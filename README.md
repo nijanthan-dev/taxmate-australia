@@ -43,30 +43,40 @@ Ambiguous, material, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, n
 
 Codex is the primary runtime. Skill files are plain Markdown with frontmatter, and the backend is a portable Go CLI. Claude or other runtimes can add wrappers without changing tax logic.
 
-## Install
+## Install this plugin
 
-Set `TAXMATE_AU_ROOT` to the plugin root:
+### Codex (recommended local install)
 
-```bash
-export TAXMATE_AU_ROOT="/path/to/taxmate-australia"
-```
-
-Build:
+1. Clone this repository.
+2. Set the plugin root.
+3. Build and validate before first use.
 
 ```bash
+git clone https://github.com/nijanthan-dev/taxmate-au.git
+cd taxmate-au
+export TAXMATE_AU_ROOT="$PWD"
 cd "$TAXMATE_AU_ROOT"
 go test ./...
 go build -o bin/taxmate-au-refresh ./cmd/taxmate-au-refresh
 go build -o bin/taxmate-au-validate ./cmd/taxmate-au-validate
 go build -o bin/taxmate-au-finance ./cmd/taxmate-au-finance
 go build -o bin/taxmate-au-calc ./cmd/taxmate-au-calc
-```
-
-Validate:
-
-```bash
 "$TAXMATE_AU_ROOT/bin/taxmate-au-validate"
 ```
+
+Then point your Codex plugin path to this checkout (or keep the repo in your normal Codex/plugin workspace). Once loaded, skills resolve via `.codex-plugin/plugin.json`.
+
+### Claude / other runtimes
+
+Use the compatibility wrapper files if your runtime loads `~/.agents/skills`:
+
+- `wrappers/taxmate-au/SKILL.md`
+- `wrappers/taxmate-au-finance-review/SKILL.md`
+- `wrappers/taxmate-au-calculators/SKILL.md`
+- `wrappers/taxmate-au-workbook/SKILL.md`
+- `wrappers/taxmate-au-taxpack/SKILL.md`
+
+Copy these wrappers into your agent skill path, keep this repo checked out locally, and set `TAXMATE_AU_ROOT` to the local plugin root.
 
 ## Scope boundaries
 
