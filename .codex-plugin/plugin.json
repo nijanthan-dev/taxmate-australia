@@ -3,7 +3,7 @@
     "name": "TaxMate Australia Maintainers"
   },
   "description": "TaxMate Australia helps Australian users move from records to accountant-ready tax prep outputs with ATO-backed research, conservative treatment rules, and clear review flags for ambiguous items.",
-  "homepage": "https://www.ato.gov.au/",
+  "homepage": "https://github.com/nijanthan-dev/taxmate-au",
   "interface": {
     "brandColor": "#1B5E20",
     "brandColorDark": "#81C784",

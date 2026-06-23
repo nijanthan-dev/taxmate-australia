@@ -2,10 +2,7 @@
 
 TaxMate Australia is a tax-preparation aid for Australian tax workflows. It is not tax, legal, accounting, financial, investment, BAS-agent, or registered-tax-agent advice.
 
-Use this plugin as a source-backed preparation workflow only:
-- not a substitute for professional advice
-- not a compliance filing service
-- not an official endorsement or representation
+TaxMate Australia is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office, the Commonwealth of Australia, any state or territory revenue office, any insurer, any super fund, or any financial institution.
 
 TaxMate Australia is not affiliated with, sponsored by, endorsed by, or approved by:
 - the Australian Taxation Office
@@ -18,7 +15,6 @@ TaxMate Australia can be wrong, incomplete, stale, or unsuitable for a user's fa
 - making legal, financial, or filing decisions
 
 TaxMate Australia does not lodge tax returns, BAS, FBT returns, TPAR, STP reports, or other official forms. Any workbook, PDF, checklist, calculation, or form-like output is a draft preparation artifact only.
-
 TaxMate Australia may identify claim candidates, GST candidates, or record gaps, but it must not be treated as confirming entitlement. Ambiguous, material, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, PSI, non-commercial-loss, and business-versus-hobby items should remain `Accountant review` unless the facts and current official guidance clearly resolve them.
 
 Do not publish private tax records, TFNs, Medicare numbers, bank details, identity documents, client files, or other sensitive personal information in issues, pull requests, examples, tests, or repository content.
