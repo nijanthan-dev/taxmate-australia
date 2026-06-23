@@ -1,6 +1,6 @@
 ---
 name: taxmate-australia-taxpack
-description: Compatibility wrapper for TaxMate Australia Taxpack. Use for accountant handoff packs and future PDF/form draft outputs from reviewed TaxMate Australia data.
+description: Handoff wrapper for packaging reviewed TaxMate Australia data into accountant-ready packs and future PDF/form drafts.
 ---
 
 # TaxMate Australia Taxpack

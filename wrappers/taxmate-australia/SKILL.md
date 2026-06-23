@@ -1,6 +1,6 @@
 ---
 name: taxmate-australia
-description: Compatibility wrapper for TaxMate Australia Research. Use for Australian ATO tax-prep research, source refresh, conservative treatment, and accountant-review flags.
+description: Entry-point wrapper for TaxMate Australia's full ATO-backed tax prep workflow across research, review, calculators, and handoff outputs.
 ---
 
 # TaxMate Australia

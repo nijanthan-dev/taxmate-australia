@@ -1,6 +1,6 @@
 ---
 name: taxmate-australia-finance-review
-description: Compatibility wrapper for TaxMate Australia Finance Review. Use for transaction CSVs, receipts, invoices, GST candidates, evidence checks, and accountant-review queues.
+description: Review wrapper for cleanly classifying Australian tax records, GST candidates, evidence gaps, and accountant-review queues.
 ---
 
 # TaxMate Australia Finance Review

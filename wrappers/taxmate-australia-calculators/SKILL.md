@@ -1,6 +1,6 @@
 ---
 name: taxmate-australia-calculators
-description: Compatibility wrapper for TaxMate Australia Calculators. Use for PAYG, BAS, CGT, FBT, super, and stamp-duty source-routing scaffolds.
+description: Calculator wrapper for conservative PAYG, BAS, CGT, FBT, super, and stamp-duty estimate scaffolds.
 ---
 
 # TaxMate Australia Calculators

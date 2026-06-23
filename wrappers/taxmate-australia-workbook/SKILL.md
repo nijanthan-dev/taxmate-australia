@@ -1,6 +1,6 @@
 ---
 name: taxmate-australia-workbook
-description: Compatibility wrapper for TaxMate Australia Workbook. Use for accountant-facing Excel workbook outputs from reviewed TaxMate Australia data.
+description: Workbook wrapper for converting reviewed TaxMate Australia data into structured, accountant-facing Excel outputs.
 ---
 
 # TaxMate Australia Workbook
