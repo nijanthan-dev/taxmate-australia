@@ -1,6 +1,6 @@
 ---
 name: research
-description: Source-backed Australian ATO tax-prep research with refresh, conservative treatment, and accountant-review flags. Use for Australian tax, ATO rules, deductions, GST/BAS, PAYG, FBT, CGT, ABN/sole-trader, WFH, investments, super, Medicare, private health, and stamp-duty source routing.
+description: ATO-first tax research that turns tax questions into conservative treatment recommendations and clear Accountant Review flags.
 metadata:
   priority: 5
   promptSignals:

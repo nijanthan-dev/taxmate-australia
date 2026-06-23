@@ -1,34 +1,47 @@
 # TaxMate Australia
 
 TaxMate Australia is an Australian tax-prep plugin for Codex. It combines official ATO source refresh, conservative tax treatment rules, transaction review, calculation scaffolds, and accountant-facing output workflows.
+TaxMate Australia is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency. Read [DISCLAIMER.md](DISCLAIMER.md) before using it.
 
 TaxMate Australia is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency. Read [DISCLAIMER.md](DISCLAIMER.md) before using it.
 
-Ambiguous, material, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-commercial-loss, and business-versus-hobby items should stay marked `Accountant review` unless the facts and current official guidance clearly resolve them.
+Ambiguous, material, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-commercial-loss, and business-versus-hobby items should stay marked `Accountant review` unless the facts and official guidance clearly resolve them.
 
-## What It Does
+## Why it exists
 
-- Refreshes and searches an official ATO source pack.
-- Reviews structured transaction CSVs for claim candidates, GST candidates, evidence gaps, and accountant-review flags.
-- Runs bounded calculators for PAYG, BAS, CGT, FBT, super, and stamp-duty source routing.
-- Defines workbook and taxpack output workflows without duplicating tax logic.
+- Reduce over-claim risk with conservative defaults.
+- Make ATO interpretation and records traceable.
+- Surface accountant handoff items early, before deadlines.
+- Keep calculation output and reporting artifacts separate from tax treatment logic.
 
-## Plugin Layout
+## What this plugin delivers
 
-- `.codex-plugin/plugin.json`: Codex plugin metadata.
-- `skills/research`: official ATO research and conservative tax treatment.
+- ATO source refresh + search from bundled official pages.
+- Structured review of transactions/receipts/bank exports.
+- Bounded calculator paths for PAYG, BAS, CGT, FBT, super, and stamp duty routing.
+- Workbook and taxpack outputs designed for handoff, not lodgment.
+
+## Who it is for
+
+- Individuals with Australian tax records needing a fast first-pass review.
+- ABN holders who need GST/BAS and expense signal separation.
+- Teams using Codex or Claude wanting consistent prompts and repeatable output layers.
+
+## Plugin layout
+
+- `.codex-plugin/plugin.json`: plugin metadata and marketplace card text.
+- `skills/research`: official ATO research + conservative treatment logic.
 - `skills/finance-review`: transaction and evidence review.
 - `skills/calculators`: bounded calculation scaffolds.
-- `skills/workbook`: accountant-facing workbook workflow.
-- `skills/taxpack`: handoff pack and future PDF/form workflow.
-- `bin/`: shared Go binaries.
-- `cmd/`, `internal/`: shared Go backend.
+- `skills/workbook`: structured accountant-facing spreadsheet output.
+- `skills/taxpack`: handoff package and future PDF/form draft path.
+- `bin/`, `cmd/`, `internal/`: shared Go binaries and backend.
 - `data/ato_knowledge_base/`: official ATO source pack.
-- `wrappers/`: compatibility skills for agents that do not yet load local plugin skills directly.
+- `wrappers/`: compatibility wrappers for runtimes with different skill loading behavior.
 
-## Agent Support
+## Runtime support
 
-Codex is the first supported runtime. The skill files are plain Markdown with frontmatter and the backend is a portable Go CLI, so Claude or other agent runtimes can add their own thin wrappers without changing tax logic.
+Codex is the primary runtime. Skill files are plain Markdown with frontmatter, and the backend is a portable Go CLI. Claude or other runtimes can add wrappers without changing tax logic.
 
 ## Install
 
@@ -55,12 +68,15 @@ Validate:
 "$TAXMATE_AU_ROOT/bin/taxmate-au-validate"
 ```
 
-## Boundaries
+## Scope boundaries
 
-Tax treatment belongs in `research`, `finance-review`, and `calculators`. Output skills such as `workbook` and `taxpack` consume reviewed data only; they must not invent independent tax rules.
+- Tax treatment must stay in `research`, `finance-review`, and `calculators`.
+- Output layers (`workbook`, `taxpack`) must consume reviewed data and must not invent tax treatment.
+- Stamp duty uses state/territory source routing only, not embedded rate tables.
+- Non-ATO commercial sources are out of scope unless explicitly requested.
 
-## Sources
+## Trust and citations
 
 The bundled source pack is ATO-first. Stamp duty is source-routed to official state or territory revenue offices. Non-ATO commercial sources are out of scope unless a user explicitly asks for them.
-
 ATO and Commonwealth material remains subject to the notices and terms published by the relevant official source. TaxMate Australia must not imply official endorsement.
+No official tax filing is performed by this plugin.

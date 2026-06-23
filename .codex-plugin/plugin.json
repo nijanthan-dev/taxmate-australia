@@ -25,6 +25,8 @@
   },
   "keywords": [
     "australia",
+    "assistant",
+    "codex",
     "ato",
     "tax",
     "bas",
@@ -33,7 +35,10 @@
     "fbt",
     "cgt",
     "super",
-    "accountant"
+    "accountant",
+    "claude",
+    "plugin",
+    "tax prep"
   ],
   "license": "Apache-2.0",
   "name": "taxmate-australia",
