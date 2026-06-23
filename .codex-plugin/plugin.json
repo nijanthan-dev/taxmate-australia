@@ -17,6 +17,8 @@
     ],
     "developerName": "TaxMate AU Maintainers",
     "displayName": "TaxMate AU",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/icon.png",
     "longDescription": "TaxMate AU is an Australian tax-prep plugin for Codex. It keeps source-backed ATO research, finance review, calculators, workbook generation, and future taxpack output as separate skills over a shared Go backend and official ATO source pack. It is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and is not affiliated with or endorsed by the Australian Taxation Office.",
     "shortDescription": "Australian ATO tax prep workflows",
     "websiteURL": "https://www.ato.gov.au/"
