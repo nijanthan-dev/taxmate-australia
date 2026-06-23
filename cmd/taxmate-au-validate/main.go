@@ -80,7 +80,6 @@ func validate(root string) (map[string]any, bool) {
 	manifest, manifestErr := readPluginManifest(root)
 	manifestText := readText(filepath.Join(root, ".codex-plugin", "plugin.json"))
 	add("codex_plugin_manifest_exists", manifestErr == nil, fmt.Sprint(manifestErr))
-	add("codex_plugin_manifest_required_keys", manifest["name"] == "taxmate-australia" && manifest["version"] != "" && manifest["skills"] == "./skills/", "")
 	add("public_manifest_polished", strings.Contains(manifestText, "TaxMate Australia Maintainers") && !strings.Contains(manifestText, `"Local"`) && !strings.Contains(manifestText, `"Private"`) && !strings.Contains(manifestText, `"repository": "local"`), "")
 	add("codex_plugin_manifest_required_keys", (manifest["name"] == "taxmate-au" || manifest["name"] == "taxmate-australia") && manifest["version"] != "" && manifest["skills"] == "./skills/", "")
 	add("plugin_icon_declared", strings.Contains(manifestText, `"composerIcon": "./assets/icon.png"`) && strings.Contains(manifestText, `"logo": "./assets/icon.png"`) && fileExists(filepath.Join(root, "assets", "icon.png")), "")
