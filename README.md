@@ -90,11 +90,12 @@ I sampled the official ecosystem (including the `openai/plugins` directory with 
 - `.codex-plugin/plugin.json`: required plugin manifest.
 - `skills/`
   - `research` — source-first treatment and reference checks.
+  - topic skills — generated official-source skills for employment deductions, WFH, ABN business, GST/BAS, PAYG employer, CGT, investments, crypto, rental property, super, private health, and records.
   - `finance-review` — transaction and evidence review.
   - `calculators` — calculation scaffolds.
   - `workbook` — structured handoff file generation.
   - `taxpack` — handoff pack packaging.
-- `cmd/`, `internal/`, `data/`: shared runtime and source assets.
+- `cmd/`, `internal/`, `data/`: shared runtime, skill generator, and compact source manifests.
 - `assets/`: icon and visual assets used by plugin install surface.
 - optional:
   - `.app.json` (app connector definitions, when plugin includes app integrations)
@@ -152,6 +153,7 @@ cd "$TAXMATE_AUSTRALIA_ROOT"
 
 ```bash
 go test ./...
+go build -o bin/taxmate-australia-skills ./cmd/taxmate-australia-skills
 go build -o bin/taxmate-australia-validate ./cmd/taxmate-australia-validate
 go build -o bin/taxmate-australia-finance ./cmd/taxmate-australia-finance
 ```
@@ -206,3 +208,21 @@ No official tax filing is performed by this plugin.
 - build required binaries (`go build -o bin/taxmate-australia-refresh ./cmd/taxmate-australia-refresh`, etc.)
 - `scripts/check-publication-ready.sh`
 - run a local secret scan before publish
+
+## Generated official-source skills
+
+`taxmate-australia-skills` converts official-source crawl metadata into concise topic skills and structured references:
+
+```bash
+taxmate-australia-skills generate
+taxmate-australia-skills refresh --topic capital-gains-tax
+taxmate-australia-skills refresh --all
+taxmate-australia-skills audit
+taxmate-australia-skills validate
+```
+
+Generated topic references live under `skills/<topic>/references/`. Full fetched HTML and extracted text are temporary local cache only under `.cache/ato/` and are not committed.
+
+The source map is `migration/source-to-skill-map.json`; every indexed source is classified once as `used`, `duplicate`, `not_used`, or `needs_review`. The generated audit report is `migration/SOURCE_TO_SKILL_REPORT.md`.
+
+`hooks.json` runs `scripts/clean-source-cache.sh` on `SessionEnd` so temporary official-source HTML/text is removed after Codex sessions.

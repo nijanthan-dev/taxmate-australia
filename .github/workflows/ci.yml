@@ -26,9 +26,12 @@ jobs:
       - run: go test ./...
       - run: mkdir -p bin
       - run: go build -o bin/taxmate-australia-refresh ./cmd/taxmate-australia-refresh
+      - run: go build -o bin/taxmate-australia-skills ./cmd/taxmate-australia-skills
       - run: go build -o bin/taxmate-australia-validate ./cmd/taxmate-australia-validate
       - run: go build -o bin/taxmate-australia-finance ./cmd/taxmate-australia-finance
       - run: go build -o bin/taxmate-australia-calc ./cmd/taxmate-australia-calc
+      - run: bin/taxmate-australia-skills validate
+      - run: bin/taxmate-australia-skills audit
       - run: bin/taxmate-australia-validate
       - run: scripts/check-publication-ready.sh
       - run: bin/taxmate-australia-calc payg --gross-pay 1500 --periods 52 --tax-free-threshold
@@ -46,11 +49,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: test -f .codex-plugin/plugin.json
+      - run: test -f hooks.json
+      - run: test -f scripts/clean-source-cache.sh
+      - run: test -f migration/source-to-skill-map.json
+      - run: test -f migration/SOURCE_TO_SKILL_REPORT.md
       - run: test -f skills/research/SKILL.md
       - run: test -f skills/finance-review/SKILL.md
       - run: test -f skills/calculators/SKILL.md
+      - run: test -f skills/capital-gains-tax/SKILL.md
+      - run: test -f skills/gst-bas/SKILL.md
       - run: test -f skills/workbook/SKILL.md
       - run: test -f skills/taxpack/SKILL.md
+      - run: test ! -d data/ato_knowledge_base/raw
+      - run: test ! -d data/ato_knowledge_base/text
+      - run: bash scripts/clean-source-cache.sh
       - run: "! git grep -nE 'public[-]work|taxmate-australia-public[-]work' -- . ':!data/ato_knowledge_base/raw/**' ':!data/ato_knowledge_base/text/**'"
       - run: "! git grep -nE '/Users/[[:alnum:]_.-]+|custom[_]apps/skills[_]and[_]plugins|Developer/custom[_]apps' -- README.md .codex-plugin agents skills docs"
       - run: "! git ls-files 'bin/*' | grep -q ."

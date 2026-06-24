@@ -17,6 +17,8 @@ fail() {
 [[ -f SECURITY.md ]] || fail "missing SECURITY.md"
 [[ -f CONTRIBUTING.md ]] || fail "missing CONTRIBUTING.md"
 [[ -f docs/PUBLICATION_CHECKLIST.md ]] || fail "missing publication checklist"
+[[ -f hooks.json ]] || fail "missing hooks.json"
+[[ -f scripts/clean-source-cache.sh ]] || fail "missing source-cache cleaner"
 
 if git ls-files 'bin/*' | grep -q .; then
   fail "built binaries are tracked"
@@ -46,9 +48,13 @@ fi
 go test ./...
 mkdir -p bin
 go build -o bin/taxmate-australia-refresh ./cmd/taxmate-australia-refresh
+go build -o bin/taxmate-australia-skills ./cmd/taxmate-australia-skills
 go build -o bin/taxmate-australia-validate ./cmd/taxmate-australia-validate
 go build -o bin/taxmate-australia-finance ./cmd/taxmate-australia-finance
 go build -o bin/taxmate-australia-calc ./cmd/taxmate-australia-calc
+bin/taxmate-australia-skills validate >/tmp/taxmate-australia-skills-validate.json
+bin/taxmate-australia-skills audit >/tmp/taxmate-australia-skills-audit.json
 bin/taxmate-australia-validate >/tmp/taxmate-australia-validate.json
+bash scripts/clean-source-cache.sh
 
 echo "publication checks passed"

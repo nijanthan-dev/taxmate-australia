@@ -1,0 +1,98 @@
+[
+  {
+    "source_id": "ato-833204ee94c2",
+    "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses",
+    "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses",
+    "title": "Deductions for home-based business expenses",
+    "last_updated": "2026-06-17T14:00:00.000+00:00",
+    "checked_at": "2026-06-24T00:00:00Z",
+    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "assigned_skill": "work-from-home",
+    "reference": "references/rules.md",
+    "assignment_reason": "matched topic keywords"
+  },
+  {
+    "source_id": "ato-45530346d241",
+    "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-business-and-cgt-implications",
+    "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-business-and-cgt-implications",
+    "title": "Home-based business and CGT implications",
+    "last_updated": "2026-02-02T13:00:00.000+00:00",
+    "checked_at": "2026-06-24T00:00:00Z",
+    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "assigned_skill": "work-from-home",
+    "reference": "references/rules.md",
+    "assignment_reason": "matched topic keywords"
+  },
+  {
+    "source_id": "ato-aa24577ab271",
+    "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-business-expenses-sole-trader-or-partnership",
+    "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-business-expenses-sole-trader-or-partnership",
+    "title": "Home-based business expenses – sole trader or partnership",
+    "last_updated": "2026-05-26T14:00:00.000+00:00",
+    "checked_at": "2026-06-24T00:00:00Z",
+    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "assigned_skill": "work-from-home",
+    "reference": "references/rules.md",
+    "assignment_reason": "matched topic keywords"
+  },
+  {
+    "source_id": "ato-4666a628bc7c",
+    "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-businesses-expenses-company-or-trust",
+    "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-businesses-expenses-company-or-trust",
+    "title": "Home-based businesses expenses – company or trust",
+    "last_updated": "2025-05-06T14:00:00.000+00:00",
+    "checked_at": "2026-06-24T00:00:00Z",
+    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "assigned_skill": "work-from-home",
+    "reference": "references/rules.md",
+    "assignment_reason": "matched topic keywords"
+  },
+  {
+    "source_id": "ato-b16c3bac20a8",
+    "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses",
+    "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses",
+    "title": "Working from home expenses",
+    "last_updated": "2026-06-07T14:00:00.000+00:00",
+    "checked_at": "2026-06-24T00:00:00Z",
+    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "assigned_skill": "work-from-home",
+    "reference": "references/rules.md",
+    "assignment_reason": "matched topic keywords"
+  },
+  {
+    "source_id": "ato-7673258c8a9f",
+    "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/actual-cost-method",
+    "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/actual-cost-method",
+    "title": "Actual cost method",
+    "last_updated": "2026-06-07T14:00:00.000+00:00",
+    "checked_at": "2026-06-24T00:00:00Z",
+    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "assigned_skill": "work-from-home",
+    "reference": "references/rules.md",
+    "assignment_reason": "matched topic keywords"
+  },
+  {
+    "source_id": "ato-1264e41fe05e",
+    "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/fixed-rate-method",
+    "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/fixed-rate-method",
+    "title": "Fixed rate method",
+    "last_updated": "2026-06-07T14:00:00.000+00:00",
+    "checked_at": "2026-06-24T00:00:00Z",
+    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "assigned_skill": "work-from-home",
+    "reference": "references/rules.md",
+    "assignment_reason": "matched topic keywords"
+  },
+  {
+    "source_id": "ato-0fcbebd18220",
+    "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/occupancy-expenses",
+    "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/occupancy-expenses",
+    "title": "Occupancy expenses",
+    "last_updated": "2026-06-07T14:00:00.000+00:00",
+    "checked_at": "2026-06-24T00:00:00Z",
+    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "assigned_skill": "work-from-home",
+    "reference": "references/rules.md",
+    "assignment_reason": "matched topic keywords"
+  }
+]

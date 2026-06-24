@@ -8,6 +8,10 @@
 /coverage/
 *.log
 
+# Refreshed official-source cache; generated references are committed instead.
+/data/ato_knowledge_base/raw/
+/data/ato_knowledge_base/text/
+
 # OS/editor noise
 .DS_Store
 *.swp

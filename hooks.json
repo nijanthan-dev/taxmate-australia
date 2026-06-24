@@ -1,0 +1,16 @@
+{
+  "description": "Clean temporary official-source cache after Codex sessions.",
+  "hooks": {
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/clean-source-cache.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -147,6 +147,10 @@ func DataDir(root string) string {
 	return filepath.Join(root, "data", "ato_knowledge_base")
 }
 
+func CacheDir(root string) string {
+	return filepath.Join(root, ".cache", "ato")
+}
+
 func IndexPath(root string) string {
 	return filepath.Join(DataDir(root), "source_index.json")
 }
@@ -281,6 +285,10 @@ func HashText(s string) string {
 
 func RecordText(root string, rec *Record) string {
 	body, err := os.ReadFile(filepath.Join(DataDir(root), rec.TextFile))
+	if err == nil {
+		return string(body)
+	}
+	body, err = os.ReadFile(filepath.Join(CacheDir(root), rec.TextFile))
 	if err != nil {
 		return ""
 	}
@@ -342,11 +350,13 @@ func RefreshRecord(root string, rec *Record) RefreshResult {
 		return RefreshResult{URL: target, Status: fetched.Status, Changed: false, Error: fmt.Sprintf("HTTP %d", fetched.Status)}
 	}
 	text := CleanText(fetched.Body)
-	textPath := filepath.Join(DataDir(root), rec.TextFile)
-	rawPath := filepath.Join(DataDir(root), rec.RawFile)
+	textPath := filepath.Join(CacheDir(root), rec.TextFile)
+	rawPath := filepath.Join(CacheDir(root), rec.RawFile)
 	oldBytes, _ := os.ReadFile(textPath)
 	changed := HashText(string(oldBytes)) != HashText(text)
 	if changed {
+		_ = os.MkdirAll(filepath.Dir(rawPath), 0755)
+		_ = os.MkdirAll(filepath.Dir(textPath), 0755)
 		_ = os.WriteFile(rawPath, fetched.Body, 0644)
 		_ = os.WriteFile(textPath, []byte(text), 0644)
 	}

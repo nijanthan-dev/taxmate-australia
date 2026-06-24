@@ -35,19 +35,24 @@ export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(pwd)}"
 Core commands:
 
 ```bash
+"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-skills" generate
+"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-skills" refresh --topic gst-bas
+"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-skills" validate
 "$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --query "<topic>"
 "$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --all
 "$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --recrawl
 "$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-validate"
 ```
 
-ATO source pack:
+Generated official-source skills:
 
 ```bash
-"$TAXMATE_AUSTRALIA_ROOT/data/ato_knowledge_base"
+"$TAXMATE_AUSTRALIA_ROOT/skills/<topic>/references"
+"$TAXMATE_AUSTRALIA_ROOT/data/ato_knowledge_base/source_manifest.json"
+"$TAXMATE_AUSTRALIA_ROOT/data/ato_knowledge_base/migration_report.json"
 ```
 
-Read `SCOPE_SUMMARY.md`, search `source_index.json` and `text/`, then refresh relevant pages before answering current tax questions. If refresh fails, say so and use cached sources only when useful.
+Read `SCOPE_SUMMARY.md`, choose the focused topic skill, consult its `references/sources.json`, `rules.md`, `evidence.md`, and `current-values.json` when present, then refresh relevant official pages before answering current tax questions. If refresh fails, say so and use generated references only as stale provenance, not as current-value proof.
 
 ## Answer Rules
 
@@ -79,9 +84,9 @@ Read `SCOPE_SUMMARY.md`, search `source_index.json` and `text/`, then refresh re
 
 1. Read `data/ato_knowledge_base/SCOPE_SUMMARY.md`.
 2. Search `source_index.json` and `text/`.
-3. Run `"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --query "<topic>"`.
-4. Re-read changed or relevant text.
-5. Answer with conclusion, conservative treatment, evidence needed, source URLs, and accountant-review flags.
+3. Run `"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-skills" refresh --topic "<skill-topic>"` when current values or changed guidance matter.
+4. Run `"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-skills" generate` and `validate`.
+5. Answer with conclusion, conservative treatment, evidence needed, source URLs, checked-at dates, and accountant-review flags.
 
 ## Invocation
 

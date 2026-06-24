@@ -1,6 +1,6 @@
-# ATO FY2025-26 Scope Summary
+# Official Source Scope Summary
 
-Fetched official ATO pages for the tax tracker on 2026-06-23.
+Generated topic references from official ATO pages first fetched on 2026-06-23 and migrated on 2026-06-24.
 
 ## Coverage
 
@@ -14,21 +14,12 @@ Fetched official ATO pages for the tax tracker on 2026-06-23.
 - Super, including personal super contributions, deductions/records around super, and employer super guarantee.
 - Private health, including private health insurance statements, rebate, Medicare levy, Medicare levy surcharge, thresholds, family/dependants, and tax return treatment.
 
-## Key Tracker Defaults From Sources
+## Dynamic Values
 
-- FY2025-26 employee WFH fixed rate is 70 cents per work hour.
-- WFH fixed-rate method still needs actual records of hours worked from home and one record for each relevant running-expense type.
-- Fixed-rate WFH covers energy, phone, internet, stationery, and computer consumables; separate claims need to stay outside those covered costs.
-- Business and employee claims must be separated; private portions must be excluded.
-- If GST credits are claimed, income-tax deductions generally use GST-exclusive amounts.
-- GST/BAS cannot be assumed nil if GST credits are being claimed; accountant review required.
-- Home-based business occupancy claims can affect main-residence CGT, so default tracker should not claim occupancy without accountant review.
-- ETF/share records should track income statement data, cost base, disposals, DRP, trust non-assessable payments, CGT events, and capital losses.
-- Crypto records should track acquisition, disposal, swaps, wallet/exchange records, cost base, proceeds, and CGT events.
-- Rental-property records should separate repairs, capital works/improvements, interest, agent fees, insurance, occupancy/private-use, and disposal-related CGT records.
-- PAYG estimates are not payroll withholding tables; payroll, HELP/STSL, bonus, termination, and rounding cases require official ATO tables and accountant/payroll review.
-- TPAR and STP/income-statement obligations depend on role, payment type, contractor status, and reporting channel.
-- Non-commercial losses and business-versus-hobby questions default to accountant review unless the facts clearly satisfy ATO criteria.
+- Rates, thresholds, caps, cents-per-kilometre amounts, WFH rates, GST thresholds, tax brackets, super rates, FBT values, Medicare thresholds, asset write-off thresholds, and due dates are volatile.
+- Volatile values live only in topic `references/current-values.json` with source URL, title, source last-updated date when available, checked-at date, content hash, context, and reuse warning.
+- Before using a volatile value, refresh or verify the official source for the requested income year or effective period.
+- If current verification is unavailable, stale, conflicting, or wrong-year, mark `Accountant review`.
 
 ## Known Limits
 
@@ -40,7 +31,9 @@ Fetched official ATO pages for the tax tracker on 2026-06-23.
 
 ## Files
 
-- `source_index.json`: machine-readable source index.
-- `README.md`: source list with links and ATO last-updated dates when available.
-- `raw/`: fetched HTML.
-- `text/`: cleaned searchable text.
+- `source_index.json`: legacy machine-readable source index used for refresh targeting.
+- `source_manifest.json`: generated sources grouped by topic skill.
+- `migration_report.json`: every indexed source mapped, duplicated, unsupported, or unassigned.
+- `README.md`: concise source-pack overview.
+- `skills/*/references/`: compact generated topic references.
+- `.cache/ato/`: ignored local refresh cache for fetched HTML and extracted text.

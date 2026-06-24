@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"taxmate-au-skill/internal/atodata"
+	"taxmate-au-skill/internal/skillgen"
 )
 
 var topicQueries = map[string][]string{
@@ -33,7 +34,7 @@ var topicQueries = map[string][]string{
 	"shares_cgt":              {"capital-gains-tax/shares-and-similar-investments", "dividend-reinvestment-plans"},
 	"crypto_records":          {"crypto-asset-investments", "keeping crypto records"},
 	"rental_property_records": {"records-for-rental-properties-and-holiday-homes", "rental properties"},
-	"non_commercial_losses":   {"non-commercial loss", "carrying on a business"},
+	"non_commercial_losses":   {"non-commercial loss", "business-losses", "business versus hobby"},
 	"tpar":                    {"taxable payments annual report", "contractor payments"},
 	"super":                   {"personal-super-contributions", "concessional-contributions", "super guarantee"},
 	"private_health":          {"private-health-insurance-rebate", "medicare-levy-surcharge"},
@@ -88,6 +89,9 @@ func validate(root string) (map[string]any, bool) {
 	add("publication_docs_exist", fileExists(filepath.Join(root, "README.md")) && fileExists(filepath.Join(root, "DISCLAIMER.md")) && fileExists(filepath.Join(root, "docs", "PUBLICATION_CHECKLIST.md")), "")
 
 	requiredSkills := []string{"research", "finance-review", "calculators", "workbook", "taxpack"}
+	for _, topic := range skillgen.Topics() {
+		requiredSkills = append(requiredSkills, topic.Slug)
+	}
 	skillText, missingSkills, badFrontmatter := loadSkillDocs(root, requiredSkills)
 	add("codex_plugin_required_skills_exist", len(missingSkills) == 0, strings.Join(missingSkills, ", "))
 	add("skill_frontmatter_valid", len(badFrontmatter) == 0, strings.Join(badFrontmatter, ", "))
@@ -95,7 +99,7 @@ func validate(root string) (map[string]any, bool) {
 	add("invocation_documented", strings.Contains(skillText, "$taxmate-australia:research") &&
 		strings.Contains(skillText, "$taxmate-australia:finance-review") &&
 		strings.Contains(skillText, "$taxmate-australia:workbook"), "")
-	add("go_binaries_documented", strings.Contains(skillText, "bin/taxmate-australia-refresh") && strings.Contains(skillText, "bin/taxmate-australia-validate") && strings.Contains(skillText, "bin/taxmate-australia-finance") && strings.Contains(skillText, "bin/taxmate-australia-calc"), "")
+	add("go_binaries_documented", strings.Contains(skillText, "bin/taxmate-australia-refresh") && strings.Contains(skillText, "bin/taxmate-australia-skills") && strings.Contains(skillText, "bin/taxmate-australia-validate") && strings.Contains(skillText, "bin/taxmate-australia-finance") && strings.Contains(skillText, "bin/taxmate-australia-calc"), "")
 	add("portable_root_documented", strings.Contains(skillText, "TAXMATE_AUSTRALIA_ROOT") && strings.Contains(readText(filepath.Join(root, "README.md")), "TAXMATE_AUSTRALIA_ROOT"), "")
 	publicDocs := publicDocFiles(root)
 	add("public_docs_no_private_paths", noPrivatePaths(root, publicDocs), strings.Join(firstN(privatePathHits(root, publicDocs), 5), "; "))
@@ -122,21 +126,16 @@ func validate(root string) (map[string]any, bool) {
 	dataDir := atodata.DataDir(root)
 	add("scope_summary_exists", fileExists(filepath.Join(dataDir, "SCOPE_SUMMARY.md")), "")
 	add("readme_exists", fileExists(filepath.Join(dataDir, "README.md")), "")
+	add("generated_source_manifest_exists", fileExists(filepath.Join(dataDir, "source_manifest.json")), "")
+	add("migration_report_exists", fileExists(filepath.Join(dataDir, "migration_report.json")), "")
+	add("raw_snapshots_not_committed", !fileExists(filepath.Join(dataDir, "raw")) && !fileExists(filepath.Join(dataDir, "text")), "")
 
-	var missingFiles []string
 	all200 := true
 	for _, rec := range idx.Records {
 		if rec.Status != 200 {
 			all200 = false
 		}
-		if !fileExists(filepath.Join(dataDir, rec.RawFile)) {
-			missingFiles = append(missingFiles, rec.FinalURL+":raw_file")
-		}
-		if !fileExists(filepath.Join(dataDir, rec.TextFile)) {
-			missingFiles = append(missingFiles, rec.FinalURL+":text_file")
-		}
 	}
-	add("indexed_files_exist", len(missingFiles) == 0, strings.Join(firstN(missingFiles, 5), "; "))
 	add("all_records_http_200", all200, "")
 
 	hay := haystack(root, idx)
@@ -163,7 +162,8 @@ func validate(root string) (map[string]any, bool) {
 	}
 	add("stale_seed_failures_have_replacements", len(unresolved) == 0, strings.Join(firstN(unresolved, 5), "; "))
 
-	add("go_binaries_exist", fileExists(filepath.Join(root, "bin", "taxmate-australia-refresh")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-validate")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-finance")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-calc")), "")
+	add("generated_skills_validate", skillgen.Validate(root) == nil, "")
+	add("go_binaries_exist", fileExists(filepath.Join(root, "bin", "taxmate-australia-refresh")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-skills")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-validate")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-finance")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-calc")), "")
 	generated, _ := filepath.Glob(filepath.Join(root, "**", "__pycache__"))
 	pyFiles := findBySuffix(root, ".py")
 	pycFiles := findBySuffix(root, ".pyc")
@@ -197,7 +197,7 @@ func finish(root string, checks []check, idx *atodata.Index, includeIndex bool) 
 	}
 	if includeIndex && idx != nil {
 		report["records"] = len(idx.Records)
-		report["failures"] = len(idx.Failures)
+		report["source_failures"] = len(idx.Failures)
 	}
 	return report, passed == len(checks)
 }
@@ -454,6 +454,28 @@ func haystack(root string, idx *atodata.Index) string {
 		}
 		return nil
 	})
+	for _, dir := range []string{filepath.Join(root, "skills"), filepath.Join(root, "data", "ato_knowledge_base")} {
+		_ = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return nil
+			}
+			ext := filepath.Ext(path)
+			if ext != ".md" && ext != ".json" {
+				return nil
+			}
+			body, err := os.ReadFile(path)
+			if err == nil {
+				b.WriteString(filepath.Base(path))
+				b.WriteByte('\n')
+				if len(body) > 40000 {
+					body = body[:40000]
+				}
+				b.Write(body)
+				b.WriteByte('\n')
+			}
+			return nil
+		})
+	}
 	return strings.ToLower(b.String())
 }
 
