@@ -1,6 +1,8 @@
 ---
 name: taxmate-australia-finance-review
 description: Review wrapper for cleanly classifying Australian tax records, GST candidates, evidence gaps, and accountant-review queues.
+metadata:
+  internal: true
 ---
 
 # TaxMate Australia Finance Review

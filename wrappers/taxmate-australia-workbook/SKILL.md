@@ -1,6 +1,8 @@
 ---
 name: taxmate-australia-workbook
 description: Workbook wrapper for converting reviewed TaxMate Australia data into structured, accountant-facing Excel outputs.
+metadata:
+  internal: true
 ---
 
 # TaxMate Australia Workbook

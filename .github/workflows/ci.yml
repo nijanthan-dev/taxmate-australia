@@ -23,7 +23,12 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
       - run: go test ./...
+      - run: go vet ./...
+      - run: go build ./...
       - run: mkdir -p bin
       - run: go build -o bin/taxmate-australia-refresh ./cmd/taxmate-australia-refresh
       - run: go build -o bin/taxmate-australia-skills ./cmd/taxmate-australia-skills
@@ -33,6 +38,7 @@ jobs:
       - run: bin/taxmate-australia-skills validate
       - run: bin/taxmate-australia-skills audit
       - run: bin/taxmate-australia-validate
+      - run: bash scripts/test-skills-install.sh
       - run: scripts/check-publication-ready.sh
       - run: bin/taxmate-australia-calc payg --gross-pay 1500 --periods 52 --tax-free-threshold
       - run: |
@@ -48,20 +54,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
       - run: test -f .codex-plugin/plugin.json
       - run: test -f hooks.json
       - run: test -f scripts/clean-source-cache.sh
       - run: test -f migration/source-to-skill-map.json
       - run: test -f migration/SOURCE_TO_SKILL_REPORT.md
-      - run: test -f skills/research/SKILL.md
-      - run: test -f skills/finance-review/SKILL.md
-      - run: test -f skills/calculators/SKILL.md
+      - run: test -f config/public-skills.json
+      - run: test -f config/skill-packaging.json
+      - run: test -f skills/taxmate-australia/SKILL.md
       - run: test -f skills/capital-gains-tax/SKILL.md
       - run: test -f skills/gst-bas/SKILL.md
       - run: test -f skills/workbook/SKILL.md
       - run: test -f skills/taxpack/SKILL.md
       - run: test ! -d data/ato_knowledge_base/raw
       - run: test ! -d data/ato_knowledge_base/text
+      - run: bash scripts/test-skills-install.sh
       - run: bash scripts/clean-source-cache.sh
       - run: "! git grep -nE 'public[-]work|taxmate-australia-public[-]work' -- . ':!data/ato_knowledge_base/raw/**' ':!data/ato_knowledge_base/text/**'"
       - run: "! git grep -nE '/Users/[[:alnum:]_.-]+|custom[_]apps/skills[_]and[_]plugins|Developer/custom[_]apps' -- README.md .codex-plugin agents skills docs"

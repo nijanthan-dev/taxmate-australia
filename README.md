@@ -1,228 +1,169 @@
 # TaxMate Australia
 
-TaxMate Australia is an Australian tax-prep plugin for Codex. It combines official ATO source refresh, conservative tax treatment rules, transaction review, calculation scaffolds, and accountant-facing output workflows.
-TaxMate Australia is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency. Read [DISCLAIMER.md](DISCLAIMER.md) before using it.
-TaxMate Australia is an OpenAI Codex plugin: a packaged workflow bundle for Australian tax-prep review work.
+TaxMate Australia is a portable Codex skill set for Australian tax-prep review. It helps route records and questions into conservative, source-linked, accountant-ready workflows.
 
-It connects official ATO research, transaction/evidence review, and bounded calculator scaffolds to output layers that support handoff to a tax professional.
+TaxMate Australia is only a preparation aid. It is not tax advice, financial advice, legal advice, accounting advice, BAS-agent advice, registered-tax-agent advice, investment advice, or a substitute for a qualified professional. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency.
 
-The plugin is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency. Read [DISCLAIMER.md](DISCLAIMER.md).
+TaxMate Australia must not lodge, file, submit, transmit, or finalise any tax return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency. If a user asks a skill to submit or lodge anything with the ATO, the skill must refuse and tell the user to use a qualified human tax professional or the official ATO channel themselves.
 
-## Plugin model and boundaries
+## Safety boundary
 
-OpenAI treats:
+- Prep only: organise records, flag evidence gaps, draft handoff material, and preserve source URLs.
+- No advice: do not present outputs as tax, financial, legal, accounting, BAS-agent, registered-tax-agent, or investment advice.
+- No lodgment: do not submit to the ATO, even if the user requests it or says they accept the risk.
+- Human review required: keep `Accountant review` visible for ambiguous, mixed-use, GST/BAS, CGT, FBT, home-business, pre-revenue, business-versus-hobby, non-commercial-loss, and uncertain items.
+- Refuse unsafe requests: reject requests to bypass evidence, hide income, overclaim, fabricate records, remove review flags, or lodge/submit without human intervention.
 
-- **Plugin** as a package that can include skills, MCP servers, and app bindings.
-- **Skill** as a playbook-like prompt+workflow for how Codex should do work.
+## Install in 60 seconds
 
-TaxMate uses:
+Prerequisites:
 
-- `skills/` for operational behavior and output conventions.
-- `cmd/` and `internal/` for shared tax-review runtime logic.
-- `.codex-plugin/plugin.json` for marketplace and install metadata.
+- Node.js 18 or newer.
+- Codex for Codex-targeted install commands.
 
-Scope boundaries are intentionally strict:
-
-- ATO-first sources only.
-- Any `Accountant review` item stays flagged when facts are incomplete or ambiguous.
-- No official filing/ lodgment is performed by this plugin.
-
-## What this plugin includes
-
-- Official-source research and evidence review workflow.
-- Conservative treatment and uncertainty flags for mixed-use, pre-revenue, FBT/CGT/GST, and home-business edge cases.
-- Calculator scaffolds for PAYG, BAS, and supporting Australian tax workflows.
-- Output layers: `skills/workbook` and `skills/taxpack` for handoff quality.
-
-## OpenAI plugin definition used here
-
-Most mature Codex plugins follow the same manifest shape:
-- `.codex-plugin/plugin.json` is required.
-- fields like `name`, `version`, `description`, `author.name`, and `interface` are required.
-- common optional top-level fields: `homepage`, `repository`, `license`, and `keywords`.
-- all manifest paths are relative and start with `./`.
-
-A representative minimal shape:
-
-```json
-{
-  "name": "taxmate-australia",
-  "version": "0.1.0",
-  "description": "ATO-backed Australian tax-prep workflow for Codex and Claude",
-  "author": {
-    "name": "TaxMate Australia Maintainers"
-  },
-  "interface": {
-    "displayName": "TaxMate Australia",
-    "shortDescription": "ATO-backed Australian tax-prep workflow",
-    "longDescription": "Converts messy tax inputs into ATO-sourced review-ready recommendations.",
-    "category": "Productivity",
-    "capabilities": ["Read", "Write"],
-    "developerName": "TaxMate Australia Maintainers",
-    "websiteURL": "https://www.ato.gov.au/",
-    "defaultPrompt": [
-      "Review these tax expenses conservatively for my accountant.",
-      "Summarize ATO-linked tax risk flags."
-    ],
-    "brandColor": "#1B5E20",
-    "composerIcon": "./assets/icon.png",
-    "logo": "./assets/icon.png",
-    "logoDark": "./assets/logo-dark.png"
-  },
-  "skills": "./skills/"
-}
-```
-
-## What successful plugins document and include
-
-I sampled the official ecosystem (including the `openai/plugins` directory with 150+ plugin entries) and mature community plugin repos. Common patterns are:
-
-- a plugin-level README explaining scope and how to use the plugin;
-- explicit plugin structure (`.codex-plugin`, `skills`, optional `.app.json`, optional `.mcp.json`, optional `agents`, `assets`);
-- optional tool glue (`commands/`, `hooks.json`, `scripts/`, `ui/`);
-- optional lock metadata (`plugin.lock.json`) when release hygiene matters;
-- explicit install path expectations and marketplace entry snippets.
-
-## Plugin layout
-
-### Plugin layout
- 
-- `.codex-plugin/plugin.json`: required plugin manifest.
-- `skills/`
-  - `research` — source-first treatment and reference checks.
-  - topic skills — generated official-source skills for employment deductions, WFH, ABN business, GST/BAS, PAYG employer, CGT, investments, crypto, rental property, super, private health, and records.
-  - `finance-review` — transaction and evidence review.
-  - `calculators` — calculation scaffolds.
-  - `workbook` — structured handoff file generation.
-  - `taxpack` — handoff pack packaging.
-- `cmd/`, `internal/`, `data/`: shared runtime, skill generator, and compact source manifests.
-- `assets/`: icon and visual assets used by plugin install surface.
-- optional:
-  - `.app.json` (app connector definitions, when plugin includes app integrations)
-  - `.mcp.json` (MCP integration wiring)
-  - `agents/` (plugin surface metadata)
-  - `commands/`, `hooks.json`, `scripts/`, `ui/`
-  - `plugin.lock.json` (release/refresh guard)
-
-## Installation
-
-### A) Install path for official/plugin sources (recommended)
-
-1. Open Codex plugin discovery and install **TaxMate Australia** from the plugin list.
-2. If your workspace policy requires explicit installation controls, keep one marketplace entry with:
-
-```json
-{
-  "name": "taxmate-local",
-  "interface": { "displayName": "Local plugins" },
-  "plugins": [
-    {
-      "name": "taxmate-australia",
-      "source": {
-        "source": "local",
-        "path": "../.."
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    }
-  ]
-}
-```
-
-3. Make sure `path` is relative to the selected marketplace file:
-- personal install: `~/.agents/plugins/marketplace.json`
-- repo/team install: `<repo-root>/.agents/plugins/marketplace.json`
-
-For both cases:
-- if your marketplace points at a repo-root plugin, use `../..` from `.agents/plugins/marketplace.json`.
-- if your marketplace points at `plugins/<plugin-name>`, use `./plugins/<plugin-name>`.
-
-### B) Local install for this repo
-
-1. Set plugin root:
+Preview available portable skills:
 
 ```bash
-export TAXMATE_AUSTRALIA_ROOT="/path/to/taxmate-australia"
-cd "$TAXMATE_AUSTRALIA_ROOT"
+npx skills@1.5.13 add nijanthan-dev/taxmate-australia --list
 ```
 
-2. (Optional) Build once to warm the runtime:
+Install all portable skills globally for Codex:
 
 ```bash
-go test ./...
-go build -o bin/taxmate-australia-skills ./cmd/taxmate-australia-skills
-go build -o bin/taxmate-australia-validate ./cmd/taxmate-australia-validate
-go build -o bin/taxmate-australia-finance ./cmd/taxmate-australia-finance
+npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
+  --skill '*' \
+  --agent codex \
+  --global \
+  --yes
 ```
 
-3. Validate plugin manifest:
+Install all portable skills in the current project:
 
 ```bash
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-validate"
+npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
+  --skill '*' \
+  --agent codex \
+  --yes
 ```
 
-4. Add a local marketplace entry (Codex reads JSON marketplaces from `~/.agents/plugins/marketplace.json`).
-
-Use `source.path` relative to the marketplace file location:
-- personal install: `../..` if you use a repo-root plugin entry file under `<repo-root>/.agents/plugins/marketplace.json`
-- repo install: `./plugins/taxmate-australia` if your repo stores plugin folders under `<repo-root>/plugins/taxmate-australia`
-
-```json
-{
-  "name": "taxmate-local",
-  "interface": { "displayName": "Local plugins" },
-  "plugins": [
-    {
-      "name": "taxmate-australia",
-      "source": {
-        "source": "local",
-        "path": "../.."
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    }
-  ]
-}
-```
-
-5. Run Codex, reload plugin list, and enable TaxMate Australia.
-
-If your install lives as a repo plugin, place it under your repo marketplace root and keep `path` aligned to that root (`./plugins/<plugin-name>` for plugin folders).
-
-If your plugin is installed as a standalone marketplace root (no `plugins/` wrapper), set `source.path` to your plugin path accordingly (for example `../..` when the marketplace file is inside `<plugin-root>/.agents/plugins/marketplace.json`).
-
-## Validation and review
-
-## Trust and citations
-
-The bundled source pack is ATO-first. Stamp duty is source-routed to official state or territory revenue offices. Non-ATO commercial sources are out of scope unless a user explicitly asks for them.
-ATO and Commonwealth material remains subject to the notices and terms published by the relevant official source. TaxMate Australia must not imply official endorsement.
-No official tax filing is performed by this plugin.
-- `go test ./...`
-- build required binaries (`go build -o bin/taxmate-australia-refresh ./cmd/taxmate-australia-refresh`, etc.)
-- `scripts/check-publication-ready.sh`
-- run a local secret scan before publish
-
-## Generated official-source skills
-
-`taxmate-australia-skills` converts official-source crawl metadata into concise topic skills and structured references:
+Install one skill:
 
 ```bash
-taxmate-australia-skills generate
-taxmate-australia-skills refresh --topic capital-gains-tax
-taxmate-australia-skills refresh --all
-taxmate-australia-skills audit
-taxmate-australia-skills validate
+npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
+  --skill capital-gains-tax \
+  --agent codex \
+  --global \
+  --yes
 ```
 
-Generated topic references live under `skills/<topic>/references/`. Full fetched HTML and extracted text are temporary local cache only under `.cache/ato/` and are not committed.
+Use one skill without installing it:
 
-The source map is `migration/source-to-skill-map.json`; every indexed source is classified once as `used`, `duplicate`, `not_used`, or `needs_review`. The generated audit report is `migration/SOURCE_TO_SKILL_REPORT.md`.
+```bash
+npx skills@1.5.13 use nijanthan-dev/taxmate-australia \
+  --skill capital-gains-tax \
+  --agent codex
+```
 
-`hooks.json` runs `scripts/clean-source-cache.sh` on `SessionEnd` so temporary official-source HTML/text is removed after Codex sessions.
+## Verify install
+
+```bash
+npx skills@1.5.13 list --agent codex --global
+```
+
+Expected Codex locations:
+
+- Project: `.agents/skills/`
+- Global with `skills@1.5.13`: `~/.agents/skills/`
+
+## First use
+
+```text
+Use the capital-gains-tax skill to review this disposal conservatively.
+```
+
+```text
+Use the gst-bas skill to identify missing evidence and accountant-review items.
+```
+
+```text
+Use the work-from-home skill for the 2025-26 income year and verify current rates before calculating anything.
+```
+
+## Portable skills
+
+The public portable skills are:
+
+- `taxmate-australia`
+- `employment-deductions`
+- `work-from-home`
+- `abn-business`
+- `gst-bas`
+- `payg-employer`
+- `capital-gains-tax`
+- `shares-etfs-managed-funds`
+- `crypto-assets`
+- `property-rental-cgt`
+- `superannuation`
+- `private-health-medicare`
+- `records-evidence`
+- `workbook`
+- `taxpack`
+
+Portable skills depend only on their own `SKILL.md`, bundled `references/`, official source URLs, and the agent's web access when available. They do not require Go, TaxMate binaries, a repository checkout, plugin manifests, marketplace JSON, or `TAXMATE_AUSTRALIA_ROOT`.
+
+## Installation modes
+
+| Capability | Portable skills | Full runtime |
+|---|---:|---:|
+| Topic guidance | Yes | Yes |
+| Bundled references | Yes | Yes |
+| Official source links | Yes | Yes |
+| Live Go source refresh | No | Yes |
+| CSV finance review | No | Yes |
+| Calculator CLI | No | Yes |
+| Skill regeneration | No | Yes |
+| Plugin orchestration | No | Yes |
+
+Portable skills are recommended. Full runtime is advanced and needs Go 1.22 or newer plus a repository checkout.
+
+## Update and remove
+
+Update all installed TaxMate skills:
+
+```bash
+npx skills@1.5.13 update --global --yes
+```
+
+Update one TaxMate skill:
+
+```bash
+npx skills@1.5.13 update capital-gains-tax --global --yes
+```
+
+Remove one TaxMate skill:
+
+```bash
+npx skills@1.5.13 remove --skill capital-gains-tax --agent codex --global --yes
+```
+
+Remove all TaxMate skills:
+
+```bash
+npx skills@1.5.13 remove --skill '*' --agent codex --global --yes
+```
+
+## Troubleshooting
+
+- `npx: command not found`: install Node.js 18 or newer.
+- Skill missing after install: run `npx skills@1.5.13 list --agent codex --global`.
+- Project install not visible: check `.agents/skills/` in the current project.
+- Global install not visible: check `~/.agents/skills/`.
+- Tax answer uncertain: keep `Accountant review`; do not guess.
+
+## More docs
+
+- Portable install: [docs/INSTALLATION.md](docs/INSTALLATION.md)
+- Full runtime install: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md)
+- Development: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+- Skill generation: [docs/SKILL_GENERATION.md](docs/SKILL_GENERATION.md)
+- Disclaimer: [DISCLAIMER.md](DISCLAIMER.md)
