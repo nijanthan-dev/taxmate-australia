@@ -5,11 +5,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance",
     "title": "Medicare and private health insurance",
     "last_updated": "2025-06-11T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-6c86d5e34fe1",
@@ -17,11 +16,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy",
     "title": "Medicare levy",
     "last_updated": "2026-04-29T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-d97cd5361a75",
@@ -29,11 +27,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge",
     "title": "Medicare levy surcharge",
     "last_updated": "2026-04-29T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-33a006afaddd",
@@ -41,11 +38,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge/family-and-dependants-for-medicare-levy-surcharge-purposes",
     "title": "Family and dependants for Medicare levy surcharge purposes",
     "last_updated": "2026-04-29T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-6c536ed6d9ac",
@@ -53,11 +49,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge/medicare-levy-surcharge-and-your-tax-return",
     "title": "Medicare levy surcharge and your tax return",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-92c78bc815df",
@@ -65,11 +60,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge/medicare-levy-surcharge-income-thresholds-and-rates",
     "title": "Medicare levy surcharge income, thresholds and rates",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-cadde338173c",
@@ -77,11 +71,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge/paying-the-medicare-levy-surcharge",
     "title": "Paying the Medicare levy surcharge",
     "last_updated": "2026-05-04T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-cfd33d26c79b",
@@ -89,11 +82,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate",
     "title": "Private health insurance rebate",
     "last_updated": "2026-04-29T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-3aea64d5fad8",
@@ -101,11 +93,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/claiming-the-private-health-insurance-rebate",
     "title": "Claiming the private health insurance rebate",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-e671d9b1371a",
@@ -113,11 +104,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/income-thresholds-and-rates-for-the-private-health-insurance-rebate",
     "title": "Income thresholds and rates for the private health insurance rebate",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-9971aa8c2031",
@@ -125,11 +115,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/lifetime-health-cover",
     "title": "Lifetime health cover",
     "last_updated": "2026-05-04T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-e55bb86920fd",
@@ -137,11 +126,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/overseas-visitors-private-health-insurance-on-your-tax-return",
     "title": "Overseas visitors – private health insurance on your tax return",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-b68e5713085b",
@@ -149,11 +137,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/private-health-insurance-rebate-eligibility",
     "title": "Private health insurance rebate eligibility",
     "last_updated": "2025-07-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-53b20854d6fb",
@@ -161,10 +148,9 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/your-private-health-insurance-statement",
     "title": "Your private health insurance statement",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   }
 ]

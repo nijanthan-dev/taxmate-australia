@@ -88,19 +88,19 @@ func validate(root string) (map[string]any, bool) {
 	add("open_plugin_backend_dirs", fileExists(filepath.Join(root, "bin")) && fileExists(filepath.Join(root, "cmd")) && fileExists(filepath.Join(root, "internal")) && fileExists(filepath.Join(root, "data")) && fileExists(filepath.Join(root, "skills")), "")
 	add("publication_docs_exist", fileExists(filepath.Join(root, "README.md")) && fileExists(filepath.Join(root, "DISCLAIMER.md")) && fileExists(filepath.Join(root, "docs", "PUBLICATION_CHECKLIST.md")), "")
 
-	requiredSkills := []string{"research", "finance-review", "calculators", "workbook", "taxpack"}
-	for _, topic := range skillgen.Topics() {
-		requiredSkills = append(requiredSkills, topic.Slug)
-	}
+	requiredSkills, manifestSkillErr := publicPortableSkills(root)
 	skillText, missingSkills, badFrontmatter := loadSkillDocs(root, requiredSkills)
+	add("public_skill_manifest_loaded", manifestSkillErr == nil, fmt.Sprint(manifestSkillErr))
 	add("codex_plugin_required_skills_exist", len(missingSkills) == 0, strings.Join(missingSkills, ", "))
 	add("skill_frontmatter_valid", len(badFrontmatter) == 0, strings.Join(badFrontmatter, ", "))
 	add("description_nonempty", allSkillDescriptionsLong(root, requiredSkills), "")
-	add("invocation_documented", strings.Contains(skillText, "$taxmate-australia:research") &&
-		strings.Contains(skillText, "$taxmate-australia:finance-review") &&
-		strings.Contains(skillText, "$taxmate-australia:workbook"), "")
-	add("go_binaries_documented", strings.Contains(skillText, "bin/taxmate-australia-refresh") && strings.Contains(skillText, "bin/taxmate-australia-skills") && strings.Contains(skillText, "bin/taxmate-australia-validate") && strings.Contains(skillText, "bin/taxmate-australia-finance") && strings.Contains(skillText, "bin/taxmate-australia-calc"), "")
-	add("portable_root_documented", strings.Contains(skillText, "TAXMATE_AUSTRALIA_ROOT") && strings.Contains(readText(filepath.Join(root, "README.md")), "TAXMATE_AUSTRALIA_ROOT"), "")
+	readmeText := readText(filepath.Join(root, "README.md"))
+	fullRuntimeText := readText(filepath.Join(root, "docs", "FULL_PLUGIN_INSTALL.md")) + readText(filepath.Join(root, "docs", "SKILL_GENERATION.md"))
+	add("invocation_documented", strings.Contains(readmeText, "npx skills@1.5.13 add nijanthan-dev/taxmate-australia") &&
+		strings.Contains(readmeText, "--skill capital-gains-tax") &&
+		strings.Contains(readmeText, "npx skills@1.5.13 use nijanthan-dev/taxmate-australia"), "")
+	add("go_binaries_documented", strings.Contains(fullRuntimeText, "bin/taxmate-australia-refresh") && strings.Contains(fullRuntimeText, "bin/taxmate-australia-skills") && strings.Contains(fullRuntimeText, "bin/taxmate-australia-validate") && strings.Contains(fullRuntimeText, "bin/taxmate-australia-finance") && strings.Contains(fullRuntimeText, "bin/taxmate-australia-calc"), "")
+	add("portable_root_documented", strings.Contains(readmeText, "Portable skills depend only on") && strings.Contains(readmeText, "do not require") && strings.Contains(readmeText, "TAXMATE_AUSTRALIA_ROOT"), "")
 	publicDocs := publicDocFiles(root)
 	add("public_docs_no_private_paths", noPrivatePaths(root, publicDocs), strings.Join(firstN(privatePathHits(root, publicDocs), 5), "; "))
 	legacyIdentityDocs := append([]string{}, publicDocs...)
@@ -112,9 +112,9 @@ func validate(root string) (map[string]any, bool) {
 	add("wrapper_frontmatter_names", wrapperFrontmatterNamesMatchPath(root), "")
 	add("wrapper_invocation_paths", wrapperInvocationsUseAustraliaPrefix(root), "")
 	disclaimerText := readText(filepath.Join(root, "DISCLAIMER.md"))
-	add("public_disclaimer_documented", hasPublicDisclaimers(readText(filepath.Join(root, "README.md"))+disclaimerText+skillText+manifestText), "")
+	add("public_disclaimer_documented", hasPublicDisclaimers(readmeText+disclaimerText+skillText+manifestText), "")
 	add("output_layer_separated", strings.Contains(skillText, "must not create new tax logic") && strings.Contains(skillText, "consumes reviewed data"), "")
-	add("expanded_domain_rules_documented", strings.Contains(skillText, "PAYG") && strings.Contains(skillText, "FBT") && strings.Contains(skillText, "CGT") && strings.Contains(skillText, "stamp duty"), "")
+	add("expanded_domain_rules_documented", strings.Contains(skillText, "PAYG") && strings.Contains(skillText, "FBT") && strings.Contains(skillText, "CGT") && strings.Contains(skillText, "GST/BAS"), "")
 
 	idx, err := atodata.LoadIndex(root)
 	add("source_index_exists", err == nil, "")
@@ -200,6 +200,23 @@ func finish(root string, checks []check, idx *atodata.Index, includeIndex bool) 
 		report["source_failures"] = len(idx.Failures)
 	}
 	return report, passed == len(checks)
+}
+
+func publicPortableSkills(root string) ([]string, error) {
+	body, err := os.ReadFile(filepath.Join(root, "config", "public-skills.json"))
+	if err != nil {
+		return nil, err
+	}
+	var raw struct {
+		PortableSkills []string `json:"portableSkills"`
+	}
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, err
+	}
+	if len(raw.PortableSkills) == 0 {
+		return nil, fmt.Errorf("portableSkills empty")
+	}
+	return raw.PortableSkills, nil
 }
 
 func readPluginManifest(root string) (map[string]string, error) {

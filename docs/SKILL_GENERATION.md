@@ -30,6 +30,16 @@ Skills must not hardcode rates, thresholds, caps, due dates, or similar volatile
 
 If a value is stale, unavailable, conflicting, or wrong-year, classify the matter as `Accountant review`.
 
+## Empty-content provenance
+
+The SHA-256 value below is empty content and must fail publication validation when present in public references:
+
+```text
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+```
+
+When source content is unavailable, keep the official URL, state that the rule was not extracted or verified, and require `Accountant review`.
+
 ## Topic Map
 
 - `employment-deductions`

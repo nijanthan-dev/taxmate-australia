@@ -5,11 +5,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business",
     "title": "Income and deductions for business",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-1e54becc0fc5",
@@ -17,11 +16,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/accounting-for-trading-stock",
     "title": "Accounting for business trading stock",
     "last_updated": "2021-07-08T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-0e54c59c31f0",
@@ -29,11 +27,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/assessable-income",
     "title": "Assessable business income",
     "last_updated": "2019-06-23T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-f2ce256a53f7",
@@ -41,11 +38,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/assessable-income/what-income-to-exclude",
     "title": "What to exclude from your business's assessable income",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-2f746e834538",
@@ -53,11 +49,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/business-losses",
     "title": "Business losses",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-7d3991795a41",
@@ -65,11 +60,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/concessions-offsets-and-rebates",
     "title": "Business offsets and rebates",
     "last_updated": "2024-11-05T13:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-379c05b86597",
@@ -77,11 +71,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions",
     "title": "Business deductions",
     "last_updated": "2026-06-17T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-19457ae8efd1",
@@ -89,11 +82,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-business-travel-expenses",
     "title": "Deductions for business travel expenses",
     "last_updated": "2026-05-26T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-56d2c7d0971c",
@@ -101,11 +93,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-carbon-sink-forest-expenses",
     "title": "Deductions for carbon sink forest expenses",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-e3ae3b47b545",
@@ -113,11 +104,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-depreciating-assets-and-capital-expenses",
     "title": "Deductions for depreciating assets and capital expenses",
     "last_updated": "2025-05-28T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-8b7033a3c26a",
@@ -125,11 +115,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-digital-product-expenses",
     "title": "Deductions for digital product expenses",
     "last_updated": "2026-05-26T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-1760ca520ccc",
@@ -137,11 +126,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-motor-vehicle-expenses",
     "title": "Deductions for motor vehicle expenses",
     "last_updated": "2026-05-26T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-5d5f05969a20",
@@ -149,11 +137,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-motor-vehicle-expenses/motor-vehicle-expense-calculation-methods",
     "title": "Motor vehicle expense calculation methods",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-14f68493eaaa",
@@ -161,11 +148,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-other-operating-expenses",
     "title": "Deductions for other operating expenses",
     "last_updated": "2024-11-12T13:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-4584f994a1ff",
@@ -173,11 +159,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-repairs-maintenance-and-replacement-expenses",
     "title": "Deductions for repairs, maintenance and replacement expenses",
     "last_updated": "2024-06-19T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-d938cf5a2c0e",
@@ -185,11 +170,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-salaries-wages-and-super-contributions",
     "title": "Deductions for salaries, wages and super contributions",
     "last_updated": "2026-04-16T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-b70c46dd8ccf",
@@ -197,11 +181,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-unrecoverable-income-bad-debts",
     "title": "Deductions for unrecoverable income (bad debts)",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-0b04bc002944",
@@ -209,11 +192,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-energy-incentive",
     "title": "Small business energy incentive",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-61a656e0ec6b",
@@ -221,11 +203,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-skills-and-training-boost",
     "title": "Small business skills and training boost",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-a656f37f40f7",
@@ -233,11 +214,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-technology-investment-boost",
     "title": "Small business technology investment boost",
     "last_updated": "2024-06-19T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-036ce52ca7ea",
@@ -245,11 +225,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/overview-of-business-income-and-deductions",
     "title": "Overview of business income and deductions",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-ee04e4287e41",
@@ -257,11 +236,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/professional-firms",
     "title": "Professional firms",
     "last_updated": "2023-10-20T13:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-57b2070eaa2b",
@@ -269,11 +247,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/registered-emissions-units",
     "title": "Registered emissions units",
     "last_updated": "2024-02-14T02:28:33.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-0f816ecd3169",
@@ -281,11 +258,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/service-entities",
     "title": "Service entities",
     "last_updated": "2025-11-16T13:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-68eecd1162b2",
@@ -293,11 +269,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/work-out-taxable-income",
     "title": "Work out your business taxable income",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-628feb0880a4",
@@ -305,10 +280,9 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/personal-services-income",
     "title": "Personal services income",
     "last_updated": "2024-11-05T13:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   }
 ]

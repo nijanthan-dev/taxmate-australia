@@ -5,11 +5,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim",
     "title": "Deductions you can claim",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-ff8796199a01",
@@ -17,11 +16,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/claiming-deductions",
     "title": "Claiming deductions",
     "last_updated": "2025-05-19T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-79041d92aa02",
@@ -29,11 +27,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/cost-of-managing-tax-affairs",
     "title": "Cost of managing tax affairs",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-fb4dd1d0ad9f",
@@ -41,11 +38,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/gifts-and-donations",
     "title": "Gifts and donations",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-273acc8ca62a",
@@ -53,11 +49,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/investments-insurance-and-super",
     "title": "Investments, insurance and super",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-4480e197c6d1",
@@ -65,11 +60,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/meals-entertainment-and-functions",
     "title": "Meals, entertainment and functions",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-594f829cb77f",
@@ -77,11 +71,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/meals-entertainment-and-functions/meals-and-snacks",
     "title": "Meals and snacks",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-be420d63dd83",
@@ -89,11 +82,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/meals-entertainment-and-functions/overtime-meal-expenses",
     "title": "Overtime meal expenses",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-f6519ad88614",
@@ -101,11 +93,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/memberships-accreditations-fees-and-commissions",
     "title": "Memberships, accreditations, fees and commissions",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-3250b4255958",
@@ -113,11 +104,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions",
     "title": "Work-related deductions",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-9944fe00c716",
@@ -125,11 +115,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel",
     "title": "Cars, transport and travel",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-f8e5133d32b4",
@@ -137,11 +126,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel/award-transport-payments",
     "title": "Award transport payments",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-14ccda44a0ae",
@@ -149,11 +137,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel/motor-vehicle-and-car-expenses/expenses-for-a-car-you-own-or-lease",
     "title": "Expenses for a car you own or lease",
     "last_updated": "2026-05-03T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-98e957e72019",
@@ -161,11 +148,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel/motor-vehicle-and-car-expenses/expenses-for-a-vehicle-that-isn-t-yours-or-isn-t-a-car",
     "title": "Expenses for a vehicle that isn't yours or isn't a car",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-7abce1a98042",
@@ -173,11 +159,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel/overnight-travel-expenses-and-allowances",
     "title": "Overnight travel expenses and allowances",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-54f21184bb21",
@@ -185,11 +170,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel/overnight-travel-expenses-and-allowances/keeping-travel-expense-records",
     "title": "Keeping travel expense records",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-fe4f3c86f20e",
@@ -197,11 +181,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel/overnight-travel-expenses-and-allowances/travel-allowances-for-overnight-travel/record-keeping-exceptions-for-travel-allowance-expenses",
     "title": "Record keeping exceptions for travel allowance expenses",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-37bfaebaee6a",
@@ -209,11 +192,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel/taxi-ride-share-and-public-transport-expenses",
     "title": "Taxi, ride-share and public transport expenses",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-aa57da95ed01",
@@ -221,11 +203,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/clothes-and-items-you-wear-at-work",
     "title": "Clothes and items you wear at work",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-76c61527a345",
@@ -233,11 +214,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/clothes-and-items-you-wear-at-work/clothing-laundry-and-dry-cleaning-expenses",
     "title": "Clothing, laundry and dry-cleaning expenses",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-2dc03ea43188",
@@ -245,11 +225,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/education-training-and-seminars",
     "title": "Education, training and seminars",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-8a65daaa6790",
@@ -257,11 +236,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/education-training-and-seminars/self-education-expenses",
     "title": "Self-education expenses",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-a177fa738431",
@@ -269,11 +247,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/personal-grooming-health-and-fitness",
     "title": "Personal grooming, health and fitness",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-82327abab0b1",
@@ -281,11 +258,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work",
     "title": "Tools, computers and items you use for work",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-36d33fd3d8b1",
@@ -293,11 +269,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/computers-laptops-and-software",
     "title": "Computers, laptops and software",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-3c0a2b7ba025",
@@ -305,11 +280,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work",
     "title": "Depreciating assets you use for work",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-b4bd59e5ac66",
@@ -317,11 +291,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work/assets-costing-300-dollars-or-less",
     "title": "Assets costing $300 or less",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-6d54db58783d",
@@ -329,11 +302,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work/assets-costing-more-than-300-dollars",
     "title": "Assets costing more than $300",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-29aa57e52c7a",
@@ -341,11 +313,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work/keeping-records-for-depreciating-assets",
     "title": "Keeping records for depreciating assets",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-e20dc9550574",
@@ -353,11 +324,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/home-phone-and-internet-expenses",
     "title": "Home phone and internet expenses",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-0a702ac5d106",
@@ -365,11 +335,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/mobile-phone-mobile-internet-and-other-devices",
     "title": "Mobile phone, mobile internet and other devices",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-e7f37f0cea33",
@@ -377,11 +346,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/tools-and-equipment-to-perform-your-work",
     "title": "Tools and equipment to perform your work",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-36b8c8cf38d4",
@@ -389,11 +357,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/employment-income",
     "title": "Employment income",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-26578cc87b2b",
@@ -401,11 +368,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/employment-income/employment-allowances",
     "title": "Employment allowances",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-9fcf81b13886",
@@ -413,10 +379,9 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/government-payments-and-allowances",
     "title": "Government payments and allowances",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   }
 ]

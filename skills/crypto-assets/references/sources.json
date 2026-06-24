@@ -5,11 +5,10 @@
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/crypto-assets-and-business",
     "title": "Crypto assets and business",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "crypto-assets",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-9154fe86298e",
@@ -17,11 +16,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/crypto-asset-investments",
     "title": "Crypto asset investments",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "crypto-assets",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-49efde1747b5",
@@ -29,10 +27,9 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/crypto-asset-investments/keeping-crypto-records",
     "title": "Keeping crypto records",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "crypto-assets",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   }
 ]

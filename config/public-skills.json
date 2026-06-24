@@ -1,0 +1,22 @@
+{
+  "skillsCliVersion": "1.5.13",
+  "source": "nijanthan-dev/taxmate-australia",
+  "agent": "codex",
+  "portableSkills": [
+    "taxmate-australia",
+    "employment-deductions",
+    "work-from-home",
+    "abn-business",
+    "gst-bas",
+    "payg-employer",
+    "capital-gains-tax",
+    "shares-etfs-managed-funds",
+    "crypto-assets",
+    "property-rental-cgt",
+    "superannuation",
+    "private-health-medicare",
+    "records-evidence",
+    "workbook",
+    "taxpack"
+  ]
+}

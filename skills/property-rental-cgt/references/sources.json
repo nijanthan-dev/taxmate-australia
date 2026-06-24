@@ -5,11 +5,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax",
     "title": "Property and capital gains tax",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-e903904d6130",
@@ -17,11 +16,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax/cgt-discount-for-affordable-housing",
     "title": "CGT discount for affordable housing",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-d5a63fd9c7a8",
@@ -29,11 +27,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax/keeping-records-for-property",
     "title": "Keeping records for property",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-e2e25b63b60c",
@@ -41,11 +38,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax/your-main-residence-home/eligibility-for-main-residence-exemption",
     "title": "Eligibility for main residence exemption",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-e922fe7591c6",
@@ -53,11 +49,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax/your-main-residence-home/using-your-home-for-rental-or-business",
     "title": "Using your home for rental or business",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-a1c6b0491a82",
@@ -65,11 +60,10 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/property-and-land",
     "title": "Property and land",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-4d58eea0b6dc",
@@ -77,10 +71,9 @@
     "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/property-and-land/residential-rental-properties/records-for-rental-properties-and-holiday-homes",
     "title": "Records for rental properties and holiday homes",
     "last_updated": "2026-05-20T14:00:00.000+00:00",
-    "checked_at": "2026-06-24T00:00:00Z",
-    "content_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "checked_at": "2026-06-24T02:23:12Z",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
-    "assignment_reason": "matched topic keywords"
+    "assignment_reason": "matched topic metadata; source content not extracted"
   }
 ]

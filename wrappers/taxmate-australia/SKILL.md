@@ -1,6 +1,8 @@
 ---
 name: taxmate-australia
 description: Entry-point wrapper for TaxMate Australia's full ATO-backed tax prep workflow across research, review, calculators, and handoff outputs.
+metadata:
+  internal: true
 ---
 
 # TaxMate Australia

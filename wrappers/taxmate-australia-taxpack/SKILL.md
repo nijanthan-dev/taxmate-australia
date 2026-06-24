@@ -1,6 +1,8 @@
 ---
 name: taxmate-australia-taxpack
 description: Handoff wrapper for packaging reviewed TaxMate Australia data into accountant-ready packs and future PDF/form drafts.
+metadata:
+  internal: true
 ---
 
 # TaxMate Australia Taxpack

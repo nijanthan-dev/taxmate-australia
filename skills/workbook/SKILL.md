@@ -15,7 +15,15 @@ metadata:
 
 # TaxMate Australia Workbook
 
-Use this skill for output rendering only. It creates draft accountant-facing artifacts, not lodgment-ready advice. It must consume reviewed data from `$taxmate-australia:finance-review` and tax treatment from `$taxmate-australia:research`; it must not create new tax logic.
+Use this skill for output rendering only. It creates draft accountant-facing artifacts, not lodgment-ready advice, tax advice, financial advice, legal advice, accounting advice, BAS-agent advice, registered-tax-agent advice, or investment advice. It must consume reviewed data and reviewed tax treatment from the user or installed topic skills; it must not create new tax logic.
+
+Read `references/rules.md` before creating a workbook structure.
+
+## Hard Safety Boundary
+
+- Never lodge, file, submit, transmit, or finalise any return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency.
+- Refuse requests to submit workbook content to the ATO. Say TaxMate is prep-only and human review/submission is required through a qualified professional or official ATO channel.
+- Keep `Accountant review` flags visible. Do not remove review flags to make a workbook appear submission-ready.
 
 ## Workbook Shape
 
@@ -44,7 +52,4 @@ Default tabs:
 - Do not silently drop rows.
 - Do not mark BAS nil when GST credits or GST collected exist.
 - Use formulas only for transparent totals; keep source rows visible.
-
-## Invocation
-
-Use `$taxmate-australia:workbook`.
+- Refuse any request to lodge, submit, file, transmit, or finalise workbook content with the ATO.

@@ -2,6 +2,7 @@
 name: research
 description: ATO-first tax research that turns tax questions into conservative treatment recommendations and clear Accountant Review flags.
 metadata:
+  internal: true
   priority: 5
   promptSignals:
     phrases:
@@ -22,7 +23,7 @@ metadata:
 
 # TaxMate Australia Research
 
-Use this skill for Australian tax-prep research and treatment decisions. It is not tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and it is not affiliated with or endorsed by the ATO. Be conservative, do not help overclaim, and mark ambiguous items as `Accountant review`.
+Use this full-runtime skill for Australian tax-prep research and treatment decisions. It is not tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and it is not affiliated with or endorsed by the ATO. Be conservative, do not help overclaim, and mark ambiguous items as `Accountant review`.
 
 ## Shared Backend
 
@@ -35,24 +36,19 @@ export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(pwd)}"
 Core commands:
 
 ```bash
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-skills" generate
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-skills" refresh --topic gst-bas
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-skills" validate
 "$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --query "<topic>"
 "$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --all
 "$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --recrawl
 "$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-validate"
 ```
 
-Generated official-source skills:
+ATO source pack:
 
 ```bash
-"$TAXMATE_AUSTRALIA_ROOT/skills/<topic>/references"
-"$TAXMATE_AUSTRALIA_ROOT/data/ato_knowledge_base/source_manifest.json"
-"$TAXMATE_AUSTRALIA_ROOT/data/ato_knowledge_base/migration_report.json"
+"$TAXMATE_AUSTRALIA_ROOT/data/ato_knowledge_base"
 ```
 
-Read `SCOPE_SUMMARY.md`, choose the focused topic skill, consult its `references/sources.json`, `rules.md`, `evidence.md`, and `current-values.json` when present, then refresh relevant official pages before answering current tax questions. If refresh fails, say so and use generated references only as stale provenance, not as current-value proof.
+Read `SCOPE_SUMMARY.md`, search `source_index.json` and `text/`, then refresh relevant pages before answering current tax questions. If refresh fails, say so and use cached sources only when useful.
 
 ## Answer Rules
 
@@ -84,10 +80,6 @@ Read `SCOPE_SUMMARY.md`, choose the focused topic skill, consult its `references
 
 1. Read `data/ato_knowledge_base/SCOPE_SUMMARY.md`.
 2. Search `source_index.json` and `text/`.
-3. Run `"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-skills" refresh --topic "<skill-topic>"` when current values or changed guidance matter.
-4. Run `"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-skills" generate` and `validate`.
-5. Answer with conclusion, conservative treatment, evidence needed, source URLs, checked-at dates, and accountant-review flags.
-
-## Invocation
-
-Use `$taxmate-australia:research` when plugin skills are available.
+3. Run `"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --query "<topic>"`.
+4. Re-read changed or relevant text.
+5. Answer with conclusion, conservative treatment, evidence needed, source URLs, and accountant-review flags.

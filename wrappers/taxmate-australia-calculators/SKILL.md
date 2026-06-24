@@ -1,6 +1,8 @@
 ---
 name: taxmate-australia-calculators
 description: Calculator wrapper for conservative PAYG, BAS, CGT, FBT, super, and stamp-duty estimate scaffolds.
+metadata:
+  internal: true
 ---
 
 # TaxMate Australia Calculators
