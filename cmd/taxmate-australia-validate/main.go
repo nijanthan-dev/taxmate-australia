@@ -580,9 +580,7 @@ func sourceMatchesPerSkill(entry skillgen.SourceCoverageEntry, perSkill map[stri
 		if !ok {
 			return false
 		}
-		if strings.TrimSpace(local.URL) != strings.TrimSpace(entry.CanonicalURL) &&
-			strings.TrimSpace(local.FinalURL) != strings.TrimSpace(entry.CanonicalURL) &&
-			entry.CanonicalURL != "" {
+		if !matchesCanonicalOrBlank(local, entry.CanonicalURL) {
 			return false
 		}
 		if local.Status != entry.Status {
@@ -593,6 +591,14 @@ func sourceMatchesPerSkill(entry skillgen.SourceCoverageEntry, perSkill map[stri
 		}
 	}
 	return true
+}
+
+func matchesCanonicalOrBlank(local skillgen.Source, canonical string) bool {
+	canonical = strings.TrimSpace(canonical)
+	if canonical == "" {
+		return true
+	}
+	return strings.TrimSpace(local.URL) == canonical || strings.TrimSpace(local.FinalURL) == canonical
 }
 
 func generationIsDeterministic(root string) (bool, error) {

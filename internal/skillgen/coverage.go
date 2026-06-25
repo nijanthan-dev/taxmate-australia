@@ -450,26 +450,16 @@ func ValidateSourceCoverage(root string) error {
 			if len(entry.Skills) == 0 || len(entry.References) == 0 {
 				return fmt.Errorf("verified source missing assignment/references %s", sourceIDValue)
 			}
-			if err := validateAssignedSourceReferences(entry, skillSources); err != nil {
+			if err := validateSourceAssignmentWithProvenance(root, entry, skillSources, "verified source missing assignment/references %s"); err != nil {
 				return err
-			}
-			for _, ref := range entry.References {
-				if err := validateReverseProvenanceInSource(root, entry, ref); err != nil {
-					return err
-				}
 			}
 		case StatusMetadataOnly:
 			if len(entry.Skills) != 0 {
 				if len(entry.References) == 0 {
 					return fmt.Errorf("metadata-only source missing references %s", sourceIDValue)
 				}
-				if err := validateAssignedSourceReferences(entry, skillSources); err != nil {
+				if err := validateSourceAssignmentWithProvenance(root, entry, skillSources, "metadata-only source missing references %s"); err != nil {
 					return err
-				}
-				for _, ref := range entry.References {
-					if err := validateReverseProvenanceInSource(root, entry, ref); err != nil {
-						return err
-					}
 				}
 			}
 		case StatusDuplicate:
@@ -541,7 +531,7 @@ func validateAssignedSourceReferences(entry SourceCoverageEntry, skillSources ma
 		if !ok {
 			return fmt.Errorf("coverage source %s missing from %s references/sources.json", entry.SourceID, skill)
 		}
-		if strings.TrimSpace(local.FinalURL) != entry.CanonicalURL && strings.TrimSpace(local.URL) != entry.CanonicalURL {
+		if !sourceMatchesCanonical(local, entry.CanonicalURL) {
 			return fmt.Errorf("canonical URL mismatch for %s in %s", entry.SourceID, skill)
 		}
 		if local.Status != entry.Status {
@@ -550,8 +540,23 @@ func validateAssignedSourceReferences(entry SourceCoverageEntry, skillSources ma
 		if local.CheckedAt != entry.CheckedAt {
 			return fmt.Errorf("checked_at mismatch for %s in %s", entry.SourceID, skill)
 		}
-		if strings.TrimSpace(entry.ContentHash) != "" && strings.TrimSpace(local.ContentHash) != strings.TrimSpace(entry.ContentHash) {
+		if !matchingOptionalContentHash(entry.ContentHash, local.ContentHash) {
 			return fmt.Errorf("content_hash mismatch for %s in %s", entry.SourceID, skill)
+		}
+	}
+	return nil
+}
+
+func validateSourceAssignmentWithProvenance(root string, entry SourceCoverageEntry, skillSources map[string]map[string]Source, emptyMsg string) error {
+	if len(entry.Skills) == 0 || len(entry.References) == 0 {
+		return fmt.Errorf(emptyMsg, entry.SourceID)
+	}
+	if err := validateAssignedSourceReferences(entry, skillSources); err != nil {
+		return err
+	}
+	for _, ref := range entry.References {
+		if err := validateReverseProvenanceInSource(root, entry, ref); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -645,7 +650,7 @@ func validateLocalCoverageBackedByGlobal(root string, coverageByID map[string]So
 			if !ok {
 				return fmt.Errorf("per-skill source %s not present in coverage", id)
 			}
-			if local.FinalURL != entry.CanonicalURL && local.URL != entry.CanonicalURL {
+			if !sourceMatchesCanonical(local, entry.CanonicalURL) {
 				return fmt.Errorf("per-skill source %s url mismatch in coverage", id)
 			}
 			if local.Status != entry.Status {
@@ -654,7 +659,7 @@ func validateLocalCoverageBackedByGlobal(root string, coverageByID map[string]So
 			if local.CheckedAt != entry.CheckedAt {
 				return fmt.Errorf("checked_at mismatch for %s across global/local", id)
 			}
-			if strings.TrimSpace(entry.ContentHash) != "" && strings.TrimSpace(local.ContentHash) != strings.TrimSpace(entry.ContentHash) {
+			if !matchingOptionalContentHash(entry.ContentHash, local.ContentHash) {
 				return fmt.Errorf("content_hash mismatch for %s across global/local", id)
 			}
 		}
@@ -674,6 +679,18 @@ func validateLocalCoverageBackedByGlobal(root string, coverageByID map[string]So
 		}
 	}
 	return nil
+}
+
+func sourceMatchesCanonical(local Source, canonical string) bool {
+	return strings.TrimSpace(local.FinalURL) == strings.TrimSpace(canonical) || strings.TrimSpace(local.URL) == strings.TrimSpace(canonical)
+}
+
+func matchingOptionalContentHash(expected, actual string) bool {
+	expected = strings.TrimSpace(expected)
+	if expected == "" {
+		return true
+	}
+	return strings.TrimSpace(actual) == expected
 }
 
 func loadPerSkillSourceAssignments(root string) (map[string]map[string]Source, error) {
