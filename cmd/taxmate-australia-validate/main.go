@@ -116,29 +116,45 @@ func validate(root string) (map[string]any, bool) {
 	add("output_layer_separated", strings.Contains(skillText, "must not create new tax logic") && strings.Contains(skillText, "consumes reviewed data"), "")
 	add("expanded_domain_rules_documented", strings.Contains(skillText, "PAYG") && strings.Contains(skillText, "FBT") && strings.Contains(skillText, "CGT") && strings.Contains(skillText, "GST/BAS"), "")
 
-	idx, err := atodata.LoadIndex(root)
-	add("source_index_exists", err == nil, "")
+	registry, err := atodata.LoadRegistry(root)
+	add("source_registry_exists", err == nil, "")
 	if err != nil {
 		return finish(root, checks, nil, false)
 	}
-	add("source_record_count", len(idx.Records) >= 290, fmt.Sprint(len(idx.Records)))
-	add("source_scope_present", idx.Scope != "", "")
+	coverage, coverageErr := skillgen.LoadSourceCoverage(root)
+	add("source_coverage_exists", coverageErr == nil, "")
+	if coverageErr != nil {
+		return finish(root, checks, nil, false)
+	}
+	add("source_coverage_matches_registry", len(coverage.Sources) == len(registry.Records), "")
+	if validateCoverageErr := skillgen.ValidateSourceCoverage(root); validateCoverageErr != nil {
+		add("source_coverage_statuses_valid", false, validateCoverageErr.Error())
+	} else {
+		add("source_coverage_statuses_valid", true, "")
+	}
+	add("verified_sources_have_content_hash", allVerifiedSourcesHaveHash(coverage), "")
+	add("metadata_only_sources_not_claimed_as_verified", !metadataOnlyMarkedAsVerified(root, coverage), "")
+	add("source_records_match_per_skill", sourceCoverageMatchesSkillFiles(root, coverage), "")
+	add("source_record_count", len(registry.Records) >= 290, fmt.Sprint(len(registry.Records)))
+	add("source_scope_present", registry.Scope != "", "")
 	dataDir := atodata.DataDir(root)
 	add("scope_summary_exists", fileExists(filepath.Join(dataDir, "SCOPE_SUMMARY.md")), "")
 	add("readme_exists", fileExists(filepath.Join(dataDir, "README.md")), "")
-	add("generated_source_manifest_exists", fileExists(filepath.Join(dataDir, "source_manifest.json")), "")
-	add("migration_report_exists", fileExists(filepath.Join(dataDir, "migration_report.json")), "")
+	add("source_coverage_file_present", fileExists(filepath.Join(dataDir, "source_coverage.json")), "")
+	add("source_registry_file_present", fileExists(filepath.Join(dataDir, "source_registry.json")), "")
+	add("source_registry_missing_old_files", !fileExists(filepath.Join(dataDir, "source_index.json")) && !fileExists(filepath.Join(dataDir, "source_manifest.json")) && !fileExists(filepath.Join(dataDir, "migration_report.json")), "")
+	add("migration_dir_missing", !fileExists(filepath.Join(root, "migration")), "")
 	add("raw_snapshots_not_committed", !fileExists(filepath.Join(dataDir, "raw")) && !fileExists(filepath.Join(dataDir, "text")), "")
 
 	all200 := true
-	for _, rec := range idx.Records {
+	for _, rec := range registry.Records {
 		if rec.Status != 200 {
 			all200 = false
 		}
 	}
 	add("all_records_http_200", all200, "")
 
-	hay := haystack(root, idx)
+	hay := haystack(root, registry)
 	var missingTopics []string
 	for topic, needles := range topicQueries {
 		if !containsAny(hay, needles) {
@@ -148,7 +164,7 @@ func validate(root string) (map[string]any, bool) {
 	add("key_tax_topics_covered", len(missingTopics) == 0, strings.Join(missingTopics, ", "))
 
 	var unresolved []string
-	for _, failure := range idx.Failures {
+	for _, failure := range registry.Failures {
 		matched := false
 		for stale, replacements := range staleSeedReplacements {
 			if strings.Contains(failure.URL, stale) {
@@ -162,6 +178,9 @@ func validate(root string) (map[string]any, bool) {
 	}
 	add("stale_seed_failures_have_replacements", len(unresolved) == 0, strings.Join(firstN(unresolved, 5), "; "))
 
+	deterministic, deterministicErr := generationIsDeterministic(root)
+	add("generation_is_deterministic", deterministic, fmt.Sprint(deterministicErr))
+	add("audit_is_read_only", auditIsReadOnly(root), "")
 	add("generated_skills_validate", skillgen.Validate(root) == nil, "")
 	add("go_binaries_exist", fileExists(filepath.Join(root, "bin", "taxmate-australia-refresh")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-skills")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-validate")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-finance")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-calc")), "")
 	generated, _ := filepath.Glob(filepath.Join(root, "**", "__pycache__"))
@@ -177,10 +196,10 @@ func validate(root string) (map[string]any, bool) {
 	}
 	add("wrapper_runtime_no_go_source", wrapperRuntimeClean, wrapperRuntimeDetail)
 
-	return finish(root, checks, idx, true)
+	return finish(root, checks, registry, true)
 }
 
-func finish(root string, checks []check, idx *atodata.Index, includeIndex bool) (map[string]any, bool) {
+func finish(root string, checks []check, registry *atodata.SourceRegistry, includeIndex bool) (map[string]any, bool) {
 	passed := 0
 	for _, item := range checks {
 		if item.Passed {
@@ -195,9 +214,9 @@ func finish(root string, checks []check, idx *atodata.Index, includeIndex bool) 
 		"total":  len(checks),
 		"checks": checks,
 	}
-	if includeIndex && idx != nil {
-		report["records"] = len(idx.Records)
-		report["source_failures"] = len(idx.Failures)
+	if includeIndex && registry != nil {
+		report["records"] = len(registry.Records)
+		report["source_failures"] = len(registry.Failures)
 	}
 	return report, passed == len(checks)
 }
@@ -444,7 +463,262 @@ func fileExists(path string) bool {
 	return err == nil
 }
 
-func haystack(root string, idx *atodata.Index) string {
+func allVerifiedSourcesHaveHash(coverage skillgen.SourceCoverage) bool {
+	for _, entry := range coverage.Sources {
+		if entry.Status == skillgen.StatusVerified {
+			hash := strings.TrimSpace(entry.ContentHash)
+			if hash == "" || strings.EqualFold(hash, skillgen.EmptyContentHashValue) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func metadataOnlyMarkedAsVerified(root string, coverage skillgen.SourceCoverage) bool {
+	metadataOnly := map[string]bool{}
+	for _, entry := range coverage.Sources {
+		if entry.Status == skillgen.StatusMetadataOnly {
+			metadataOnly[entry.SourceID] = true
+		}
+	}
+	if len(metadataOnly) == 0 {
+		return false
+	}
+
+	for _, topic := range skillgen.Topics() {
+		body, err := os.ReadFile(filepath.Join(root, "skills", topic.Slug, "references", "rules.md"))
+		if err != nil {
+			return true
+		}
+		inVerifiedSection := false
+		for _, rawLine := range strings.Split(string(body), "\n") {
+			line := strings.TrimSpace(rawLine)
+			if strings.HasPrefix(line, "## ") {
+				inVerifiedSection = strings.EqualFold(line, "## Verified official-source content")
+				continue
+			}
+			if !inVerifiedSection {
+				continue
+			}
+			if strings.Contains(line, "Source ID:") {
+				i := strings.Index(line, "Source ID:")
+				sourceID := strings.TrimSpace(line[i+len("Source ID:"):])
+				if metadataOnly[sourceID] {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func sourceCoverageMatchesSkillFiles(root string, coverage skillgen.SourceCoverage) bool {
+	perSkill, err := loadPerSkillSources(root, requiredTopics())
+	if err != nil {
+		return false
+	}
+	seen := map[string]bool{}
+	coverageByID := map[string]skillgen.SourceCoverageEntry{}
+	for _, entry := range coverage.Sources {
+		if strings.TrimSpace(entry.SourceID) == "" {
+			return false
+		}
+		if seen[entry.SourceID] {
+			return false
+		}
+		seen[entry.SourceID] = true
+		coverageByID[entry.SourceID] = entry
+
+		switch entry.Status {
+		case skillgen.StatusVerified:
+			if len(entry.Skills) == 0 || len(entry.References) == 0 {
+				return false
+			}
+			for _, skill := range entry.Skills {
+				byID, ok := perSkill[skill]
+				if !ok {
+					return false
+				}
+				local, ok := byID[entry.SourceID]
+				if !ok {
+					return false
+				}
+				if strings.TrimSpace(local.URL) != strings.TrimSpace(entry.CanonicalURL) &&
+					strings.TrimSpace(local.FinalURL) != strings.TrimSpace(entry.CanonicalURL) &&
+					entry.CanonicalURL != "" {
+					return false
+				}
+				if local.Status != entry.Status {
+					return false
+				}
+				if strings.TrimSpace(local.CheckedAt) != strings.TrimSpace(entry.CheckedAt) {
+					return false
+				}
+			}
+		case skillgen.StatusMetadataOnly:
+			if len(entry.Skills) == 0 {
+				if len(entry.References) != 0 {
+					return false
+				}
+				continue
+			}
+			if len(entry.Skills) == 0 || len(entry.References) == 0 {
+				return false
+			}
+			for _, skill := range entry.Skills {
+				byID, ok := perSkill[skill]
+				if !ok {
+					return false
+				}
+				local, ok := byID[entry.SourceID]
+				if !ok {
+					return false
+				}
+				if strings.TrimSpace(local.URL) != strings.TrimSpace(entry.CanonicalURL) &&
+					strings.TrimSpace(local.FinalURL) != strings.TrimSpace(entry.CanonicalURL) &&
+					entry.CanonicalURL != "" {
+					return false
+				}
+				if local.Status != entry.Status {
+					return false
+				}
+				if strings.TrimSpace(local.CheckedAt) != strings.TrimSpace(entry.CheckedAt) {
+					return false
+				}
+			}
+		case skillgen.StatusDuplicate:
+			if strings.TrimSpace(entry.DuplicateOf) == "" || strings.TrimSpace(entry.DuplicateEvidence) == "" {
+				return false
+			}
+		case skillgen.StatusExcluded:
+			// excluded entries are not expected in per-skill references
+		case skillgen.StatusNeedsReview:
+			return false
+		default:
+			return false
+		}
+	}
+	for skill, byID := range perSkill {
+		_ = skill
+		for sourceID := range byID {
+			entry, ok := coverageByID[sourceID]
+			if !ok {
+				continue
+			}
+			if entry.Status != skillgen.StatusVerified && entry.Status != skillgen.StatusMetadataOnly {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func generationIsDeterministic(root string) (bool, error) {
+	tmp, err := os.MkdirTemp("", "taxmate-validate-generation-check-")
+	if err != nil {
+		return false, err
+	}
+	defer os.RemoveAll(tmp)
+	if err := copyDir(filepath.Join(root, "data", "ato_knowledge_base"), filepath.Join(tmp, "data", "ato_knowledge_base")); err != nil {
+		return false, err
+	}
+	if _, err := skillgen.Generate(skillgen.Options{Root: tmp, OutputRoot: tmp}); err != nil {
+		return false, err
+	}
+	if err := skillgen.CompareGeneratedArtifacts(root, tmp); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func auditIsReadOnly(root string) bool {
+	if _, err := skillgen.WriteCoverageReport(root, "markdown"); err != nil {
+		return false
+	}
+	return true
+}
+
+func requiredTopics() []string {
+	out := make([]string, 0, len(skillgen.Topics()))
+	for _, topic := range skillgen.Topics() {
+		out = append(out, topic.Slug)
+	}
+	return out
+}
+
+func loadPerSkillSources(root string, skills []string) (map[string]map[string]skillgen.Source, error) {
+	perSkill := map[string]map[string]skillgen.Source{}
+	for _, skill := range skills {
+		path := filepath.Join(root, "skills", skill, "references", "sources.json")
+		body, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		var list []skillgen.Source
+		if err := json.Unmarshal(body, &list); err != nil {
+			return nil, err
+		}
+		byID := map[string]skillgen.Source{}
+		for _, source := range list {
+			if strings.TrimSpace(source.SourceID) == "" {
+				return nil, fmt.Errorf("missing source_id in %s", path)
+			}
+			if _, ok := byID[source.SourceID]; ok {
+				return nil, fmt.Errorf("duplicate source_id %s in %s", source.SourceID, path)
+			}
+			byID[source.SourceID] = source
+		}
+		perSkill[skill] = byID
+	}
+	return perSkill, nil
+}
+
+func copyDir(src, dst string) error {
+	info, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+			return err
+		}
+		body, err := os.ReadFile(src)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(dst, body, 0644)
+	}
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return err
+	}
+	return filepath.WalkDir(src, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+		if d.IsDir() {
+			if rel == "." {
+				return nil
+			}
+			return os.MkdirAll(target, 0755)
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			return err
+		}
+		body, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, body, 0644)
+	})
+}
+
+func haystack(root string, idx *atodata.SourceRegistry) string {
 	var b strings.Builder
 	for _, rec := range idx.Records {
 		b.WriteString(rec.Title)

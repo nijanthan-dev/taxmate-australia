@@ -16,6 +16,18 @@ bash scripts/test-skills-install.sh
 scripts/check-publication-ready.sh
 ```
 
+Coverage checks:
+
+```bash
+go test ./...
+go vet ./...
+go build ./...
+bin/taxmate-australia-skills generate --check
+bin/taxmate-australia-skills audit --check
+bin/taxmate-australia-skills audit --format markdown --output /tmp/source-coverage.md
+scripts/check-publication-ready.sh
+```
+
 Build all binaries:
 
 ```bash

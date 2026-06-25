@@ -1,6 +1,6 @@
 # Official Source Scope Summary
 
-Generated topic references from official ATO pages first fetched on 2026-06-23 and migrated on 2026-06-24.
+Generated topic references from official ATO pages are refreshed into `source_registry.json` and derived into permanent source coverage during generation.
 
 ## Coverage
 
@@ -31,9 +31,8 @@ Generated topic references from official ATO pages first fetched on 2026-06-23 a
 
 ## Files
 
-- `source_index.json`: legacy machine-readable source index used for refresh targeting.
-- `source_manifest.json`: generated sources grouped by topic skill.
-- `migration_report.json`: every indexed source mapped, duplicated, unsupported, or unassigned.
+- `source_registry.json`: active source registry and source metadata used by refresh and generation.
+- `source_coverage.json`: global required field for every indexed source with coverage status and provenance.
 - `README.md`: concise source-pack overview.
-- `skills/*/references/`: compact generated topic references.
+- `skills/*/references/`: compact generated topic references and per-source provenance.
 - `.cache/ato/`: ignored local refresh cache for fetched HTML and extracted text.

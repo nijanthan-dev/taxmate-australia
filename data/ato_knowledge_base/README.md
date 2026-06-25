@@ -4,10 +4,11 @@ This directory keeps compact provenance for generated TaxMate Australia skills. 
 
 ## Files
 
-- `source_index.json`: legacy refresh target index from the official-source crawl.
-- `source_manifest.json`: generated source map grouped by topic skill.
-- `migration_report.json`: source-by-source migration report with duplicate and unassigned status.
+- `source_registry.json`: active source registry used for refresh targeting and generation.
+- `source_coverage.json`: global source-to-skill coverage with verified/metadata-only statuses and proof pointers.
 - `SCOPE_SUMMARY.md`: coverage, limits, and dynamic-value handling.
+- `README.md`: scope and generation summary.
+- `skills/*/references/`: per-topic source and provenance references.
 
 ## Refresh
 
@@ -17,6 +18,7 @@ Use the Go generator:
 taxmate-australia-skills refresh --topic gst-bas
 taxmate-australia-skills refresh --all
 taxmate-australia-skills generate
+taxmate-australia-skills generate --check
 taxmate-australia-skills validate
 ```
 

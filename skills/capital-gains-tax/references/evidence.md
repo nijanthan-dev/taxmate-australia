@@ -10,3 +10,27 @@ Collect records before classifying anything as `Claim candidate`.
 - logbooks, diaries, rosters, timesheets, or usage records where relevant
 
 Missing or altered evidence means `Insufficient evidence` or `Accountant review`, never a confirmed claim.
+
+### Topic source coverage
+
+- ato-0127b617689a from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-events (metadata_only)
+- ato-16b521e92898 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/how-to-calculate-your-cgt (metadata_only)
+- ato-1c21ee00bebf from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/cost-base-of-asset (metadata_only)
+- ato-258eb669018c from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-discount (metadata_only)
+- ato-2e44f4e5a40b from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/cost-base-adjustments-for-capital-works (metadata_only)
+- ato-329bcce487e3 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/indexing-the-cost-base (metadata_only)
+- ato-39738a03f9e5 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/what-is-capital-gains-tax (metadata_only)
+- ato-3b8f4dbb25c7 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/market-valuation-of-assets (metadata_only)
+- ato-3fbf9489ce3f from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/inherited-assets-and-capital-gains-tax (metadata_only)
+- ato-531bacc15d56 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/capital-proceeds-from-disposing-of-assets (metadata_only)
+- ato-549aa3fe0999 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/acquiring-cgt-assets (metadata_only)
+- ato-5a8928b23f7e from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/using-capital-losses-to-reduce-capital-gains (metadata_only)
+- ato-6fec75e60013 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/relationship-breakdown-and-capital-gains-tax (metadata_only)
+- ato-7b2f52af4bc7 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/inherited-assets-and-capital-gains-tax/inherited-property-and-cgt (metadata_only)
+- ato-a1b882bd62f6 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/relationship-breakdown-and-capital-gains-tax/main-residence-exemption-in-relationship-breakdown (metadata_only)
+- ato-add01449c8b7 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/foreign-residents-and-capital-gains-tax (metadata_only)
+- ato-bdda087b142a from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/list-of-cgt-assets-and-exemptions (metadata_only)
+- ato-c7a6a9032eab from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax (metadata_only)
+- ato-ca7036921304 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/foreign-resident-investments (metadata_only)
+- ato-e4bcd98f4ecb from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt (metadata_only)
+- ato-e85950c21566 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/foreign-residents-and-capital-gains-tax/cgt-discount-for-foreign-residents (metadata_only)

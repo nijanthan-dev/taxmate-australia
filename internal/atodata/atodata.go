@@ -90,26 +90,28 @@ var PathKeywords = []string{
 	"/tax-rates-and-codes",
 }
 
-type Index struct {
-	FetchedAt   string    `json:"fetched_at,omitempty"`
-	RefreshedAt string    `json:"refreshed_at,omitempty"`
-	Scope       string    `json:"scope"`
-	Records     []*Record `json:"records"`
-	Failures    []Failure `json:"failures"`
+type SourceRegistry struct {
+	FetchedAt   string          `json:"fetched_at,omitempty"`
+	RefreshedAt string          `json:"refreshed_at,omitempty"`
+	Scope       string          `json:"scope"`
+	Records     []*SourceRecord `json:"records"`
+	Failures    []SourceFailure `json:"failures"`
 }
 
-type Record struct {
-	URL         string `json:"url"`
-	FinalURL    string `json:"final_url"`
-	Status      int    `json:"status"`
-	Title       string `json:"title"`
-	LastUpdated string `json:"last_updated"`
-	RawFile     string `json:"raw_file"`
-	TextFile    string `json:"text_file"`
-	LastChecked string `json:"last_checked,omitempty"`
+type SourceRecord struct {
+	URL             string `json:"url"`
+	FinalURL        string `json:"final_url"`
+	Status          int    `json:"status"`
+	Title           string `json:"title"`
+	LastUpdated     string `json:"last_updated"`
+	RawFile         string `json:"raw_file"`
+	TextFile        string `json:"text_file"`
+	ContentHash     string `json:"content_hash,omitempty"`
+	ContentVerified bool   `json:"content_verified,omitempty"`
+	LastChecked     string `json:"last_checked,omitempty"`
 }
 
-type Failure struct {
+type SourceFailure struct {
 	URL   string `json:"url"`
 	Error string `json:"error"`
 }
@@ -151,29 +153,28 @@ func CacheDir(root string) string {
 	return filepath.Join(root, ".cache", "ato")
 }
 
-func IndexPath(root string) string {
-	return filepath.Join(DataDir(root), "source_index.json")
+func RegistryPath(root string) string {
+	return filepath.Join(DataDir(root), "source_registry.json")
 }
 
-func LoadIndex(root string) (*Index, error) {
-	body, err := os.ReadFile(IndexPath(root))
+func LoadRegistry(root string) (*SourceRegistry, error) {
+	body, err := os.ReadFile(RegistryPath(root))
 	if err != nil {
 		return nil, err
 	}
-	var idx Index
+	var idx SourceRegistry
 	if err := json.Unmarshal(body, &idx); err != nil {
 		return nil, err
 	}
 	return &idx, nil
 }
 
-func SaveIndex(root string, idx *Index) error {
-	idx.RefreshedAt = time.Now().UTC().Format(time.RFC3339)
+func SaveRegistry(root string, idx *SourceRegistry) error {
 	body, err := json.MarshalIndent(idx, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(IndexPath(root), append(body, '\n'), 0644)
+	return os.WriteFile(RegistryPath(root), append(body, '\n'), 0644)
 }
 
 func Fetch(rawURL string) (*FetchResult, error) {
@@ -283,7 +284,7 @@ func HashText(s string) string {
 	return hex.EncodeToString(h[:])
 }
 
-func RecordText(root string, rec *Record) string {
+func RecordText(root string, rec *SourceRecord) string {
 	body, err := os.ReadFile(filepath.Join(DataDir(root), rec.TextFile))
 	if err == nil {
 		return string(body)
@@ -295,7 +296,7 @@ func RecordText(root string, rec *Record) string {
 	return string(body)
 }
 
-func QueryScore(root string, rec *Record, query string) int {
+func QueryScore(root string, rec *SourceRecord, query string) int {
 	titleURL := strings.ToLower(rec.Title + " " + rec.URL + " " + rec.FinalURL)
 	terms := Terms(query)
 	if len(terms) == 0 {
@@ -340,7 +341,7 @@ func Terms(query string) []string {
 	return terms
 }
 
-func RefreshRecord(root string, rec *Record) RefreshResult {
+func RefreshRecord(root string, rec *SourceRecord) RefreshResult {
 	target := firstNonEmpty(rec.FinalURL, rec.URL)
 	fetched, err := Fetch(target)
 	if err != nil {
@@ -353,7 +354,9 @@ func RefreshRecord(root string, rec *Record) RefreshResult {
 	textPath := filepath.Join(CacheDir(root), rec.TextFile)
 	rawPath := filepath.Join(CacheDir(root), rec.RawFile)
 	oldBytes, _ := os.ReadFile(textPath)
-	changed := HashText(string(oldBytes)) != HashText(text)
+	oldHash := HashText(string(oldBytes))
+	newHash := HashText(text)
+	changed := oldHash != newHash
 	if changed {
 		_ = os.MkdirAll(filepath.Dir(rawPath), 0755)
 		_ = os.MkdirAll(filepath.Dir(textPath), 0755)
@@ -365,13 +368,15 @@ func RefreshRecord(root string, rec *Record) RefreshResult {
 	rec.Title = TitleOf(text)
 	rec.LastUpdated = ModifiedOf(fetched.Body, text)
 	rec.LastChecked = time.Now().UTC().Format(time.RFC3339)
+	rec.ContentHash = newHash
+	rec.ContentVerified = newHash != "" && newHash != HashText("")
 	return RefreshResult{URL: fetched.FinalURL, Status: fetched.Status, Changed: changed, Title: rec.Title}
 }
 
-func SelectByQuery(root string, records []*Record, query string, limit int) []*Record {
+func SelectByQuery(root string, records []*SourceRecord, query string, limit int) []*SourceRecord {
 	type scored struct {
 		score int
-		rec   *Record
+		rec   *SourceRecord
 	}
 	var scoredRecords []scored
 	for _, rec := range records {
@@ -386,19 +391,19 @@ func SelectByQuery(root string, records []*Record, query string, limit int) []*R
 	if limit <= 0 || limit > len(scoredRecords) {
 		limit = len(scoredRecords)
 	}
-	selected := make([]*Record, 0, limit)
+	selected := make([]*SourceRecord, 0, limit)
 	for _, item := range scoredRecords[:limit] {
 		selected = append(selected, item.rec)
 	}
 	return selected
 }
 
-func SelectByURL(records []*Record, urls []string) ([]*Record, []string) {
+func SelectByURL(records []*SourceRecord, urls []string) ([]*SourceRecord, []string) {
 	wanted := map[string]bool{}
 	for _, raw := range urls {
 		wanted[raw] = true
 	}
-	var selected []*Record
+	var selected []*SourceRecord
 	for _, rec := range records {
 		if wanted[rec.URL] || wanted[rec.FinalURL] {
 			selected = append(selected, rec)
@@ -462,15 +467,15 @@ type QueueItem struct {
 	Depth int
 }
 
-func Recrawl(root string, maxPages int) (*Index, error) {
+func Recrawl(root string, maxPages int) (*SourceRegistry, error) {
 	if maxPages <= 0 {
 		maxPages = 250
 	}
-	dataDir := DataDir(root)
-	if err := os.MkdirAll(filepath.Join(dataDir, "raw"), 0755); err != nil {
+	cacheDir := CacheDir(root)
+	if err := os.MkdirAll(filepath.Join(cacheDir, "raw"), 0755); err != nil {
 		return nil, err
 	}
-	if err := os.MkdirAll(filepath.Join(dataDir, "text"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(cacheDir, "text"), 0755); err != nil {
 		return nil, err
 	}
 	var queue []QueueItem
@@ -480,7 +485,7 @@ func Recrawl(root string, maxPages int) (*Index, error) {
 		queue = append(queue, QueueItem{URL: clean})
 		seen[clean] = true
 	}
-	idx := &Index{
+	idx := &SourceRegistry{
 		FetchedAt: time.Now().UTC().Format(time.RFC3339),
 		Scope:     Scope,
 	}
@@ -495,27 +500,36 @@ func Recrawl(root string, maxPages int) (*Index, error) {
 			} else {
 				msg = fmt.Sprintf("HTTP Error %d: HTTP error", fetched.Status)
 			}
-			idx.Failures = append(idx.Failures, Failure{URL: item.URL, Error: msg})
+			idx.Failures = append(idx.Failures, SourceFailure{URL: item.URL, Error: msg})
 			continue
 		}
 		text := CleanText(fetched.Body)
 		slug := SlugFor(fetched.FinalURL)
 		rawFile := filepath.Join("raw", slug+".html")
 		textFile := filepath.Join("text", slug+".txt")
-		if err := os.WriteFile(filepath.Join(dataDir, rawFile), fetched.Body, 0644); err != nil {
+		rawPath := filepath.Join(cacheDir, rawFile)
+		textPath := filepath.Join(cacheDir, textFile)
+		if err := os.WriteFile(rawPath, fetched.Body, 0644); err != nil {
 			return nil, err
 		}
-		if err := os.WriteFile(filepath.Join(dataDir, textFile), []byte(text), 0644); err != nil {
+		if err := os.WriteFile(textPath, []byte(text), 0644); err != nil {
 			return nil, err
 		}
-		idx.Records = append(idx.Records, &Record{
-			URL:         item.URL,
-			FinalURL:    fetched.FinalURL,
-			Status:      fetched.Status,
-			Title:       TitleOf(text),
-			LastUpdated: ModifiedOf(fetched.Body, text),
-			RawFile:     rawFile,
-			TextFile:    textFile,
+		contentHash := HashText(text)
+		if strings.TrimSpace(text) == "" {
+			contentHash = ""
+		}
+		idx.Records = append(idx.Records, &SourceRecord{
+			URL:             item.URL,
+			FinalURL:        fetched.FinalURL,
+			Status:          fetched.Status,
+			Title:           TitleOf(text),
+			LastUpdated:     ModifiedOf(fetched.Body, text),
+			RawFile:         rawFile,
+			TextFile:        textFile,
+			ContentHash:     contentHash,
+			ContentVerified: contentHash != "" && contentHash != HashText(""),
+			LastChecked:     time.Now().UTC().Format(time.RFC3339),
 		})
 		if item.Depth < 1 {
 			for _, link := range DiscoverLinks(fetched.FinalURL, fetched.Body) {
@@ -534,13 +548,13 @@ func Recrawl(root string, maxPages int) (*Index, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := os.WriteFile(IndexPath(root), append(body, '\n'), 0644); err != nil {
+	if err := os.WriteFile(RegistryPath(root), append(body, '\n'), 0644); err != nil {
 		return nil, err
 	}
 	return idx, nil
 }
 
-func WriteReadme(root string, idx *Index) error {
+func WriteReadme(root string, idx *SourceRegistry) error {
 	var buf bytes.Buffer
 	buf.WriteString("# ATO Tax Knowledge Base\n\n")
 	buf.WriteString("Fetched: " + idx.FetchedAt + "\n\n")

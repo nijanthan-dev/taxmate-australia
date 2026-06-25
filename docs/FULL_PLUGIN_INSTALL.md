@@ -1,6 +1,6 @@
 # Full Plugin Runtime
 
-Use this advanced path only when you need live ATO source refresh, Go-backed CSV finance review, calculator commands, skill regeneration, source mapping, audit commands, or Codex plugin orchestration.
+Use this advanced path only when you need live ATO source refresh, Go-backed CSV finance review, calculator commands, skill regeneration, source coverage, and Codex plugin orchestration.
 
 Prerequisites:
 
@@ -33,7 +33,8 @@ Validate:
 ```bash
 bin/taxmate-australia-validate
 bin/taxmate-australia-skills validate
-bin/taxmate-australia-skills audit
+bin/taxmate-australia-skills audit --check
+bin/taxmate-australia-skills audit --format markdown --output /tmp/source-coverage.md
 scripts/check-publication-ready.sh
 ```
 

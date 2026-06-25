@@ -1,7 +1,12 @@
 # Taxpack Rules
 
-## Official-source metadata
+## Verified official-source content
 
+- No verified official-source summaries are stored in this output layer.
+
+## Metadata-only official-source links
+
+- Taxpack coordinates topic references for review and packaging workflows.
 - ATO how to lodge your tax return: https://www.ato.gov.au/individuals-and-families/your-tax-return/how-to-lodge-your-tax-return
 - ATO records you need to keep: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/records-you-need-to-keep
 

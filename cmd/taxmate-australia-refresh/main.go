@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"os"
+	"path/filepath"
 
 	"taxmate-au-skill/internal/atodata"
 )
@@ -17,41 +18,41 @@ func main() {
 	flag.Var(&urls, "url", "Refresh explicit indexed ATO URL. Repeatable.")
 	flag.Parse()
 
-	root, err := atodata.SkillRoot()
+	root, err := commandRoot()
 	if err != nil {
 		atodata.Errorf("%v", err)
 		os.Exit(1)
 	}
 
 	if *recrawl {
-		idx, err := atodata.Recrawl(root, *maxPages)
+		registry, err := atodata.Recrawl(root, *maxPages)
 		if err != nil {
 			atodata.Errorf("%v", err)
 			os.Exit(1)
 		}
 		_ = atodata.WriteJSON(map[string]any{
-			"records":  len(idx.Records),
-			"failures": len(idx.Failures),
-			"index":    atodata.IndexPath(root),
+			"records":  len(registry.Records),
+			"failures": len(registry.Failures),
+			"registry": atodata.RegistryPath(root),
 		})
 		return
 	}
 
-	idx, err := atodata.LoadIndex(root)
+	registry, err := atodata.LoadRegistry(root)
 	if err != nil {
 		atodata.Errorf("%v", err)
 		os.Exit(1)
 	}
 
-	var selected []*atodata.Record
+	var selected []*atodata.SourceRecord
 	var missing []string
 	switch {
 	case *all:
-		selected = idx.Records
+		selected = registry.Records
 	case len(urls) > 0:
-		selected, missing = atodata.SelectByURL(idx.Records, urls)
+		selected, missing = atodata.SelectByURL(registry.Records, urls)
 	case *query != "":
-		selected = atodata.SelectByQuery(root, idx.Records, *query, *limit)
+		selected = atodata.SelectByQuery(root, registry.Records, *query, *limit)
 	default:
 		atodata.Errorf("use --query, --url, --all, or --recrawl")
 		os.Exit(2)
@@ -59,7 +60,7 @@ func main() {
 
 	results := make([]atodata.RefreshResult, 0, len(selected)+len(missing))
 	for _, rawURL := range missing {
-		results = append(results, atodata.RefreshResult{URL: rawURL, Error: "not in index"})
+		results = append(results, atodata.RefreshResult{URL: rawURL, Error: "not in source registry"})
 	}
 	changed := 0
 	for _, rec := range selected {
@@ -69,7 +70,7 @@ func main() {
 		}
 		results = append(results, result)
 	}
-	if err := atodata.SaveIndex(root, idx); err != nil {
+	if err := atodata.SaveRegistry(root, registry); err != nil {
 		atodata.Errorf("%v", err)
 		os.Exit(1)
 	}
@@ -89,4 +90,13 @@ func (m *multiFlag) String() string {
 func (m *multiFlag) Set(value string) error {
 	*m = append(*m, value)
 	return nil
+}
+
+func commandRoot() (string, error) {
+	if cwd, err := os.Getwd(); err == nil {
+		if _, statErr := os.Stat(filepath.Join(cwd, ".codex-plugin", "plugin.json")); statErr == nil {
+			return cwd, nil
+		}
+	}
+	return atodata.SkillRoot()
 }

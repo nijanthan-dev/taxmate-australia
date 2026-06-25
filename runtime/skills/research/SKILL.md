@@ -48,7 +48,7 @@ ATO source pack:
 "$TAXMATE_AUSTRALIA_ROOT/data/ato_knowledge_base"
 ```
 
-Read `SCOPE_SUMMARY.md`, search `source_index.json` and `text/`, then refresh relevant pages before answering current tax questions. If refresh fails, say so and use cached sources only when useful.
+Read `SCOPE_SUMMARY.md`, search `source_registry.json` and `.cache/ato/`, then refresh relevant pages before answering current tax questions. If refresh fails, say so and use cached sources only when useful.
 
 ## Answer Rules
 
@@ -79,7 +79,7 @@ Read `SCOPE_SUMMARY.md`, search `source_index.json` and `text/`, then refresh re
 ## Workflow
 
 1. Read `data/ato_knowledge_base/SCOPE_SUMMARY.md`.
-2. Search `source_index.json` and `text/`.
+2. Search `source_registry.json` and `text/`.
 3. Run `"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --query "<topic>"`.
 4. Re-read changed or relevant text.
 5. Answer with conclusion, conservative treatment, evidence needed, source URLs, and accountant-review flags.

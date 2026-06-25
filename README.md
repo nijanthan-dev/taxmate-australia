@@ -110,6 +110,7 @@ The public portable skills are:
 - `taxpack`
 
 Portable skills depend only on their own `SKILL.md`, bundled `references/`, official source URLs, and the agent's web access when available. They do not require Go, TaxMate binaries, a repository checkout, plugin manifests, marketplace JSON, or `TAXMATE_AUSTRALIA_ROOT`.
+Source artifacts are tracked in `data/ato_knowledge_base/source_coverage.json`, derived from `data/ato_knowledge_base/source_registry.json`.
 
 ## Installation modes
 

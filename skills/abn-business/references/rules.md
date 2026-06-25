@@ -2,172 +2,188 @@
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 
-Checked at: 2026-06-24T02:23:12Z
+These are conservative topic summaries from official sources, not copied ATO pages.
 
-These are project summaries of official sources, not copied ATO pages. Official wording remains at source URLs.
+## Verified official-source content
 
-## Official-source metadata
+- No verified official-source summaries for this topic.
 
-- Income and deductions for business
-  - Source ID: ato-af838ed671be
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business
-  - Source last updated: 2025-05-06T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Accounting for business trading stock
-  - Source ID: ato-1e54becc0fc5
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/accounting-for-trading-stock
-  - Source last updated: 2021-07-08T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Assessable business income
-  - Source ID: ato-0e54c59c31f0
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/assessable-income
-  - Source last updated: 2019-06-23T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- What to exclude from your business's assessable income
-  - Source ID: ato-f2ce256a53f7
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/assessable-income/what-income-to-exclude
-  - Source last updated: 2025-05-06T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Business losses
-  - Source ID: ato-2f746e834538
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/business-losses
-  - Source last updated: 2025-05-06T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Business offsets and rebates
-  - Source ID: ato-7d3991795a41
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/concessions-offsets-and-rebates
-  - Source last updated: 2024-11-05T13:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Business deductions
-  - Source ID: ato-379c05b86597
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions
-  - Source last updated: 2026-06-17T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Deductions for business travel expenses
-  - Source ID: ato-19457ae8efd1
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-business-travel-expenses
-  - Source last updated: 2026-05-26T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Deductions for carbon sink forest expenses
-  - Source ID: ato-56d2c7d0971c
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-carbon-sink-forest-expenses
-  - Source last updated: 2025-05-06T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Deductions for depreciating assets and capital expenses
-  - Source ID: ato-e3ae3b47b545
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-depreciating-assets-and-capital-expenses
-  - Source last updated: 2025-05-28T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Deductions for digital product expenses
-  - Source ID: ato-8b7033a3c26a
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-digital-product-expenses
-  - Source last updated: 2026-05-26T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Deductions for motor vehicle expenses
-  - Source ID: ato-1760ca520ccc
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-motor-vehicle-expenses
-  - Source last updated: 2026-05-26T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Motor vehicle expense calculation methods
-  - Source ID: ato-5d5f05969a20
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-motor-vehicle-expenses/motor-vehicle-expense-calculation-methods
-  - Source last updated: 2025-05-06T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Deductions for other operating expenses
-  - Source ID: ato-14f68493eaaa
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-other-operating-expenses
-  - Source last updated: 2024-11-12T13:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Deductions for repairs, maintenance and replacement expenses
-  - Source ID: ato-4584f994a1ff
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-repairs-maintenance-and-replacement-expenses
-  - Source last updated: 2024-06-19T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Deductions for salaries, wages and super contributions
-  - Source ID: ato-d938cf5a2c0e
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-salaries-wages-and-super-contributions
-  - Source last updated: 2026-04-16T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Deductions for unrecoverable income (bad debts)
-  - Source ID: ato-b70c46dd8ccf
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-unrecoverable-income-bad-debts
-  - Source last updated: 2025-05-06T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Small business energy incentive
-  - Source ID: ato-0b04bc002944
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-energy-incentive
-  - Source last updated: 2025-05-06T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Small business skills and training boost
-  - Source ID: ato-61a656e0ec6b
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-skills-and-training-boost
-  - Source last updated: 2025-05-06T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Small business technology investment boost
-  - Source ID: ato-a656f37f40f7
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-technology-investment-boost
-  - Source last updated: 2024-06-19T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
+## Metadata-only official-source links
+
 - Overview of business income and deductions
   - Source ID: ato-036ce52ca7ea
   - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/overview-of-business-income-and-deductions
   - Source last updated: 2025-05-06T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Professional firms
-  - Source ID: ato-ee04e4287e41
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/professional-firms
-  - Source last updated: 2023-10-20T13:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Registered emissions units
-  - Source ID: ato-57b2070eaa2b
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/registered-emissions-units
-  - Source last updated: 2024-02-14T02:28:33.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Small business energy incentive
+  - Source ID: ato-0b04bc002944
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-energy-incentive
+  - Source last updated: 2025-05-06T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Assessable business income
+  - Source ID: ato-0e54c59c31f0
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/assessable-income
+  - Source last updated: 2019-06-23T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
 - Service entities
   - Source ID: ato-0f816ecd3169
   - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/service-entities
   - Source last updated: 2025-11-16T13:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
-- Work out your business taxable income
-  - Source ID: ato-68eecd1162b2
-  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/work-out-taxable-income
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Deductions for other operating expenses
+  - Source ID: ato-14f68493eaaa
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-other-operating-expenses
+  - Source last updated: 2024-11-12T13:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Deductions for motor vehicle expenses
+  - Source ID: ato-1760ca520ccc
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-motor-vehicle-expenses
+  - Source last updated: 2026-05-26T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Deductions for business travel expenses
+  - Source ID: ato-19457ae8efd1
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-business-travel-expenses
+  - Source last updated: 2026-05-26T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Accounting for business trading stock
+  - Source ID: ato-1e54becc0fc5
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/accounting-for-trading-stock
+  - Source last updated: 2021-07-08T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Business losses
+  - Source ID: ato-2f746e834538
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/business-losses
   - Source last updated: 2025-05-06T14:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Business deductions
+  - Source ID: ato-379c05b86597
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions
+  - Source last updated: 2026-06-17T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Deductions for repairs, maintenance and replacement expenses
+  - Source ID: ato-4584f994a1ff
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-repairs-maintenance-and-replacement-expenses
+  - Source last updated: 2024-06-19T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Deductions for carbon sink forest expenses
+  - Source ID: ato-56d2c7d0971c
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-carbon-sink-forest-expenses
+  - Source last updated: 2025-05-06T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Registered emissions units
+  - Source ID: ato-57b2070eaa2b
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/registered-emissions-units
+  - Source last updated: 2024-02-14T02:28:33.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Motor vehicle expense calculation methods
+  - Source ID: ato-5d5f05969a20
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-motor-vehicle-expenses/motor-vehicle-expense-calculation-methods
+  - Source last updated: 2025-05-06T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Small business skills and training boost
+  - Source ID: ato-61a656e0ec6b
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-skills-and-training-boost
+  - Source last updated: 2025-05-06T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
 - Personal services income
   - Source ID: ato-628feb0880a4
   - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/personal-services-income
   - Source last updated: 2024-11-05T13:00:00.000+00:00
-  - Checked at: 2026-06-24T02:23:12Z
-  - Source content: not extracted or not verified; use URL only and mark unresolved treatment `Accountant review`.
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Work out your business taxable income
+  - Source ID: ato-68eecd1162b2
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/work-out-taxable-income
+  - Source last updated: 2025-05-06T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Business offsets and rebates
+  - Source ID: ato-7d3991795a41
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/concessions-offsets-and-rebates
+  - Source last updated: 2024-11-05T13:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Deductions for digital product expenses
+  - Source ID: ato-8b7033a3c26a
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-digital-product-expenses
+  - Source last updated: 2026-05-26T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Small business technology investment boost
+  - Source ID: ato-a656f37f40f7
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-technology-investment-boost
+  - Source last updated: 2024-06-19T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Income and deductions for business
+  - Source ID: ato-af838ed671be
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business
+  - Source last updated: 2025-05-06T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Deductions for unrecoverable income (bad debts)
+  - Source ID: ato-b70c46dd8ccf
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-unrecoverable-income-bad-debts
+  - Source last updated: 2025-05-06T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Deductions for salaries, wages and super contributions
+  - Source ID: ato-d938cf5a2c0e
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-salaries-wages-and-super-contributions
+  - Source last updated: 2026-04-16T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Deductions for depreciating assets and capital expenses
+  - Source ID: ato-e3ae3b47b545
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-depreciating-assets-and-capital-expenses
+  - Source last updated: 2025-05-28T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- Professional firms
+  - Source ID: ato-ee04e4287e41
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/professional-firms
+  - Source last updated: 2023-10-20T13:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+- What to exclude from your business's assessable income
+  - Source ID: ato-f2ce256a53f7
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/assessable-income/what-income-to-exclude
+  - Source last updated: 2025-05-06T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
 
 ## TaxMate conservative summary
 
-- Use sources only for ABN and business income or expenses.
-- Values, rates, thresholds, caps, and due dates are volatile. Verify `current-values.json` against the source and income year before use.
-- If current official support is unavailable, classify as `Accountant review` or `Insufficient evidence`.
-- Do not claim source-backed treatment from metadata-only sources; use the official URL and require `Accountant review` until source text is verified.
+- Use official URLs plus source hashes to support treatment guidance.
+- Values, rates, thresholds, caps, and due dates are volatile. Verify against listed source URL and official income year/effective period before use.
+- If official support is unavailable or stale, classify as `Accountant review`.
+- Do not claim source-backed treatment from metadata-only sources without explicit validation.
+
+## Accountant-review boundaries
+
+- pre-revenue
+- PSI
+- business versus hobby
+- non-commercial losses
+- capital versus revenue
+- mixed business/private use
+- missing ownership or entity details
+- missing evidence
+- pre-revenue expenses
+- capital versus revenue treatment
+- GST/BAS, FBT, payroll, or complex CGT uncertainty

@@ -19,10 +19,15 @@ fail() {
 [[ -f docs/PUBLICATION_CHECKLIST.md ]] || fail "missing publication checklist"
 [[ -f hooks.json ]] || fail "missing hooks.json"
 [[ -f scripts/clean-source-cache.sh ]] || fail "missing source-cache cleaner"
+[[ -f data/ato_knowledge_base/source_registry.json ]] || fail "missing source_registry.json"
+[[ -f data/ato_knowledge_base/source_coverage.json ]] || fail "missing source_coverage.json"
 [[ -f config/public-skills.json ]] || fail "missing public skills manifest"
 [[ -f config/skill-packaging.json ]] || fail "missing skill packaging manifest"
 [[ -f skills/taxmate-australia/SKILL.md ]] || fail "missing portable entry-point skill"
 [[ -f scripts/test-skills-install.sh ]] || fail "missing skills install smoke test"
+if [[ -d migration ]] || [[ -f data/ato_knowledge_base/source_index.json ]] || [[ -f data/ato_knowledge_base/source_manifest.json ]] || [[ -f data/ato_knowledge_base/migration_report.json ]]; then
+  fail "legacy migration artifacts present"
+fi
 
 if git ls-files 'bin/*' | grep -q .; then
   fail "built binaries are tracked"
@@ -83,11 +88,16 @@ for (const name of publicSkills) {
   const rules = fs.readFileSync(rulesPath, "utf8");
   if (rules.includes(emptyHash)) fail(`empty-content hash in ${name}`);
   if (repoOnly.test(rules)) fail(`repository-only reference in ${name}/references`);
-  if (!rules.includes("Official-source metadata")) fail(`missing official-source metadata ${name}`);
+  if (!rules.includes("Verified official-source content")) fail(`missing verified provenance heading ${name}`);
+  if (!rules.includes("Metadata-only official-source links")) fail(`missing metadata-only provenance heading ${name}`);
   if (!rules.includes("TaxMate conservative summary")) fail(`missing conservative summary ${name}`);
   if (!rules.includes("Accountant review")) fail(`missing accountant review rules ${name}`);
   if (rules.length < 300) fail(`placeholder-only rules ${name}`);
 }
+
+const sourceCoverage = JSON.parse(fs.readFileSync("data/ato_knowledge_base/source_coverage.json", "utf8"));
+if (!Array.isArray(sourceCoverage.sources) || sourceCoverage.sources.length === 0) fail("missing or empty source_coverage");
+if (sourceCoverage.sources.some((entry) => entry.status === "needs_review")) fail("source_coverage contains needs_review entries");
 
 const skillDirs = fs.readdirSync("skills").filter((entry) => fs.existsSync(path.join("skills", entry, "SKILL.md")));
 const unexpectedPublic = skillDirs.filter((entry) => !publicSet.has(entry) && !packaging.runtimeOnly.includes(entry));
@@ -121,7 +131,9 @@ go build -o bin/taxmate-australia-validate ./cmd/taxmate-australia-validate
 go build -o bin/taxmate-australia-finance ./cmd/taxmate-australia-finance
 go build -o bin/taxmate-australia-calc ./cmd/taxmate-australia-calc
 bin/taxmate-australia-skills validate >/tmp/taxmate-australia-skills-validate.json
-bin/taxmate-australia-skills audit >/tmp/taxmate-australia-skills-audit.json
+bin/taxmate-australia-skills generate --check
+bin/taxmate-australia-skills audit --check
+bin/taxmate-australia-skills audit --format markdown --output /tmp/source-coverage.md
 bin/taxmate-australia-validate >/tmp/taxmate-australia-validate.json
 bash scripts/test-skills-install.sh
 bash scripts/clean-source-cache.sh
