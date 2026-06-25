@@ -16,6 +16,50 @@ bash scripts/test-skills-install.sh
 scripts/check-publication-ready.sh
 ```
 
+## Cloud and local build environments (Mac-independent)
+
+Use one setup for both GitHub-hosted and laptop-local workflows.
+
+### GitHub Codespaces
+
+1. Open the repository and click **Code → Codespaces → Create codespace on main**.
+2. The container auto-creates from `.devcontainer/devcontainer.json`.
+3. Run bootstrap checks (or your preferred command set) from the container:
+
+```bash
+bash scripts/bootstrap-dev-env.sh
+```
+
+Codespaces will keep `.devcontainer` dependencies pinned to the repository and avoids local host drift.
+
+### Local Docker environment
+
+```bash
+docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml exec taxmate-australia bash
+```
+
+The local container includes:
+- Go 1.22
+- Node.js 20
+- Git/cURL/JQ
+
+Then run the normal checks from the repo:
+
+```bash
+bash scripts/bootstrap-dev-env.sh
+go test ./...
+go vet ./...
+go build ./...
+bash scripts/test-skills-install.sh
+scripts/check-publication-ready.sh
+```
+
+### Codex usage in container
+
+Codex is not globally installed by default in the container image.
+If you need Codex commands inside the container, install it with your standard method and ensure it is on `PATH`.
+
 Coverage checks:
 
 ```bash

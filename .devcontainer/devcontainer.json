@@ -1,0 +1,25 @@
+{
+  "name": "TaxMate Australia",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "workspaceFolder": "/workspaces/taxmate-australia",
+  "remoteEnv": {
+    "GOCACHE": "/workspaces/taxmate-australia/.cache/gocache",
+    "GOMODCACHE": "/workspaces/taxmate-australia/.cache/gomod"
+  },
+  "postCreateCommand": "bash scripts/bootstrap-dev-env.sh",
+  "containerEnv": {
+    "LC_ALL": "C.UTF-8"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  },
+  "mounts": []
+}

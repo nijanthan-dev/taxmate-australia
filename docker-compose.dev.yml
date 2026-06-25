@@ -1,0 +1,18 @@
+services:
+  taxmate-australia:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    working_dir: /workspaces/taxmate-australia
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/workspaces/taxmate-australia
+      - go-cache:/workspaces/taxmate-australia/.cache
+    environment:
+      GOCACHE: /workspaces/taxmate-australia/.cache/gocache
+      GOMODCACHE: /workspaces/taxmate-australia/.cache/gomod
+
+volumes:
+  go-cache:
