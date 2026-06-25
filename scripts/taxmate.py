@@ -179,8 +179,20 @@ def _run_local_binary(binary: Path, command: str, args: List[str], root: Path) -
     return subprocess.run([str(binary), *args], cwd=str(root)).returncode
 
 
+
+def _run_python_command(script: str, args: List[str], root: Path) -> int:
+    script_path = Path(__file__).resolve().parent / script
+    if not script_path.exists():
+        print(f"error: missing script {script}", file=sys.stderr)
+        return 1
+    return subprocess.run([sys.executable, str(script_path), *args], cwd=str(root)).returncode
+
+
 def _dispatch(command: str, args: List[str]) -> int:
     root = _find_repo_root(Path.cwd())
+    if command == "calc":
+        return _run_python_command("taxmate_calc.py", args, root)
+
     local = _find_local_binary(command, root)
 
     if local is not None:
