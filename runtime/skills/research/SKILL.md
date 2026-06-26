@@ -85,7 +85,7 @@ Read `SCOPE_SUMMARY.md`, search `source_registry.json` and `.cache/ato/`, then r
 ## Workflow
 
 1. Read `data/ato_knowledge_base/SCOPE_SUMMARY.md`.
-2. Search `source_registry.json` and `text/`.
+2. Search `source_registry.json` and `.cache/ato/text/`.
 3. Run `"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --query "<topic>"`.
 4. Re-read changed or relevant text.
 5. Answer with conclusion, conservative treatment, evidence needed, source URLs, and accountant-review flags.
