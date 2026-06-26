@@ -294,7 +294,7 @@ def write_markdown(report: Report, out) -> None:
 
 
 def read_csv(handle) -> List[Transaction]:
-    reader = csv.reader(handle)
+    reader = csv.reader(handle, skipinitialspace=True)
     rows = list(reader)
     if not rows:
         raise ValueError("empty csv")

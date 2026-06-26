@@ -17,7 +17,7 @@ from typing import Dict, Iterable, List, Sequence, Tuple
 from urllib.parse import urljoin, urlparse, urlunparse
 
 from datetime import datetime, timezone
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 
 
 SCOPE = (
@@ -457,6 +457,8 @@ def fetch(raw_url: str) -> FetchResult:
             body = response.read()
             status = int(getattr(response, "status", 0) or 0)
             final_url = response.geturl()
+    except HTTPError as exc:
+        return FetchResult(status=int(exc.code), final_url=raw_url, body=exc.read())
     except URLError as exc:
         raise RuntimeError(str(exc)) from exc
 

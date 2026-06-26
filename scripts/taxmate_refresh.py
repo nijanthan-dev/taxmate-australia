@@ -32,14 +32,14 @@ def run(argv: List[str]) -> int:
     try:
         root = command_root()
     except Exception as exc:
-        atodata.Errorf("%v", exc)
+        atodata.Errorf("%s", exc)
         return 1
 
     if args.recrawl:
         try:
             registry = atodata.Recrawl(root, args.max_pages)
         except Exception as exc:
-            atodata.Errorf("%v", exc)
+            atodata.Errorf("%s", exc)
             return 1
         atodata.WriteJSON(
             {
@@ -53,7 +53,7 @@ def run(argv: List[str]) -> int:
     try:
         registry = atodata.LoadRegistry(root)
     except Exception as exc:
-        atodata.Errorf("%v", exc)
+        atodata.Errorf("%s", exc)
         return 1
 
     selected = []
@@ -82,7 +82,7 @@ def run(argv: List[str]) -> int:
     try:
         atodata.SaveRegistry(root, registry)
     except Exception as exc:
-        atodata.Errorf("%v", exc)
+        atodata.Errorf("%s", exc)
         return 1
 
     atodata.WriteJSON(

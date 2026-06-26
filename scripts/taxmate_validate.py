@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import atodata
 import skillgen
+import taxmate_finance
 import taxmate_skills
 
 
@@ -38,7 +39,7 @@ def validate(root: str) -> Tuple[Dict[str, Any], bool]:
     checks: List[Dict[str, Any]] = []
 
     def add(name: str, passed: bool, detail: str) -> None:
-        checks.append({"name": name, "passed": bool(passed), "detail": detail})
+        checks.append({"check": name, "passed": bool(passed), "detail": detail})
 
     manifest, manifest_err = read_plugin_manifest(root)
     manifest_text = read_text(os.path.join(root, ".codex-plugin", "plugin.json"))
@@ -254,6 +255,10 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("audit_is_read_only", audit_is_read_only(root), "")
     add("audit_json_stdout_single_document", audit_json_stdout_single_document(root), "")
     add("save_registry_stamps_refreshed_at", save_registry_stamps_refreshed_at(), "")
+    add("fetch_http_error_preserves_status", fetch_http_error_preserves_status(), "")
+    add("finance_csv_trims_leading_space", finance_csv_trims_leading_space(), "")
+    add("refresh_errors_use_python_formatting", refresh_errors_use_python_formatting(root), "")
+    add("validate_json_uses_check_field", validate_json_uses_check_field(), "")
     add("recrawl_link_host_filter_strict", recrawl_link_host_filter_strict(), "")
     add("super_seed_matches_registry", super_seed_matches_registry(registry), "")
     add("generated_skills_validate", is_valid_exception_safe(lambda: skillgen.Validate(root)) is None, "")
@@ -267,6 +272,8 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("no_go_tooling_config", len(go_tooling_hits) == 0, "; ".join(go_tooling_hits))
     go_runtime_claim_hits = stale_go_runtime_claim_hits(root)
     add("public_metadata_no_go_runtime_claims", len(go_runtime_claim_hits) == 0, "; ".join(go_runtime_claim_hits))
+    stale_cache_claim_hits = stale_committed_source_cache_claim_hits(root)
+    add("public_docs_no_committed_source_cache_claims", len(stale_cache_claim_hits) == 0, "; ".join(stale_cache_claim_hits))
 
 
 def is_valid_exception_safe(fn) -> Optional[Exception]:
@@ -710,6 +717,13 @@ def stale_go_runtime_claim_hits(root: str) -> List[str]:
     return hits
 
 
+def stale_committed_source_cache_claim_hits(root: str) -> List[str]:
+    hits: List[str] = []
+    for rel in public_runtime_claim_scan_files():
+        hits.extend(text_hits(root, rel, committed_source_cache_claim_needles()))
+    return hits
+
+
 def go_tooling_scan_files() -> List[str]:
     return [
         os.path.join(".devcontainer", "Dockerfile"),
@@ -738,6 +752,15 @@ def public_runtime_claim_scan_files() -> List[str]:
         os.path.join("docs", "FULL_PLUGIN_INSTALL.md"),
         os.path.join("docs", "INSTALLATION.md"),
         os.path.join("docs", "PUBLICATION_CHECKLIST.md"),
+    ]
+
+
+def committed_source_cache_claim_needles() -> List[str]:
+    return [
+        "repository contains an ato source cache",
+        "committed ato source cache",
+        "committed source cache",
+        "source cache and test fixtures",
     ]
 
 
@@ -797,6 +820,45 @@ def audit_json_stdout_single_document(root: str) -> bool:
         return "summary" in payload and "source_coverage" in payload
     except Exception:
         return False
+
+
+def fetch_http_error_preserves_status() -> bool:
+    original = atodata.urllib.request.urlopen
+
+    def fake_urlopen(*_args, **_kwargs):
+        raise atodata.HTTPError("https://www.ato.gov.au/missing", 404, "missing", {}, io.BytesIO(b"not found"))
+
+    atodata.urllib.request.urlopen = fake_urlopen
+    try:
+        fetched = atodata.Fetch("https://www.ato.gov.au/missing")
+        return fetched.status == 404 and fetched.body == b"not found"
+    except Exception:
+        return False
+    finally:
+        atodata.urllib.request.urlopen = original
+
+
+def finance_csv_trims_leading_space() -> bool:
+    body = 'date,description,amount\n2026-01-01, "Quoted desk",10\n'
+    try:
+        rows = taxmate_finance.read_csv(io.StringIO(body))
+    except Exception:
+        return False
+    return len(rows) == 1 and rows[0].description == "Quoted desk"
+
+
+def refresh_errors_use_python_formatting(root: str) -> bool:
+    text = read_text(os.path.join(root, "scripts", "taxmate_refresh.py"))
+    return '"%v"' not in text and "'%v'" not in text
+
+
+def validate_json_uses_check_field() -> bool:
+    report, _ = finish("", [{"check": "sample", "passed": True, "detail": ""}], None, False)
+    checks = report.get("checks", [])
+    if not isinstance(checks, list) or not checks:
+        return False
+    first = checks[0]
+    return isinstance(first, dict) and first.get("check") == "sample" and "name" not in first
 
 
 def save_registry_stamps_refreshed_at() -> bool:
