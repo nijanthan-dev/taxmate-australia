@@ -6,13 +6,13 @@
     "title": "Family and dependants for Medicare levy surcharge purposes",
     "last_updated": "2026-04-29T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "b8a116dc6dc2e28c29a44c46603ca260188ee406a7e78cdf559565f177af8dcb",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-3925dae59e52",
@@ -21,13 +21,13 @@
     "title": "Medicare and private health insurance",
     "last_updated": "2025-06-11T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "cb260b19f85a414f804c5549fa606c678d2b227da9b331d9ae7e00480f44ecd3",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-3aea64d5fad8",
@@ -40,9 +40,9 @@
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-53b20854d6fb",
@@ -51,13 +51,13 @@
     "title": "Your private health insurance statement",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "89a8d0a61e913f1397bc4ce8b6ec708842ba646046072a79bdcdc100fbf1e884",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-6c536ed6d9ac",
@@ -66,13 +66,13 @@
     "title": "Medicare levy surcharge and your tax return",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "e5046fc4570145a48dbd7321031482491f6e14dfce143fde9765cd4d7f5e31f1",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-6c86d5e34fe1",
@@ -81,13 +81,13 @@
     "title": "Medicare levy",
     "last_updated": "2026-04-29T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "14a37b65665b12eb8b3fb7fb0c9cfe60406945d49fee9035e7900b016f8c6880",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-92c78bc815df",
@@ -100,9 +100,9 @@
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-9971aa8c2031",
@@ -111,13 +111,13 @@
     "title": "Lifetime health cover",
     "last_updated": "2026-05-04T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "dae62e468a591aeea7204ce5f87082cb401e9612cb45027bc1bd09e4c82459dd",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-b68e5713085b",
@@ -130,9 +130,9 @@
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-cadde338173c",
@@ -145,9 +145,9 @@
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-cfd33d26c79b",
@@ -156,13 +156,13 @@
     "title": "Private health insurance rebate",
     "last_updated": "2026-04-29T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "8d0c08b6e6f9ad9c5e3d8fc3361ac08b035363682379fa6e3cb02be792c20581",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-d97cd5361a75",
@@ -171,13 +171,13 @@
     "title": "Medicare levy surcharge",
     "last_updated": "2026-04-29T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "bf61f4a34f33495858be0fc6f7b8728fc23a9e88ce9f7870340d00afe6a4f40f",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-e55bb86920fd",
@@ -186,13 +186,13 @@
     "title": "Overseas visitors \u2013 private health insurance on your tax return",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "9d2d00b3979061a008bbe044a1d6770c718ae73bd156100037747e8ea4b96bb9",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-e671d9b1371a",
@@ -205,8 +205,8 @@
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   }
 ]

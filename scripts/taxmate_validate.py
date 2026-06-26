@@ -261,6 +261,8 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("audit_json_stdout_single_document", audit_json_stdout_single_document(root), "")
     add("audit_cgt_counts_metadata_assignments", audit_cgt_counts_metadata_assignments(root), "")
     add("audit_check_fails_missing_required_assignments", audit_check_fails_missing_required_assignments(root), "")
+    add("audit_check_fails_missing_required_verified_sources", audit_check_fails_missing_required_verified_sources(root), "")
+    add("skills_generate_check_catches_validation_error", skills_generate_check_catches_validation_error(root), "")
     add("source_coverage_status_check_consumes_return_error", source_coverage_status_check_consumes_return_error(root), "")
     add("save_registry_stamps_refreshed_at", save_registry_stamps_refreshed_at(), "")
     add("fetch_http_error_preserves_status", fetch_http_error_preserves_status(), "")
@@ -932,20 +934,68 @@ def audit_check_fails_missing_required_assignments(root: str) -> bool:
     try:
         atodata.CopyDir(os.path.join(root, "skills"), os.path.join(work_root, "skills"))
         atodata.CopyDir(os.path.join(root, "data", "ato_knowledge_base"), os.path.join(work_root, "data", "ato_knowledge_base"))
-        path = os.path.join(work_root, "data", "ato_knowledge_base", skillgen.SOURCE_COVERAGE_FILE)
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
         target = required_topics()[0]
-        for entry in payload.get("sources", []):
-            skills = entry.get("skills", [])
-            if isinstance(skills, list) and target in skills:
-                entry["skills"] = [skill for skill in skills if skill != target]
-        Path(path).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        downgrade_topic_sources(work_root, target, "test assignment removal", remove_assignment=True)
         err = skillgen.ValidateSourceCoverage(work_root)
-        return err is not None and target in str(err)
+        return err is not None and "required tax areas missing source assignments" in str(err)
     except Exception:
         return False
     finally:
         shutil.rmtree(work_root, ignore_errors=True)
+
+
+def audit_check_fails_missing_required_verified_sources(root: str) -> bool:
+    import shutil
+
+    work_root = tempfile.mkdtemp(prefix="taxmate-validate-required-verified-")
+    try:
+        atodata.CopyDir(os.path.join(root, "skills"), os.path.join(work_root, "skills"))
+        atodata.CopyDir(os.path.join(root, "data", "ato_knowledge_base"), os.path.join(work_root, "data", "ato_knowledge_base"))
+        target = required_topics()[0]
+        downgrade_topic_sources(work_root, target, "test metadata-only downgrade", remove_assignment=False)
+        err = skillgen.ValidateSourceCoverage(work_root)
+        return err is not None and "required tax areas missing verified source content" in str(err)
+    except Exception:
+        return False
+    finally:
+        shutil.rmtree(work_root, ignore_errors=True)
+
+
+def downgrade_topic_sources(work_root: str, target: str, reason: str, remove_assignment: bool) -> None:
+    coverage_path = os.path.join(work_root, "data", "ato_knowledge_base", skillgen.SOURCE_COVERAGE_FILE)
+    payload = json.loads(Path(coverage_path).read_text(encoding="utf-8"))
+    for entry in payload.get("sources", []):
+        skills = entry.get("skills", [])
+        if not isinstance(skills, list) or target not in skills:
+            continue
+        if remove_assignment:
+            entry["skills"] = [skill for skill in skills if skill != target]
+        entry["status"] = skillgen.StatusMetadataOnly
+        entry["reason"] = reason
+    Path(coverage_path).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    sources_path = os.path.join(work_root, "skills", target, "references", "sources.json")
+    sources = json.loads(Path(sources_path).read_text(encoding="utf-8"))
+    for entry in sources:
+        entry["status"] = skillgen.StatusMetadataOnly
+        entry["assignment_reason"] = reason
+    Path(sources_path).write_text(json.dumps(sources, indent=2) + "\n", encoding="utf-8")
+
+
+def skills_generate_check_catches_validation_error(root: str) -> bool:
+    original = taxmate_skills.skillgen.Generate
+
+    def fail_generate(_opts):
+        raise RuntimeError("synthetic validation error")
+
+    taxmate_skills.skillgen.Generate = fail_generate
+    try:
+        _, err = taxmate_skills._check_generation(root, "")
+        return err is not None and "synthetic validation error" in str(err)
+    except Exception:
+        return False
+    finally:
+        taxmate_skills.skillgen.Generate = original
 
 
 def source_coverage_status_check_consumes_return_error(root: str) -> bool:
@@ -1076,7 +1126,7 @@ def refresh_query_no_match_is_read_only(root: str) -> bool:
     err = io.StringIO()
     try:
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            code = taxmate_refresh.run(["--query", "zzzzzzz-no-match"])
+            code = taxmate_refresh.run(["--query", "zzzxqvnomatchtoken"])
         if code != 0:
             return False
         payload = json.loads(out.getvalue())

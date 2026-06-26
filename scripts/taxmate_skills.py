@@ -62,13 +62,16 @@ def _source_url(row: Dict[str, Any]) -> str:
 def _check_generation(root: str, checked_at: str) -> Tuple[int, Optional[Exception]]:
     work_root = Path(tempfile.mkdtemp(prefix="taxmate-australia-skills-check-"))
     try:
-        report = skillgen.Generate(
-            skillgen.Options(
-                root=root,
-                output_root=str(work_root),
-                checked_at=checked_at,
+        try:
+            report = skillgen.Generate(
+                skillgen.Options(
+                    root=root,
+                    output_root=str(work_root),
+                    checked_at=checked_at,
+                )
             )
-        )
+        except Exception as exc:
+            return 0, exc
         if report is None:
             raise RuntimeError("generation returned empty report")
         count = len(report.sources)

@@ -6,13 +6,13 @@
     "title": "CGT events",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "0be260d67012401d3867194975df31f8871521788f52c7ecec00f3b9ad1a33d2",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-16b521e92898",
@@ -21,13 +21,13 @@
     "title": "How to calculate your CGT",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "21dcf9048a6843f7398f9a6c0b230cbc5b3dc9f8493a5bc5ef7f56d345903a85",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-1c21ee00bebf",
@@ -36,13 +36,13 @@
     "title": "Cost base of assets",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "43289393009bf6d21f1d97071b619e22e42eb092759f0c89c07b493ccda3544a",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-258eb669018c",
@@ -51,13 +51,13 @@
     "title": "CGT discount",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "ebca5ed87a2cb8f333597ccde18be3499446bdfa79c6e216600f208572090ff9",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-2e44f4e5a40b",
@@ -66,13 +66,13 @@
     "title": "Cost base adjustments for capital works",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "8b214e08dcb93c0ee2e2a97fefd6298d748ee6411dd9d2b8f9c6de295b56bbe7",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-329bcce487e3",
@@ -81,13 +81,13 @@
     "title": "Indexing the cost base",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "189394b1c7753e15ccba7a9fbeacfe8a66a50ae886e8743d8d2bd7fa0c3c6238",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-39738a03f9e5",
@@ -96,13 +96,13 @@
     "title": "What is capital gains tax?",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "7518f4c340ce591ae57e06fca9a811151cf89b97f922ec7589275addda204f2c",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-3b8f4dbb25c7",
@@ -111,13 +111,13 @@
     "title": "Market valuation of assets",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "4004f015d92a3f8a5bc8a7072fee7a8bfb361fd1eda27d5bb0c47792a3d66f5f",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-3fbf9489ce3f",
@@ -126,13 +126,13 @@
     "title": "Inherited assets and capital gains tax",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "e55f2c950ed0d644c7a499f5acacef685c58e8ed1364a8b2141b8cef5b5270fd",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-531bacc15d56",
@@ -141,13 +141,13 @@
     "title": "Capital proceeds from disposing of assets",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "fbdb7b439aaa1b57644bd8155e198f119186307788c5d8f54bcaedd6cbf20b12",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-549aa3fe0999",
@@ -156,13 +156,13 @@
     "title": "Acquiring CGT assets",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "211c4dae7e5ef96aaff9cbee333d0c9d1199ce00b680be7ece5a60f11f06ee7b",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-5a8928b23f7e",
@@ -171,13 +171,13 @@
     "title": "Using capital losses to reduce capital gains",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "5456ff5a15d663b4c359d55a5db0dd5fd89ee1a92c58f675dc22ba644b791666",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-6fec75e60013",
@@ -186,13 +186,13 @@
     "title": "Relationship breakdown and capital gains tax",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "eaee9a1be7d6b9335cba3f46b9645613ac86d804e154bbf8127c1b73ff55d403",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-7b2f52af4bc7",
@@ -201,13 +201,13 @@
     "title": "Inherited property and CGT",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "34ee371707fee6773d236cc4ff6c619df03cb98eb9f129d0b5f241b61070aac5",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-a1b882bd62f6",
@@ -216,13 +216,13 @@
     "title": "Main residence exemption in relationship breakdown",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "19193b2ba3b1b1ba56f23e414c583319debb2ed4632c95c2b110d38e6b04cb36",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-add01449c8b7",
@@ -231,13 +231,13 @@
     "title": "Foreign residents and capital gains tax",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "7705b79885ff6fd0dbf4656b1ebb67daccd98e66d6ac2823b9d4f41643122768",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-bdda087b142a",
@@ -246,13 +246,13 @@
     "title": "List of CGT assets and exemptions",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "01e5455e2787e9aa0d19f3ba9a6ac8bcaee12f18ee983ed5058df7b8e4994a8a",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-c7a6a9032eab",
@@ -261,13 +261,13 @@
     "title": "Capital gains tax",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "45934b8d7491d2c47997ccac2883ccfa962f7a9da776f2e5fd1bc397382ea458",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-ca7036921304",
@@ -276,13 +276,13 @@
     "title": "Foreign resident investments",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "63f1ef4402c9cc3cac4c56b97191a438a0ac81b2920c4c551987958d71217607",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-e4bcd98f4ecb",
@@ -291,13 +291,13 @@
     "title": "Calculating your CGT",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "0b147254ec3b9e3325d233443d04dd77443d3ee5dd436c00cc721984d2849b67",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-e85950c21566",
@@ -306,12 +306,12 @@
     "title": "CGT discount for foreign residents",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "526652892a1d61395664e0e2bfa50960a2891010abb8c08c48e27c508be7ae78",
     "assigned_skill": "capital-gains-tax",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   }
 ]

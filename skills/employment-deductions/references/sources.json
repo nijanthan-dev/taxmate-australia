@@ -1,5 +1,20 @@
 [
   {
+    "source_id": "ato-095b0ade158a",
+    "url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets",
+    "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets",
+    "title": "Investments and assets",
+    "last_updated": "2025-04-08T14:00:00.000+00:00",
+    "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "3728cac488927678d3e38c208af567cec8322822c742b4b1dfbea37f60bc7c17",
+    "assigned_skill": "employment-deductions",
+    "reference": "references/rules.md",
+    "duplicate_of": "",
+    "status": "verified",
+    "reason": "",
+    "assignment_reason": "topic match + verified source content"
+  },
+  {
     "source_id": "ato-0a702ac5d106",
     "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/mobile-phone-mobile-internet-and-other-devices",
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/mobile-phone-mobile-internet-and-other-devices",
@@ -10,9 +25,9 @@
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-14ccda44a0ae",
@@ -21,13 +36,13 @@
     "title": "Expenses for a car you own or lease",
     "last_updated": "2026-05-03T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "ac7996e05e29b923f0d13f71879c55d04749e4c17ba69ef1bc42c3fb3dbc08e8",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-16d06b3f9be4",
@@ -40,9 +55,9 @@
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-26578cc87b2b",
@@ -51,13 +66,13 @@
     "title": "Employment allowances",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "6e8cdfa946c0f0cc5f2936e8fd97a2cc3542cf0bb2765c3edbf452d03c534728",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-273acc8ca62a",
@@ -66,13 +81,13 @@
     "title": "Investments, insurance and super",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "60e077bfa67e84855268b57fc3a59b02937bb7ba074684f75a7b57bb7aae9397",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-29aa57e52c7a",
@@ -81,13 +96,13 @@
     "title": "Keeping records for depreciating assets",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "a691fa1a74e7b6a3a3c0fb2a1d73ff0b6f1046b767c9506ce1af0f0f37ae0892",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-2cc0818cc9aa",
@@ -96,13 +111,13 @@
     "title": "Amounts you do not include as income",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "32535bd2d242c94ba7c109039afea77e515b461d915f94cdd490914890f6454c",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-2dc03ea43188",
@@ -111,13 +126,13 @@
     "title": "Education, training and seminars",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "1cd150a8fe0812f35ea2f9b9019a2689b90fce6b2e1924fdd24970539b11bd52",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-3250b4255958",
@@ -126,13 +141,13 @@
     "title": "Work-related deductions",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "a162434be7991b22a6cb370f6168f88a59e1edfe185018c3bf12a79f62420a08",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-36b8c8cf38d4",
@@ -141,13 +156,13 @@
     "title": "Employment income",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "16bad81d9772a8edf30f377691614632f47cf7551be730b4d805af566b7efdb2",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-36d33fd3d8b1",
@@ -156,13 +171,13 @@
     "title": "Computers, laptops and software",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "df6b2b738662ed62efa7962792783f1f6524fce7dbc1b9d77e0335b7fb9e2217",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-37bfaebaee6a",
@@ -171,13 +186,13 @@
     "title": "Taxi, ride-share and public transport expenses",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "5c9c4b640e92176d023908bdb8b942068f09d3288bd3a69e00f79c0121fd2451",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-3c0a2b7ba025",
@@ -186,13 +201,13 @@
     "title": "Depreciating assets you use for work",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "a421f5ac18673c3a46b3895316af0019f57836d4c821c0e06e5e5572b91bb395",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-3d51e086742b",
@@ -201,13 +216,13 @@
     "title": "Guides for occupations and industries",
     "last_updated": "2026-05-10T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "97b1a289494bfef495fe360f62f36b67ae5a506967c496f85013303415b33d96",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-3f9afa298a90",
@@ -216,13 +231,13 @@
     "title": "Australian defence force members performing overseas duty",
     "last_updated": "2025-06-15T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "864282aa5f056867baccbdb639033849e037db1c957431215df6a36cc7219b36",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-4480e197c6d1",
@@ -231,13 +246,13 @@
     "title": "Meals, entertainment and functions",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "2c4c4b3afd79b9b679b7e37d107fa79d5664022f2cdd983945d61f8340afe986",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-459eb7b48b9c",
@@ -246,28 +261,13 @@
     "title": "Business, partnership and trust income",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "d5d9b269e51d7d302a535f98d1093f9e609b698dd4c38c21e02d5f7fd3132936",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
-  },
-  {
-    "source_id": "ato-4d772bdf4492",
-    "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/investment-income",
-    "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/investment-income",
-    "title": "Investment income",
-    "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
-    "assigned_skill": "employment-deductions",
-    "reference": "references/rules.md",
-    "duplicate_of": "",
-    "status": "metadata_only",
-    "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-54f21184bb21",
@@ -276,13 +276,13 @@
     "title": "Keeping travel expense records",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "6aa1d729ce638b1552204ce1cc8caf2c42621c4b08d6814b855d4e2d08842a08",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-594f829cb77f",
@@ -291,13 +291,13 @@
     "title": "Meals and snacks",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "af7b5da54a01e6fcbbd3eec94d91d7c04ec0812efc6a065a28c4d9439f03eb61",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-6d54db58783d",
@@ -306,13 +306,28 @@
     "title": "Assets costing more than $300",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "8b1dfa26bf6f1eac00045fc965a671a5241d5b3fa4f7a19de6ef687c382511c3",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
+  },
+  {
+    "source_id": "ato-6e23b44e97ae",
+    "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/superannuation-pensions-and-annuities",
+    "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/superannuation-pensions-and-annuities",
+    "title": "Superannuation pensions and annuities",
+    "last_updated": "2026-06-07T14:00:00.000+00:00",
+    "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "f617d293b53162b05e510ca9813096647f2d9c1622e6178ac46ede358c97293c",
+    "assigned_skill": "employment-deductions",
+    "reference": "references/rules.md",
+    "duplicate_of": "",
+    "status": "verified",
+    "reason": "",
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-76c61527a345",
@@ -321,13 +336,13 @@
     "title": "Clothing, laundry and dry-cleaning expenses",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "9e5920b58d96e80fae09e668226a4f07b1a0ff415d3384d022855350d125a3c6",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-77cc5fde845a",
@@ -336,13 +351,13 @@
     "title": "Tax offsets",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "16b340fea278d7da9fdbb0eacd2976ec17ccd00da5efd8e8de828ae28e6d2ec3",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-79041d92aa02",
@@ -351,13 +366,13 @@
     "title": "Cost of managing tax affairs",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "e69e934ad8cdd72e85dc68ddddc9609976a98626b4f4d59749a7f24f865e71ad",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-7abce1a98042",
@@ -366,13 +381,13 @@
     "title": "Overnight travel expenses and allowances",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "ffd45c638261badfe35bb5c828a757c41fdab74c5e642561cd8d4b198af84fbe",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-82327abab0b1",
@@ -381,13 +396,13 @@
     "title": "Tools, computers and items you use for work",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "f4c8bbce1902d2c7cda8502442863278e7df2c52a0716d324fad48ca1f126af8",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-8a65daaa6790",
@@ -396,13 +411,13 @@
     "title": "Self-education expenses",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "7fb4eeaf0f15996bf67061766f6be11be8ab052acee37c7bdfd7a25a97bc1acb",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-8e227b9aad9c",
@@ -411,13 +426,13 @@
     "title": "Income tests",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "30a54fec602028905106ffeeb33a618bd5c4f6a981b2e8b520af9a9936bda272",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-98e957e72019",
@@ -426,13 +441,13 @@
     "title": "Expenses for a vehicle that isn't yours or isn't a car",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "825cd11e3ae27bb58d6da20fe34919674d95cb7a3f402feec364ffde1a335df1",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-9944fe00c716",
@@ -441,13 +456,28 @@
     "title": "Cars, transport and travel",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "d727d529b8f85b338d37a7f5b69b74547991396ca812c218a3e8b69dafcb4794",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
+  },
+  {
+    "source_id": "ato-9963c78283bc",
+    "url": "https://www.ato.gov.au/individuals-and-families/your-tax-return/how-to-lodge-your-tax-return",
+    "final_url": "https://www.ato.gov.au/individuals-and-families/your-tax-return/how-to-lodge-your-tax-return",
+    "title": "How to lodge your tax return",
+    "last_updated": "2026-06-14T14:00:00.000+00:00",
+    "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "e4fd8a5b1ee7492ee1ad2beacded9a8abd0bf4bc2bb73cf99a633834668b189d",
+    "assigned_skill": "employment-deductions",
+    "reference": "references/rules.md",
+    "duplicate_of": "",
+    "status": "verified",
+    "reason": "",
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-9fcf81b13886",
@@ -456,13 +486,13 @@
     "title": "Government payments and allowances",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "478e682f2e29b7ffba0a662e105d31165106a7fd3f71b2ca56fba937a5a7414d",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-a177fa738431",
@@ -471,13 +501,28 @@
     "title": "Personal grooming, health and fitness",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "ee2ad0ee5168c8c60abdee2fd7a0d31d90434a382943a6567f6ae5209d8ca5b4",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
+  },
+  {
+    "source_id": "ato-a1c6b0491a82",
+    "url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/property-and-land",
+    "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/property-and-land",
+    "title": "Property and land",
+    "last_updated": "2026-06-21T14:00:00.000+00:00",
+    "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "742edbe8f228c1cd2c105729bcff9a958b124a6f0d0736326dd0ddb1dc880dee",
+    "assigned_skill": "employment-deductions",
+    "reference": "references/rules.md",
+    "duplicate_of": "",
+    "status": "verified",
+    "reason": "",
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-a5980ce6ec9b",
@@ -486,13 +531,28 @@
     "title": "Deductions you can claim",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "ae5c89ad4e2a81532c50b48d6023ff61b18b3c57516c510d589e209edc4c6ade",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
+  },
+  {
+    "source_id": "ato-a623fbc4a699",
+    "url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/keeping-good-investment-records",
+    "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/keeping-good-investment-records",
+    "title": "Keeping good investment records",
+    "last_updated": "2026-06-21T14:00:00.000+00:00",
+    "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "6aa98af02ccec691839ba8a3d46b2e01bc363b7512b66e3b1c7a55beb3bae494",
+    "assigned_skill": "employment-deductions",
+    "reference": "references/rules.md",
+    "duplicate_of": "",
+    "status": "verified",
+    "reason": "",
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-aa57da95ed01",
@@ -501,13 +561,13 @@
     "title": "Clothes and items you wear at work",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "3ef81af885ab5574c6b02dae29c4972188b0a61a4078c10e526c17cc04845391",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-b14937deb8af",
@@ -516,13 +576,13 @@
     "title": "Australia-United States Joint Space and Defence Projects",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "ce8e2e2df796a3251a186cb94f1b029fb38c710a27b2be80ab4a36af8c744e5c",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-b4bd59e5ac66",
@@ -531,28 +591,13 @@
     "title": "Assets costing $300 or less",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "c7d3f56429e55f20aa652121462b1085a462cdc676883847492f2f070bab1631",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
-  },
-  {
-    "source_id": "ato-b95d541cfb0d",
-    "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/your-income-if-you-are-under-18-years-old",
-    "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/your-income-if-you-are-under-18-years-old",
-    "title": "Your income if you are under 18 years old",
-    "last_updated": "2026-06-07T14:00:00.000+00:00",
-    "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
-    "assigned_skill": "employment-deductions",
-    "reference": "references/rules.md",
-    "duplicate_of": "",
-    "status": "metadata_only",
-    "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-be420d63dd83",
@@ -565,9 +610,9 @@
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-c1b427dcb526",
@@ -576,13 +621,13 @@
     "title": "Scholarships prizes and awards",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "455ce2b12407906927e3f36a6a16ab3ecb22fa994bd81e94a5536cf35293f41f",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-c5bd0aa99e58",
@@ -591,13 +636,13 @@
     "title": "Taxable, assessable and exempt income",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "bf19f7e6279f30768401037e4743d09787f818abe20d1556d90068db8d699470",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-d9a732d7dd0c",
@@ -606,13 +651,13 @@
     "title": "Income you must declare",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "4bc1db13b4aef6d916c44942cefa423db405e42979bc1a98a5597d7c0468b996",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-dda6a498aca6",
@@ -621,13 +666,13 @@
     "title": "Compensation and insurance payments",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "0f819080a949dabcbf5e57d71d0cc25a959f0a73028b2c71bef8cd364c427f15",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-e20dc9550574",
@@ -636,13 +681,13 @@
     "title": "Home phone and internet expenses",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "2cd5546c090cddd513773c76ab9189973d12ca2e0dd7f646257368a02d96fc68",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-e3505da0c0c1",
@@ -651,13 +696,13 @@
     "title": "Occupation and industry specific guides",
     "last_updated": "2026-05-10T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "c26e5f3f0eadb4aa53be837e35b706cf85569c2f89f39ce36b157eac83cd9103",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-e7f37f0cea33",
@@ -666,13 +711,13 @@
     "title": "Tools and equipment to perform your work",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "ff81c7f481ba26bef8343b2f2bad4cff3a2cdbe77972caa368eab5f6ace6b66f",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-f230a7798407",
@@ -681,13 +726,13 @@
     "title": "Income, deductions, offsets and records",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "7898227261b9b83486f61f8d3251b87c83e6d98e0bf011fcfb56ccb5bc77b3c5",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-f3398e15f5ec",
@@ -696,13 +741,28 @@
     "title": "Foreign and worldwide income",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "04c095f433ebdd773f9460cdffcfba62b017c44801ca71f872bdae5773204545",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
+  },
+  {
+    "source_id": "ato-f34dc0f0abdc",
+    "url": "https://www.ato.gov.au/individuals-and-families/your-tax-return",
+    "final_url": "https://www.ato.gov.au/individuals-and-families/your-tax-return",
+    "title": "Your tax return",
+    "last_updated": "2026-05-21T14:00:00.000+00:00",
+    "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "fef046a909a09711f1cb1c1c473c695f207ee9a7b4e2cee1d960a019a902483c",
+    "assigned_skill": "employment-deductions",
+    "reference": "references/rules.md",
+    "duplicate_of": "",
+    "status": "verified",
+    "reason": "",
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-f6519ad88614",
@@ -711,13 +771,13 @@
     "title": "Memberships, accreditations, fees and commissions",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "77297c04e53c365c57c2cc5244318b35c7abc0eb3557bd8bef516ff17849ccbd",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-f8e5133d32b4",
@@ -726,13 +786,13 @@
     "title": "Award transport payments",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "b94a987637c00fdebf731427fefaea4eeeb238d31db7b04ce55d784e55c8cab4",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-fb4dd1d0ad9f",
@@ -745,9 +805,9 @@
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-fe4f3c86f20e",
@@ -756,13 +816,13 @@
     "title": "Record keeping exceptions for travel allowance expenses",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "7e1031b53154a6e24eacf46b8f39b23bed774cdfda5919e43c59e412de2687ca",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-ff8796199a01",
@@ -775,8 +835,8 @@
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   }
 ]

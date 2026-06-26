@@ -6,30 +6,30 @@ These are conservative topic summaries from official sources, not copied ATO pag
 
 ## Verified official-source content
 
-- No verified official-source summaries for this topic.
-## Metadata-only official-source links
-
 - Crypto assets and business
   - Source ID: ato-1fdb86303741
   - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/crypto-assets-and-business
   - Source last updated: 2025-05-06T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
-  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+  - Content hash: b22f497b9f262e83874982f287cfdf4e127de85d8f22bac5439818a35100070a
 
 - Keeping crypto records
   - Source ID: ato-49efde1747b5
   - URL: https://www.ato.gov.au/individuals-and-families/investments-and-assets/crypto-asset-investments/keeping-crypto-records
   - Source last updated: 2026-06-21T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
-  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+  - Content hash: ad2ea7fa6797ee2e933756f015c29186d81653e2001629b3508ebb7814aecd91
 
 - Crypto asset investments
   - Source ID: ato-9154fe86298e
   - URL: https://www.ato.gov.au/individuals-and-families/investments-and-assets/crypto-asset-investments
   - Source last updated: 2026-06-21T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
-  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+  - Content hash: e069be217dd3c08c734426f75d67a7245f29277e58d0f1be2a9b8b229cbf4bfb
 
+## Metadata-only official-source links
+
+- No metadata-only assigned sources for this topic.
 ## TaxMate conservative summary
 
 - Use official URLs plus source hashes to support treatment guidance.

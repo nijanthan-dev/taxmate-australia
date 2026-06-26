@@ -6,13 +6,13 @@
     "title": "Fortnightly tax table with no and half Medicare levy",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "57fca648410a4a6ae095e924297c8902c5a7d055747b5bed3d296653a3e065d1",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-03f67d25002e",
@@ -21,13 +21,13 @@
     "title": "Fringe benefits tax (FBT)",
     "last_updated": "2024-11-03T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "780c49f54473153f02c1a44864b96b15812affb3e60d04a3fe4a8a4ebf5853d6",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-06c18a20ed4e",
@@ -36,13 +36,13 @@
     "title": "FBT concessions for not-for-profit organisations",
     "last_updated": "2023-01-11T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "15b15479a83e5b73ec2167bc08bd5985c0bba59a5974de878c45494ae7eb8bf0",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-0dbbab1d7423",
@@ -51,13 +51,13 @@
     "title": "PAYG withholding payment summaries",
     "last_updated": "2025-06-10T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "75baccb169bf1cf135c70cf089a74d9cd4ba20c2e4e69a3f37bf516c3d92bee7",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-163412ea4d3c",
@@ -66,13 +66,13 @@
     "title": "Exemptions, concessions and other ways to reduce FBT",
     "last_updated": "2023-01-11T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "8e555ed2e0cae442c5b10c6464f7b2edc4909a4aa4343a7e1850313162a7d685",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-163fdfbe1136",
@@ -85,9 +85,9 @@
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-1796cf927e0e",
@@ -96,13 +96,13 @@
     "title": "Schedule 3 \u2013 Tax table for actors, variety artists and other entertainers",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "b8c2b95579cbb746fb9a51de272c02ea0372d66467b152c20425f2d1e3d3c9f7",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-17d6c5a48a40",
@@ -111,13 +111,13 @@
     "title": "Removing deductions for non-compliant payments",
     "last_updated": "2025-06-10T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "48449f7a9989dcea4860c44e3ee3426b4855ae43f81f93da5f04b49476e0b4ce",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-185868cc3604",
@@ -126,13 +126,13 @@
     "title": "Government organisations and FBT",
     "last_updated": "2023-01-11T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "fc71c72d283be1a017082a4cf123838bfe637d6798e74fec8c7b03d9d5c3acdd",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-1964fc327f63",
@@ -141,13 +141,13 @@
     "title": "Concessional reporting",
     "last_updated": "2021-06-30T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "fc52d44a9eab8ea289f75965f9ba9dca6a42696221080aea43e73ac028dd543c",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-1bdf2a06fc90",
@@ -156,13 +156,13 @@
     "title": "Medicare levy adjustment weekly tax table",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "add5b50f978ef698108a3e1c2f31fb55e366dd30e043a34ba1731f6db99404ab",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-1cc892969cb2",
@@ -171,13 +171,13 @@
     "title": "Entertainment-related fringe benefits",
     "last_updated": "2023-01-11T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "22d2daaf8ca104c337f0877e99e88f0d49115b90d0ee4b8e373376a4ce0fa4d4",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-225aeac1c597",
@@ -186,13 +186,13 @@
     "title": "Weekly tax table with no and half Medicare levy",
     "last_updated": "2026-06-17T07:02:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "4bcb4d1ab602925b6b4046bd1960f0a9b3f7152bf2271e54ab86ab6d2abd1461",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-252e4341e146",
@@ -201,13 +201,13 @@
     "title": "Schedule 4 \u2013 Tax table for return to work payments",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "0f77b408aad4e1117106e235b0bd26127f2706f5abcdad8ae739a32ad2c97b54",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-2c07c0334c9a",
@@ -216,13 +216,13 @@
     "title": "Tax tables",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "a19fb505ff3b3132785ec4c944cbb2bf2eadd46ae2cfa1e1b9f1f25252e25a3b",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-2e08d4f131a9",
@@ -231,13 +231,13 @@
     "title": "Monthly tax table",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "613e74a21bd3af884baf6cf35a7c7ebf5c81f588a19937acf89ad9459332d5d2",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-311b08e8a08c",
@@ -246,13 +246,13 @@
     "title": "What STP is",
     "last_updated": "2021-08-31T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "6849eca14159c47c25730b8f79ccd0461f4dea1b7f19dcab5e555bd77409ddf6",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-32e0ab220d98",
@@ -261,13 +261,13 @@
     "title": "Paying and reporting PAYG withholding amounts to us",
     "last_updated": "2025-11-20T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "b2dcdbd0ed8ef4245939cda46dccdac7ed4d83223690e861e33695b12c2017c3",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-3315a762d829",
@@ -276,13 +276,13 @@
     "title": "Study and training support loans fortnightly tax table",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "7e5e8697e120e405bc8d9ad16f11b072a3498f6e8d852ab67bf8b71c7cda7467",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-346ced4fd2e2",
@@ -291,13 +291,13 @@
     "title": "Schedule 10 \u2013 Tax table for payments made under voluntary agreements",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "6e9deccb3aea41086f5fc257dea903b6758ff9da74c3b92a1aefaad8d17814ad",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-351bb9c20589",
@@ -306,13 +306,13 @@
     "title": "Weekly tax table",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "02c226a81343d614b873d68d058fbedbab7471f524acbad8ffb83f28747c3076",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-3cac38599f52",
@@ -321,13 +321,13 @@
     "title": "FBT registration, lodgment, payment and reporting",
     "last_updated": "2023-01-11T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "0a59daa943c277e747460f1217e314469d79810269759dfd7875f8ea00c1dfe6",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-3e78c12538af",
@@ -336,13 +336,13 @@
     "title": "Tax rates and codes",
     "last_updated": "2024-10-29T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "626a0ec6ce638d24d8b6e1dd357c7957cd82f60c87e0fd5a5b855636488573ed",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-404d691c683c",
@@ -351,13 +351,13 @@
     "title": "PAYG withholding annual reports",
     "last_updated": "2025-06-10T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "4e017d2aeb5900890e0f6234345a13f1ad899cc5bd6acba5d06a660621870a8b",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-40f27ceb892a",
@@ -366,13 +366,13 @@
     "title": "Schedule 12 \u2013 Tax table for superannuation lump sums",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "92542082ff86c72e7819f72561b07417c8216fd17a0147b317317c986791d862",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-4137ec5a86de",
@@ -381,13 +381,13 @@
     "title": "Schedule 5 \u2013 Tax table for back payments, commissions, bonuses and similar payments",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "e794796367f38a2bb7d82a16632c061a16e6ccdb7435af4aaf9c4da67c0eb49f",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-41d8f9b576b5",
@@ -396,13 +396,13 @@
     "title": "Payments you need to withhold from",
     "last_updated": "2025-06-10T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "1e8155763150fbe090032190f36828a0729882a1a2109550aec20640c57c119f",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-44b6ac767879",
@@ -411,13 +411,13 @@
     "title": "Schedule 1 \u2013 Statement of formulas for calculating amounts to be withheld",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "f30d980725673a39c485b99f169e3d08a01e8db8da0a7e705b5c263ba75d465b",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-46e150b4ce2d",
@@ -426,13 +426,13 @@
     "title": "Previous years' tax tables",
     "last_updated": "2024-11-28T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "8dd256f520cd03d4a9ff653e7193cde18b70f6adb3d8011d1c404ecc56f35668",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-5363525d8085",
@@ -441,13 +441,13 @@
     "title": "Fringe benefits tax - historical rates and thresholds",
     "last_updated": "2026-03-31T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "71bce2378833ef1c5e340a358cef7e547bc4b480ae8eaa1c483f136a934bcac4",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-57afd51349e0",
@@ -456,13 +456,13 @@
     "title": "Payments with special rules",
     "last_updated": "2025-06-10T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "713b02155a1ef3d2399c12c667f8bade0aa7c3b99626f8abd7115345d11b641f",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-597610a477fb",
@@ -471,13 +471,13 @@
     "title": "Single Touch Payroll for intermediaries",
     "last_updated": "2019-09-30T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "660fd926b7bde2a33bc3b6588bdb3ca7b9e47b078342a9ebc7f707065720cdc9",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-5ab489240ceb",
@@ -486,13 +486,13 @@
     "title": "Schedule 2 \u2013 Tax table for individuals working in the horticultural or shearing industry",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "c907fda6edd031fe14244df3daf3a4d1c66a2928f511b096e24b7e0e602085ee",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-5c36bbe6c2cf",
@@ -501,13 +501,13 @@
     "title": "Study and training support loans weekly tax table",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "136b0f4946cca47effda639c5698bbaab1736420856e87148ddbe7b0e4f9c89e",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-5e5645e99e91",
@@ -516,13 +516,13 @@
     "title": "Schedule 14 \u2013 Tax table for additional amounts to withhold as a result of an agreement to increase withholding",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "b856b16d109f0ca80569da696fe902f3201e6ff16713a6eb57d5207f8a839513",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-5eaa95323356",
@@ -531,13 +531,13 @@
     "title": "Schedule 7 \u2013 Tax table for unused leave payments on termination of employment",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "823e0234784b381a28c55556b64bb9aac456bea44a0a7c60e337794614b6ca06",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-63190b9720f9",
@@ -546,13 +546,13 @@
     "title": "Tax table for daily and casual workers",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "a18a052803193117b51df7697ffbd143d12d2bec03bcc311a78cad43fa20bc31",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-6b2e731919a8",
@@ -561,13 +561,13 @@
     "title": "Employers of Pacific Australia Labour Mobility scheme workers",
     "last_updated": "2024-04-23T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "c52602f45a1297be41a465681ef5c0d6c83aea4690c929fa20cce13e37e2d8ce",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-6c3d86805537",
@@ -576,13 +576,13 @@
     "title": "Tax rates \u2013 Australian resident",
     "last_updated": "2026-05-31T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "7ed299a621c34a08a821a2dac3659bc29318ebc5c5ed8f07d5a2f4532a75b184",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-6e34c0da9aec",
@@ -591,13 +591,13 @@
     "title": "Single Touch Payroll for employees",
     "last_updated": "2024-09-30T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "da1168892a80d88cb709cb8d06e2c613518db118e36ee9bd948299c98ea5f99b",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-6e382c4fc68e",
@@ -606,13 +606,13 @@
     "title": "STP employer reporting guidelines",
     "last_updated": "2024-11-21T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "2c9d0d38b77cabf9bb0163bba9594fed5dd5eb046b9246b555570e7656dd1e06",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-6e573a5198b7",
@@ -621,13 +621,13 @@
     "title": "Super guarantee",
     "last_updated": "2026-04-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "95d7482180c967d92e2d674da2c14055a6d4d18539037d165379b1feb67f9dc7",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-73254309befe",
@@ -636,13 +636,13 @@
     "title": "Calculating your FBT",
     "last_updated": "2023-01-11T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "a484c7de262b55c7e63120f7cfb630ba8696b8b6523b136ea35e2db1236f3679",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-74fe5fb3d397",
@@ -651,13 +651,13 @@
     "title": "Key super rates and thresholds",
     "last_updated": "2025-08-26T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "6cbbe7d8cb2f7c9a0ace30e27d5f46b8464a61c7d4e0056488f015e2bbfc0a55",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-786324db0f1f",
@@ -666,13 +666,13 @@
     "title": "When STP reporting can cease",
     "last_updated": "2021-09-09T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "fba050f93dabfb3ed2a728290406d7940b4410d18efeaad070fba127336c05da",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-7b13b0d6a66b",
@@ -681,13 +681,13 @@
     "title": "Seasonal Worker Programme and Pacific Labour Scheme",
     "last_updated": "2025-06-10T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "aa848efa61b0f1f950880c0e1690886d4a67023e444f46e3ef50fb29ebdcc240",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-80d378541538",
@@ -696,13 +696,13 @@
     "title": "Medicare levy adjustment fortnightly tax table",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "711fedf2108c6c2e46e72a6b3ff3b8803c114641e3a3650720cf741c3a4661b2",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-87cfe2c9fbea",
@@ -711,13 +711,13 @@
     "title": "Expanding Single Touch Payroll Phase 2",
     "last_updated": "2022-12-21T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "47db7994f840065fa6a8b25b5681461b81f282b863035c0b2ffb616674f71fea",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-8a7e49216719",
@@ -730,9 +730,9 @@
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-8a9db70ba5b0",
@@ -741,13 +741,13 @@
     "title": "Start reporting",
     "last_updated": "2021-08-18T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "0e115fac48a02186d7b20b759832bff27d25c21aaef99926d4599517d209db5c",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-8c94336238a3",
@@ -756,13 +756,13 @@
     "title": "Single Touch Payroll",
     "last_updated": "2024-11-03T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "7e4c277eed071942eac4aadd4f0e5811a3174e28a2f1c720c1259429ea4314ba",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-91f8ca946fb9",
@@ -771,13 +771,13 @@
     "title": "Medicare levy adjustment monthly tax table",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "a13c9f69a25613db2291f28180ae3bc6f3b4d3c5043bbe1097c7397450a3e28f",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-92fc24b8debe",
@@ -786,13 +786,13 @@
     "title": "STP and activity statements",
     "last_updated": "2025-08-14T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "1096d4c20b7c9efb1c0b04aa8fd568bf9f7a868845a3ff0d245a659d0fbfa143",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-942af3e02aa4",
@@ -801,13 +801,13 @@
     "title": "Taxable payments reporting and contractors",
     "last_updated": "2026-05-26T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "dc57fdd1f00e973acd2a0d327c4273c10e9cfdb83af6b5afcfabbb47f1f251b1",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-978ed1ace39a",
@@ -820,9 +820,9 @@
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-9c49cfc7dcf4",
@@ -831,13 +831,13 @@
     "title": "Types of fringe benefits",
     "last_updated": "2023-01-11T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "f43d4bdaa819461da8f76c88df928418eabe66f057b9cc1b9098c6123ec2a0de",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-a10b1d19f758",
@@ -846,13 +846,13 @@
     "title": "Schedule 15 \u2013 Tax table for working holiday makers",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "eee26df42a2bd3d51c602c8780568b13d63e9775fc51bae8a9e5a6b57c3fcaa8",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-af694ad342bf",
@@ -861,13 +861,13 @@
     "title": "Taxable payments annual report (TPAR)",
     "last_updated": "2022-03-13T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "190c81a33524a58d7c788d9ef15543f9190e45bd5b113cba0d0f8595f4c715c6",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-b3e689bdf897",
@@ -876,13 +876,13 @@
     "title": "Fortnightly tax table",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "b01e7512c8f02ddf076168ef5c878f0e91ffd5ad34ddaa1add7f876b501719c0",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-b5a2adde571d",
@@ -891,13 +891,13 @@
     "title": "Need more time?",
     "last_updated": "2019-11-25T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "966e760bc7791e548894b2ae459c2f857525d744865a97df529fc7136e83e94b",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-bcc7151aacb7",
@@ -906,13 +906,13 @@
     "title": "Work out if you need to lodge a TPAR",
     "last_updated": "2024-04-22T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "4c66828f6f43f08d1ae994d5aa628349ffb2576abf8bb7140bf080861e804f99",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-be79053947b1",
@@ -921,13 +921,13 @@
     "title": "Lodge your TPAR",
     "last_updated": "2025-08-28T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "fba604a65d754942fb30b97c2c96066bc9b1217943314f7cfe71ae6146911134",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-c467804a5a59",
@@ -936,13 +936,13 @@
     "title": "How to report Single Touch Payroll data",
     "last_updated": "2023-11-04T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "834f99b73c541e4635342db60e3e20985ba6c52d4192561c18e60cbe48bbdee0",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-c4ccdee4e221",
@@ -951,13 +951,13 @@
     "title": "Schedule 13 \u2013 Tax table for superannuation income streams",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "eef4beb0e798c0c6d3b301618d8aa3b4593a87f41666aef4b5f16450a2defda6",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-c5426f4a9c08",
@@ -966,13 +966,13 @@
     "title": "STP reporting options",
     "last_updated": "2024-11-13T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "1f3a567f789f427effa9b2f3874020c65dc0b2e652df66a6524ce5bf35897b6f",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-c80218e04372",
@@ -981,13 +981,13 @@
     "title": "Schedule 8 \u2013 Statement of formulas for calculating study and training support loans components",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "93a575a59922cb9e93d66b3f6f22a92d1190286713d9156e4a00c6e8eec7255f",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-c9f71340235c",
@@ -996,13 +996,13 @@
     "title": "PAYG withholding compliance",
     "last_updated": "2025-06-10T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "65fd60f41c4c39bb8a0cf15ccac60b57d0245fd19b9b686b8b7b66afd0a868b0",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-cc9274eb2422",
@@ -1011,13 +1011,13 @@
     "title": "News, events and resources",
     "last_updated": "2024-08-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "9a9501d1ca764504795121ccd0f8f7e37b4a4c15d6caad8ff70689dfd89d4ea1",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-cd3e5d1a5c2f",
@@ -1026,13 +1026,13 @@
     "title": "PAYG withholding for deceased employees",
     "last_updated": "2025-06-10T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "122edf74d1ab9fdd26bd06abc3bc9e42c72eebbe5c3de8e38320824938188384",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-cd44254365e9",
@@ -1041,13 +1041,13 @@
     "title": "Schedule 9 \u2013 Tax table for seniors and pensioners",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "6b639644cdc2af1ead125712e0e3342e6c3b321ee8623791480a74fc7af14111",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-d23af0e37e90",
@@ -1056,13 +1056,13 @@
     "title": "PAYG withholding",
     "last_updated": "2024-06-17T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "d8aa92670f857de30a0a28f0676ca6f5703ba249b21b93205e2af46081cd01ab",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-de950c469c37",
@@ -1071,13 +1071,13 @@
     "title": "Fringe benefits tax - rates and thresholds",
     "last_updated": "2026-05-19T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "0e5b858803891c265bf9a15c66eaa639410cf7481f981887c1e4d519516f34a6",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-dfa8b8fcffee",
@@ -1086,13 +1086,13 @@
     "title": "How fringe benefits tax works",
     "last_updated": "2024-07-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "b33de20e493484a46b1bfa0a0e49bf1c5a362d4dddc4f20b606fee72f58e8c24",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-e15e34913f35",
@@ -1101,13 +1101,13 @@
     "title": "Study and training support loans monthly tax table",
     "last_updated": "2026-06-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "95df3430d7bf95bd68e9af11339b7eef89dfde3f59ad361eb0998dc188261b20",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-e2f85829f84f",
@@ -1116,13 +1116,13 @@
     "title": "Tax file number and withholding declarations",
     "last_updated": "2025-06-10T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "5018c535a5908485bb91c7d97443f7cc6582a0f28d3448e132db6544c23cb8b2",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-f35212d4e324",
@@ -1131,13 +1131,13 @@
     "title": "Salary sacrificing",
     "last_updated": "2026-04-23T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "994aff45a9d9b28f579b213a8cdb7b00f87a192efb4fb6811caa5b025034603f",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-f51e0078258c",
@@ -1146,12 +1146,12 @@
     "title": "Payroll governance for employers",
     "last_updated": "2025-10-27T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "57dbbad47ff21ed0c9c188121ae89507ed2bb3568a36ca97481035c3feef5162",
     "assigned_skill": "payg-employer",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   }
 ]

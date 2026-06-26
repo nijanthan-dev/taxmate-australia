@@ -13,7 +13,7 @@ Missing or altered evidence means `Insufficient evidence` or `Accountant review`
 
 ### Topic source coverage
 
-- ato-0fcbebd18220 from https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/occupancy-expenses (metadata_only)
-- ato-1264e41fe05e from https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/fixed-rate-method (metadata_only)
-- ato-7673258c8a9f from https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/actual-cost-method (metadata_only)
-- ato-b16c3bac20a8 from https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses (metadata_only)
+- ato-0fcbebd18220 from https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/occupancy-expenses (verified)
+- ato-1264e41fe05e from https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/fixed-rate-method (verified)
+- ato-7673258c8a9f from https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/actual-cost-method (verified)
+- ato-b16c3bac20a8 from https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses (verified)

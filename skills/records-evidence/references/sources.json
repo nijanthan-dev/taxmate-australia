@@ -6,13 +6,13 @@
     "title": "Records you need to keep",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "35da5ede36855ab5c8fada6ef1fccaba06175a8562ab935c0ea7c25c50eb0d16",
     "assigned_skill": "records-evidence",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-a0d25d13a38f",
@@ -21,27 +21,12 @@
     "title": "Documents to support and verify your claims",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "afef9c8ff051ebc0283143ba65eb1a31758cb42d5cbff32c7473107febfe7dab",
     "assigned_skill": "records-evidence",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
-  },
-  {
-    "source_id": "ato-a623fbc4a699",
-    "url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/keeping-good-investment-records",
-    "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/keeping-good-investment-records",
-    "title": "Keeping good investment records",
-    "last_updated": "2026-06-21T14:00:00.000+00:00",
-    "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
-    "assigned_skill": "records-evidence",
-    "reference": "references/rules.md",
-    "duplicate_of": "",
-    "status": "metadata_only",
-    "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   }
 ]

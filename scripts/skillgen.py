@@ -669,15 +669,39 @@ def Generate(opts: Union[Options, dict]) -> GenerationReport:
 
     coverage = BuildSourceCoverage(report_sources)
     WriteSourceCoverage(opts.output_root, coverage)
-    if opts.output_root != opts.root:
-        src = os.path.join(opts.root, "data", "ato_knowledge_base", "source_registry.json")
-        dst = os.path.join(opts.output_root, "data", "ato_knowledge_base", "source_registry.json")
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
-        shutil.copyfile(src, dst)
+    syncRegistryWithVerifiedSources(registry, report_sources)
+    writeRegistrySnapshot(opts.output_root, registry)
     err = ValidateSourceCoverage(opts.output_root)
     if err is not None:
         raise err
     return GenerationReport(generated_at=checked_at, sources=report_sources)
+
+
+def syncRegistryWithVerifiedSources(registry: atodata.SourceRegistry, sources: List[Source]) -> None:
+    by_id: Dict[str, atodata.SourceRecord] = {}
+    for rec in registry.records:
+        canonical = coverageCanonicalURL(rec.url, rec.final_url)
+        by_id[sourceID(rec.url, canonical)] = rec
+
+    for src in sources:
+        if src.status != StatusVerified or not validContentHash(src.content_hash):
+            continue
+        canonical = coverageCanonicalURL(src.url, src.final_url)
+        rec = by_id.get(sourceID(src.url, canonical))
+        if rec is None:
+            continue
+        rec.final_url = canonical
+        rec.title = src.title
+        rec.last_updated = src.last_updated
+        rec.content_hash = src.content_hash
+        rec.content_verified = True
+        rec.last_checked = src.checked_at
+
+
+def writeRegistrySnapshot(root: str, registry: atodata.SourceRegistry) -> None:
+    path = os.path.join(root, "data", "ato_knowledge_base", "source_registry.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    Path(path).write_text(json.dumps(registry.to_dict(), indent=2) + "\n", encoding="utf-8")
 
 
 def Validate(root: str) -> None:
@@ -751,8 +775,11 @@ def _build(
             content_hash = prev.content_hash.strip()
 
         preserved_verified = False
+        preserved_skill = ""
         if not content_verified and use_previous:
             if prev is not None:
+                if prev.skills:
+                    preserved_skill = prev.skills[0]
                 preserved_verified = (
                     prev.status == StatusVerified
                     and prev.canonical_url.strip() == canonical.strip()
@@ -791,22 +818,21 @@ def _build(
 
         seen_canonical[canonical] = record_id
 
-        if score == 0 or firstNonEmpty(topic_match.slug if topic_match else "") == "":
-            src.status = StatusMetadataOnly
-            src.assignment_reason = "source topic not assigned from metadata"
-        elif content_verified:
+        if content_verified and score != 0 and firstNonEmpty(topic_match.slug if topic_match else "") != "":
             src.status = StatusVerified
             src.assigned_skill = topic_match.slug
             src.assignment_reason = "topic match + verified source content"
             grouped.setdefault(topic_match.slug, []).append(src)
             if record_text != "":
                 values.setdefault(topic_match.slug, []).extend(detectValues(topic_match.slug, record_text, src))
-        elif preserved_verified:
+        elif preserved_verified and preserved_skill:
             src.status = StatusVerified
-            src.assigned_skill = topic_match.slug
-            prev = previous_by_id.get(record_id)
-            src.assignment_reason = firstNonEmpty(prev.assignment_reason if prev else "", "verified from previous coverage and unchanged hash")
-            grouped.setdefault(topic_match.slug, []).append(src)
+            src.assigned_skill = preserved_skill
+            src.assignment_reason = firstNonEmpty(prev.reason if prev else "", "verified from previous coverage and unchanged hash")
+            grouped.setdefault(preserved_skill, []).append(src)
+        elif score == 0 or firstNonEmpty(topic_match.slug if topic_match else "") == "":
+            src.status = StatusMetadataOnly
+            src.assignment_reason = "source topic not assigned from metadata"
         else:
             src.status = StatusMetadataOnly
             src.assigned_skill = topic_match.slug
@@ -1589,6 +1615,8 @@ def ValidateSourceCoverage(root: str) -> Optional[RuntimeError]:
         return RuntimeError("invalid hashes: " + ", ".join(summary.invalid_hashes[: min(3, len(summary.invalid_hashes))]))
     if len(summary.required_assignment_missing) > 0:
         return RuntimeError("required tax areas missing source assignments: " + ", ".join(summary.required_assignment_missing[: min(3, len(summary.required_assignment_missing))]))
+    if len(summary.required_verified_missing) > 0:
+        return RuntimeError("required tax areas missing verified source content: " + ", ".join(summary.required_verified_missing[: min(3, len(summary.required_verified_missing))]))
     if len(summary.volatile_missing_periods) > 0:
         return RuntimeError("volatile values missing periods: " + ", ".join(summary.volatile_missing_periods[: min(3, len(summary.volatile_missing_periods))]))
     if len(summary.skills_missing_guardrail) > 0:

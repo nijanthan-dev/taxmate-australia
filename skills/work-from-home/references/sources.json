@@ -10,9 +10,9 @@
     "assigned_skill": "work-from-home",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-1264e41fe05e",
@@ -25,9 +25,9 @@
     "assigned_skill": "work-from-home",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-7673258c8a9f",
@@ -36,13 +36,13 @@
     "title": "Actual cost method",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "7ae008d3e51c05f3384ed73cd54c726057911d6c05a1aa7ef9f87360fae94351",
     "assigned_skill": "work-from-home",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-b16c3bac20a8",
@@ -51,12 +51,12 @@
     "title": "Working from home expenses",
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "5adf1b531866e165b5dfd8548c9fdbadd5deae8ffb97bb521311ebcc86b53b36",
     "assigned_skill": "work-from-home",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   }
 ]

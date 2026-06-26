@@ -6,30 +6,23 @@ These are conservative topic summaries from official sources, not copied ATO pag
 
 ## Verified official-source content
 
-- No verified official-source summaries for this topic.
-## Metadata-only official-source links
-
 - Records you need to keep
   - Source ID: ato-93e19de11e37
   - URL: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/records-you-need-to-keep
   - Source last updated: 2026-06-07T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
-  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+  - Content hash: 35da5ede36855ab5c8fada6ef1fccaba06175a8562ab935c0ea7c25c50eb0d16
 
 - Documents to support and verify your claims
   - Source ID: ato-a0d25d13a38f
   - URL: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/records-you-need-to-keep/documents-to-support-and-verify-your-claims
   - Source last updated: 2026-06-07T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
-  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+  - Content hash: afef9c8ff051ebc0283143ba65eb1a31758cb42d5cbff32c7473107febfe7dab
 
-- Keeping good investment records
-  - Source ID: ato-a623fbc4a699
-  - URL: https://www.ato.gov.au/individuals-and-families/investments-and-assets/keeping-good-investment-records
-  - Source last updated: 2026-06-21T14:00:00.000+00:00
-  - Checked at: 2026-06-23T09:04:57Z
-  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+## Metadata-only official-source links
 
+- No metadata-only assigned sources for this topic.
 ## TaxMate conservative summary
 
 - Use official URLs plus source hashes to support treatment guidance.

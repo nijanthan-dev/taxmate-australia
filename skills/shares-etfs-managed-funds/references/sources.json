@@ -6,13 +6,13 @@
     "title": "Share investing versus share trading",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "66fd1b80052659c644e7b0cc3aa9630df70757846453d4011367209c5276e8c8",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-077808f7bbf0",
@@ -25,9 +25,9 @@
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-14fe5f00f154",
@@ -36,13 +36,13 @@
     "title": "Share buy-backs",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "86bdceedbe8537e4c09766dbb099c51e76db20f4694dd442a586c2888ca75b3f",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-23bc20060a77",
@@ -51,13 +51,13 @@
     "title": "Shares and similar investments",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "ffcae122b6be28de5d1caf5f83e8cd9a24641fef8e5318188752b9778abd9cf3",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-330a5b644c5b",
@@ -66,13 +66,13 @@
     "title": "Obtaining shares",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "ac86f97242940e5d1ac8cf60aad1e1ea6b2b8e56bc7d16713a46c7b6e50535f1",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-38dc7d86de55",
@@ -81,13 +81,13 @@
     "title": "Dividend reinvestment plans",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "e1f22b1c034bd2df093259e61c0e952c800f32c1b3ed177f1424829e1e8e2f30",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-4c6c7ee85a4b",
@@ -96,13 +96,28 @@
     "title": "Investing in bank accounts and income bonds",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "b867c472e8c5a6feccfa8327fa206823e4add4213994ea9c4e2f2201b8ceed09",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
+  },
+  {
+    "source_id": "ato-4d772bdf4492",
+    "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/investment-income",
+    "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/investment-income",
+    "title": "Investment income",
+    "last_updated": "2026-06-07T14:00:00.000+00:00",
+    "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "0e6cc3e1f9173f88bb4acff215b7738c84d6d9daed791793f862bee43d074c83",
+    "assigned_skill": "shares-etfs-managed-funds",
+    "reference": "references/rules.md",
+    "duplicate_of": "",
+    "status": "verified",
+    "reason": "",
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-5015e6c89c28",
@@ -115,9 +130,9 @@
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-64b2bb4a43aa",
@@ -126,13 +141,13 @@
     "title": "Demergers CGT rollover for shareholders and unit holders",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "eaba7c073ec60e817fc746a6b9b046c26ee7818c64e6665f3c0ef4f040a1f452",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-78a333d5f41d",
@@ -141,13 +156,13 @@
     "title": "Shares, funds and trusts",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "fbd45465a518ca9181461c61b7344500cf77a45b5f03bd72f6a5de38bcd3b965",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-891530affa3a",
@@ -160,9 +175,9 @@
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-9457984c1cce",
@@ -171,13 +186,13 @@
     "title": "Keeping records of shares and units",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "170153a71baa6a0ddf7df15c793f5d1f17e1e3b022aada401bb57b058ec03eb2",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-9596a9c387eb",
@@ -186,13 +201,13 @@
     "title": "Owning shares",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "9b21a9cd4ba10bc2b836216d31f303eb1d5c7b62c7a702b565e4cfede744d63f",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-95b333040444",
@@ -201,13 +216,13 @@
     "title": "When you can claim losses on shares and units",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "c616dbac92a86919d06a194c0ccd22d348f6a4a6b9832af9924b8f66102c51c5",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-af754927effa",
@@ -216,13 +231,28 @@
     "title": "Refund of franking credits for individuals",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "8ff739ef54cd2ddc1ebff3f4924ea9f4b981c8c7f3b4255a724077751ff5c7b4",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
+  },
+  {
+    "source_id": "ato-b95d541cfb0d",
+    "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/your-income-if-you-are-under-18-years-old",
+    "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/your-income-if-you-are-under-18-years-old",
+    "title": "Your income if you are under 18 years old",
+    "last_updated": "2026-06-07T14:00:00.000+00:00",
+    "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "dffc871530b66ae45cd78f4522b2919bf225356b1ab6db28730248aed0b58352",
+    "assigned_skill": "shares-etfs-managed-funds",
+    "reference": "references/rules.md",
+    "duplicate_of": "",
+    "status": "verified",
+    "reason": "",
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-c903b4c64ae8",
@@ -231,13 +261,13 @@
     "title": "When CGT applies to shares and units",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "e8772b8af14fe96c037a34b2bb8d9c4e5967ee9237654a1413f8e6401b21c385",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-cba415d9732a",
@@ -250,9 +280,9 @@
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-cd2dcef7d84d",
@@ -261,13 +291,13 @@
     "title": "Investing in shares",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "1c1468dcdd36de9152adb769384e838b0c0f7fbe640cd37ce848891548f86c6f",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   },
   {
     "source_id": "ato-d06342555e0a",
@@ -276,12 +306,12 @@
     "title": "Children's share investments",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
-    "content_hash": "",
+    "content_hash": "a714d687f524e91ac8bff31ade66d586be5edd80fb82e42bf6b6373b4408c562",
     "assigned_skill": "shares-etfs-managed-funds",
     "reference": "references/rules.md",
     "duplicate_of": "",
-    "status": "metadata_only",
+    "status": "verified",
     "reason": "",
-    "assignment_reason": "matched topic metadata; source content not extracted"
+    "assignment_reason": "topic match + verified source content"
   }
 ]
