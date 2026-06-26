@@ -740,10 +740,17 @@ def _build(
         content_hash = record_hash
         if text_hash != "":
             content_hash = text_hash
+        prev = previous_by_id.get(record_id) if use_previous else None
+        if (
+            not validContentHash(content_hash)
+            and prev is not None
+            and prev.canonical_url.strip() == canonical.strip()
+            and validContentHash(prev.content_hash)
+        ):
+            content_hash = prev.content_hash.strip()
 
         preserved_verified = False
         if not content_verified and use_previous:
-            prev = previous_by_id.get(record_id)
             if prev is not None:
                 preserved_verified = (
                     prev.status == StatusVerified
@@ -1123,23 +1130,28 @@ def currentValueMatchesSource(value: ValueFact, sources: List[Source]) -> bool:
         source_urls = {canonicalURL(src.url), canonicalURL(src.final_url)}
         if value_url not in source_urls:
             continue
-        if value.content_hash != src.content_hash:
-            continue
-        return True
+        if value.content_hash == src.content_hash or (
+            validContentHash(value.content_hash) and not validContentHash(src.content_hash)
+        ):
+            return True
     return False
 
 
 def preserveScaleWord(value: ValueFact) -> ValueFact:
     if "$" not in value.value:
         return value
-    normal_value = normalizeSpace(value.value)
+    normal_value = normalizeCurrencyValue(value.value)
+    value.value = normal_value
     if re.search(r"(?i)\b" + SCALE_WORDS_RE + r"\b", normal_value):
-        value.value = normal_value
         return value
     match = re.search(re.escape(normal_value) + r"\s+" + SCALE_WORDS_RE + r"\b", normalizeSpace(value.context), flags=re.IGNORECASE)
     if match:
         value.value = match.group(0)
     return value
+
+
+def normalizeCurrencyValue(value: str) -> str:
+    return normalizeSpace(value).rstrip(".,;:")
 
 
 def filterValuesWithPeriods(values: List[ValueFact]) -> List[ValueFact]:
