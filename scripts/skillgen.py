@@ -9,6 +9,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from urllib.parse import urlparse
@@ -1783,18 +1784,52 @@ def requiredSourceArtifacts(root: str) -> List[str]:
 
 
 def trackedGeneratedArtifacts(root: str) -> List[str]:
-    out = set(requiredSourceArtifacts(root))
-    for skill in requiredSkillSlugs():
-        skill_path = os.path.join(root, "skills", skill, "SKILL.md")
-        if os.path.exists(skill_path):
-            out.add(os.path.join("skills", skill, "SKILL.md"))
-        references = os.path.join(root, "skills", skill, "references")
-        if not os.path.isdir(references):
-            continue
-        for dir_path, _, names in os.walk(references):
-            for name in sorted(names):
-                out.add(os.path.relpath(os.path.join(dir_path, name), root))
-    return sorted(out)
+    tracked = gitTrackedGeneratedArtifacts(root)
+    if tracked:
+        return tracked
+    return requiredSourceArtifacts(root)
+
+
+def gitTrackedGeneratedArtifacts(root: str) -> List[str]:
+    try:
+        proc = subprocess.run(
+            [
+                "git",
+                "-C",
+                root,
+                "ls-files",
+                "-z",
+                "--",
+                "skills",
+                os.path.join("data", "ato_knowledge_base", SOURCE_COVERAGE_FILE),
+            ],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        return []
+    if proc.returncode != 0:
+        return []
+    out = []
+    for rel in proc.stdout.decode("utf-8", errors="ignore").split("\0"):
+        if rel and isGeneratedArtifactPath(rel):
+            out.append(rel)
+    return sorted(set(out))
+
+
+def isGeneratedArtifactPath(rel: str) -> bool:
+    rel = rel.replace("\\", "/")
+    if rel == f"data/ato_knowledge_base/{SOURCE_COVERAGE_FILE}":
+        return True
+    if rel in ["skills/workbook/references/topic-inputs.md", "skills/taxpack/references/topic-inputs.md"]:
+        return True
+    parts = rel.split("/")
+    if len(parts) < 3 or parts[0] != "skills" or parts[1] not in requiredSkillSlugs():
+        return False
+    if len(parts) == 3 and parts[2] == "SKILL.md":
+        return True
+    return len(parts) >= 4 and parts[2] == "references"
 
 
 def CompareGeneratedArtifacts(root: str, generated_root: str) -> Optional[RuntimeError]:

@@ -105,6 +105,16 @@ MODIFIED_RE = re.compile(r'dcterms\.modified" content="[^;]+;\s*([^"]+)"')
 UPDATED_RE = re.compile(r"Last updated\s+([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4})")
 HREF_RE = re.compile(r"(?i)href=['\"]([^'\"]+)['\"]")
 TERM_RE = re.compile(r"[^a-z0-9]+")
+GENERIC_QUERY_TERMS = {
+    "and",
+    "ato",
+    "for",
+    "not",
+    "tax",
+    "the",
+    "you",
+    "your",
+}
 
 
 @dataclass
@@ -520,7 +530,7 @@ def record_text(root: str, rec: SourceRecord) -> str:
 
 
 def terms(query: str) -> List[str]:
-    return [term for term in TERM_RE.split(query.lower()) if len(term) > 2]
+    return [term for term in TERM_RE.split(query.lower()) if len(term) > 2 and term not in GENERIC_QUERY_TERMS]
 
 
 def query_score(root: str, rec: SourceRecord, query: str) -> int:
@@ -552,7 +562,7 @@ def select_by_query(root: str, records: List[SourceRecord], query: str, limit: i
     scored = []
     for rec in records:
         score = query_score(root, rec, query)
-        if score > 0:
+        if score >= 15:
             scored.append((score, rec))
     scored.sort(key=lambda item: item[0], reverse=True)
     if limit <= 0 or limit > len(scored):

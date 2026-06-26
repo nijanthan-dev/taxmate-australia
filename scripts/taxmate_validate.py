@@ -94,6 +94,7 @@ def validate(root: str) -> Tuple[Dict[str, Any], bool]:
     add("stale_cache_text_does_not_verify_source", stale_cache_text_does_not_verify_source(root), "")
     add("stale_current_values_detected", stale_current_values_detected(root), "")
     add("stale_generated_reference_detected", stale_generated_reference_detected(root), "")
+    add("untracked_generated_reference_ignored", untracked_generated_reference_ignored(root), "")
     add_runtime_binary_checks(root, add, registry)
 
     return finish(root, checks, registry, True)
@@ -932,7 +933,32 @@ def stale_generated_reference_detected(root: str) -> bool:
     try:
         copy_generated_check_inputs(root, expected_root, generated_root)
         Path(os.path.join(expected_root, stale_rel)).write_text("stale generated reference\n", encoding="utf-8")
+        init_git_index(expected_root, ["skills", os.path.join("data", "ato_knowledge_base", skillgen.SOURCE_COVERAGE_FILE)])
         return skillgen.CompareGeneratedArtifacts(expected_root, generated_root) is not None
+    except Exception:
+        return False
+    finally:
+        shutil.rmtree(expected_root, ignore_errors=True)
+        shutil.rmtree(generated_root, ignore_errors=True)
+
+
+def untracked_generated_reference_ignored(root: str) -> bool:
+    import shutil
+
+    expected_root = tempfile.mkdtemp(prefix="taxmate-validate-untracked-reference-expected-")
+    generated_root = tempfile.mkdtemp(prefix="taxmate-validate-untracked-reference-generated-")
+    scratch_rel = os.path.join("skills", required_topics()[0], "references", "scratch.md")
+    try:
+        copy_generated_check_inputs(root, expected_root, generated_root)
+        Path(os.path.join(expected_root, scratch_rel)).write_text("local scratch\n", encoding="utf-8")
+        init_git_index(expected_root, ["skills", os.path.join("data", "ato_knowledge_base", skillgen.SOURCE_COVERAGE_FILE)])
+        subprocess.run(
+            ["git", "-C", expected_root, "reset", "-q", "--", scratch_rel],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        return skillgen.CompareGeneratedArtifacts(expected_root, generated_root) is None
     except Exception:
         return False
     finally:
@@ -945,6 +971,21 @@ def copy_generated_check_inputs(root: str, expected_root: str, generated_root: s
     atodata.CopyDir(os.path.join(root, "data", "ato_knowledge_base"), os.path.join(expected_root, "data", "ato_knowledge_base"))
     atodata.CopyDir(os.path.join(expected_root, "skills"), os.path.join(generated_root, "skills"))
     atodata.CopyDir(os.path.join(expected_root, "data", "ato_knowledge_base"), os.path.join(generated_root, "data", "ato_knowledge_base"))
+
+
+def init_git_index(root: str, paths: List[str]) -> None:
+    subprocess.run(
+        ["git", "-C", root, "init", "-q"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    subprocess.run(
+        ["git", "-C", root, "add", "--", *paths],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
 
 
 def write_stale_current_values(path: str) -> None:
@@ -1322,7 +1363,7 @@ def refresh_query_no_match_is_read_only(root: str) -> bool:
     err = io.StringIO()
     try:
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            code = taxmate_refresh.run(["--query", "zzzxqvnomatchtoken"])
+            code = taxmate_refresh.run(["--query", "zzzz-not-a-topic"])
         if code != 0:
             return False
         payload = json.loads(out.getvalue())
