@@ -32,7 +32,7 @@ Skills must not hardcode rates, thresholds, caps, due dates, or similar volatile
 
 If a value is stale, unavailable, conflicting, or wrong-year, classify the matter as `Accountant review`.
 
-When `.cache/ato/text/` is unavailable, generation may preserve existing `current-values.json` entries only if their source URL and content hash match an assigned source. Refresh preserved value title, last-updated, and checked-at metadata from the current source row; do not accept a valid value hash against a blank source hash. `skills generate --check` must compare both generated and tracked generated files so stale tracked references fail the check.
+When `.cache/ato/text/` is unavailable, generation may preserve existing `current-values.json` entries only if their source URL and content hash match an assigned verified source. Refresh preserved value title, last-updated, and checked-at metadata from the current source row; do not accept a valid value hash against a blank source hash or a metadata-only source. `skills generate --check` must compare both generated and tracked generated files so stale tracked references fail the check.
 
 ## Empty-content provenance
 

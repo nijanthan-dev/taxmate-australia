@@ -19,7 +19,7 @@ def command_root() -> str:
 
 
 def run(argv: List[str]) -> int:
-    parser = argparse.ArgumentParser(description="Refresh TaxMate source registry")
+    parser = argparse.ArgumentParser(prog="./scripts/taxmate refresh", description="Refresh TaxMate source registry")
     parser.add_argument("--query", default="", help="Refresh indexed pages matching a topic query.")
     parser.add_argument("--all", action="store_true", help="Refresh all indexed pages.")
     parser.add_argument("--recrawl", action="store_true", help="Rebuild scoped ATO source pack from seed URLs.")

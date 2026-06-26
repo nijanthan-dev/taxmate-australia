@@ -9,6 +9,7 @@ import hashlib
 import io
 import json
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -267,6 +268,9 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("calc_rejects_non_finite_numbers", calc_rejects_non_finite_numbers(), "")
     add("finance_csv_rejects_non_finite_numbers", finance_csv_rejects_non_finite_numbers(), "")
     add("refresh_errors_use_python_formatting", refresh_errors_use_python_formatting(root), "")
+    add("wrapper_help_uses_public_commands", wrapper_help_uses_public_commands(root), "")
+    bash5_hits = stale_bash5_prereq_hits(root)
+    add("docs_no_stale_bash5_requirement", len(bash5_hits) == 0, "; ".join(bash5_hits))
     add("refresh_query_no_match_is_read_only", refresh_query_no_match_is_read_only(root), "")
     add("skills_refresh_unknown_topic_is_noop", skills_refresh_unknown_topic_is_noop(root), "")
     add("finance_record_rows_classify_before_income", finance_record_rows_classify_before_income(), "")
@@ -816,6 +820,8 @@ def go_tooling_scan_files() -> List[str]:
         "README.md",
         os.path.join("docs", "DEVELOPMENT.md"),
         os.path.join("docs", "FULL_PLUGIN_INSTALL.md"),
+        os.path.join(".github", "workflows", "ci.yml"),
+        os.path.join(".github", "workflows", "release.yml"),
         os.path.join(".github", "dependabot.yml"),
         os.path.join(".github", "dependabot.yaml"),
     ]
@@ -1019,6 +1025,36 @@ def finance_csv_rejects_non_finite_numbers() -> bool:
 def refresh_errors_use_python_formatting(root: str) -> bool:
     text = read_text(os.path.join(root, "scripts", "taxmate_refresh.py"))
     return '"%v"' not in text and "'%v'" not in text
+
+
+def wrapper_help_uses_public_commands(root: str) -> bool:
+    script = os.path.join(root, "scripts", "taxmate")
+    commands = [
+        [script, "--help"],
+        [script, "finance", "--help"],
+        [script, "refresh", "--help"],
+        [script, "skills", "--help"],
+        [script, "skills", "audit", "--help"],
+        [script, "calc", "payg", "--help"],
+    ]
+    for command in commands:
+        try:
+            proc = subprocess.run(command, cwd=root, text=True, capture_output=True, timeout=10)
+        except Exception:
+            return False
+        help_text = proc.stdout + proc.stderr
+        if proc.returncode != 0 or "taxmate_" in help_text or ".py" in help_text:
+            return False
+        if "./scripts/taxmate" not in help_text:
+            return False
+    return True
+
+
+def stale_bash5_prereq_hits(root: str) -> List[str]:
+    hits: List[str] = []
+    for rel in ["README.md", os.path.join("docs", "DEVELOPMENT.md"), os.path.join("docs", "FULL_PLUGIN_INSTALL.md")]:
+        hits.extend(text_hits(root, rel, ["bash 5", "bash 5+"]))
+    return hits
 
 
 def refresh_query_no_match_is_read_only(root: str) -> bool:

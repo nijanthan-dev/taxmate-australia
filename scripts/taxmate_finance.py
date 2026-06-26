@@ -791,7 +791,7 @@ def escape_md(value: str) -> str:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="TaxMate Australia finance review.")
+    parser = argparse.ArgumentParser(prog="./scripts/taxmate finance", description="TaxMate Australia finance review.")
     parser.add_argument("--input", required=False, help="CSV file of expenses, income, investments, GST, super, or private-health records.")
     parser.add_argument("--format", default="json", help="Output format: json or markdown.")
     parser.add_argument("--mode", default=ModeStrict, help="Analysis mode: strict, assisted, or review.")

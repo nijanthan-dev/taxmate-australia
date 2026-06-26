@@ -6,7 +6,7 @@ Contributor prerequisites:
 - Git.
 - curl.
 - jq.
-- Bash 5+.
+- Bash.
 - Python 3.9+.
 
 Core plugin checks:

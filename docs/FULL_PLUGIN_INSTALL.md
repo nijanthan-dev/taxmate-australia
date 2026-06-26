@@ -5,7 +5,7 @@ Use this runtime path for the full TaxMate product experience: live ATO source r
 Prerequisites:
 
 - Node.js 20+ for full-runtime bootstrap and packaging checks.
-- Bash 5+.
+- Bash.
 - Python 3.9+.
 - Git.
 - curl.

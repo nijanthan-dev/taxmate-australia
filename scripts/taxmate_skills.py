@@ -137,23 +137,23 @@ def _audit(root: str, output: str, fmt: str, check_only: bool) -> int:
 
 
 def run(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description="TaxMate skills command")
+    parser = argparse.ArgumentParser(prog="./scripts/taxmate skills", description="TaxMate skills command")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    gen = sub.add_parser("generate")
+    gen = sub.add_parser("generate", prog="./scripts/taxmate skills generate")
     gen.add_argument("--checked-at", dest="checked_at", default="", help="verification timestamp")
     gen.add_argument("--check", action="store_true", help="validate generated output without writing tracked files")
 
-    refresh = sub.add_parser("refresh")
+    refresh = sub.add_parser("refresh", prog="./scripts/taxmate skills refresh")
     refresh.add_argument("--topic", default="", help="topic slug")
     refresh.add_argument("--all", action="store_true", help="refresh all generated source URLs")
 
-    audit = sub.add_parser("audit")
+    audit = sub.add_parser("audit", prog="./scripts/taxmate skills audit")
     audit.add_argument("--format", default="markdown", choices=("markdown", "json"), help="output format")
     audit.add_argument("--output", default="", help="optional output path")
     audit.add_argument("--check", action="store_true", help="validate coverage and exit non-zero on failure")
 
-    sub.add_parser("validate")
+    sub.add_parser("validate", prog="./scripts/taxmate skills validate")
 
     if argv is None:
         import sys

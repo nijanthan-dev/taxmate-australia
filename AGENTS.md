@@ -9,7 +9,7 @@
 - Public plugin metadata must describe the bash+Python runtime, not a Go backend.
 - Do not reintroduce Go source, Go modules, Go commands, Go build/test docs, or `gomod` automation.
 - Do not add Go tooling to devcontainers, CI, dependency automation, or contributor docs unless a Go manifest is restored.
-- Validation must scan plugin metadata for stale Go runtime claims, not only toolchain commands.
+- Validation must scan plugin metadata and GitHub workflows for stale Go runtime/tooling claims, not only devcontainer commands.
 - Dependency automation must match committed manifests. Remove stale ecosystem entries when their manifest is removed.
 - Plugin locks and wrapper fallback paths must resolve to tracked `SKILL.md` files.
 - Publication checks must fail when `plugin.lock.json` omits packaged skills or points at stale paths.
@@ -20,8 +20,9 @@
 - Do not reintroduce migration artifacts, `source_index`, `source_manifest`, committed raw snapshots, or `data/ato_knowledge_base/text`.
 - Treat refreshed source text as ignored cache under `.cache/ato/text/`.
 - Generated topic skills must keep source workflow, anti-overclaim rules, current-value provenance, and `Accountant review` flags.
-- Preserved `current-values.json` entries must match an assigned source URL and content hash, and must be refreshed to the current source title, last-updated date, and checked-at date.
-- Do not preserve a current value by accepting a valid value hash against a blank source hash.
+- Preserved `current-values.json` entries must match an assigned verified source URL and content hash, and must be refreshed to the current source title, last-updated date, and checked-at date.
+- Do not preserve a current value from metadata-only sources or by accepting a valid value hash against a blank source hash.
+- Wrapper help must show `./scripts/taxmate ...` commands, not internal `taxmate_*.py` script names.
 - Update generated topic skills through `scripts/skillgen.py`, then regenerate. Do not hand-edit generated `skills/<topic>/SKILL.md`.
 - `skills generate --check` must fail on stale tracked generated artifacts, including files absent from fresh output.
 - Generated-artifact checks must enumerate tracked `skills/<topic>/SKILL.md` and `skills/<topic>/references/*`, not only hard-coded expected files.

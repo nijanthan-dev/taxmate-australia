@@ -48,7 +48,7 @@ def _dispatch(command: str, args: List[str]) -> int:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run full-runtime TaxMate Australia commands.")
+    parser = argparse.ArgumentParser(prog="./scripts/taxmate", description="Run full-runtime TaxMate Australia commands.")
     parser.add_argument("command", choices=sorted(COMMANDS))
     parser.add_argument("args", nargs=argparse.REMAINDER)
     return parser

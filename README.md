@@ -21,7 +21,7 @@ Primary install is the full plugin runtime (full feature set, CI-safe source pip
 Prerequisites:
 
 - Node.js 20 or newer.
-- Bash 5+, Python 3.9+, Git, curl, and jq.
+- Bash, Python 3.9+, Git, curl, and jq.
 - Codex for plugin-oriented workflows.
 
 - Clone and wire locally:

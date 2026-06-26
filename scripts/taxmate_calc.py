@@ -312,40 +312,36 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 2
 
     parser = argparse.ArgumentParser(prog=f"./scripts/taxmate calc {tool}", add_help=True)
+    tool_args = argv[1:]
 
     if tool == "bas":
-        parser.add_argument("tool")
         parser.add_argument("--gst-collected", type=finite_float, default=0)
         parser.add_argument("--gst-credits", type=finite_float, default=0)
         parser.add_argument("--payg-withheld", type=finite_float, default=0)
         parser.add_argument("--fuel-tax-credit", type=finite_float, default=0)
         parser.add_argument("--adjustments", type=finite_float, default=0)
-        args = parser.parse_args(argv)
+        args = parser.parse_args(tool_args)
         result = bas(args.gst_collected, args.gst_credits, args.payg_withheld, args.fuel_tax_credit, args.adjustments)
     elif tool == "super":
-        parser.add_argument("tool")
         parser.add_argument("--ote", type=finite_float, default=0)
         parser.add_argument("--rate", type=finite_float, default=0)
-        args = parser.parse_args(argv)
+        args = parser.parse_args(tool_args)
         result = super_guarantee(args.ote, args.rate)
     elif tool == "fbt":
-        parser.add_argument("tool")
         parser.add_argument("--taxable-value", type=finite_float, default=0)
         parser.add_argument("--type", default="type2")
-        args = parser.parse_args(argv)
+        args = parser.parse_args(tool_args)
         result = fbt(args.taxable_value, args.type)
     elif tool == "cgt":
-        parser.add_argument("tool")
         parser.add_argument("--proceeds", type=finite_float, default=0)
         parser.add_argument("--cost-base", type=finite_float, default=0)
         parser.add_argument("--capital-losses", type=finite_float, default=0)
         parser.add_argument("--acquired", default="")
         parser.add_argument("--disposed", default="")
         parser.add_argument("--discount", action="store_true")
-        args = parser.parse_args(argv)
+        args = parser.parse_args(tool_args)
         result = cgt(args.proceeds, args.cost_base, args.capital_losses, args.acquired, args.disposed, args.discount)
     elif tool == "payg":
-        parser.add_argument("tool")
         parser.add_argument("--gross-pay", type=finite_float, default=0)
         parser.add_argument("--periods", type=int, default=52)
         parser.add_argument(
@@ -357,13 +353,12 @@ def main(argv: Optional[List[str]] = None) -> int:
             metavar="(true|false)",
         )
         parser.add_argument("--medicare", action="store_true")
-        args = parser.parse_args(argv)
+        args = parser.parse_args(tool_args)
         result = payg_estimate(args.gross_pay, args.periods, args.tax_free_threshold, args.medicare)
     else:  # stamp-duty
-        parser.add_argument("tool")
         parser.add_argument("--state", default="")
         parser.add_argument("--value", type=finite_float, default=0)
-        args = parser.parse_args(argv)
+        args = parser.parse_args(tool_args)
         result = stamp_duty_router(args.state, args.value)
 
     write_json(result, sys.stdout)

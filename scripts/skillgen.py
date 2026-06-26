@@ -720,7 +720,6 @@ def _build(
     if use_previous and previous is not None:
         for entry in previous.sources:
             previous_by_id[entry.source_id] = entry
-    previous_value_hashes = previousCurrentValueHashes(root)
 
     sources: List[Source] = []
     grouped: Dict[str, List[Source]] = {}
@@ -743,10 +742,6 @@ def _build(
         if text_hash != "":
             content_hash = text_hash
         prev = previous_by_id.get(record_id) if use_previous else None
-        if not validContentHash(content_hash):
-            preserved_value_hash = previous_value_hashes.get((topic_match.slug, canonical), "")
-            if validContentHash(preserved_value_hash):
-                content_hash = preserved_value_hash
         if (
             not validContentHash(content_hash)
             and prev is not None
@@ -1136,6 +1131,8 @@ def currentValueMatchesSource(value: ValueFact, sources: List[Source]) -> bool:
 def matchingCurrentValueSource(value: ValueFact, sources: List[Source]) -> Optional[Source]:
     value_url = canonicalURL(value.source_url)
     for src in sources:
+        if src.status != StatusVerified:
+            continue
         source_urls = {canonicalURL(src.url), canonicalURL(src.final_url)}
         if value_url not in source_urls:
             continue
@@ -1166,24 +1163,6 @@ def currentValueMetadataMatchesSource(value: ValueFact, sources: List[Source]) -
         and value.last_updated == src.last_updated
         and value.checked_at == src.checked_at
     )
-
-
-def previousCurrentValueHashes(root: str) -> Dict[tuple[str, str], str]:
-    out: Dict[tuple[str, str], str] = {}
-    for topic_obj in Topics():
-        path = os.path.join(root, "skills", topic_obj.slug, "references", "current-values.json")
-        try:
-            raw = json.loads(Path(path).read_text(encoding="utf-8"))
-        except Exception:
-            continue
-        for item in raw:
-            value = value_from_json(item)
-            if not validContentHash(value.content_hash) or not value.source_url:
-                continue
-            key = (topic_obj.slug, canonicalURL(value.source_url))
-            if key not in out:
-                out[key] = value.content_hash.strip()
-    return out
 
 
 def preserveScaleWord(value: ValueFact) -> ValueFact:
