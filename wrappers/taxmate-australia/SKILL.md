@@ -18,7 +18,7 @@ export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(cd "$(dirname "$0")/.
 Read:
 
 ```bash
-"$TAXMATE_AUSTRALIA_ROOT/skills/research/SKILL.md"
+"$TAXMATE_AUSTRALIA_ROOT/runtime/skills/research/SKILL.md"
 ```
 
 Follow that skill exactly. This wrapper exists for Codex installations that load `~/.agents/skills` before local plugin-cache skills.

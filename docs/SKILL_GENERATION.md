@@ -3,7 +3,7 @@
 TaxMate Australia uses a bash+python runtime pipeline to turn approved Australian government sources into concise topic skills.
 
 Do not reintroduce Go tooling, `go.mod`, `gomod` Dependabot entries, migration artifacts, `source_index`, `source_manifest`, or committed raw source text.
-Public plugin metadata must describe the bash+Python runtime and must not claim a shared Go backend.
+Public plugin metadata must describe the bash+Python runtime and must not mention removed backend architectures.
 
 ## Pipeline
 

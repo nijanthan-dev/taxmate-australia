@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
 import io
 import json
 import os
@@ -179,6 +180,8 @@ def add_skill_and_documentation_checks(
     add("wrappers_mark_local_fallback", wrappers_mark_local_fallback(root), "")
     add("wrapper_frontmatter_names", wrapper_frontmatter_names_match_path(root), "")
     add("wrapper_invocations_use_australia_prefix", wrapper_invocations_use_australia_prefix(root), "")
+    add("plugin_lock_skill_paths_exist", plugin_lock_skill_paths_exist(root), "")
+    add("wrapper_fallback_skill_paths_exist", wrapper_fallback_skill_paths_exist(root), "")
 
 
 def add_public_disclaimer_checks(add, text: str) -> None:
@@ -199,11 +202,8 @@ def add_source_coverage_checks(
     data_dir = atodata.DataDir(root)
     add("source_coverage_matches_registry", len(coverage.sources) == len(registry.records), "")
 
-    try:
-        skillgen.ValidateSourceCoverage(root)
-        add("source_coverage_statuses_valid", True, "")
-    except Exception as exc:
-        add("source_coverage_statuses_valid", False, str(exc))
+    status_err = skillgen.ValidateSourceCoverage(root)
+    add("source_coverage_statuses_valid", status_err is None, "" if status_err is None else str(status_err))
 
     add("verified_sources_have_content_hash", all_verified_sources_have_hash(coverage), "")
     add("metadata_only_sources_not_claimed_as_verified", not metadata_only_marked_as_verified(root, coverage), "")
@@ -256,10 +256,12 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("audit_json_stdout_single_document", audit_json_stdout_single_document(root), "")
     add("audit_cgt_counts_metadata_assignments", audit_cgt_counts_metadata_assignments(root), "")
     add("audit_check_fails_missing_required_assignments", audit_check_fails_missing_required_assignments(root), "")
+    add("source_coverage_status_check_consumes_return_error", source_coverage_status_check_consumes_return_error(root), "")
     add("save_registry_stamps_refreshed_at", save_registry_stamps_refreshed_at(), "")
     add("fetch_http_error_preserves_status", fetch_http_error_preserves_status(), "")
     add("finance_csv_trims_leading_space", finance_csv_trims_leading_space(), "")
     add("refresh_errors_use_python_formatting", refresh_errors_use_python_formatting(root), "")
+    add("skills_refresh_unknown_topic_is_noop", skills_refresh_unknown_topic_is_noop(root), "")
     add("validate_json_uses_check_field", validate_json_uses_check_field(), "")
     add("recrawl_link_host_filter_strict", recrawl_link_host_filter_strict(), "")
     add("super_seed_matches_registry", super_seed_matches_registry(registry), "")
@@ -443,6 +445,72 @@ def wrapper_invocations_use_australia_prefix(root: str) -> bool:
     for path in find_by_suffix(os.path.join(root, "wrappers"), "SKILL.md"):
         text = read_text(path)
         if "$taxmate-au:" in text or "$taxmate-australia:" not in text:
+            return False
+    return True
+
+
+def plugin_lock_skill_paths_exist(root: str) -> bool:
+    try:
+        payload = json.loads(Path(os.path.join(root, "plugin.lock.json")).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    skills = payload.get("skills")
+    if not isinstance(skills, list) or not skills:
+        return False
+    for skill in skills:
+        if not isinstance(skill, dict):
+            return False
+        source = skill.get("source")
+        if not isinstance(source, dict):
+            return False
+        paths = [skill.get("vendoredPath"), source.get("path")]
+        for rel in paths:
+            if not isinstance(rel, str) or not file_exists(os.path.join(root, rel, "SKILL.md")):
+                return False
+        vendored_path = skill.get("vendoredPath")
+        integrity = skill.get("integrity")
+        if not isinstance(vendored_path, str) or not isinstance(integrity, str):
+            return False
+        body = Path(os.path.join(root, vendored_path, "SKILL.md")).read_bytes()
+        if integrity != "sha256:" + hashlib.sha256(body).hexdigest():
+            return False
+    expected = expected_plugin_lock_paths(root)
+    actual = sorted(skill.get("vendoredPath") for skill in skills if isinstance(skill.get("vendoredPath"), str))
+    if expected != actual:
+        return False
+    return True
+
+
+def expected_plugin_lock_paths(root: str) -> List[str]:
+    try:
+        public_manifest = json.loads(Path(os.path.join(root, "config", "public-skills.json")).read_text(encoding="utf-8"))
+        packaging = json.loads(Path(os.path.join(root, "config", "skill-packaging.json")).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    public_paths = [os.path.join("skills", item) for item in public_manifest.get("portableSkills", []) if isinstance(item, str)]
+    runtime_paths = [
+        item
+        for item in packaging.get("runtimeOnlyPaths", [])
+        if isinstance(item, str) and item.startswith("runtime/skills/")
+    ]
+    return sorted(public_paths + runtime_paths)
+
+
+def wrapper_fallback_skill_paths_exist(root: str) -> bool:
+    wrappers = find_by_suffix(os.path.join(root, "wrappers"), "SKILL.md")
+    if len(wrappers) == 0:
+        return False
+    for path in wrappers:
+        found = False
+        for line in read_text(path).splitlines():
+            marker = "$TAXMATE_AUSTRALIA_ROOT/"
+            if marker not in line or not line.strip().endswith('/SKILL.md"'):
+                continue
+            rel = line.split(marker, 1)[1].split('"', 1)[0]
+            if not file_exists(os.path.join(root, rel)):
+                return False
+            found = True
+        if not found:
             return False
     return True
 
@@ -858,6 +926,36 @@ def audit_check_fails_missing_required_assignments(root: str) -> bool:
         shutil.rmtree(work_root, ignore_errors=True)
 
 
+def source_coverage_status_check_consumes_return_error(root: str) -> bool:
+    import shutil
+
+    work_root = tempfile.mkdtemp(prefix="taxmate-validate-coverage-status-")
+    try:
+        atodata.CopyDir(os.path.join(root, "skills"), os.path.join(work_root, "skills"))
+        atodata.CopyDir(os.path.join(root, "data", "ato_knowledge_base"), os.path.join(work_root, "data", "ato_knowledge_base"))
+        path = os.path.join(work_root, "data", "ato_knowledge_base", skillgen.SOURCE_COVERAGE_FILE)
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        payload["sources"] = payload.get("sources", [])[1:]
+        Path(path).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+        registry = atodata.LoadRegistry(work_root)
+        coverage = skillgen.LoadSourceCoverage(work_root)
+        checks: List[Dict[str, Any]] = []
+        add_source_coverage_checks(
+            work_root,
+            lambda name, passed, detail: checks.append({"check": name, "passed": passed, "detail": detail}),
+            registry,
+            coverage,
+            None,
+        )
+        status = next((check for check in checks if check["check"] == "source_coverage_statuses_valid"), None)
+        return status is not None and status["passed"] is False and "does not match registry count" in status["detail"]
+    except Exception:
+        return False
+    finally:
+        shutil.rmtree(work_root, ignore_errors=True)
+
+
 def fetch_http_error_preserves_status() -> bool:
     original = atodata.urllib.request.urlopen
 
@@ -886,6 +984,22 @@ def finance_csv_trims_leading_space() -> bool:
 def refresh_errors_use_python_formatting(root: str) -> bool:
     text = read_text(os.path.join(root, "scripts", "taxmate_refresh.py"))
     return '"%v"' not in text and "'%v'" not in text
+
+
+def skills_refresh_unknown_topic_is_noop(root: str) -> bool:
+    original = taxmate_skills.atodata.LoadRegistry
+
+    def fail_load_registry(_root: str):
+        raise RuntimeError("LoadRegistry should not run for unknown topic")
+
+    taxmate_skills.atodata.LoadRegistry = fail_load_registry
+    try:
+        payload = taxmate_skills._refresh(root, "does-not-exist", False)
+        return payload == {"requested": 0, "matched": 0, "results": []}
+    except Exception:
+        return False
+    finally:
+        taxmate_skills.atodata.LoadRegistry = original
 
 
 def validate_json_uses_check_field() -> bool:

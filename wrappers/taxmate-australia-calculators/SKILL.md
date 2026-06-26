@@ -13,5 +13,5 @@ Read and follow:
 
 ```bash
 export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
-"$TAXMATE_AUSTRALIA_ROOT/skills/calculators/SKILL.md"
+"$TAXMATE_AUSTRALIA_ROOT/runtime/skills/calculators/SKILL.md"
 ```

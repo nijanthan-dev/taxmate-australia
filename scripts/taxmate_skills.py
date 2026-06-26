@@ -97,6 +97,13 @@ def _refresh(root: str, topic: str, all_sources: bool) -> Dict[str, Any]:
             if final_url and skillgen.HostApproved(final_url):
                 urls.append(final_url)
 
+    if not urls:
+        return {
+            "requested": 0,
+            "matched": 0,
+            "results": [],
+        }
+
     registry = atodata.LoadRegistry(root)
     selected, missing = atodata.SelectByURL(registry.records, urls)
 

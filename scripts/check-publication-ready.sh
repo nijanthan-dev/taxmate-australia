@@ -52,6 +52,7 @@ git grep -q 'Accountant review' -- DISCLAIMER.md skills || fail "missing account
 
 node <<'NODE'
 const fs = require("fs");
+const crypto = require("crypto");
 const path = require("path");
 
 const root = process.cwd();
@@ -108,6 +109,30 @@ for (const runtimePath of packaging.runtimeOnlyPaths) {
   if (!fs.existsSync(skillPath)) fail(`missing runtime-only skill ${runtimePath}`);
   const body = fs.readFileSync(skillPath, "utf8");
   if (!/metadata:\n(?:.*\n)*?\s+internal:\s+true/m.test(body)) fail(`runtime skill not internal: ${runtimePath}`);
+}
+
+const lock = JSON.parse(fs.readFileSync("plugin.lock.json", "utf8"));
+const expectedLockPaths = [
+  ...publicSkills.map((name) => `skills/${name}`),
+  ...packaging.runtimeOnlyPaths.filter((name) => name.startsWith("runtime/skills/")),
+].sort();
+const lockedPaths = lock.skills.map((entry) => entry.vendoredPath).sort();
+if (JSON.stringify(lockedPaths) !== JSON.stringify(expectedLockPaths)) fail("plugin.lock skill paths do not match packaged skills");
+for (const entry of lock.skills) {
+  if (!entry.source || entry.source.path !== entry.vendoredPath) fail(`plugin.lock source path mismatch ${entry.id}`);
+  if (!fs.existsSync(path.join(entry.vendoredPath, "SKILL.md"))) fail(`plugin.lock missing skill path ${entry.vendoredPath}`);
+  if (!/^sha256:[a-f0-9]{64}$/.test(entry.integrity || "")) fail(`plugin.lock invalid integrity ${entry.id}`);
+  const skillHash = crypto.createHash("sha256").update(fs.readFileSync(path.join(entry.vendoredPath, "SKILL.md"))).digest("hex");
+  if (entry.integrity !== `sha256:${skillHash}`) fail(`plugin.lock stale integrity ${entry.id}`);
+}
+
+for (const wrapper of packaging.runtimeOnlyPaths.filter((name) => name.startsWith("wrappers/"))) {
+  const body = fs.readFileSync(path.join(wrapper, "SKILL.md"), "utf8");
+  const fallbackPaths = [...body.matchAll(/\$TAXMATE_AUSTRALIA_ROOT\/([^"`\n]+\/SKILL\.md)/g)].map((match) => match[1]);
+  if (!fallbackPaths.length) fail(`wrapper missing fallback path ${wrapper}`);
+  for (const fallback of fallbackPaths) {
+    if (!fs.existsSync(fallback)) fail(`wrapper fallback path missing ${wrapper}: ${fallback}`);
+  }
 }
 
 const readme = fs.readFileSync("README.md", "utf8");

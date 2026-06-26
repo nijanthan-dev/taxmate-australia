@@ -53,3 +53,10 @@ If the required topic skill is not installed, do not decide the tax treatment. S
 ## Mandatory Accountant Review
 
 Mark ambiguous, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-commercial-loss, and business-versus-hobby items as `Accountant review` unless installed sources clearly resolve them.
+
+## Maintenance Guardrails
+
+- Keep plugin lock entries and wrapper fallback paths pointed at real tracked `SKILL.md` files.
+- Keep no-op refresh commands read-only; they must not rewrite source registry metadata.
+- Treat returned validation errors as failed checks, even when helpers do not throw.
+- Do not replace the complete Codex plugin with portable skills only.

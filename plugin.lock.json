@@ -7,30 +7,138 @@
   "skills": [
     {
       "id": "calculators",
-      "vendoredPath": "skills/calculators",
+      "vendoredPath": "runtime/skills/calculators",
       "source": {
         "type": "local",
-        "path": "skills/calculators"
+        "path": "runtime/skills/calculators"
       },
-      "integrity": "sha256:a7c4ae285bc80bd4fbcfedd5d2be38c5081317f85ad61c6d48adc0e9272bed92"
+      "integrity": "sha256:0d0f769bbb792db5adcac67accbfef21399a361a750cf5d74e506e27233eaede"
     },
     {
       "id": "finance-review",
-      "vendoredPath": "skills/finance-review",
+      "vendoredPath": "runtime/skills/finance-review",
       "source": {
         "type": "local",
-        "path": "skills/finance-review"
+        "path": "runtime/skills/finance-review"
       },
-      "integrity": "sha256:d4fffe9307c53f2d2fb5584abe26b2c7557c060306413b1004cb548d08d55e80"
+      "integrity": "sha256:4e33dee83211420bd74489f945359026cd1e1aed17af5faaa3026750a8540271"
     },
     {
       "id": "research",
-      "vendoredPath": "skills/research",
+      "vendoredPath": "runtime/skills/research",
       "source": {
         "type": "local",
-        "path": "skills/research"
+        "path": "runtime/skills/research"
       },
-      "integrity": "sha256:3783c2d0ec3d0b8f602668da0a88f6fe5ced8ca304e215a85f2bbaad4479bcd3"
+      "integrity": "sha256:8d138699cd099fc7195754f555a92206f31b22cf2136681444493934308060cf"
+    },
+    {
+      "id": "abn-business",
+      "vendoredPath": "skills/abn-business",
+      "source": {
+        "type": "local",
+        "path": "skills/abn-business"
+      },
+      "integrity": "sha256:ab4fb6dc8e685481145f3f0293fbeaf15a8fc32543e8c4ceca8483ae4fa7fc60"
+    },
+    {
+      "id": "capital-gains-tax",
+      "vendoredPath": "skills/capital-gains-tax",
+      "source": {
+        "type": "local",
+        "path": "skills/capital-gains-tax"
+      },
+      "integrity": "sha256:e1ee5b8eab3dab77c88ae016cb51c88cd7bbfeec1db5530d8be3dd6fac8e37af"
+    },
+    {
+      "id": "crypto-assets",
+      "vendoredPath": "skills/crypto-assets",
+      "source": {
+        "type": "local",
+        "path": "skills/crypto-assets"
+      },
+      "integrity": "sha256:8a37ea2087ec944dfc796c52a28cccffdd4436f4101fc7af0a035a9a41b34e1a"
+    },
+    {
+      "id": "employment-deductions",
+      "vendoredPath": "skills/employment-deductions",
+      "source": {
+        "type": "local",
+        "path": "skills/employment-deductions"
+      },
+      "integrity": "sha256:4fc5f6679f6552cd1524d1092f7c0c6bbc4b22f93d68ec8df01708611aaf19ce"
+    },
+    {
+      "id": "gst-bas",
+      "vendoredPath": "skills/gst-bas",
+      "source": {
+        "type": "local",
+        "path": "skills/gst-bas"
+      },
+      "integrity": "sha256:fcd6856fcad802f94164fe9503fe100a95636cbc01c8aecf713193bc72437944"
+    },
+    {
+      "id": "payg-employer",
+      "vendoredPath": "skills/payg-employer",
+      "source": {
+        "type": "local",
+        "path": "skills/payg-employer"
+      },
+      "integrity": "sha256:d1cc297f0facd314d3be662f744a840bda3035ea2a635ee4297765a78af5027e"
+    },
+    {
+      "id": "private-health-medicare",
+      "vendoredPath": "skills/private-health-medicare",
+      "source": {
+        "type": "local",
+        "path": "skills/private-health-medicare"
+      },
+      "integrity": "sha256:e0e551fa03ce086c64fc968bb681c3f81059d35125ca0a535451994df440042b"
+    },
+    {
+      "id": "property-rental-cgt",
+      "vendoredPath": "skills/property-rental-cgt",
+      "source": {
+        "type": "local",
+        "path": "skills/property-rental-cgt"
+      },
+      "integrity": "sha256:a55b788b1763f60ad899d7cfd4937a4fef6dc3156bbf9e47bb513592508ba9f5"
+    },
+    {
+      "id": "records-evidence",
+      "vendoredPath": "skills/records-evidence",
+      "source": {
+        "type": "local",
+        "path": "skills/records-evidence"
+      },
+      "integrity": "sha256:4807c6e07c38eb131ef6af2f06a88a9a14d837b53308be6cda9bf5b286f58b07"
+    },
+    {
+      "id": "shares-etfs-managed-funds",
+      "vendoredPath": "skills/shares-etfs-managed-funds",
+      "source": {
+        "type": "local",
+        "path": "skills/shares-etfs-managed-funds"
+      },
+      "integrity": "sha256:a331efd1d45d7c9988e6f8978b94e22f9fbb8dd6734090efc362353fd7abbcdf"
+    },
+    {
+      "id": "superannuation",
+      "vendoredPath": "skills/superannuation",
+      "source": {
+        "type": "local",
+        "path": "skills/superannuation"
+      },
+      "integrity": "sha256:80ff555d16f7e43a3e202c115d71eddda98aeb18088945ccaef68dffc5a99b14"
+    },
+    {
+      "id": "taxmate-australia",
+      "vendoredPath": "skills/taxmate-australia",
+      "source": {
+        "type": "local",
+        "path": "skills/taxmate-australia"
+      },
+      "integrity": "sha256:3fe77925937538a2db8b26b2cec2b75fd0f059b7fe3a7b9c6f0a75e00ed261ba"
     },
     {
       "id": "taxpack",
@@ -39,7 +147,16 @@
         "type": "local",
         "path": "skills/taxpack"
       },
-      "integrity": "sha256:a7acad61300f4af3ca0902d52529a934d6b6422102a0013ecee57037d957558d"
+      "integrity": "sha256:7d93c6f748cfbbb96bcc471c08d4942b83daa9e404fb895d5f1488ca90e03db4"
+    },
+    {
+      "id": "work-from-home",
+      "vendoredPath": "skills/work-from-home",
+      "source": {
+        "type": "local",
+        "path": "skills/work-from-home"
+      },
+      "integrity": "sha256:17db5398208f93957348e05aaecbcbd66284d288e776d307b8dfc9255276ebdd"
     },
     {
       "id": "workbook",
@@ -48,7 +165,7 @@
         "type": "local",
         "path": "skills/workbook"
       },
-      "integrity": "sha256:526d5af3e9f025797c86466fe3c990ee141415abad94a4f60d8e45eaa4b5600d"
+      "integrity": "sha256:3db803170ede642f16f7262a65de5b26a576b5908898e28c71698b5bf57268b1"
     }
   ]
 }

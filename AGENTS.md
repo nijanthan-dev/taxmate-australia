@@ -11,6 +11,11 @@
 - Do not add Go tooling to devcontainers, CI, dependency automation, or contributor docs unless a Go manifest is restored.
 - Validation must scan plugin metadata for stale Go runtime claims, not only toolchain commands.
 - Dependency automation must match committed manifests. Remove stale ecosystem entries when their manifest is removed.
+- Plugin locks and wrapper fallback paths must resolve to tracked `SKILL.md` files.
+- Publication checks must fail when `plugin.lock.json` omits packaged skills or points at stale paths.
+- Treat validator helpers that return errors as failed checks; do not assume they throw exceptions.
+- No-op CLI commands, including unknown-topic refreshes, must not rewrite registry metadata.
+- Plugin hooks should use Codex-compatible root resolution with cwd fallback.
 - Keep source state in `data/ato_knowledge_base/source_registry.json` and `data/ato_knowledge_base/source_coverage.json`.
 - Do not reintroduce migration artifacts, `source_index`, `source_manifest`, committed raw snapshots, or `data/ato_knowledge_base/text`.
 - Treat refreshed source text as ignored cache under `.cache/ato/text/`.

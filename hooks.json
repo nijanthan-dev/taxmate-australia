@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/clean-source-cache.sh\"",
+            "command": "bash \"${CODEX_PLUGIN_ROOT:-$PWD}/scripts/clean-source-cache.sh\"",
             "timeout": 10
           }
         ]
