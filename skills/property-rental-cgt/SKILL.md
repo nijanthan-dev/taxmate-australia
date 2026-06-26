@@ -29,7 +29,6 @@ Use for rental property records and property-related CGT. Do not use for non-pro
 
 - Supported record
 - Claim candidate
-- must not be bypassed
 - Not claimable
 - Insufficient evidence
 - Accountant review

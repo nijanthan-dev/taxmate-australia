@@ -29,7 +29,6 @@ Use for general CGT concepts and records. Do not use for routine employee deduct
 
 - Supported record
 - Claim candidate
-- must not be bypassed
 - Not claimable
 - Insufficient evidence
 - Accountant review

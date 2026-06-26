@@ -29,7 +29,6 @@ Use for employer withholding and reporting obligations. Do not use for personal 
 
 - Supported record
 - Claim candidate
-- must not be bypassed
 - Not claimable
 - Insufficient evidence
 - Accountant review

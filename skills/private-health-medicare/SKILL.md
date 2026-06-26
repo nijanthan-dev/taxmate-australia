@@ -29,7 +29,6 @@ Use for private health and Medicare levy questions. Do not use for deductibility
 
 - Supported record
 - Claim candidate
-- must not be bypassed
 - Not claimable
 - Insufficient evidence
 - Accountant review

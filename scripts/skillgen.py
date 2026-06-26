@@ -20,6 +20,16 @@ GENERATED_MARKER = "Generated from TaxMate Australia source metadata. Verify vol
 JURISDICTION = "Australia"
 EMPTY_CONTENT_HASH_V2 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 SOURCE_COVERAGE_FILE = "source_coverage.json"
+SKILL_GUARDRAIL_NEEDLES = [
+    "Accountant review",
+    "Claim candidate",
+    "Do not hide income",
+    "metadata-only sources",
+    "Supported record",
+    "Insufficient evidence",
+    "Not claimable",
+    "Do not lodge",
+]
 
 # Statuses
 StatusVerified = "verified"
@@ -675,15 +685,7 @@ def Validate(root: str) -> None:
         path = os.path.join(root, "skills", topic.slug, "SKILL.md")
         with open(path, "r", encoding="utf-8") as f:
             text = f.read()
-        for needle in [
-            "Accountant review",
-            "Claim candidate",
-            "must not be bypassed",
-            "Supported record",
-            "Insufficient evidence",
-            "Not claimable",
-            "must not be bypassed",
-        ]:
+        for needle in SKILL_GUARDRAIL_NEEDLES:
             if needle not in text:
                 raise RuntimeError(f"{topic.slug} missing guardrail {needle!r}")
         if "<html" in text or "<script" in text or "Skip to main content" in text:
@@ -881,7 +883,6 @@ def skillMarkdown(topic_obj: Topic) -> str:
         "",
         "- Supported record",
         "- Claim candidate",
-        "- must not be bypassed",
         "- Not claimable",
         "- Insufficient evidence",
         "- Accountant review",
@@ -1678,9 +1679,24 @@ def requiredSourceArtifacts(root: str) -> List[str]:
     return out
 
 
+def trackedGeneratedArtifacts(root: str) -> List[str]:
+    out = set(requiredSourceArtifacts(root))
+    for skill in requiredSkillSlugs():
+        skill_path = os.path.join(root, "skills", skill, "SKILL.md")
+        if os.path.exists(skill_path):
+            out.add(os.path.join("skills", skill, "SKILL.md"))
+        references = os.path.join(root, "skills", skill, "references")
+        if not os.path.isdir(references):
+            continue
+        for dir_path, _, names in os.walk(references):
+            for name in sorted(names):
+                out.add(os.path.relpath(os.path.join(dir_path, name), root))
+    return sorted(out)
+
+
 def CompareGeneratedArtifacts(root: str, generated_root: str) -> Optional[RuntimeError]:
-    expected_files = set(requiredSourceArtifacts(root))
-    generated_files = set(requiredSourceArtifacts(generated_root))
+    expected_files = set(trackedGeneratedArtifacts(root))
+    generated_files = set(trackedGeneratedArtifacts(generated_root))
     for rel in sorted(expected_files | generated_files):
         generated_path = os.path.join(generated_root, rel)
         expected_path = os.path.join(root, rel)
@@ -1741,15 +1757,7 @@ def missingGuardrail(root: str, skill: str) -> bool:
         text = Path(path).read_text(encoding="utf-8")
     except OSError:
         return True
-    for needle in [
-        "Accountant review",
-        "Claim candidate",
-        "must not be bypassed",
-        "Supported record",
-        "Insufficient evidence",
-        "Not claimable",
-        "must not be bypassed",
-    ]:
+    for needle in SKILL_GUARDRAIL_NEEDLES:
         if needle not in text:
             return True
     return False

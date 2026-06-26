@@ -85,6 +85,7 @@ def validate(root: str) -> Tuple[Dict[str, Any], bool]:
     add("generation_is_deterministic", deterministic, str(deterministic_err))
     add("current_values_preserved_without_cache", current_values_preserved_without_cache(root), "")
     add("stale_current_values_detected", stale_current_values_detected(root), "")
+    add("stale_generated_reference_detected", stale_generated_reference_detected(root), "")
     add_runtime_binary_checks(root, add, registry)
 
     return finish(root, checks, registry, True)
@@ -260,6 +261,8 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     )
     add("python_backend_exists", python_backend, "")
     add("no_go_source", len(find_by_suffix(root, ".go")) == 0, "")
+    go_tooling_hits = stale_go_tooling_hits(root)
+    add("no_go_tooling_config", len(go_tooling_hits) == 0, "; ".join(go_tooling_hits))
 
 
 def is_valid_exception_safe(fn) -> Optional[Exception]:
@@ -613,10 +616,7 @@ def stale_current_values_detected(root: str) -> bool:
     expected_root = tempfile.mkdtemp(prefix="taxmate-validate-stale-expected-")
     generated_root = tempfile.mkdtemp(prefix="taxmate-validate-stale-generated-")
     try:
-        atodata.CopyDir(os.path.join(root, "skills"), os.path.join(expected_root, "skills"))
-        atodata.CopyDir(os.path.join(root, "data", "ato_knowledge_base"), os.path.join(expected_root, "data", "ato_knowledge_base"))
-        atodata.CopyDir(os.path.join(expected_root, "skills"), os.path.join(generated_root, "skills"))
-        atodata.CopyDir(os.path.join(expected_root, "data", "ato_knowledge_base"), os.path.join(generated_root, "data", "ato_knowledge_base"))
+        copy_generated_check_inputs(root, expected_root, generated_root)
         os.remove(os.path.join(generated_root, value_files[0]))
         return skillgen.CompareGeneratedArtifacts(expected_root, generated_root) is not None
     except Exception:
@@ -626,6 +626,30 @@ def stale_current_values_detected(root: str) -> bool:
         shutil.rmtree(generated_root, ignore_errors=True)
 
 
+def stale_generated_reference_detected(root: str) -> bool:
+    import shutil
+
+    expected_root = tempfile.mkdtemp(prefix="taxmate-validate-stale-reference-expected-")
+    generated_root = tempfile.mkdtemp(prefix="taxmate-validate-stale-reference-generated-")
+    stale_rel = os.path.join("skills", required_topics()[0], "references", "stale-generated.md")
+    try:
+        copy_generated_check_inputs(root, expected_root, generated_root)
+        Path(os.path.join(expected_root, stale_rel)).write_text("stale generated reference\n", encoding="utf-8")
+        return skillgen.CompareGeneratedArtifacts(expected_root, generated_root) is not None
+    except Exception:
+        return False
+    finally:
+        shutil.rmtree(expected_root, ignore_errors=True)
+        shutil.rmtree(generated_root, ignore_errors=True)
+
+
+def copy_generated_check_inputs(root: str, expected_root: str, generated_root: str) -> None:
+    atodata.CopyDir(os.path.join(root, "skills"), os.path.join(expected_root, "skills"))
+    atodata.CopyDir(os.path.join(root, "data", "ato_knowledge_base"), os.path.join(expected_root, "data", "ato_knowledge_base"))
+    atodata.CopyDir(os.path.join(expected_root, "skills"), os.path.join(generated_root, "skills"))
+    atodata.CopyDir(os.path.join(expected_root, "data", "ato_knowledge_base"), os.path.join(generated_root, "data", "ato_knowledge_base"))
+
+
 def current_value_files(root: str) -> List[str]:
     out: List[str] = []
     for skill in required_topics():
@@ -633,6 +657,24 @@ def current_value_files(root: str) -> List[str]:
         if file_exists(os.path.join(root, rel)):
             out.append(rel)
     return sorted(out)
+
+
+def stale_go_tooling_hits(root: str) -> List[str]:
+    hits: List[str] = []
+    for rel in [
+        os.path.join(".devcontainer", "Dockerfile"),
+        os.path.join(".devcontainer", "devcontainer.json"),
+        os.path.join(".github", "dependabot.yml"),
+        os.path.join(".github", "dependabot.yaml"),
+    ]:
+        path = os.path.join(root, rel)
+        text = read_text(path).lower()
+        if not text:
+            continue
+        for needle in ["devcontainers/go", "golang.go", "gomodcache", "gocache", "go version", "package-ecosystem: gomod"]:
+            if needle in text:
+                hits.append(f"{rel}:{needle}")
+    return hits
 
 
 def audit_is_read_only(root: str) -> bool:

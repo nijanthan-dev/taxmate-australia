@@ -29,7 +29,6 @@ Use for GST registration, credits, tax invoices, and BAS preparation. Do not use
 
 - Supported record
 - Claim candidate
-- must not be bypassed
 - Not claimable
 - Insufficient evidence
 - Accountant review

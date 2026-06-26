@@ -29,7 +29,6 @@ Use for employee income and work-related deductions. Do not use for ABN business
 
 - Supported record
 - Claim candidate
-- must not be bypassed
 - Not claimable
 - Insufficient evidence
 - Accountant review

@@ -29,7 +29,6 @@ Use for super contribution and record questions. Do not use for BAS, employee de
 
 - Supported record
 - Claim candidate
-- must not be bypassed
 - Not claimable
 - Insufficient evidence
 - Accountant review

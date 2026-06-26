@@ -29,7 +29,6 @@ Use for work-from-home expenses and evidence. Do not use for general business de
 
 - Supported record
 - Claim candidate
-- must not be bypassed
 - Not claimable
 - Insufficient evidence
 - Accountant review

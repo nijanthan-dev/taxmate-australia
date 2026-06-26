@@ -29,7 +29,6 @@ Use for shares, ETFs, managed funds, investment income and related CGT records. 
 
 - Supported record
 - Claim candidate
-- must not be bypassed
 - Not claimable
 - Insufficient evidence
 - Accountant review

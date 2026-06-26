@@ -29,7 +29,6 @@ Use for records and proof standards. Do not use for topic-specific current rates
 
 - Supported record
 - Claim candidate
-- must not be bypassed
 - Not claimable
 - Insufficient evidence
 - Accountant review

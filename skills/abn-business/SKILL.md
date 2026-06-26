@@ -29,7 +29,6 @@ Use for ABN and business income or expenses. Do not use for employee-only expens
 
 - Supported record
 - Claim candidate
-- must not be bypassed
 - Not claimable
 - Insufficient evidence
 - Accountant review

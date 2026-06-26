@@ -29,7 +29,6 @@ Use for crypto asset events and records. Do not use for shares, ETFs, or non-cry
 
 - Supported record
 - Claim candidate
-- must not be bypassed
 - Not claimable
 - Insufficient evidence
 - Accountant review
