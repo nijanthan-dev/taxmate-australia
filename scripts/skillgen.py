@@ -1058,7 +1058,13 @@ def ExtractMainText(src: bytes) -> str:
     return s.strip()
 
 
-valueRE = re.compile(r"(?i)(\b\d{4}[-–]\d{2}\b|\b\d{1,2}\s+[A-Za-z]+\s+\d{4}\b|[$]\s?\d[\d,]*(?:\.\d+)?|\b\d+(?:\.\d+)?\s?(?:cents?|%|per cent|percent)\b)")
+SCALE_WORDS_RE = r"(?:thousand|million|billion|trillion)"
+CURRENCY_VALUE_RE = r"[$]\s?\d[\d,]*(?:\.\d+)?(?:[\s\u00a0\u202f]+" + SCALE_WORDS_RE + r")?"
+valueRE = re.compile(
+    r"(?i)(\b\d{4}[-–]\d{2}\b|\b\d{1,2}\s+[A-Za-z]+\s+\d{4}\b|"
+    + CURRENCY_VALUE_RE
+    + r"|\b\d+(?:\.\d+)?\s?(?:cents?|%|per cent|percent)\b)"
+)
 
 
 def detectValues(topic: str, text: str, src: Source) -> List[ValueFact]:
@@ -1102,7 +1108,21 @@ def mergeAndFilterValues(root: str, topic: str, values: List[ValueFact]) -> List
             values = [value_from_json(item) for item in raw]
         except Exception:
             values = []
+    values = [preserveScaleWord(value) for value in values]
     return filterValuesWithPeriods(values)
+
+
+def preserveScaleWord(value: ValueFact) -> ValueFact:
+    if "$" not in value.value:
+        return value
+    normal_value = normalizeSpace(value.value)
+    if re.search(r"(?i)\b" + SCALE_WORDS_RE + r"\b", normal_value):
+        value.value = normal_value
+        return value
+    match = re.search(re.escape(normal_value) + r"\s+" + SCALE_WORDS_RE + r"\b", normalizeSpace(value.context), flags=re.IGNORECASE)
+    if match:
+        value.value = match.group(0)
+    return value
 
 
 def filterValuesWithPeriods(values: List[ValueFact]) -> List[ValueFact]:
@@ -1747,9 +1767,27 @@ def valuesMissingPeriods(root: str) -> List[str]:
             if v.source_url == "" or v.source_title == "" or v.checked_at == "" or v.content_hash == "" or v.unit == "" or v.context == "":
                 missing.append(f"{path}:{i}:missing-provenance")
                 continue
+            if scaleWordMissing(v.value, v.context):
+                missing.append(f"{path}:{i}:scaled-value-truncated")
+                continue
             if v.income_year == "" and (v.effective_from == "" or v.effective_to == ""):
                 missing.append(f"{path}:{i}:missing-period")
     return missing
+
+
+def scaleWordMissing(value: str, context: str) -> bool:
+    if "$" not in value:
+        return False
+    normal_value = normalizeSpace(value)
+    if re.search(r"(?i)\b" + SCALE_WORDS_RE + r"\b", normal_value):
+        return False
+    normal_context = normalizeSpace(context)
+    pattern = re.escape(normal_value) + r"\s+" + SCALE_WORDS_RE + r"\b"
+    return re.search(pattern, normal_context, flags=re.IGNORECASE) is not None
+
+
+def normalizeSpace(value: str) -> str:
+    return re.sub(r"[\s\u00a0\u202f]+", " ", value).strip()
 
 
 def missingGuardrail(root: str, skill: str) -> bool:
