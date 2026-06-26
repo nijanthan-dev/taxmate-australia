@@ -20,6 +20,8 @@
 - Do not reintroduce migration artifacts, `source_index`, `source_manifest`, committed raw snapshots, or `data/ato_knowledge_base/text`.
 - Treat refreshed source text as ignored cache under `.cache/ato/text/`.
 - Generated topic skills must keep source workflow, anti-overclaim rules, current-value provenance, and `Accountant review` flags.
+- Preserved `current-values.json` entries must match an assigned source URL and content hash, and must be refreshed to the current source title, last-updated date, and checked-at date.
+- Do not preserve a current value by accepting a valid value hash against a blank source hash.
 - Update generated topic skills through `scripts/skillgen.py`, then regenerate. Do not hand-edit generated `skills/<topic>/SKILL.md`.
 - `skills generate --check` must fail on stale tracked generated artifacts, including files absent from fresh output.
 - Generated-artifact checks must enumerate tracked `skills/<topic>/SKILL.md` and `skills/<topic>/references/*`, not only hard-coded expected files.

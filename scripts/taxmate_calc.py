@@ -291,23 +291,27 @@ def months_held(acquired: str, disposed: str) -> int:
 
 def main(argv: Optional[List[str]] = None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
+    usage = "usage: ./scripts/taxmate calc <bas|super|fbt|cgt|payg|stamp-duty> [flags]"
     if not argv:
-        print("usage: taxmate-australia-calc <bas|super|fbt|cgt|payg|stamp-duty> [flags]", file=sys.stderr)
+        print(usage, file=sys.stderr)
         return 2
+    if argv[0] in {"-h", "--help"}:
+        print(usage)
+        return 0
 
     tool = argv[0]
     if tool not in {"bas", "super", "fbt", "cgt", "payg", "stamp-duty"}:
-        print("usage: taxmate-australia-calc <bas|super|fbt|cgt|payg|stamp-duty> [flags]", file=sys.stderr)
+        print(usage, file=sys.stderr)
         return 2
 
     try:
         validate_tool(tool)
     except ValueError as exc:
         print(exc, file=sys.stderr)
-        print("usage: taxmate-australia-calc <bas|super|fbt|cgt|payg|stamp-duty> [flags]", file=sys.stderr)
+        print(usage, file=sys.stderr)
         return 2
 
-    parser = argparse.ArgumentParser(prog=f"taxmate-australia-calc {tool}", add_help=True)
+    parser = argparse.ArgumentParser(prog=f"./scripts/taxmate calc {tool}", add_help=True)
 
     if tool == "bas":
         parser.add_argument("tool")

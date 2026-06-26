@@ -33,11 +33,14 @@ The same commands also work by calling the Python module directly:
 Validate:
 
 ```bash
+PYTHONPYCACHEPREFIX=/tmp/taxmate-pycache python3 -m py_compile scripts/*.py
 ./scripts/taxmate validate
 ./scripts/taxmate skills validate
+./scripts/taxmate skills generate --check
 ./scripts/taxmate skills audit --check
 ./scripts/taxmate skills audit --format markdown --output /tmp/source-coverage.md
 scripts/check-publication-ready.sh
+gitleaks detect --source . --redact --no-banner
 ```
 
 If you need local-speed, keep Python runtime wrappers and dependencies local and use the launcher directly.

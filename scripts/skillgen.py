@@ -720,6 +720,7 @@ def _build(
     if use_previous and previous is not None:
         for entry in previous.sources:
             previous_by_id[entry.source_id] = entry
+    previous_value_hashes = previousCurrentValueHashes(root)
 
     sources: List[Source] = []
     grouped: Dict[str, List[Source]] = {}
@@ -731,6 +732,7 @@ def _build(
             canonical = rec.url
         record_id = sourceID(rec.url, canonical)
         record_text = atodata.RecordText(root, rec).strip()
+        topic_match, score = assignTopic(rec, record_text)
         record_hash = (rec.content_hash or "").strip()
         text_hash = ""
         content_verified = False
@@ -741,6 +743,10 @@ def _build(
         if text_hash != "":
             content_hash = text_hash
         prev = previous_by_id.get(record_id) if use_previous else None
+        if not validContentHash(content_hash):
+            preserved_value_hash = previous_value_hashes.get((topic_match.slug, canonical), "")
+            if validContentHash(preserved_value_hash):
+                content_hash = preserved_value_hash
         if (
             not validContentHash(content_hash)
             and prev is not None
@@ -776,7 +782,6 @@ def _build(
             sources.append(src)
             continue
 
-        topic_match, score = assignTopic(rec, record_text)
         if canonical in seen_canonical:
             src.status = StatusDuplicate
             src.duplicate_of = seen_canonical[canonical]
@@ -1113,28 +1118,72 @@ def mergeAndFilterValues(root: str, topic: str, sources: List[Source], values: L
         try:
             body = Path(path).read_text(encoding="utf-8")
             raw = json.loads(body)
-            values = [
-                value
-                for value in [value_from_json(item) for item in raw]
-                if currentValueMatchesSource(value, sources)
-            ]
+            values = []
+            for item in raw:
+                value = value_from_json(item)
+                if currentValueMatchesSource(value, sources):
+                    values.append(refreshCurrentValueProvenance(value, sources))
         except Exception:
             values = []
-    values = [preserveScaleWord(value) for value in values]
+    values = [refreshCurrentValueProvenance(preserveScaleWord(value), sources) for value in values]
     return filterValuesWithPeriods(values)
 
 
 def currentValueMatchesSource(value: ValueFact, sources: List[Source]) -> bool:
+    return matchingCurrentValueSource(value, sources) is not None
+
+
+def matchingCurrentValueSource(value: ValueFact, sources: List[Source]) -> Optional[Source]:
     value_url = canonicalURL(value.source_url)
     for src in sources:
         source_urls = {canonicalURL(src.url), canonicalURL(src.final_url)}
         if value_url not in source_urls:
             continue
-        if value.content_hash == src.content_hash or (
-            validContentHash(value.content_hash) and not validContentHash(src.content_hash)
-        ):
-            return True
-    return False
+        if value.content_hash == src.content_hash and validContentHash(src.content_hash):
+            return src
+    return None
+
+
+def refreshCurrentValueProvenance(value: ValueFact, sources: List[Source]) -> ValueFact:
+    src = matchingCurrentValueSource(value, sources)
+    if src is None:
+        return value
+    value.source_url = src.final_url
+    value.source_title = src.title
+    value.last_updated = src.last_updated
+    value.checked_at = src.checked_at
+    value.content_hash = src.content_hash
+    return value
+
+
+def currentValueMetadataMatchesSource(value: ValueFact, sources: List[Source]) -> bool:
+    src = matchingCurrentValueSource(value, sources)
+    if src is None:
+        return False
+    return (
+        value.source_url == src.final_url
+        and value.source_title == src.title
+        and value.last_updated == src.last_updated
+        and value.checked_at == src.checked_at
+    )
+
+
+def previousCurrentValueHashes(root: str) -> Dict[tuple[str, str], str]:
+    out: Dict[tuple[str, str], str] = {}
+    for topic_obj in Topics():
+        path = os.path.join(root, "skills", topic_obj.slug, "references", "current-values.json")
+        try:
+            raw = json.loads(Path(path).read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for item in raw:
+            value = value_from_json(item)
+            if not validContentHash(value.content_hash) or not value.source_url:
+                continue
+            key = (topic_obj.slug, canonicalURL(value.source_url))
+            if key not in out:
+                out[key] = value.content_hash.strip()
+    return out
 
 
 def preserveScaleWord(value: ValueFact) -> ValueFact:
@@ -1808,6 +1857,9 @@ def valuesMissingPeriods(root: str) -> List[str]:
                 continue
             if not currentValueMatchesSource(v, list(sources_by_skill.get(skill, {}).values())):
                 missing.append(f"{path}:{i}:source-not-assigned-to-skill")
+                continue
+            if not currentValueMetadataMatchesSource(v, list(sources_by_skill.get(skill, {}).values())):
+                missing.append(f"{path}:{i}:source-metadata-mismatch")
                 continue
             if scaleWordMissing(v.value, v.context):
                 missing.append(f"{path}:{i}:scaled-value-truncated")

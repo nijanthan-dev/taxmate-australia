@@ -59,4 +59,5 @@ Mark ambiguous, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-co
 - Keep plugin lock entries and wrapper fallback paths pointed at real tracked `SKILL.md` files.
 - Keep no-op refresh commands read-only; they must not rewrite source registry metadata.
 - Treat returned validation errors as failed checks, even when helpers do not throw.
+- Preserve generated current values only when their source URL and content hash match an assigned source; refresh preserved value metadata from the current source row.
 - Do not replace the complete Codex plugin with portable skills only.

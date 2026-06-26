@@ -109,7 +109,7 @@ def _refresh(root: str, topic: str, all_sources: bool) -> Dict[str, Any]:
 
     results: List[Dict[str, Any]] = []
     for raw_url in missing:
-        results.append({"url": raw_url, "error": "not in source registry; run taxmate-australia-refresh --url or recrawl first"})
+        results.append({"url": raw_url, "error": "not in source registry; run ./scripts/taxmate refresh --url or --recrawl first"})
 
     for rec in selected:
         results.append(atodata.RefreshRecord(root, rec).__dict__)

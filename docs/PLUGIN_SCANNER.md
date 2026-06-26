@@ -8,7 +8,7 @@ Use when you are preparing a public release (not required for local-only install
   - `jq . .codex-plugin/plugin.json > /dev/null`
   - `jq . plugin.lock.json > /dev/null` (if lock is used)
 - Keep lock metadata honest:
-  - every skill in `skills/` appears once in `plugin.lock.json`
+  - every packaged public skill in `skills/` and every runtime skill in `runtime/skills/` appears once in `plugin.lock.json`
   - no `REPLACE_WITH_REAL_VALUE` entries remain
   - no placeholders remain in public docs (`TODO`, `<fill-in>`, `TBD`)
 - Release scan checklist:

@@ -12,9 +12,12 @@ Contributor prerequisites:
 Core plugin checks:
 
 ```bash
-bash scripts/test-skills-install.sh
-scripts/check-publication-ready.sh
+PYTHONPYCACHEPREFIX=/tmp/taxmate-pycache python3 -m py_compile scripts/*.py
 ./scripts/taxmate validate
+./scripts/taxmate skills generate --check
+./scripts/taxmate skills audit --check
+scripts/check-publication-ready.sh
+gitleaks detect --source . --redact --no-banner
 ```
 
 ## Cloud (Codex) and local build environments (Mac-independent)
@@ -61,8 +64,12 @@ Then run the normal checks from the repo:
 
 ```bash
 bash scripts/bootstrap-dev-env.sh
-bash scripts/test-skills-install.sh
+PYTHONPYCACHEPREFIX=/tmp/taxmate-pycache python3 -m py_compile scripts/*.py
+./scripts/taxmate validate
+./scripts/taxmate skills generate --check
+./scripts/taxmate skills audit --check
 scripts/check-publication-ready.sh
+gitleaks detect --source . --redact --no-banner
 ```
 
 ### Codex usage in container

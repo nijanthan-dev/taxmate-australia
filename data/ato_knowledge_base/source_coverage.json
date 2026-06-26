@@ -316,7 +316,7 @@
       "source_title": "Disposing of shares",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "526ab512eedff1390b81cb16483e33b1fa877922ca6c79fbad008a1120880aac",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -400,7 +400,7 @@
       "source_title": "Mobile phone, mobile internet and other devices",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "f9ea9d9670f68587785e9e7f5bb9d4fc70acf012c7c7373fbdf1c462e77e2cde",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -608,7 +608,7 @@
       "source_title": "Occupancy expenses",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "5700f8262c975f96ed4efcd7052b6d6a39c9c515f7bd7709a9a92815c98c9126",
       "status": "metadata_only",
       "skills": [
         "work-from-home"
@@ -707,7 +707,7 @@
       "source_title": "Fixed rate method",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "47bb254a2bc6f83438c91d382f7dfa6953585314d003cf4732a5dd9a8492e329",
       "status": "metadata_only",
       "skills": [
         "work-from-home"
@@ -882,7 +882,7 @@
       "source_title": "Reporting back payments",
       "source_last_updated": "2025-07-15T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "7fc0e1175ab3c80c4b0412c6020000d66e770ea67bda4f967eb310bca38a5e30",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -952,7 +952,7 @@
       "source_title": "Lump sum payment in arrears",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "c6823eb3b9c253051b1fbfb750422bb7643e03f55aefaaccb79dbd721be0fc2e",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -2873,7 +2873,7 @@
       "source_title": "Claiming the private health insurance rebate",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "b839376c843a9da2bdac14cbc139c53f828864f5a96c6ec992182fadfa17103b",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -3802,7 +3802,7 @@
       "source_title": "Trust non-assessable payments (CGT event E4)",
       "source_last_updated": "2023-06-29T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "7637ac9786ef2648110a6434fdd3bb8dfe1e22a60a7431a8e245adffa14474c2",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -3839,7 +3839,7 @@
       "source_title": "How much quarterly super to pay",
       "source_last_updated": "2026-02-24T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "c1ef24e29e26396c71dca44dcdc1b8ad145e4f9c4df56bac6fa9144ea9641d47",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -4075,7 +4075,7 @@
       "source_title": "Deductions for carbon sink forest expenses",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "7f28fefe2764abdf2c1e3141d7df80b6e2747ddddc30defee32c5db576c76cf3",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -4144,7 +4144,7 @@
       "source_title": "Registered emissions units",
       "source_last_updated": "2024-02-14T02:28:33.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "843e51fe5cc883ceed734018e8a85164eb5bc424661c12c9ec5b0e3b62ab5db9",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -4756,7 +4756,7 @@
       "source_title": "Work out your business taxable income",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "c3899bb566b779887f8ba2ea7cab85001b740a2a77d216d97b57ccd0dfd54bc0",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -5226,7 +5226,7 @@
       "source_title": "Understanding concessional and non-concessional contributions",
       "source_last_updated": "2026-01-14T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "4fd8b5d735e046da3626a8f68bf98cba5c7898f60cfdfcad235392bd47fbd47d",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -5569,7 +5569,7 @@
       "source_title": "Concessional contributions cap",
       "source_last_updated": "2024-07-23T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "8f22338a96859931c0143d5cdc108e5027c55d3938f831af2a9aca1183dd1b86",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -5741,7 +5741,7 @@
       "source_title": "Personal super contributions",
       "source_last_updated": "2024-05-22T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "e90c76873112a61b08565add7494c0ed2d09732a356b3a7e605458b22b9c3097",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -5975,7 +5975,7 @@
       "source_title": "CGT listed investment companies concession",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "d06b1c5485835fd54029d880091b62ce11e7670e4ca0e51c2b5488b5c9a6d3ce",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -6081,7 +6081,7 @@
       "source_title": "Schedule 11 \u2013 Tax table for employment termination payments",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "134f65cdf73b8ab89deaaa9d6ee7f5497652dbdaa6e79365a3c0156cf1c46da0",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -6380,7 +6380,7 @@
       "source_title": "Medicare levy surcharge income, thresholds and rates",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "da837532b779a062d38b82448a729142a90439858a6247b9f903d7eb40ba91e3",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -6686,7 +6686,7 @@
       "source_title": "Schedule 6 \u2013 Tax table for annuities",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "99620a3665fb439e162b91b46ee6283e3b94c61f6a4e12ddd3e582f2d5eb7365",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -7151,7 +7151,7 @@
       "source_title": "Small business technology investment boost",
       "source_last_updated": "2024-06-19T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "1302bf8f070e0b543f4af77e48ec33bb2ce984fa55f9a6e91300833ca4afed2e",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -7502,7 +7502,7 @@
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "da4a1b486f3c85ec09c825f0b90da2f2e5ad9469d5dc5524eb1f13ba11f5e1de",
       "status": "duplicate",
       "skills": [],
       "references": [],
@@ -7588,7 +7588,7 @@
       "source_title": "Private health insurance rebate eligibility",
       "source_last_updated": "2025-07-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "28e25951df69c8da9d3d83f8bcd8da1fb8b402a09377ffc91ff7cd60f9904b23",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -7794,7 +7794,7 @@
       "source_title": "Overtime meal expenses",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "92b7869c127e1e2b4ac29ed7fa4f06160965078d0badf8d1849029022187ae35",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -8378,7 +8378,7 @@
       "source_title": "Paying the Medicare levy surcharge",
       "source_last_updated": "2026-05-04T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "7bb2d351fd41cc43d70e679537bc2194324b18ab9f853715ade956c9a8c5994b",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -8410,7 +8410,7 @@
       "source_title": "Investments in a company in liquidation or administration",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "ae62e0775feaa9516191e3547145402b676a2d64c2ae6a5190f1aed24c68223b",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -9232,7 +9232,7 @@
       "source_title": "Deductions for depreciating assets and capital expenses",
       "source_last_updated": "2025-05-28T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "63f16e608bfd3e64ca75d801bc08b46ba1a33cfb93a37ad6c33289df3208509a",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -9368,7 +9368,7 @@
       "source_title": "Income thresholds and rates for the private health insurance rebate",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "34a665512e0f9f48e072f16f2c025bd23f7d9ad07d709585d2b147cfec9386d8",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -9642,7 +9642,7 @@
       "source_title": "What to exclude from your business's assessable income",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "1483fb861ef6a9f7e24f030775a87a6bf16d15388fa96248a5f077987a43865a",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -9935,7 +9935,7 @@
       "source_title": "Gifts and donations",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "298334e6c78521365d45994f3c1cd3fd8126bd1fb55ee14ba7e957106fc03a6d",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -10007,7 +10007,7 @@
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "",
+      "content_hash": "da4a1b486f3c85ec09c825f0b90da2f2e5ad9469d5dc5524eb1f13ba11f5e1de",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
