@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -59,34 +60,25 @@ def _source_url(row: Dict[str, Any]) -> str:
 
 
 def _check_generation(root: str, checked_at: str) -> Tuple[int, Exception | None]:
-    work_root = tempfile.mkdtemp(prefix="taxmate-australia-skills-check-")
+    work_root = Path(tempfile.mkdtemp(prefix="taxmate-australia-skills-check-"))
     try:
         atodata.CopyDir(
             os.path.join(root, "data", "ato_knowledge_base"),
-            os.path.join(work_root, "data", "ato_knowledge_base"),
+            str(work_root / "data" / "ato_knowledge_base"),
         )
         report = skillgen.Generate(
             skillgen.Options(
-                root=work_root,
-                output_root=work_root,
+                root=str(work_root),
+                output_root=str(work_root),
                 checked_at=checked_at,
             )
         )
         if report is None:
             raise RuntimeError("generation returned empty report")
         count = len(report.sources)
-        return count, skillgen.CompareGeneratedArtifacts(root, work_root)
+        return count, skillgen.CompareGeneratedArtifacts(root, str(work_root))
     finally:
-        try:
-            Path(work_root).rmdir()
-        except OSError:
-            # shutil equivalent done by context close from os; avoid import overhead
-            try:
-                import shutil
-
-                shutil.rmtree(work_root, ignore_errors=True)
-            except Exception:
-                pass
+        shutil.rmtree(work_root, ignore_errors=True)
 
 
 def _refresh(root: str, topic: str, all_sources: bool) -> Dict[str, Any]:
