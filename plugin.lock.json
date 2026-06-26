@@ -12,7 +12,7 @@
         "type": "local",
         "path": "runtime/skills/calculators"
       },
-      "integrity": "sha256:0d0f769bbb792db5adcac67accbfef21399a361a750cf5d74e506e27233eaede"
+      "integrity": "sha256:2d6941d109494bc23ab0799bc736905a817b11f3941e684e61030c9f6af77f08"
     },
     {
       "id": "finance-review",
@@ -21,7 +21,7 @@
         "type": "local",
         "path": "runtime/skills/finance-review"
       },
-      "integrity": "sha256:4e33dee83211420bd74489f945359026cd1e1aed17af5faaa3026750a8540271"
+      "integrity": "sha256:84e86ef0e9df8a2796bcc08a8f9a453a2a30eb6b30d240743918882259c8195a"
     },
     {
       "id": "research",
@@ -30,7 +30,7 @@
         "type": "local",
         "path": "runtime/skills/research"
       },
-      "integrity": "sha256:8d138699cd099fc7195754f555a92206f31b22cf2136681444493934308060cf"
+      "integrity": "sha256:b4bc58a293f3bf3526062ff39d35934fc246f106ae6ac4b6fc579a1ffb43a0ca"
     },
     {
       "id": "abn-business",

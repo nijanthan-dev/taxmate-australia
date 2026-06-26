@@ -10,7 +10,7 @@ metadata:
 
 Runtime requirements:
 
-- Bash 5+
+- Bash
 - Python 3.9+
 - Git
 

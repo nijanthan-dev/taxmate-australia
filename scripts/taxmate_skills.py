@@ -114,7 +114,8 @@ def _refresh(root: str, topic: str, all_sources: bool) -> Dict[str, Any]:
     for rec in selected:
         results.append(atodata.RefreshRecord(root, rec).__dict__)
 
-    atodata.SaveRegistry(root, registry)
+    if selected:
+        atodata.SaveRegistry(root, registry)
     return {
         "requested": len(urls),
         "matched": len(selected),

@@ -29,7 +29,7 @@ Use this full-runtime skill for Australian tax-prep research and treatment decis
 
 Runtime requirements:
 
-- Bash 5+
+- Bash
 - Python 3.9+
 - Git
 

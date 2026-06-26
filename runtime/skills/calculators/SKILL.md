@@ -10,7 +10,7 @@ metadata:
 
 Runtime requirements:
 
-- Bash 5+
+- Bash
 - Python 3.9+
 
 Use this full-runtime skill for bounded tax-prep calculations. It is not professional advice, payroll advice, lodgment support, or confirmation of entitlement. Keep outputs labelled as estimates or scaffolds where applicable.

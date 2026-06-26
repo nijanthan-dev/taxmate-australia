@@ -273,6 +273,7 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("docs_no_stale_bash5_requirement", len(bash5_hits) == 0, "; ".join(bash5_hits))
     add("refresh_query_no_match_is_read_only", refresh_query_no_match_is_read_only(root), "")
     add("skills_refresh_unknown_topic_is_noop", skills_refresh_unknown_topic_is_noop(root), "")
+    add("skills_refresh_missing_urls_is_read_only", skills_refresh_missing_urls_is_read_only(root), "")
     add("finance_record_rows_classify_before_income", finance_record_rows_classify_before_income(), "")
     add("finance_investment_income_classifies_as_income", finance_investment_income_classifies_as_income(), "")
     add("finance_investment_income_outranks_business_tag", finance_investment_income_outranks_business_tag(), "")
@@ -1052,7 +1053,14 @@ def wrapper_help_uses_public_commands(root: str) -> bool:
 
 def stale_bash5_prereq_hits(root: str) -> List[str]:
     hits: List[str] = []
-    for rel in ["README.md", os.path.join("docs", "DEVELOPMENT.md"), os.path.join("docs", "FULL_PLUGIN_INSTALL.md")]:
+    for rel in [
+        "README.md",
+        os.path.join("docs", "DEVELOPMENT.md"),
+        os.path.join("docs", "FULL_PLUGIN_INSTALL.md"),
+        os.path.join("runtime", "skills", "calculators", "SKILL.md"),
+        os.path.join("runtime", "skills", "finance-review", "SKILL.md"),
+        os.path.join("runtime", "skills", "research", "SKILL.md"),
+    ]:
         hits.extend(text_hits(root, rel, ["bash 5", "bash 5+"]))
     return hits
 
@@ -1093,6 +1101,37 @@ def skills_refresh_unknown_topic_is_noop(root: str) -> bool:
         return False
     finally:
         taxmate_skills.atodata.LoadRegistry = original
+
+
+def skills_refresh_missing_urls_is_read_only(root: str) -> bool:
+    original_load = taxmate_skills.atodata.LoadRegistry
+    original_select = taxmate_skills.atodata.SelectByURL
+    original_save = taxmate_skills.atodata.SaveRegistry
+
+    class EmptyRegistry:
+        records: List[Any] = []
+
+    def empty_registry(_root: str):
+        return EmptyRegistry()
+
+    def all_missing(_records, urls):
+        return [], list(urls)
+
+    def fail_save_registry(_root: str, _registry) -> None:
+        raise RuntimeError("SaveRegistry should not run when skills refresh matches no registry records")
+
+    taxmate_skills.atodata.LoadRegistry = empty_registry
+    taxmate_skills.atodata.SelectByURL = all_missing
+    taxmate_skills.atodata.SaveRegistry = fail_save_registry
+    try:
+        payload = taxmate_skills._refresh(root, "abn-business", False)
+        return payload.get("requested", 0) > 0 and payload.get("matched") == 0 and bool(payload.get("results"))
+    except Exception:
+        return False
+    finally:
+        taxmate_skills.atodata.LoadRegistry = original_load
+        taxmate_skills.atodata.SelectByURL = original_select
+        taxmate_skills.atodata.SaveRegistry = original_save
 
 
 def finance_record_rows_classify_before_income() -> bool:
