@@ -7,7 +7,6 @@ These are conservative topic summaries from official sources, not copied ATO pag
 ## Verified official-source content
 
 - No verified official-source summaries for this topic.
-
 ## Metadata-only official-source links
 
 - How GST works
@@ -16,240 +15,280 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Source last updated: 2023-06-21T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - In detail
   - Source ID: ato-075d8eb46aa3
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/in-detail
   - Source last updated: 2023-10-20T13:55:03.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Reverse charge in the valuable metals industry
   - Source ID: ato-0b4342066a51
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/in-detail/rules-for-specific-transactions/reverse-charge-in-the-valuable-metals-industry
   - Source last updated: 2020-01-16T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Luxury car tax (LCT)
   - Source ID: ato-1021b1dc6513
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/luxury-car-tax-lct
   - Source last updated: 2025-04-30T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - GST groups
   - Source ID: ato-10622be7014f
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/in-detail/managing-gst-in-your-business/gst-groups-and-branches/gst-groups
   - Source last updated: 2017-03-16T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - How to lodge your BAS
   - Source ID: ato-18c9d050d6d0
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/how-to-lodge-your-bas
   - Source last updated: 2026-04-23T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Goods and services tax (GST)
   - Source ID: ato-1acb17bc45a7
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/goods-and-services-tax-gst
   - Source last updated: 2020-03-31T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Insurance settlements
   - Source ID: ato-1f0e6c088862
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/when-to-charge-gst-and-when-not-to/insurance-settlements
   - Source last updated: 2015-06-15T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Accounting for GST in your business
   - Source ID: ato-1ff99151ae93
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/accounting-for-gst-in-your-business
   - Source last updated: 2019-04-04T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Fixing BAS mistakes or making adjustments
   - Source ID: ato-223260695bee
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/fixing-bas-mistakes-or-making-adjustments
   - Source last updated: 2023-07-18T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Invoices with a WEG label
   - Source ID: ato-229572f3cf45
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/in-detail/managing-gst-in-your-business/tax-invoices/invoices-with-a-weg-label
   - Source last updated: 2017-03-09T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Due dates for lodging and paying your BAS
   - Source ID: ato-27e8710b98e2
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/due-dates-for-lodging-and-paying-your-bas
   - Source last updated: 2025-02-23T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - If your business changes or ceases
   - Source ID: ato-2c6c2bae3e39
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/if-your-business-changes-or-ceases
   - Source last updated: 2016-09-22T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Tax invoices
   - Source ID: ato-2decb7aab3a5
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/tax-invoices
   - Source last updated: 2025-08-24T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - When to charge GST (and when not to)
   - Source ID: ato-2defe3225797
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/when-to-charge-gst-and-when-not-to
   - Source last updated: 2016-12-22T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Registering for GST
   - Source ID: ato-2f6d3ca4047b
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/registering-for-gst
   - Source last updated: 2025-05-22T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - When you can claim a GST credit
   - Source ID: ato-33c0bc6a1307
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/claiming-gst-credits/when-you-can-claim-a-gst-credit
   - Source last updated: 2026-01-07T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Claiming GST credits
   - Source ID: ato-37e620b37884
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/claiming-gst-credits
   - Source last updated: 2024-06-19T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Grants and sponsorship
   - Source ID: ato-3cecde8dc3a0
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/when-to-charge-gst-and-when-not-to/grants-and-sponsorship
   - Source last updated: 2023-05-28T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - GST - Goods and Services Tax
   - Source ID: ato-3f9fa2f28c18
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst
   - Source last updated: 2023-06-21T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Pay as you go (PAYG) instalments
   - Source ID: ato-44698fc26b5e
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/payg-instalments
   - Source last updated: 2023-10-12T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - GST-free sales
   - Source ID: ato-47cc6fb47915
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/when-to-charge-gst-and-when-not-to/gst-free-sales
   - Source last updated: 2021-07-06T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Input-taxed sales
   - Source ID: ato-596a8afad56e
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/when-to-charge-gst-and-when-not-to/input-taxed-sales
   - Source last updated: 2015-06-15T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Input Tax Credit estimators
   - Source ID: ato-682f2249b276
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/itc-estimators
   - Source last updated: 2022-09-06T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - GST branches
   - Source ID: ato-6be5d3a85483
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/in-detail/managing-gst-in-your-business/gst-groups-and-branches/gst-branches
   - Source last updated: 2017-03-16T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Fringe benefits tax (FBT) instalment
   - Source ID: ato-772e291682a3
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/fringe-benefits-tax-fbt-instalment
   - Source last updated: 2025-04-30T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Taxable sales
   - Source ID: ato-789c8e72adbd
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/when-to-charge-gst-and-when-not-to/taxable-sales
   - Source last updated: 2023-05-17T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Instalment notices for GST and PAYG instalments
   - Source ID: ato-8127aa78db57
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/instalment-notices-for-gst-and-payg-instalments
   - Source last updated: 2025-04-30T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - BAS and GST tips
   - Source ID: ato-894ebb2c6aa7
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/bas-and-gst-tips
   - Source last updated: 2025-06-25T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - How we can help
   - Source ID: ato-bace86bc17c9
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/how-we-can-help
   - Source last updated: 2023-07-12T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - When you cannot claim a GST credit
   - Source ID: ato-be785cbea049
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/claiming-gst-credits/when-you-cannot-claim-a-gst-credit
   - Source last updated: 2024-08-29T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Business activity statements (BAS)
   - Source ID: ato-c16eeaf0fff7
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas
   - Source last updated: 2023-06-30T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Pay as you go (PAYG) withholding
   - Source ID: ato-c4b8b2e01c35
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/pay-as-you-go-payg-withholding
   - Source last updated: 2025-04-30T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Effect of GST credits on income tax deductions
   - Source ID: ato-ca3568e5cd9b
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/claiming-gst-credits/effect-of-gst-credits-on-income-tax-deductions
   - Source last updated: 2019-12-08T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Lodging your BAS or annual GST return
   - Source ID: ato-d11f14e31b8e
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/lodging-your-bas-or-annual-gst-return
   - Source last updated: 2015-06-15T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Wine equalisation tax (WET)
   - Source ID: ato-d19c1c8a7766
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/wine-equalisation-tax-wet
   - Source last updated: 2025-04-30T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Special rules for specific GST credit claims
   - Source ID: ato-e21183fadd94
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/claiming-gst-credits/special-rules-for-specific-gst-credit-claims
   - Source last updated: 2015-06-15T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Fuel tax credits
   - Source ID: ato-e5d2eb1ff64e
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/fuel-tax-credits
   - Source last updated: 2025-04-30T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - If you are finding it hard to lodge and pay on time
   - Source ID: ato-e8cacb115337
   - URL: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/what-if-you-can-t-lodge-and-pay-on-time
   - Source last updated: 2023-09-04T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Cancelling your GST registration
   - Source ID: ato-f6a8f549c2e9
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/if-your-business-changes-or-ceases/cancelling-your-gst-registration
   - Source last updated: 2025-03-03T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Time limit on GST credits
   - Source ID: ato-f91d30a27c3d
   - URL: https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/claiming-gst-credits/time-limits-on-gst-credits-and-refunds
@@ -265,7 +304,6 @@ These are conservative topic summaries from official sources, not copied ATO pag
 - Do not claim source-backed treatment from metadata-only sources without explicit validation.
 
 ## Accountant-review boundaries
-
 - GST registration
 - creditable purpose
 - mixed use

@@ -53,7 +53,9 @@ Run a full runtime command:
 Optional: install one or more portable skills for ad-hoc use without checkout:
 
 ```bash
-npx skills@1.5.13 add nijanthan-dev/taxmate-australia --agent codex --global --skill '*' --yes
+npx skills@1.5.13 add nijanthan-dev/taxmate-australia --list
+npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
+  --agent codex --global --skill '*' --yes
 ```
 
 ## First use

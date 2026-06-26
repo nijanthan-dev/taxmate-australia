@@ -190,11 +190,13 @@ def _run_python_command(script: str, args: List[str], root: Path) -> int:
 
 def _dispatch(command: str, args: List[str]) -> int:
     root = _find_repo_root(Path.cwd())
-    if command in {"calc", "finance", "refresh"}:
+    if command in {"calc", "finance", "refresh", "skills", "validate"}:
         script = {
             "calc": "taxmate_calc.py",
             "finance": "taxmate_finance.py",
             "refresh": "taxmate_refresh.py",
+            "skills": "taxmate_skills.py",
+            "validate": "taxmate_validate.py",
         }[command]
         return _run_python_command(script, args, root)
 

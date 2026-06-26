@@ -3,9 +3,11 @@
 
 ## Validation
 
-- [ ] `go test ./...`
-- [ ] build all binaries
-- [ ] `bin/taxmate-australia-validate`
+- [ ] `bash scripts/bootstrap-dev-env.sh`
+- [ ] `python3 -m py_compile scripts/*.py`
+- [ ] `./scripts/taxmate validate`
+- [ ] `./scripts/taxmate skills generate --check`
+- [ ] `./scripts/taxmate skills audit --check`
 - [ ] `scripts/check-publication-ready.sh`
 - [ ] secret scan
 

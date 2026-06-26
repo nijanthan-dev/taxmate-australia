@@ -12,14 +12,14 @@ This directory keeps compact provenance for generated TaxMate Australia skills. 
 
 ## Refresh
 
-Use the Go generator:
+Use the bash+python generator:
 
 ```bash
-taxmate-australia-skills refresh --topic gst-bas
-taxmate-australia-skills refresh --all
-taxmate-australia-skills generate
-taxmate-australia-skills generate --check
-taxmate-australia-skills validate
+./scripts/taxmate refresh --topic gst-bas
+./scripts/taxmate refresh --all
+./scripts/taxmate skills generate
+./scripts/taxmate skills generate --check
+./scripts/taxmate skills validate
 ```
 
 Live refresh stores temporary fetched HTML and extracted text under ignored `.cache/ato/`. Do not commit full webpage snapshots.

@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-export GOCACHE="${GOCACHE:-$ROOT/.cache/go-build}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$ROOT/.cache}"
 
 fail() {
   echo "error: $*" >&2
@@ -60,7 +60,7 @@ const packaging = JSON.parse(fs.readFileSync("config/skill-packaging.json", "utf
 const publicSkills = publicManifest.portableSkills;
 const publicSet = new Set(publicSkills);
 const emptyHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-const repoOnly = /(TAXMATE_AUSTRALIA_ROOT|bin\/taxmate-australia-|cmd\/|internal\/|data\/ato_knowledge_base|\.codex-plugin|\$taxmate-australia:|taxmate-australia-(skills|refresh|finance|calc|validate))/;
+const repoOnly = /(TAXMATE_AUSTRALIA_ROOT|cmd\/|internal\/|data\/ato_knowledge_base|\.codex-plugin|\$taxmate-australia:|taxmate-australia-(skills|refresh|finance|calc|validate))/;
 
 function fail(message) {
   console.error(`error: ${message}`);
@@ -119,22 +119,15 @@ if (readme.includes("official plugin discovery") || readme.includes("marketplace
 for (const name of publicSkills) if (!readme.includes(`\`${name}\``)) fail(`README missing public skill ${name}`);
 NODE
 
-if git grep -nE 'taxmate-australia-re[d]act|internal/pri[v]acy|cmd/taxmate-australia-re[d]act|RE[D]ACTED' -- . ':!data/ato_knowledge_base/raw/**' ':!data/ato_knowledge_base/text/**'; then
+if git grep -nE 'taxmate-australia-re[d]act|internal/pri[v]acy|RE[D]ACTED' -- . ':!data/ato_knowledge_base/raw/**' ':!data/ato_knowledge_base/text/**'; then
   fail "legacy file-sanitisation artifact found"
 fi
 
-go test ./...
-mkdir -p bin
-go build -o bin/taxmate-australia-refresh ./cmd/taxmate-australia-refresh
-go build -o bin/taxmate-australia-skills ./cmd/taxmate-australia-skills
-go build -o bin/taxmate-australia-validate ./cmd/taxmate-australia-validate
-go build -o bin/taxmate-australia-finance ./cmd/taxmate-australia-finance
-go build -o bin/taxmate-australia-calc ./cmd/taxmate-australia-calc
-bin/taxmate-australia-skills validate >/tmp/taxmate-australia-skills-validate.json
-bin/taxmate-australia-skills generate --check
-bin/taxmate-australia-skills audit --check
-bin/taxmate-australia-skills audit --format markdown --output /tmp/source-coverage.md
-bin/taxmate-australia-validate >/tmp/taxmate-australia-validate.json
+./scripts/taxmate skills validate >/tmp/taxmate-australia-skills-validate.json
+./scripts/taxmate skills generate --check
+./scripts/taxmate skills audit --check
+./scripts/taxmate skills audit --format markdown --output /tmp/source-coverage.md
+./scripts/taxmate validate >/tmp/taxmate-australia-validate.json
 bash scripts/test-skills-install.sh
 bash scripts/clean-source-cache.sh
 

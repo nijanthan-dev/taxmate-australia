@@ -42,7 +42,7 @@ Run runtime commands with the bash+python stack:
 ```
 
 The launcher entrypoint is bash (`./scripts/taxmate`) and delegates to `scripts/taxmate.py`.
-If local binaries are absent, it runs Python directly; this is the supported default runtime path.
+Python is the supported default runtime path.
 
 ### Local Docker environment
 
@@ -77,18 +77,18 @@ Coverage checks:
 scripts/check-publication-ready.sh
 ```
 
-Do not commit `bin/` outputs or private user tax records.
+Do not commit private user tax records.
 
 ## Skill packaging
 
 - Public portable skill source of truth: `config/public-skills.json` (optional fallback).
 - Classification source of truth: `config/skill-packaging.json`.
 - Runtime-only skills must include `metadata.internal: true`.
-- Public skills must not reference repository binaries, `TAXMATE_AUSTRALIA_ROOT`, plugin-qualified skill names, or repository data paths.
+- Public skills must not reference repository runtime paths, `TAXMATE_AUSTRALIA_ROOT`, plugin-qualified skill names, or repository data paths.
 
 ## CI
 
-CI runs plugin runtime checks, publication validation, and Gitleaks.
+CI runs bash+python runtime checks, publication validation, and Gitleaks.
 
 ## Release (semver on merge to main)
 

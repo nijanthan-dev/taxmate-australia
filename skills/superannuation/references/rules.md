@@ -7,7 +7,6 @@ These are conservative topic summaries from official sources, not copied ATO pag
 ## Verified official-source content
 
 - No verified official-source summaries for this topic.
-
 ## Metadata-only official-source links
 
 - The quarterly super guarantee charge
@@ -16,114 +15,133 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Source last updated: 2026-02-24T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - List of payments that are ordinary time earnings
   - Source ID: ato-38a70e7692e3
   - URL: https://www.ato.gov.au/businesses-and-organisations/super-for-employers/paying-super-contributions/how-much-super-to-pay/list-of-payments-that-are-ordinary-time-earnings
   - Source last updated: 2026-04-29T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Super for independent contractors
   - Source ID: ato-39f3d3e7f3be
   - URL: https://www.ato.gov.au/businesses-and-organisations/super-for-employers/work-out-if-you-have-to-pay-super/super-for-independent-contractors
   - Source last updated: 2026-04-28T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - How much quarterly super to pay
   - Source ID: ato-5030584c589d
   - URL: https://www.ato.gov.au/businesses-and-organisations/super-for-employers/paying-super-contributions/how-much-super-to-pay
   - Source last updated: 2026-02-24T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Self-managed super funds
   - Source ID: ato-565f18c83daf
   - URL: https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/self-managed-super-funds-smsf
   - Source last updated: 2025-04-16T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Restrictions on voluntary contributions
   - Source ID: ato-59425da20ce0
   - URL: https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super/growing-and-keeping-track-of-your-super/caps-limits-and-tax-on-super-contributions/restrictions-on-voluntary-contributions
   - Source last updated: 2025-07-23T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Work out if you have to pay super
   - Source ID: ato-629f9d4ff6c8
   - URL: https://www.ato.gov.au/businesses-and-organisations/super-for-employers/work-out-if-you-have-to-pay-super
   - Source last updated: 2026-04-28T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Quarterly super payment due dates
   - Source ID: ato-685ddc2c1412
   - URL: https://www.ato.gov.au/businesses-and-organisations/super-for-employers/paying-super-contributions/super-payment-due-dates
   - Source last updated: 2026-02-24T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Superannuation pensions and annuities
   - Source ID: ato-6e23b44e97ae
   - URL: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/superannuation-pensions-and-annuities
   - Source last updated: 2026-06-07T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Payday Super
   - Source ID: ato-7169c68d6d41
   - URL: https://www.ato.gov.au/businesses-and-organisations/super-for-employers/payday-super
   - Source last updated: 2025-11-18T04:13:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Understanding concessional and non-concessional contributions
   - Source ID: ato-746a32c01704
   - URL: https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super/growing-and-keeping-track-of-your-super/caps-limits-and-tax-on-super-contributions/understanding-concessional-and-non-concessional-contributions
   - Source last updated: 2026-01-14T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Concessional contributions cap
   - Source ID: ato-7a4e177e27fa
   - URL: https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super/growing-and-keeping-track-of-your-super/caps-limits-and-tax-on-super-contributions/concessional-contributions-cap
   - Source last updated: 2024-07-23T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Personal super contributions
   - Source ID: ato-7e22b51d6a8f
   - URL: https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super/growing-and-keeping-track-of-your-super/how-to-save-more-in-your-super/personal-super-contributions
   - Source last updated: 2024-05-22T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Super for long-distance drivers
   - Source ID: ato-862b6ca5065e
   - URL: https://www.ato.gov.au/businesses-and-organisations/super-for-employers/paying-super-contributions/how-much-super-to-pay/list-of-payments-that-are-ordinary-time-earnings/super-for-long-distance-drivers
   - Source last updated: 2025-06-30T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Super co-contribution
   - Source ID: ato-8b8ed5d471d0
   - URL: https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super/growing-and-keeping-track-of-your-super/how-to-save-more-in-your-super/government-super-contributions/super-co-contribution
   - Source last updated: 2023-08-01T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Payments that are not ordinary time earnings
   - Source ID: ato-8bdf8944c53d
   - URL: https://www.ato.gov.au/businesses-and-organisations/super-for-employers/paying-super-contributions/how-much-super-to-pay/list-of-payments-that-are-ordinary-time-earnings/payments-that-are-not-ordinary-time-earnings
   - Source last updated: 2025-08-06T05:53:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Options for adding to your super
   - Source ID: ato-93b6ff70167f
   - URL: https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super/growing-and-keeping-track-of-your-super/how-to-save-more-in-your-super/options-for-adding-to-your-super
   - Source last updated: 2023-08-01T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Super for individuals and families
   - Source ID: ato-9739e95c50af
   - URL: https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families
   - Source last updated: 2023-10-20T12:18:23.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Division 293 tax on concessional contributions by high-income earners
   - Source ID: ato-c73788d863d9
   - URL: https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super/growing-and-keeping-track-of-your-super/caps-limits-and-tax-on-super-contributions/division-293-tax-on-concessional-contributions-by-high-income-earners
   - Source last updated: 2025-12-07T13:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Super
   - Source ID: ato-dce57e499685
   - URL: https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super
@@ -139,7 +157,6 @@ These are conservative topic summaries from official sources, not copied ATO pag
 - Do not claim source-backed treatment from metadata-only sources without explicit validation.
 
 ## Accountant-review boundaries
-
 - caps
 - SG rates
 - payment date

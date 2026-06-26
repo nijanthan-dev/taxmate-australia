@@ -19,37 +19,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: go test ./...
-      - run: go vet ./...
-      - run: go build ./...
-      - run: mkdir -p bin
-      - run: go build -o bin/taxmate-australia-refresh ./cmd/taxmate-australia-refresh
-      - run: go build -o bin/taxmate-australia-skills ./cmd/taxmate-australia-skills
-      - run: go build -o bin/taxmate-australia-validate ./cmd/taxmate-australia-validate
-      - run: go build -o bin/taxmate-australia-finance ./cmd/taxmate-australia-finance
-      - run: go build -o bin/taxmate-australia-calc ./cmd/taxmate-australia-calc
-      - run: bin/taxmate-australia-skills validate
-      - run: bin/taxmate-australia-skills generate --check
-      - run: bin/taxmate-australia-skills audit --check
-      - run: bin/taxmate-australia-skills audit --format markdown --output "$RUNNER_TEMP/source-coverage.md"
-      - run: bin/taxmate-australia-validate
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python3 -m py_compile scripts/*.py
+      - run: bash scripts/bootstrap-dev-env.sh
+      - run: ./scripts/taxmate skills validate
+      - run: ./scripts/taxmate validate
+      - run: ./scripts/taxmate skills generate --check
+      - run: ./scripts/taxmate skills audit --check
+      - run: ./scripts/taxmate skills audit --format markdown --output "$RUNNER_TEMP/source-coverage.md"
       - run: bash scripts/test-skills-install.sh
       - run: scripts/check-publication-ready.sh
-      - run: bin/taxmate-australia-calc payg --gross-pay 1500 --periods 52 --tax-free-threshold
+      - run: ./scripts/taxmate calc payg --gross-pay 1500 --periods 52 --tax-free-threshold
       - run: |
           cat > /tmp/taxmate-finance-sample.csv <<'CSV'
           date,description,amount,gst,owner,purpose,evidence,category,type
           2026-04-15,OpenAI Codex subscription,33.00,3.00,owner,ABN app development,invoice,software,expense
           2026-05-10,Private health premium,220.00,0.00,joint,private health statement,statement,private_health,record
           CSV
-          bin/taxmate-australia-finance --input /tmp/taxmate-finance-sample.csv --format json >/tmp/taxmate-finance-review.json
+          ./scripts/taxmate finance --input /tmp/taxmate-finance-sample.csv --format json >/tmp/taxmate-finance-review.json
 
   plugin-package:
     name: Plugin Package
@@ -59,6 +51,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - run: test -f .codex-plugin/plugin.json
       - run: test -f hooks.json
       - run: test -f scripts/clean-source-cache.sh

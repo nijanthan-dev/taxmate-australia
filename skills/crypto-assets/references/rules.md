@@ -7,7 +7,6 @@ These are conservative topic summaries from official sources, not copied ATO pag
 ## Verified official-source content
 
 - No verified official-source summaries for this topic.
-
 ## Metadata-only official-source links
 
 - Crypto assets and business
@@ -16,12 +15,14 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Source last updated: 2025-05-06T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Keeping crypto records
   - Source ID: ato-49efde1747b5
   - URL: https://www.ato.gov.au/individuals-and-families/investments-and-assets/crypto-asset-investments/keeping-crypto-records
   - Source last updated: 2026-06-21T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Crypto asset investments
   - Source ID: ato-9154fe86298e
   - URL: https://www.ato.gov.au/individuals-and-families/investments-and-assets/crypto-asset-investments
@@ -37,7 +38,6 @@ These are conservative topic summaries from official sources, not copied ATO pag
 - Do not claim source-backed treatment from metadata-only sources without explicit validation.
 
 ## Accountant-review boundaries
-
 - swaps
 - rewards
 - lost records

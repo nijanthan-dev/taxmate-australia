@@ -6,9 +6,12 @@
     "title": "Crypto assets and business",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "crypto-assets",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -18,9 +21,12 @@
     "title": "Keeping crypto records",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "crypto-assets",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -30,9 +36,12 @@
     "title": "Crypto asset investments",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "crypto-assets",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   }
 ]

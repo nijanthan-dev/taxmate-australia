@@ -21,11 +21,11 @@ require_command() {
 print_version() {
   local tool="$1"
   case "$tool" in
-    go)
-      go version
-      ;;
     node|npm)
       "$tool" --version
+      ;;
+    python3|python)
+      "$tool" --version | head -n 1
       ;;
     *)
       "$tool" --version | head -n 1
@@ -69,13 +69,7 @@ version_ge() {
 }
 
 assert_minimum_versions() {
-  local go_version node_version
-
-  go_version="$(go version | awk '{print $3}' | sed 's/go//')"
-  if ! version_ge "$go_version" "1.22"; then
-    say "Go 1.22+ required; detected $go_version"
-    return 1
-  fi
+  local node_version python_version
 
   node_version="$(node --version)"
   node_version="${node_version#v}"
@@ -83,26 +77,26 @@ assert_minimum_versions() {
     say "Node.js 20+ required; detected $node_version"
     return 1
   fi
+
+  python_version="$(python3 --version 2>&1 | sed 's/^Python //')"
+  if ! version_ge "$python_version" "3.9"; then
+    say "Python 3.9+ required; detected $python_version"
+    return 1
+  fi
 }
 
 say "Checking dev environment..."
 
-for tool in go node npm git curl jq; do
+for tool in python3 node npm git curl jq; do
   require_command "$tool"
 done
 
-for tool in go node npm git curl; do
+for tool in python3 node npm git curl; do
   print_version "$tool"
 done
 
 assert_minimum_versions
-mkdir -p .cache/gocache .cache/gomod
-
-if [ -f go.mod ]; then
-  go mod download
-else
-  say "No go.mod found; skipping go mod download."
-fi
+mkdir -p .cache/ato
 
 if command -v codex >/dev/null 2>&1; then
   say "Codex CLI: available"

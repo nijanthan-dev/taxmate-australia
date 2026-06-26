@@ -6,9 +6,12 @@
     "title": "Property and capital gains tax",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -18,9 +21,12 @@
     "title": "Records for rental properties and holiday homes",
     "last_updated": "2026-05-20T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -30,9 +36,12 @@
     "title": "Property and land",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -42,9 +51,12 @@
     "title": "Keeping records for property",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -54,9 +66,12 @@
     "title": "Eligibility for main residence exemption",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -66,9 +81,12 @@
     "title": "CGT discount for affordable housing",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -78,9 +96,12 @@
     "title": "Using your home for rental or business",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "property-rental-cgt",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   }
 ]

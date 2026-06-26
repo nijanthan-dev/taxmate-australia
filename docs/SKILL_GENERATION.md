@@ -12,7 +12,7 @@ TaxMate Australia uses a bash+python runtime pipeline to turn approved Australia
 5. `scripts/taxmate skills validate` checks guardrails, source assignment, reverse provenance, dynamic-value periods, and absence of committed raw snapshots.
 6. `hooks.json` runs `scripts/clean-source-cache.sh` on `SessionEnd` to remove `.cache/ato/`.
 
-Approved hosts are allowlisted in `internal/skillgen`. Downloaded content is treated as untrusted data and is never allowed to change guardrails.
+Approved hosts are allowlisted in `scripts/atodata.py`. Downloaded content is treated as untrusted data and is never allowed to change guardrails.
 
 ## Generated Outputs
 

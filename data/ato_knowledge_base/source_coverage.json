@@ -7,6 +7,7 @@
       "source_title": "Property and capital gains tax",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "property-rental-cgt"
@@ -28,6 +29,8 @@
         "rental-properties",
         "residential-rental-properties"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -37,6 +40,7 @@
       "source_title": "CGT events",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -61,6 +65,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -70,6 +76,7 @@
       "source_title": "Share investing versus share trading",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -93,6 +100,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -102,6 +111,7 @@
       "source_title": "Fortnightly tax table with no and half Medicare levy",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -124,6 +134,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -133,6 +145,7 @@
       "source_title": "Overview of business income and deductions",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -156,6 +169,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -165,6 +180,7 @@
       "source_title": "Fringe benefits tax (FBT)",
       "source_last_updated": "2024-11-03T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -187,6 +203,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -196,6 +214,7 @@
       "source_title": "How GST works",
       "source_last_updated": "2023-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -217,6 +236,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -226,6 +247,7 @@
       "source_title": "FBT concessions for not-for-profit organisations",
       "source_last_updated": "2023-01-11T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -248,6 +270,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -257,6 +281,7 @@
       "source_title": "In detail",
       "source_last_updated": "2023-10-20T13:55:03.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -278,6 +303,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -287,6 +314,7 @@
       "source_title": "Disposing of shares",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -310,6 +338,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -319,7 +349,13 @@
       "source_title": "Investments and assets",
       "source_last_updated": "2025-04-08T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "source topic not assigned from metadata"
     },
     {
@@ -329,6 +365,7 @@
       "source_title": "The quarterly super guarantee charge",
       "source_last_updated": "2026-02-24T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -348,6 +385,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -357,6 +396,7 @@
       "source_title": "Mobile phone, mobile internet and other devices",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -368,12 +408,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -383,6 +421,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -392,6 +432,7 @@
       "source_title": "Small business energy incentive",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -415,6 +456,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -424,6 +467,7 @@
       "source_title": "Reverse charge in the valuable metals industry",
       "source_last_updated": "2020-01-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -445,6 +489,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -454,6 +500,7 @@
       "source_title": "PAYG withholding payment summaries",
       "source_last_updated": "2025-06-10T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -476,6 +523,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -485,6 +534,7 @@
       "source_title": "Assessable business income",
       "source_last_updated": "2019-06-23T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -508,6 +558,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -517,6 +569,7 @@
       "source_title": "Service entities",
       "source_last_updated": "2025-11-16T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -540,6 +593,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -549,6 +604,7 @@
       "source_title": "Occupancy expenses",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "work-from-home"
@@ -570,6 +626,8 @@
         "work from home",
         "working-from-home-expenses"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -579,6 +637,7 @@
       "source_title": "Luxury car tax (LCT)",
       "source_last_updated": "2025-04-30T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -600,6 +659,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -609,6 +670,7 @@
       "source_title": "GST groups",
       "source_last_updated": "2017-03-16T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -630,6 +692,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -639,6 +703,7 @@
       "source_title": "Fixed rate method",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "work-from-home"
@@ -660,6 +725,8 @@
         "work from home",
         "working-from-home-expenses"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -669,6 +736,7 @@
       "source_title": "Expenses for a car you own or lease",
       "source_last_updated": "2026-05-03T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -680,12 +748,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -695,6 +761,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -704,6 +772,7 @@
       "source_title": "Deductions for other operating expenses",
       "source_last_updated": "2024-11-12T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -727,6 +796,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -736,6 +807,7 @@
       "source_title": "Share buy-backs",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -759,6 +831,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -768,6 +842,7 @@
       "source_title": "Exemptions, concessions and other ways to reduce FBT",
       "source_last_updated": "2023-01-11T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -790,6 +865,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -799,6 +876,7 @@
       "source_title": "Reporting back payments",
       "source_last_updated": "2025-07-15T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -821,6 +899,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -830,6 +910,7 @@
       "source_title": "How to calculate your CGT",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -854,6 +935,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -863,27 +946,33 @@
       "source_title": "Lump sum payment in arrears",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -893,6 +982,7 @@
       "source_title": "Deductions for motor vehicle expenses",
       "source_last_updated": "2026-05-26T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -916,15 +1006,18 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-1796cf927e0e",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-3-tax-table-for-actors-variety-artists-and-other-entertainers",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-3-tax-table-for-actors-variety-artists-and-other-entertainers",
-      "source_title": "Schedule 3 – Tax table for actors, variety artists and other entertainers",
+      "source_title": "Schedule 3 \u2013 Tax table for actors, variety artists and other entertainers",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -947,6 +1040,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -956,6 +1051,7 @@
       "source_title": "Removing deductions for non-compliant payments",
       "source_last_updated": "2025-06-10T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -978,6 +1074,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -987,6 +1085,7 @@
       "source_title": "Government organisations and FBT",
       "source_last_updated": "2023-01-11T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -1009,6 +1108,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1018,6 +1119,7 @@
       "source_title": "How to lodge your BAS",
       "source_last_updated": "2026-04-23T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -1039,6 +1141,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1048,6 +1152,7 @@
       "source_title": "Deductions for business travel expenses",
       "source_last_updated": "2026-05-26T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -1071,6 +1176,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1080,6 +1187,7 @@
       "source_title": "Concessional reporting",
       "source_last_updated": "2021-06-30T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -1102,6 +1210,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1111,6 +1221,7 @@
       "source_title": "Goods and services tax (GST)",
       "source_last_updated": "2020-03-31T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -1132,6 +1243,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1141,6 +1254,7 @@
       "source_title": "Medicare levy adjustment weekly tax table",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -1163,6 +1277,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1172,6 +1288,7 @@
       "source_title": "Cost base of assets",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -1196,6 +1313,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1205,6 +1324,7 @@
       "source_title": "Entertainment-related fringe benefits",
       "source_last_updated": "2023-01-11T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -1227,6 +1347,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1236,6 +1358,7 @@
       "source_title": "Accounting for business trading stock",
       "source_last_updated": "2021-07-08T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -1259,6 +1382,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1268,6 +1393,7 @@
       "source_title": "Insurance settlements",
       "source_last_updated": "2015-06-15T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -1289,6 +1415,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1298,6 +1426,7 @@
       "source_title": "Crypto assets and business",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "crypto-assets"
@@ -1316,6 +1445,8 @@
         "swap",
         "wallet"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1325,6 +1456,7 @@
       "source_title": "Accounting for GST in your business",
       "source_last_updated": "2019-04-04T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -1346,6 +1478,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1355,6 +1489,7 @@
       "source_title": "Fixing BAS mistakes or making adjustments",
       "source_last_updated": "2023-07-18T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -1376,6 +1511,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1385,6 +1522,7 @@
       "source_title": "Weekly tax table with no and half Medicare levy",
       "source_last_updated": "2026-06-17T07:02:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -1407,6 +1545,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1416,6 +1556,7 @@
       "source_title": "Invoices with a WEG label",
       "source_last_updated": "2017-03-09T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -1437,6 +1578,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1446,6 +1589,7 @@
       "source_title": "Shares and similar investments",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -1469,15 +1613,18 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-252e4341e146",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-4-tax-table-for-return-to-work-payments",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-4-tax-table-for-return-to-work-payments",
-      "source_title": "Schedule 4 – Tax table for return to work payments",
+      "source_title": "Schedule 4 \u2013 Tax table for return to work payments",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -1500,6 +1647,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1509,6 +1658,7 @@
       "source_title": "CGT discount",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -1533,6 +1683,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1542,6 +1694,7 @@
       "source_title": "Employment allowances",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -1553,12 +1706,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -1568,6 +1719,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1577,6 +1730,7 @@
       "source_title": "Investments, insurance and super",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -1588,12 +1742,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -1603,6 +1755,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1612,6 +1766,7 @@
       "source_title": "Due dates for lodging and paying your BAS",
       "source_last_updated": "2025-02-23T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -1633,6 +1788,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1642,6 +1799,7 @@
       "source_title": "Keeping records for depreciating assets",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -1653,12 +1811,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -1668,6 +1824,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1677,6 +1835,7 @@
       "source_title": "Tax tables",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -1699,6 +1858,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1708,6 +1869,7 @@
       "source_title": "If your business changes or ceases",
       "source_last_updated": "2016-09-22T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -1729,6 +1891,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1738,27 +1902,33 @@
       "source_title": "Amounts you do not include as income",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1768,6 +1938,7 @@
       "source_title": "Education, training and seminars",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -1779,12 +1950,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -1794,6 +1963,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1803,6 +1974,7 @@
       "source_title": "Tax invoices",
       "source_last_updated": "2025-08-24T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -1824,6 +1996,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1833,6 +2007,7 @@
       "source_title": "When to charge GST (and when not to)",
       "source_last_updated": "2016-12-22T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -1854,6 +2029,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1863,6 +2040,7 @@
       "source_title": "Monthly tax table",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -1885,6 +2063,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1894,6 +2074,7 @@
       "source_title": "Cost base adjustments for capital works",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -1918,6 +2099,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1927,6 +2110,7 @@
       "source_title": "Registering for GST",
       "source_last_updated": "2025-05-22T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -1948,6 +2132,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1957,6 +2143,7 @@
       "source_title": "Business losses",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -1980,6 +2167,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -1989,6 +2178,7 @@
       "source_title": "What STP is",
       "source_last_updated": "2021-08-31T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -2011,6 +2201,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2020,6 +2212,7 @@
       "source_title": "Work-related deductions",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -2031,12 +2224,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -2046,6 +2237,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2055,6 +2248,7 @@
       "source_title": "Indexing the cost base",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -2079,6 +2273,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2088,6 +2284,7 @@
       "source_title": "Paying and reporting PAYG withholding amounts to us",
       "source_last_updated": "2025-11-20T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -2110,6 +2307,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2119,6 +2318,7 @@
       "source_title": "Obtaining shares",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -2142,6 +2342,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2151,6 +2353,7 @@
       "source_title": "Study and training support loans fortnightly tax table",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -2173,6 +2376,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2182,6 +2387,7 @@
       "source_title": "Family and dependants for Medicare levy surcharge purposes",
       "source_last_updated": "2026-04-29T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -2202,6 +2408,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2211,6 +2419,7 @@
       "source_title": "When you can claim a GST credit",
       "source_last_updated": "2026-01-07T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -2232,15 +2441,18 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-346ced4fd2e2",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-10-tax-table-for-payments-made-under-voluntary-agreements",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-10-tax-table-for-payments-made-under-voluntary-agreements",
-      "source_title": "Schedule 10 – Tax table for payments made under voluntary agreements",
+      "source_title": "Schedule 10 \u2013 Tax table for payments made under voluntary agreements",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -2263,6 +2475,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2272,6 +2486,7 @@
       "source_title": "Weekly tax table",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -2294,6 +2509,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2303,6 +2520,7 @@
       "source_title": "Employment income",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -2314,12 +2532,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -2329,6 +2545,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2338,6 +2556,7 @@
       "source_title": "Computers, laptops and software",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -2349,12 +2568,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -2364,6 +2581,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2373,6 +2592,7 @@
       "source_title": "Business deductions",
       "source_last_updated": "2026-06-17T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -2396,6 +2616,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2405,6 +2627,7 @@
       "source_title": "Taxi, ride-share and public transport expenses",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -2416,12 +2639,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -2431,6 +2652,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2440,6 +2663,7 @@
       "source_title": "Claiming GST credits",
       "source_last_updated": "2024-06-19T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -2461,6 +2685,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2470,6 +2696,7 @@
       "source_title": "List of payments that are ordinary time earnings",
       "source_last_updated": "2026-04-29T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -2489,6 +2716,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2498,6 +2727,7 @@
       "source_title": "Dividend reinvestment plans",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -2521,6 +2751,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2530,6 +2762,7 @@
       "source_title": "Medicare and private health insurance",
       "source_last_updated": "2025-06-11T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -2550,6 +2783,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2559,6 +2794,7 @@
       "source_title": "What is capital gains tax?",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -2583,6 +2819,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2592,6 +2830,7 @@
       "source_title": "Super for independent contractors",
       "source_last_updated": "2026-04-28T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -2611,6 +2850,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2620,6 +2861,7 @@
       "source_title": "Claiming the private health insurance rebate",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -2640,6 +2882,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2649,6 +2893,7 @@
       "source_title": "Market valuation of assets",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -2673,6 +2918,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2682,6 +2929,7 @@
       "source_title": "Depreciating assets you use for work",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -2693,12 +2941,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -2708,6 +2954,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2717,6 +2965,7 @@
       "source_title": "FBT registration, lodgment, payment and reporting",
       "source_last_updated": "2023-01-11T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -2739,6 +2988,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2748,6 +2999,7 @@
       "source_title": "Grants and sponsorship",
       "source_last_updated": "2023-05-28T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -2769,6 +3021,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2778,27 +3032,33 @@
       "source_title": "Guides for occupations and industries",
       "source_last_updated": "2026-05-10T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2808,6 +3068,7 @@
       "source_title": "Tax rates and codes",
       "source_last_updated": "2024-10-29T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -2830,6 +3091,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2839,27 +3102,33 @@
       "source_title": "Australian defence force members performing overseas duty",
       "source_last_updated": "2025-06-15T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2869,6 +3138,7 @@
       "source_title": "GST - Goods and Services Tax",
       "source_last_updated": "2023-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -2890,6 +3160,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2899,6 +3171,7 @@
       "source_title": "Inherited assets and capital gains tax",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -2923,6 +3196,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -2932,6 +3207,7 @@
       "source_title": "PAYG withholding annual reports",
       "source_last_updated": "2025-06-10T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -2954,15 +3230,18 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-40f27ceb892a",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-12-tax-table-for-superannuation-lump-sums",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-12-tax-table-for-superannuation-lump-sums",
-      "source_title": "Schedule 12 – Tax table for superannuation lump sums",
+      "source_title": "Schedule 12 \u2013 Tax table for superannuation lump sums",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -2985,15 +3264,18 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-4137ec5a86de",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-5-tax-table-for-back-payments-commissions-bonuses-and-similar-payments",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-5-tax-table-for-back-payments-commissions-bonuses-and-similar-payments",
-      "source_title": "Schedule 5 – Tax table for back payments, commissions, bonuses and similar payments",
+      "source_title": "Schedule 5 \u2013 Tax table for back payments, commissions, bonuses and similar payments",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -3016,6 +3298,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3025,6 +3309,7 @@
       "source_title": "Payments you need to withhold from",
       "source_last_updated": "2025-06-10T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -3047,6 +3332,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3056,6 +3343,7 @@
       "source_title": "Pay as you go (PAYG) instalments",
       "source_last_updated": "2023-10-12T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -3077,6 +3365,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3086,6 +3376,7 @@
       "source_title": "Meals, entertainment and functions",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -3097,12 +3388,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -3112,15 +3401,18 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-44b6ac767879",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-1-statement-of-formulas-for-calculating-amounts-to-be-withheld",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-1-statement-of-formulas-for-calculating-amounts-to-be-withheld",
-      "source_title": "Schedule 1 – Statement of formulas for calculating amounts to be withheld",
+      "source_title": "Schedule 1 \u2013 Statement of formulas for calculating amounts to be withheld",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -3143,6 +3435,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3152,6 +3446,7 @@
       "source_title": "Home-based business and CGT implications",
       "source_last_updated": "2026-02-02T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "work-from-home"
@@ -3173,6 +3468,8 @@
         "work from home",
         "working-from-home-expenses"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3182,6 +3479,7 @@
       "source_title": "Deductions for repairs, maintenance and replacement expenses",
       "source_last_updated": "2024-06-19T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -3205,6 +3503,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3214,36 +3514,43 @@
       "source_title": "Business, partnership and trust income",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-4666a628bc7c",
       "original_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-businesses-expenses-company-or-trust",
       "canonical_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-businesses-expenses-company-or-trust",
-      "source_title": "Home-based businesses expenses – company or trust",
+      "source_title": "Home-based businesses expenses \u2013 company or trust",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "work-from-home"
@@ -3265,6 +3572,8 @@
         "work from home",
         "working-from-home-expenses"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3274,6 +3583,7 @@
       "source_title": "Previous years' tax tables",
       "source_last_updated": "2024-11-28T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -3296,6 +3606,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3305,6 +3617,7 @@
       "source_title": "GST-free sales",
       "source_last_updated": "2021-07-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -3326,6 +3639,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3335,6 +3650,7 @@
       "source_title": "Keeping crypto records",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "crypto-assets"
@@ -3353,6 +3669,8 @@
         "swap",
         "wallet"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3362,7 +3680,13 @@
       "source_title": "Investing in bank accounts and income bonds",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "source topic not assigned from metadata"
     },
     {
@@ -3372,6 +3696,7 @@
       "source_title": "Records for rental properties and holiday homes",
       "source_last_updated": "2026-05-20T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "property-rental-cgt"
@@ -3393,6 +3718,8 @@
         "rental-properties",
         "residential-rental-properties"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3402,27 +3729,33 @@
       "source_title": "Investment income",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3432,6 +3765,7 @@
       "source_title": "Trust non-assessable payments (CGT event E4)",
       "source_last_updated": "2023-06-29T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -3455,6 +3789,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3464,6 +3800,7 @@
       "source_title": "How much quarterly super to pay",
       "source_last_updated": "2026-02-24T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -3483,6 +3820,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3492,6 +3831,7 @@
       "source_title": "Capital proceeds from disposing of assets",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -3516,6 +3856,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3525,6 +3867,7 @@
       "source_title": "Fringe benefits tax - historical rates and thresholds",
       "source_last_updated": "2026-03-31T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -3547,6 +3890,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3556,6 +3901,7 @@
       "source_title": "Your private health insurance statement",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -3576,6 +3922,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3585,6 +3933,7 @@
       "source_title": "Acquiring CGT assets",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -3609,6 +3958,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3618,6 +3969,7 @@
       "source_title": "Keeping travel expense records",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -3629,12 +3981,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -3644,6 +3994,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3653,6 +4005,7 @@
       "source_title": "Self-managed super funds",
       "source_last_updated": "2025-04-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -3672,6 +4025,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3681,6 +4036,7 @@
       "source_title": "Deductions for carbon sink forest expenses",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -3704,6 +4060,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3713,6 +4071,7 @@
       "source_title": "Payments with special rules",
       "source_last_updated": "2025-06-10T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -3735,6 +4094,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3744,6 +4105,7 @@
       "source_title": "Registered emissions units",
       "source_last_updated": "2024-02-14T02:28:33.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -3767,6 +4129,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3776,6 +4140,7 @@
       "source_title": "Restrictions on voluntary contributions",
       "source_last_updated": "2025-07-23T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -3795,6 +4160,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3804,6 +4171,7 @@
       "source_title": "Meals and snacks",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -3815,12 +4183,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -3830,6 +4196,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3839,6 +4207,7 @@
       "source_title": "Input-taxed sales",
       "source_last_updated": "2015-06-15T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -3860,6 +4229,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3869,6 +4240,7 @@
       "source_title": "Single Touch Payroll for intermediaries",
       "source_last_updated": "2019-09-30T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -3891,6 +4263,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3900,6 +4274,7 @@
       "source_title": "Using capital losses to reduce capital gains",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -3924,15 +4299,18 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-5ab489240ceb",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-2-tax-table-for-the-horticultural-or-shearing-industry",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-2-tax-table-for-the-horticultural-or-shearing-industry",
-      "source_title": "Schedule 2 – Tax table for individuals working in the horticultural or shearing industry",
+      "source_title": "Schedule 2 \u2013 Tax table for individuals working in the horticultural or shearing industry",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -3955,6 +4333,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3964,6 +4344,7 @@
       "source_title": "Study and training support loans weekly tax table",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -3986,6 +4367,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -3995,6 +4378,7 @@
       "source_title": "Motor vehicle expense calculation methods",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -4018,15 +4402,18 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-5e5645e99e91",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/sch-14-table-of-additional-amounts-to-withhold-as-a-result-of-an-agreement-to-increase-withholding",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/sch-14-table-of-additional-amounts-to-withhold-as-a-result-of-an-agreement-to-increase-withholding",
-      "source_title": "Schedule 14 – Tax table for additional amounts to withhold as a result of an agreement to increase withholding",
+      "source_title": "Schedule 14 \u2013 Tax table for additional amounts to withhold as a result of an agreement to increase withholding",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -4049,15 +4436,18 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-5eaa95323356",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-7-tax-table-for-unused-leave-payments-on-termination-of-employment",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-7-tax-table-for-unused-leave-payments-on-termination-of-employment",
-      "source_title": "Schedule 7 – Tax table for unused leave payments on termination of employment",
+      "source_title": "Schedule 7 \u2013 Tax table for unused leave payments on termination of employment",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -4080,6 +4470,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4089,6 +4481,7 @@
       "source_title": "Small business skills and training boost",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -4112,6 +4505,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4121,6 +4516,7 @@
       "source_title": "Personal services income",
       "source_last_updated": "2024-11-05T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -4144,6 +4540,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4153,6 +4551,7 @@
       "source_title": "Work out if you have to pay super",
       "source_last_updated": "2026-04-28T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -4172,6 +4571,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4181,6 +4582,7 @@
       "source_title": "Tax table for daily and casual workers",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -4203,6 +4605,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4212,6 +4616,7 @@
       "source_title": "Demergers CGT rollover for shareholders and unit holders",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -4235,6 +4640,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4244,6 +4651,7 @@
       "source_title": "Input Tax Credit estimators",
       "source_last_updated": "2022-09-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -4265,6 +4673,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4274,6 +4684,7 @@
       "source_title": "Quarterly super payment due dates",
       "source_last_updated": "2026-02-24T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -4293,6 +4704,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4302,6 +4715,7 @@
       "source_title": "Work out your business taxable income",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -4325,6 +4739,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4334,6 +4750,7 @@
       "source_title": "Employers of Pacific Australia Labour Mobility scheme workers",
       "source_last_updated": "2024-04-23T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -4356,6 +4773,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4365,6 +4784,7 @@
       "source_title": "GST branches",
       "source_last_updated": "2017-03-16T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -4386,15 +4806,18 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-6c3d86805537",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-rates-australian-residents",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-rates-australian-residents",
-      "source_title": "Tax rates – Australian resident",
+      "source_title": "Tax rates \u2013 Australian resident",
       "source_last_updated": "2026-05-31T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -4417,6 +4840,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4426,6 +4851,7 @@
       "source_title": "Medicare levy surcharge and your tax return",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -4446,6 +4872,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4455,6 +4883,7 @@
       "source_title": "Medicare levy",
       "source_last_updated": "2026-04-29T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -4475,6 +4904,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4484,6 +4915,7 @@
       "source_title": "Assets costing more than $300",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -4495,12 +4927,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -4510,6 +4940,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4519,6 +4951,7 @@
       "source_title": "Superannuation pensions and annuities",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -4538,6 +4971,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4547,6 +4982,7 @@
       "source_title": "Single Touch Payroll for employees",
       "source_last_updated": "2024-09-30T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -4569,6 +5005,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4578,6 +5016,7 @@
       "source_title": "STP employer reporting guidelines",
       "source_last_updated": "2024-11-21T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -4600,6 +5039,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4609,6 +5050,7 @@
       "source_title": "Super guarantee",
       "source_last_updated": "2026-04-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -4631,6 +5073,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4640,6 +5084,7 @@
       "source_title": "Relationship breakdown and capital gains tax",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -4664,6 +5109,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4673,6 +5120,7 @@
       "source_title": "Payday Super",
       "source_last_updated": "2025-11-18T04:13:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -4692,6 +5140,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4701,6 +5151,7 @@
       "source_title": "Calculating your FBT",
       "source_last_updated": "2023-01-11T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -4723,6 +5174,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4732,6 +5185,7 @@
       "source_title": "Understanding concessional and non-concessional contributions",
       "source_last_updated": "2026-01-14T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -4751,6 +5205,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4760,6 +5216,7 @@
       "source_title": "Key super rates and thresholds",
       "source_last_updated": "2025-08-26T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -4782,6 +5239,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4791,6 +5250,7 @@
       "source_title": "Actual cost method",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "work-from-home"
@@ -4812,6 +5272,8 @@
         "work from home",
         "working-from-home-expenses"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4821,6 +5283,7 @@
       "source_title": "Clothing, laundry and dry-cleaning expenses",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -4832,12 +5295,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -4847,6 +5308,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4856,6 +5319,7 @@
       "source_title": "Fringe benefits tax (FBT) instalment",
       "source_last_updated": "2025-04-30T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -4877,6 +5341,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4886,27 +5352,33 @@
       "source_title": "Tax offsets",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4916,6 +5388,7 @@
       "source_title": "When STP reporting can cease",
       "source_last_updated": "2021-09-09T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -4938,6 +5411,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4947,6 +5422,7 @@
       "source_title": "Taxable sales",
       "source_last_updated": "2023-05-17T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -4968,6 +5444,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -4977,6 +5455,7 @@
       "source_title": "Shares, funds and trusts",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -5000,6 +5479,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5009,6 +5490,7 @@
       "source_title": "Cost of managing tax affairs",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -5020,12 +5502,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -5035,6 +5515,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5044,6 +5526,7 @@
       "source_title": "Concessional contributions cap",
       "source_last_updated": "2024-07-23T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -5063,6 +5546,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5072,6 +5557,7 @@
       "source_title": "Overnight travel expenses and allowances",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -5083,12 +5569,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -5098,6 +5582,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5107,6 +5593,7 @@
       "source_title": "Seasonal Worker Programme and Pacific Labour Scheme",
       "source_last_updated": "2025-06-10T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -5129,6 +5616,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5138,6 +5627,7 @@
       "source_title": "Inherited property and CGT",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -5162,6 +5652,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5171,6 +5663,7 @@
       "source_title": "Business offsets and rebates",
       "source_last_updated": "2024-11-05T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -5194,6 +5687,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5203,6 +5698,7 @@
       "source_title": "Personal super contributions",
       "source_last_updated": "2024-05-22T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -5222,6 +5718,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5231,6 +5729,7 @@
       "source_title": "Medicare levy adjustment fortnightly tax table",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -5253,6 +5752,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5262,6 +5763,7 @@
       "source_title": "Instalment notices for GST and PAYG instalments",
       "source_last_updated": "2025-04-30T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -5283,6 +5785,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5292,6 +5796,7 @@
       "source_title": "Tools, computers and items you use for work",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -5303,12 +5808,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -5318,6 +5821,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5327,6 +5832,7 @@
       "source_title": "Deductions for home-based business expenses",
       "source_last_updated": "2026-06-17T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "work-from-home"
@@ -5348,6 +5854,8 @@
         "work from home",
         "working-from-home-expenses"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5357,6 +5865,7 @@
       "source_title": "Super for long-distance drivers",
       "source_last_updated": "2025-06-30T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -5376,6 +5885,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5385,6 +5896,7 @@
       "source_title": "Expanding Single Touch Payroll Phase 2",
       "source_last_updated": "2022-12-21T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -5407,6 +5919,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5416,6 +5930,7 @@
       "source_title": "CGT listed investment companies concession",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -5439,6 +5954,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5448,6 +5965,7 @@
       "source_title": "BAS and GST tips",
       "source_last_updated": "2025-06-25T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -5469,6 +5987,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5478,6 +5998,7 @@
       "source_title": "Self-education expenses",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -5489,12 +6010,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -5504,15 +6023,18 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-8a7e49216719",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-11-tax-table-for-employment-termination-payments",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-11-tax-table-for-employment-termination-payments",
-      "source_title": "Schedule 11 – Tax table for employment termination payments",
+      "source_title": "Schedule 11 \u2013 Tax table for employment termination payments",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -5535,6 +6057,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5544,6 +6068,7 @@
       "source_title": "Start reporting",
       "source_last_updated": "2021-08-18T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -5566,6 +6091,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5575,6 +6102,7 @@
       "source_title": "Deductions for digital product expenses",
       "source_last_updated": "2026-05-26T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -5598,6 +6126,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5607,6 +6137,7 @@
       "source_title": "Super co-contribution",
       "source_last_updated": "2023-08-01T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -5626,6 +6157,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5635,6 +6168,7 @@
       "source_title": "Payments that are not ordinary time earnings",
       "source_last_updated": "2025-08-06T05:53:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -5654,6 +6188,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5663,6 +6199,7 @@
       "source_title": "Single Touch Payroll",
       "source_last_updated": "2024-11-03T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -5685,6 +6222,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5694,27 +6233,33 @@
       "source_title": "Income tests",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5724,6 +6269,7 @@
       "source_title": "Crypto asset investments",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "crypto-assets"
@@ -5742,6 +6288,8 @@
         "swap",
         "wallet"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5751,6 +6299,7 @@
       "source_title": "Medicare levy adjustment monthly tax table",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -5773,6 +6322,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5782,6 +6333,7 @@
       "source_title": "Medicare levy surcharge income, thresholds and rates",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -5802,6 +6354,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5811,6 +6365,7 @@
       "source_title": "STP and activity statements",
       "source_last_updated": "2025-08-14T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -5833,6 +6388,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5842,6 +6399,7 @@
       "source_title": "Options for adding to your super",
       "source_last_updated": "2023-08-01T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -5861,6 +6419,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5870,6 +6430,7 @@
       "source_title": "Records you need to keep",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "records-evidence"
@@ -5891,6 +6452,8 @@
         "substantiation",
         "tax-invoices"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5900,6 +6463,7 @@
       "source_title": "Taxable payments reporting and contractors",
       "source_last_updated": "2026-05-26T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -5922,6 +6486,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5931,6 +6497,7 @@
       "source_title": "Keeping records of shares and units",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -5954,6 +6521,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5963,6 +6532,7 @@
       "source_title": "Owning shares",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -5986,6 +6556,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -5995,6 +6567,7 @@
       "source_title": "When you can claim losses on shares and units",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -6018,6 +6591,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6027,6 +6602,7 @@
       "source_title": "Super for individuals and families",
       "source_last_updated": "2023-10-20T12:18:23.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -6046,15 +6622,18 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-978ed1ace39a",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-6-tax-table-for-annuities",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-6-tax-table-for-annuities",
-      "source_title": "Schedule 6 – Tax table for annuities",
+      "source_title": "Schedule 6 \u2013 Tax table for annuities",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -6077,6 +6656,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6086,6 +6667,7 @@
       "source_title": "Expenses for a vehicle that isn't yours or isn't a car",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -6097,12 +6679,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -6112,6 +6692,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6121,6 +6703,7 @@
       "source_title": "Cars, transport and travel",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -6132,12 +6715,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -6147,6 +6728,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6156,7 +6739,13 @@
       "source_title": "How to lodge your tax return",
       "source_last_updated": "2026-06-14T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "source topic not assigned from metadata"
     },
     {
@@ -6166,6 +6755,7 @@
       "source_title": "Lifetime health cover",
       "source_last_updated": "2026-05-04T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -6186,6 +6776,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6195,6 +6787,7 @@
       "source_title": "Types of fringe benefits",
       "source_last_updated": "2023-01-11T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -6217,6 +6810,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6226,6 +6821,7 @@
       "source_title": "Government payments and allowances",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -6237,12 +6833,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -6252,6 +6846,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6261,6 +6857,7 @@
       "source_title": "Documents to support and verify your claims",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "records-evidence"
@@ -6282,15 +6879,18 @@
         "substantiation",
         "tax-invoices"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-a10b1d19f758",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-15-tax-table-for-working-holiday-makers",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-15-tax-table-for-working-holiday-makers",
-      "source_title": "Schedule 15 – Tax table for working holiday makers",
+      "source_title": "Schedule 15 \u2013 Tax table for working holiday makers",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -6313,6 +6913,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6322,6 +6924,7 @@
       "source_title": "Personal grooming, health and fitness",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -6333,12 +6936,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -6348,6 +6949,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6357,6 +6960,7 @@
       "source_title": "Main residence exemption in relationship breakdown",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -6381,6 +6985,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6390,6 +6996,7 @@
       "source_title": "Property and land",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "property-rental-cgt"
@@ -6411,6 +7018,8 @@
         "rental-properties",
         "residential-rental-properties"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6420,6 +7029,7 @@
       "source_title": "Deductions you can claim",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -6431,12 +7041,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -6446,6 +7054,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6455,6 +7065,7 @@
       "source_title": "Keeping good investment records",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "records-evidence"
@@ -6476,6 +7087,8 @@
         "substantiation",
         "tax-invoices"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6485,6 +7098,7 @@
       "source_title": "Small business technology investment boost",
       "source_last_updated": "2024-06-19T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -6508,15 +7122,18 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-aa24577ab271",
       "original_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-business-expenses-sole-trader-or-partnership",
       "canonical_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-business-expenses-sole-trader-or-partnership",
-      "source_title": "Home-based business expenses – sole trader or partnership",
+      "source_title": "Home-based business expenses \u2013 sole trader or partnership",
       "source_last_updated": "2026-05-26T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "work-from-home"
@@ -6538,6 +7155,8 @@
         "work from home",
         "working-from-home-expenses"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6547,6 +7166,7 @@
       "source_title": "Clothes and items you wear at work",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -6558,12 +7178,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -6573,6 +7191,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6582,6 +7202,7 @@
       "source_title": "Foreign residents and capital gains tax",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -6606,6 +7227,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6615,6 +7238,7 @@
       "source_title": "Taxable payments annual report (TPAR)",
       "source_last_updated": "2022-03-13T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -6637,6 +7261,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6646,6 +7272,7 @@
       "source_title": "Refund of franking credits for individuals",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -6669,6 +7296,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6678,6 +7307,7 @@
       "source_title": "Income and deductions for business",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -6701,6 +7331,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6710,27 +7342,33 @@
       "source_title": "Australia-United States Joint Space and Defence Projects",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6740,6 +7378,7 @@
       "source_title": "Working from home expenses",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "work-from-home"
@@ -6761,6 +7400,8 @@
         "work from home",
         "working-from-home-expenses"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6770,6 +7411,7 @@
       "source_title": "Fortnightly tax table",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -6792,6 +7434,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6801,7 +7445,11 @@
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "duplicate",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
       "duplicate_of": "ato-ff8796199a01",
       "duplicate_evidence": "identical canonical URL",
       "reason": "identical canonical URL"
@@ -6813,6 +7461,7 @@
       "source_title": "Assets costing $300 or less",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -6824,12 +7473,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -6839,6 +7486,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6848,6 +7497,7 @@
       "source_title": "Need more time?",
       "source_last_updated": "2019-11-25T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -6870,6 +7520,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6879,6 +7531,7 @@
       "source_title": "Private health insurance rebate eligibility",
       "source_last_updated": "2025-07-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -6899,6 +7552,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6908,6 +7563,7 @@
       "source_title": "Deductions for unrecoverable income (bad debts)",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -6931,6 +7587,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6940,27 +7598,33 @@
       "source_title": "Your income if you are under 18 years old",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -6970,6 +7634,7 @@
       "source_title": "How we can help",
       "source_last_updated": "2023-07-12T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -6991,6 +7656,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7000,6 +7667,7 @@
       "source_title": "Work out if you need to lodge a TPAR",
       "source_last_updated": "2024-04-22T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -7022,6 +7690,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7031,6 +7701,7 @@
       "source_title": "List of CGT assets and exemptions",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -7055,6 +7726,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7064,6 +7737,7 @@
       "source_title": "Overtime meal expenses",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -7075,12 +7749,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -7090,6 +7762,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7099,6 +7773,7 @@
       "source_title": "When you cannot claim a GST credit",
       "source_last_updated": "2024-08-29T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -7120,6 +7795,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7129,6 +7806,7 @@
       "source_title": "Lodge your TPAR",
       "source_last_updated": "2025-08-28T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -7151,6 +7829,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7160,6 +7840,7 @@
       "source_title": "Business activity statements (BAS)",
       "source_last_updated": "2023-06-30T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -7181,6 +7862,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7190,27 +7873,33 @@
       "source_title": "Scholarships prizes and awards",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7220,6 +7909,7 @@
       "source_title": "How to report Single Touch Payroll data",
       "source_last_updated": "2023-11-04T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -7242,6 +7932,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7251,6 +7943,7 @@
       "source_title": "Pay as you go (PAYG) withholding",
       "source_last_updated": "2025-04-30T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -7272,15 +7965,18 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-c4ccdee4e221",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-13-tax-table-for-superannuation-income-streams",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-13-tax-table-for-superannuation-income-streams",
-      "source_title": "Schedule 13 – Tax table for superannuation income streams",
+      "source_title": "Schedule 13 \u2013 Tax table for superannuation income streams",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -7303,6 +7999,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7312,6 +8010,7 @@
       "source_title": "STP reporting options",
       "source_last_updated": "2024-11-13T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -7334,6 +8033,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7343,27 +8044,33 @@
       "source_title": "Taxable, assessable and exempt income",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7373,6 +8080,7 @@
       "source_title": "Division 293 tax on concessional contributions by high-income earners",
       "source_last_updated": "2025-12-07T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -7392,6 +8100,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7401,6 +8111,7 @@
       "source_title": "Capital gains tax",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -7425,15 +8136,18 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-c80218e04372",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-8-statement-of-formulas-for-calculating-study-and-training-support-loans-components",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-8-statement-of-formulas-for-calculating-study-and-training-support-loans-components",
-      "source_title": "Schedule 8 – Statement of formulas for calculating study and training support loans components",
+      "source_title": "Schedule 8 \u2013 Statement of formulas for calculating study and training support loans components",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -7456,6 +8170,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7465,6 +8181,7 @@
       "source_title": "When CGT applies to shares and units",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -7488,6 +8205,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7497,6 +8216,7 @@
       "source_title": "PAYG withholding compliance",
       "source_last_updated": "2025-06-10T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -7519,6 +8239,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7528,6 +8250,7 @@
       "source_title": "Effect of GST credits on income tax deductions",
       "source_last_updated": "2019-12-08T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -7549,6 +8272,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7558,6 +8283,7 @@
       "source_title": "Foreign resident investments",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -7582,6 +8308,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7591,6 +8319,7 @@
       "source_title": "Paying the Medicare levy surcharge",
       "source_last_updated": "2026-05-04T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -7611,6 +8340,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7620,6 +8351,7 @@
       "source_title": "Investments in a company in liquidation or administration",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -7643,6 +8375,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7652,6 +8386,7 @@
       "source_title": "News, events and resources",
       "source_last_updated": "2024-08-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -7674,6 +8409,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7683,6 +8420,7 @@
       "source_title": "Investing in shares",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -7706,6 +8444,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7715,6 +8455,7 @@
       "source_title": "PAYG withholding for deceased employees",
       "source_last_updated": "2025-06-10T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -7737,15 +8478,18 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-cd44254365e9",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-9-tax-table-for-seniors-and-pensioners",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes/schedule-9-tax-table-for-seniors-and-pensioners",
-      "source_title": "Schedule 9 – Tax table for seniors and pensioners",
+      "source_title": "Schedule 9 \u2013 Tax table for seniors and pensioners",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -7768,6 +8512,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7777,6 +8523,7 @@
       "source_title": "Private health insurance rebate",
       "source_last_updated": "2026-04-29T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -7797,6 +8544,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7806,6 +8555,7 @@
       "source_title": "Children's share investments",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "shares-etfs-managed-funds"
@@ -7829,6 +8579,8 @@
         "similar-investments",
         "trust-non-assessable"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7838,6 +8590,7 @@
       "source_title": "Lodging your BAS or annual GST return",
       "source_last_updated": "2015-06-15T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -7859,6 +8612,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7868,6 +8623,7 @@
       "source_title": "Wine equalisation tax (WET)",
       "source_last_updated": "2025-04-30T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -7889,6 +8645,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7898,6 +8656,7 @@
       "source_title": "PAYG withholding",
       "source_last_updated": "2024-06-17T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -7920,6 +8679,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7929,6 +8690,7 @@
       "source_title": "Keeping records for property",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "property-rental-cgt"
@@ -7950,6 +8712,8 @@
         "rental-properties",
         "residential-rental-properties"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7959,6 +8723,7 @@
       "source_title": "Deductions for salaries, wages and super contributions",
       "source_last_updated": "2026-04-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -7982,6 +8747,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -7991,6 +8758,7 @@
       "source_title": "Medicare levy surcharge",
       "source_last_updated": "2026-04-29T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -8011,6 +8779,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8020,27 +8790,33 @@
       "source_title": "Income you must declare",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8050,6 +8826,7 @@
       "source_title": "Super",
       "source_last_updated": "2023-08-01T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "superannuation"
@@ -8069,6 +8846,8 @@
         "super-guarantee",
         "superannuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8078,27 +8857,33 @@
       "source_title": "Compensation and insurance payments",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8108,6 +8893,7 @@
       "source_title": "Fringe benefits tax - rates and thresholds",
       "source_last_updated": "2026-05-19T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -8130,6 +8916,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8139,6 +8927,7 @@
       "source_title": "How fringe benefits tax works",
       "source_last_updated": "2024-07-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -8161,6 +8950,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8170,6 +8961,7 @@
       "source_title": "Study and training support loans monthly tax table",
       "source_last_updated": "2026-06-16T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -8192,6 +8984,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8201,6 +8995,7 @@
       "source_title": "Home phone and internet expenses",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -8212,12 +9007,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -8227,6 +9020,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8236,6 +9031,7 @@
       "source_title": "Special rules for specific GST credit claims",
       "source_last_updated": "2015-06-15T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -8257,6 +9053,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8266,6 +9064,7 @@
       "source_title": "Eligibility for main residence exemption",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "property-rental-cgt"
@@ -8287,6 +9086,8 @@
         "rental-properties",
         "residential-rental-properties"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8296,6 +9097,7 @@
       "source_title": "Tax file number and withholding declarations",
       "source_last_updated": "2025-06-10T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -8318,6 +9120,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8327,27 +9131,33 @@
       "source_title": "Occupation and industry specific guides",
       "source_last_updated": "2026-05-10T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8357,6 +9167,7 @@
       "source_title": "Deductions for depreciating assets and capital expenses",
       "source_last_updated": "2025-05-28T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -8380,6 +9191,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8389,6 +9202,7 @@
       "source_title": "Calculating your CGT",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -8413,15 +9227,18 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
       "source_id": "ato-e55bb86920fd",
       "original_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/overseas-visitors-private-health-insurance-on-your-tax-return",
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/overseas-visitors-private-health-insurance-on-your-tax-return",
-      "source_title": "Overseas visitors – private health insurance on your tax return",
+      "source_title": "Overseas visitors \u2013 private health insurance on your tax return",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -8442,6 +9259,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8451,6 +9270,7 @@
       "source_title": "Fuel tax credits",
       "source_last_updated": "2025-04-30T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -8472,6 +9292,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8481,6 +9303,7 @@
       "source_title": "Income thresholds and rates for the private health insurance rebate",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "private-health-medicare"
@@ -8501,6 +9324,8 @@
         "private-health-insurance-rebate",
         "rebate"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8510,6 +9335,7 @@
       "source_title": "Tools and equipment to perform your work",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -8521,12 +9347,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -8536,6 +9360,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8545,6 +9371,7 @@
       "source_title": "CGT discount for foreign residents",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "capital-gains-tax"
@@ -8569,6 +9396,8 @@
         "disposal",
         "market-valuation"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8578,6 +9407,7 @@
       "source_title": "If you are finding it hard to lodge and pay on time",
       "source_last_updated": "2023-09-04T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -8599,6 +9429,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8608,6 +9440,7 @@
       "source_title": "CGT discount for affordable housing",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "property-rental-cgt"
@@ -8629,6 +9462,8 @@
         "rental-properties",
         "residential-rental-properties"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8638,6 +9473,7 @@
       "source_title": "Using your home for rental or business",
       "source_last_updated": "2026-06-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "property-rental-cgt"
@@ -8659,6 +9495,8 @@
         "rental-properties",
         "residential-rental-properties"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8668,6 +9506,7 @@
       "source_title": "Professional firms",
       "source_last_updated": "2023-10-20T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -8691,6 +9530,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8700,27 +9541,33 @@
       "source_title": "Income, deductions, offsets and records",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8730,6 +9577,7 @@
       "source_title": "What to exclude from your business's assessable income",
       "source_last_updated": "2025-05-06T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "abn-business"
@@ -8753,6 +9601,8 @@
         "personal-services-income",
         "sole trader"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8762,27 +9612,33 @@
       "source_title": "Foreign and worldwide income",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "records-evidence"
+        "employment-deductions"
       ],
       "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
       ],
       "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
         "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8792,7 +9648,13 @@
       "source_title": "Your tax return",
       "source_last_updated": "2026-05-21T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "source topic not assigned from metadata"
     },
     {
@@ -8802,6 +9664,7 @@
       "source_title": "Salary sacrificing",
       "source_last_updated": "2026-04-23T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -8824,6 +9687,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8833,6 +9698,7 @@
       "source_title": "Payroll governance for employers",
       "source_last_updated": "2025-10-27T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "payg-employer"
@@ -8855,6 +9721,8 @@
         "tax-table",
         "taxable-payments-annual-report"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8864,6 +9732,7 @@
       "source_title": "Memberships, accreditations, fees and commissions",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -8875,12 +9744,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -8890,6 +9757,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8899,6 +9768,7 @@
       "source_title": "Cancelling your GST registration",
       "source_last_updated": "2025-03-03T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -8920,6 +9790,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8929,6 +9801,7 @@
       "source_title": "Award transport payments",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -8940,12 +9813,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -8955,6 +9826,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8964,6 +9837,7 @@
       "source_title": "Time limit on GST credits",
       "source_last_updated": "2026-01-07T13:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "gst-bas"
@@ -8985,6 +9859,8 @@
         "tax-invoices",
         "when-to-charge-gst"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -8994,6 +9870,7 @@
       "source_title": "Gifts and donations",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -9005,12 +9882,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -9020,6 +9895,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -9029,6 +9906,7 @@
       "source_title": "Record keeping exceptions for travel allowance expenses",
       "source_last_updated": "2026-06-07T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -9040,12 +9918,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -9055,6 +9931,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     },
     {
@@ -9064,6 +9942,7 @@
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
+      "content_hash": "",
       "status": "metadata_only",
       "skills": [
         "employment-deductions"
@@ -9075,12 +9954,10 @@
       "covered_concepts": [
         "allowance",
         "allowances",
-        "clothes",
         "deduction",
         "deductions-you-can-claim",
         "education",
         "employee",
-        "employment-income",
         "meals",
         "occupancy",
         "records-you-need-to-keep",
@@ -9090,6 +9967,8 @@
         "wages",
         "work-related"
       ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
       "reason": "matched topic metadata; source content not extracted"
     }
   ]

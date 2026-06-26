@@ -6,9 +6,12 @@
     "title": "Family and dependants for Medicare levy surcharge purposes",
     "last_updated": "2026-04-29T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -18,9 +21,12 @@
     "title": "Medicare and private health insurance",
     "last_updated": "2025-06-11T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -30,9 +36,12 @@
     "title": "Claiming the private health insurance rebate",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -42,9 +51,12 @@
     "title": "Your private health insurance statement",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -54,9 +66,12 @@
     "title": "Medicare levy surcharge and your tax return",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -66,9 +81,12 @@
     "title": "Medicare levy",
     "last_updated": "2026-04-29T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -78,9 +96,12 @@
     "title": "Medicare levy surcharge income, thresholds and rates",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -90,9 +111,12 @@
     "title": "Lifetime health cover",
     "last_updated": "2026-05-04T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -102,9 +126,12 @@
     "title": "Private health insurance rebate eligibility",
     "last_updated": "2025-07-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -114,9 +141,12 @@
     "title": "Paying the Medicare levy surcharge",
     "last_updated": "2026-05-04T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -126,9 +156,12 @@
     "title": "Private health insurance rebate",
     "last_updated": "2026-04-29T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -138,21 +171,27 @@
     "title": "Medicare levy surcharge",
     "last_updated": "2026-04-29T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
     "source_id": "ato-e55bb86920fd",
     "url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/overseas-visitors-private-health-insurance-on-your-tax-return",
     "final_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/overseas-visitors-private-health-insurance-on-your-tax-return",
-    "title": "Overseas visitors – private health insurance on your tax return",
+    "title": "Overseas visitors \u2013 private health insurance on your tax return",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -162,9 +201,12 @@
     "title": "Income thresholds and rates for the private health insurance rebate",
     "last_updated": "2026-06-21T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "private-health-medicare",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   }
 ]

@@ -6,9 +6,12 @@
     "title": "Overview of business income and deductions",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -18,9 +21,12 @@
     "title": "Small business energy incentive",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -30,9 +36,12 @@
     "title": "Assessable business income",
     "last_updated": "2019-06-23T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -42,9 +51,12 @@
     "title": "Service entities",
     "last_updated": "2025-11-16T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -54,9 +66,12 @@
     "title": "Deductions for other operating expenses",
     "last_updated": "2024-11-12T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -66,9 +81,12 @@
     "title": "Deductions for motor vehicle expenses",
     "last_updated": "2026-05-26T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -78,9 +96,12 @@
     "title": "Deductions for business travel expenses",
     "last_updated": "2026-05-26T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -90,9 +111,12 @@
     "title": "Accounting for business trading stock",
     "last_updated": "2021-07-08T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -102,9 +126,12 @@
     "title": "Business losses",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -114,9 +141,12 @@
     "title": "Business deductions",
     "last_updated": "2026-06-17T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -126,9 +156,12 @@
     "title": "Deductions for repairs, maintenance and replacement expenses",
     "last_updated": "2024-06-19T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -138,9 +171,12 @@
     "title": "Deductions for carbon sink forest expenses",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -150,9 +186,12 @@
     "title": "Registered emissions units",
     "last_updated": "2024-02-14T02:28:33.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -162,9 +201,12 @@
     "title": "Motor vehicle expense calculation methods",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -174,9 +216,12 @@
     "title": "Small business skills and training boost",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -186,9 +231,12 @@
     "title": "Personal services income",
     "last_updated": "2024-11-05T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -198,9 +246,12 @@
     "title": "Work out your business taxable income",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -210,9 +261,12 @@
     "title": "Business offsets and rebates",
     "last_updated": "2024-11-05T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -222,9 +276,12 @@
     "title": "Deductions for digital product expenses",
     "last_updated": "2026-05-26T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -234,9 +291,12 @@
     "title": "Small business technology investment boost",
     "last_updated": "2024-06-19T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -246,9 +306,12 @@
     "title": "Income and deductions for business",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -258,9 +321,12 @@
     "title": "Deductions for unrecoverable income (bad debts)",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -270,9 +336,12 @@
     "title": "Deductions for salaries, wages and super contributions",
     "last_updated": "2026-04-16T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -282,9 +351,12 @@
     "title": "Deductions for depreciating assets and capital expenses",
     "last_updated": "2025-05-28T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -294,9 +366,12 @@
     "title": "Professional firms",
     "last_updated": "2023-10-20T13:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
@@ -306,9 +381,12 @@
     "title": "What to exclude from your business's assessable income",
     "last_updated": "2025-05-06T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
     "assigned_skill": "abn-business",
     "reference": "references/rules.md",
+    "duplicate_of": "",
     "status": "metadata_only",
+    "reason": "",
     "assignment_reason": "matched topic metadata; source content not extracted"
   }
 ]

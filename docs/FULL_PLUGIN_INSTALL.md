@@ -38,8 +38,8 @@ Validate:
 scripts/check-publication-ready.sh
 ```
 
-If you need local-speed, rebuild native binaries in `bin/` once and keep those ahead of the launcher.
-Native binaries are optional; bash + python execution is the supported default path.
+If you need local-speed, keep Python runtime wrappers and dependencies local and use the launcher directly.
+Bash + python execution is the supported default path.
 
 ## Local plugin setup
 
