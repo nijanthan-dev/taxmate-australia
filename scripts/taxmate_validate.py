@@ -254,6 +254,8 @@ def add_topic_checks(root: str, add, registry) -> None:
 def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("audit_is_read_only", audit_is_read_only(root), "")
     add("audit_json_stdout_single_document", audit_json_stdout_single_document(root), "")
+    add("audit_cgt_counts_metadata_assignments", audit_cgt_counts_metadata_assignments(root), "")
+    add("audit_check_fails_missing_required_assignments", audit_check_fails_missing_required_assignments(root), "")
     add("save_registry_stamps_refreshed_at", save_registry_stamps_refreshed_at(), "")
     add("fetch_http_error_preserves_status", fetch_http_error_preserves_status(), "")
     add("finance_csv_trims_leading_space", finance_csv_trims_leading_space(), "")
@@ -820,6 +822,40 @@ def audit_json_stdout_single_document(root: str) -> bool:
         return "summary" in payload and "source_coverage" in payload
     except Exception:
         return False
+
+
+def audit_cgt_counts_metadata_assignments(root: str) -> bool:
+    try:
+        summary = skillgen.Audit(root, skillgen.LoadSourceCoverage(root))
+    except Exception:
+        return False
+    return all(
+        summary.cgt_coverage.get(key)
+        for key in ["general", "shares_etfs_managed_funds", "crypto", "property_rental"]
+    )
+
+
+def audit_check_fails_missing_required_assignments(root: str) -> bool:
+    import shutil
+
+    work_root = tempfile.mkdtemp(prefix="taxmate-validate-required-assignment-")
+    try:
+        atodata.CopyDir(os.path.join(root, "skills"), os.path.join(work_root, "skills"))
+        atodata.CopyDir(os.path.join(root, "data", "ato_knowledge_base"), os.path.join(work_root, "data", "ato_knowledge_base"))
+        path = os.path.join(work_root, "data", "ato_knowledge_base", skillgen.SOURCE_COVERAGE_FILE)
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        target = required_topics()[0]
+        for entry in payload.get("sources", []):
+            skills = entry.get("skills", [])
+            if isinstance(skills, list) and target in skills:
+                entry["skills"] = [skill for skill in skills if skill != target]
+        Path(path).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        err = skillgen.ValidateSourceCoverage(work_root)
+        return err is not None and target in str(err)
+    except Exception:
+        return False
+    finally:
+        shutil.rmtree(work_root, ignore_errors=True)
 
 
 def fetch_http_error_preserves_status() -> bool:

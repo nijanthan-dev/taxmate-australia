@@ -1345,6 +1345,7 @@ def Audit(root: str, coverage: SourceCoverage) -> CoverageSummary:
                 st.assigned_sources += 1
                 st.metadata_only_sources += 1
                 summary.by_skill[skill] = st
+                summary = cgtMark(summary, skill)
             summary.missing_destination_files.extend(checkReferences(root, entry))
             summary.missing_reverse_provenance.extend(checkReverseProvenance(root, entry))
         elif entry.status == StatusDuplicate:
@@ -1546,6 +1547,8 @@ def ValidateSourceCoverage(root: str) -> Optional[RuntimeError]:
         return RuntimeError("missing reverse provenance: " + ", ".join(summary.missing_reverse_provenance[: min(3, len(summary.missing_reverse_provenance))]))
     if len(summary.invalid_hashes) > 0:
         return RuntimeError("invalid hashes: " + ", ".join(summary.invalid_hashes[: min(3, len(summary.invalid_hashes))]))
+    if len(summary.required_assignment_missing) > 0:
+        return RuntimeError("required tax areas missing source assignments: " + ", ".join(summary.required_assignment_missing[: min(3, len(summary.required_assignment_missing))]))
     if len(summary.volatile_missing_periods) > 0:
         return RuntimeError("volatile values missing periods: " + ", ".join(summary.volatile_missing_periods[: min(3, len(summary.volatile_missing_periods))]))
     if len(summary.skills_missing_guardrail) > 0:
