@@ -728,6 +728,7 @@ def Validate(root: str) -> None:
         or os.path.exists(os.path.join(root, "data", "ato_knowledge_base", "text"))
     ):
         raise RuntimeError("committed raw/text ATO snapshots must be removed")
+    validateRuntimeOnlySkills(root)
     err = ValidateSourceCoverage(root)
     if err is not None:
         raise err
@@ -1546,7 +1547,10 @@ def ValidateSourceCoverage(root: str) -> Optional[RuntimeError]:
     except Exception as exc:
         return RuntimeError(str(exc))
 
-    registry = atodata.LoadRegistry(root)
+    try:
+        registry = atodata.LoadRegistry(root)
+    except Exception as exc:
+        return RuntimeError(str(exc))
     if len(coverage.sources) != len(registry.records):
         return RuntimeError(f"source coverage count {len(coverage.sources)} does not match registry count {len(registry.records)}")
 
@@ -1969,6 +1973,36 @@ def missingGuardrail(root: str, skill: str) -> bool:
         if needle not in text:
             return True
     return False
+
+
+def validateRuntimeOnlySkills(root: str) -> None:
+    path = os.path.join(root, "config", "skill-packaging.json")
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise RuntimeError(f"invalid runtime skill packaging manifest: {exc}") from exc
+
+    paths = payload.get("runtimeOnlyPaths")
+    if not isinstance(paths, list):
+        raise RuntimeError("runtimeOnlyPaths must be a list")
+
+    for rel in paths:
+        if not isinstance(rel, str) or not rel.startswith("runtime/skills/"):
+            continue
+        body = Path(os.path.join(root, rel, "SKILL.md")).read_text(encoding="utf-8")
+        haystack = body.lower()
+        checks = {
+            "metadata": "metadata:" in haystack,
+            "internal": "internal: true" in haystack,
+            "bash": "bash" in haystack,
+            "python": "python" in haystack,
+            "no_advice": "not professional" in haystack or "not tax, legal" in haystack,
+            "accountant_review": "accountant review" in haystack,
+            "public_command": "scripts/taxmate" in haystack,
+        }
+        missing = [name for name, ok in checks.items() if not ok]
+        if missing:
+            raise RuntimeError(f"runtime skill {rel} missing guardrails: {', '.join(missing)}")
 
 
 def sourceID(originalURL: str, canonicalURLValue: str) -> str:

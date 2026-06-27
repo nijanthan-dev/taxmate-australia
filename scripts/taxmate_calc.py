@@ -66,6 +66,13 @@ def round2(value: float) -> float:
 def bas(sales_gst: float, purchase_gst: float, payg_withheld: float, fuel_tax_credit: float, adjustments: float) -> Dict[str, Any]:
     net_gst = round2(sales_gst - purchase_gst + adjustments)
     net_payable = round2(net_gst + payg_withheld - fuel_tax_credit)
+    nil_activity = (
+        sales_gst == 0
+        and purchase_gst == 0
+        and payg_withheld == 0
+        and fuel_tax_credit == 0
+        and adjustments == 0
+    )
     return {
         "tool": titlecase_tool("bas"),
         "income_year": "2025-26",
@@ -81,7 +88,7 @@ def bas(sales_gst: float, purchase_gst: float, payg_withheld: float, fuel_tax_cr
         "outputs": {
             "net_gst_payable": net_gst,
             "estimated_bas_total": net_payable,
-            "nil_bas": net_payable == 0,
+            "nil_bas": nil_activity,
         },
         "assumptions": [
             "Inputs are already separated into GST collected, GST credits, PAYG withheld, fuel tax credits, and adjustments."
@@ -282,11 +289,14 @@ def months_held(acquired: str, disposed: str) -> int:
     try:
         a = datetime.strptime(acquired, "%Y-%m-%d")
         d = datetime.strptime(disposed, "%Y-%m-%d")
-    except Exception:
+    except ValueError:
         return 0
     if d < a:
         return 0
-    return int((d - a).days / 30.4375)
+    months = (d.year - a.year) * 12 + (d.month - a.month)
+    if d.day <= a.day:
+        months -= 1
+    return max(months, 0)
 
 
 def main(argv: Optional[List[str]] = None) -> int:

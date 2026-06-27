@@ -24,6 +24,7 @@ fail() {
 [[ -f scripts/codex-env-cleanup.sh ]] || fail "missing Codex environment cleaner"
 [[ -f scripts/codex-env-full-check.sh ]] || fail "missing Codex environment full check"
 [[ -f scripts/codex-cloud-post-task-cleanup.sh ]] || fail "missing Codex Cloud cleanup wrapper"
+[[ -f .codex/environments/environment.toml ]] || fail "missing Codex environment config"
 [[ -f scripts/test-codex-env-cleanup.sh ]] || fail "missing Codex environment cleanup test"
 [[ -f scripts/test-codex-env-setup-clean.sh ]] || fail "missing Codex environment setup clean-worktree test"
 [[ -f data/ato_knowledge_base/source_registry.json ]] || fail "missing source_registry.json"
@@ -44,8 +45,16 @@ if git grep -nE 'public[-]work|taxmate-australia-public[-]work' -- . ':!data/ato
   fail "temporary staging name leaked"
 fi
 
-if git grep -nE '/Users/[[:alnum:]_.-]+|custom[_]apps/skills[_]and[_]plugins|Developer/custom[_]apps' -- README.md skill.json .codex-plugin agents skills docs; then
-  fail "private machine path leaked into public docs"
+PRIVATE_SCAN_FILES="$(
+  git ls-files '*.md' '*.json' '*.toml' '*.yaml' '*.yml' '*.py' '*.sh' '.gitignore' 'scripts/taxmate' \
+    ':!:data/ato_knowledge_base/raw/**' \
+    ':!:data/ato_knowledge_base/text/**' \
+    ':!:scripts/check-publication-ready.sh' \
+    ':!:scripts/taxmate_validate.py' \
+    ':!:.github/workflows/ci.yml'
+)"
+if [[ -n "$PRIVATE_SCAN_FILES" ]] && git grep -nE '/Users/[[:alnum:]_.-]+|custom[_]apps/skills[_]and[_]plugins|Developer/custom[_]apps' -- $PRIVATE_SCAN_FILES; then
+  fail "private machine path leaked into tracked text files"
 fi
 
 if git grep -nE 'taxmate-au($|[^s])|TaxMate AU($|[^s])|TAXMATE_AU_ROOT' -- README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md skill.json .gitleaks.toml docs .github .codex-plugin .agents agents skills wrappers plugin.lock.json; then

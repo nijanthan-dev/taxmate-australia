@@ -34,6 +34,17 @@ touch \
 
 TAXMATE_AUSTRALIA_ROOT="$WORKTREE" bash "$ROOT/scripts/codex-env-cleanup.sh" >/dev/null
 
+BAD_ROOT="$TMP_PARENT/not-taxmate"
+mkdir -p "$BAD_ROOT/.cache/ato"
+if TAXMATE_AUSTRALIA_ROOT="$BAD_ROOT" bash "$ROOT/scripts/clean-source-cache.sh" >/dev/null 2>&1; then
+  echo "error: source cache cleanup accepted non-plugin root" >&2
+  exit 1
+fi
+[[ -d "$BAD_ROOT/.cache/ato" ]] || {
+  echo "error: source cache cleanup removed non-plugin cache" >&2
+  exit 1
+}
+
 for path in \
   "$WORKTREE/.coverage" \
   "$WORKTREE/.tmp" \

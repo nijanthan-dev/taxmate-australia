@@ -351,6 +351,10 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("finance_csv_rejects_non_finite_numbers", finance_csv_rejects_non_finite_numbers(), "")
     add("refresh_errors_use_python_formatting", refresh_errors_use_python_formatting(root), "")
     add("wrapper_help_uses_public_commands", wrapper_help_uses_public_commands(root), "")
+    add("codex_environment_toml_valid", codex_environment_toml_valid(root), "")
+    private_hits = tracked_private_path_hits(root)
+    add("tracked_text_no_private_paths", len(private_hits) == 0, "; ".join(first_n(private_hits, 5)))
+    add("gitleaks_no_broad_cache_allowlist", gitleaks_no_broad_cache_allowlist(root), "")
     bash5_hits = stale_bash5_prereq_hits(root)
     add("docs_no_stale_bash5_requirement", len(bash5_hits) == 0, "; ".join(bash5_hits))
     add("refresh_query_no_match_is_read_only", refresh_query_no_match_is_read_only(root), "")
@@ -525,12 +529,26 @@ def private_path_hits(root: str, paths: List[str]) -> List[str]:
     hits: List[str] = []
     needles = ["/Users/", "custom_apps/skills_and_plugins", "Developer/custom_apps"]
     for path in paths:
-        text = read_text(path)
-        for needle in needles:
-            if needle in text:
-                hits.append(f"{relative_path(root, path)}:{needle}")
-                break
+        for line in read_text(path).splitlines():
+            if private_path_scan_ignore_line(line):
+                continue
+            for needle in needles:
+                if needle in line:
+                    hits.append(f"{relative_path(root, path)}:{needle}")
+                    break
     return hits
+
+
+def private_path_scan_ignore_line(line: str) -> bool:
+    return (
+        "/Users/[[:alnum:]_.-]+" in line
+        or "needles = [" in line
+        or (
+            "custom_apps/skills_and_plugins" in line
+            and "Developer/custom_apps" in line
+            and "/Users/" in line
+        )
+    )
 
 
 def wrappers_mark_local_fallback(root: str) -> bool:
@@ -1110,6 +1128,7 @@ def stale_committed_source_cache_claim_hits(root: str) -> List[str]:
 
 def go_tooling_scan_files() -> List[str]:
     return [
+        ".gitignore",
         os.path.join(".devcontainer", "Dockerfile"),
         os.path.join(".devcontainer", "devcontainer.json"),
         "docker-compose.dev.yml",
@@ -1154,6 +1173,8 @@ def committed_source_cache_claim_needles() -> List[str]:
 
 def go_tooling_needles() -> List[str]:
     return [
+        "# go",
+        "*.test",
         "devcontainers/go",
         "golang.go",
         "gomodcache",
@@ -1187,6 +1208,157 @@ def text_hits(root: str, rel: str, needles: List[str]) -> List[str]:
         if needle in text:
             hits.append(f"{rel}:{needle}")
     return hits
+
+
+def codex_environment_toml_valid(root: str) -> bool:
+    path = os.path.join(root, ".codex", "environments", "environment.toml")
+    text = read_text(path)
+    if not text:
+        return False
+    try:
+        data = parse_toml(text)
+    except ValueError:
+        return False
+    if data.get("version") != 1:
+        return False
+    setup = data.get("setup")
+    cleanup = data.get("cleanup")
+    if not isinstance(setup, dict) or setup.get("script") != "bash scripts/codex-env-setup.sh":
+        return False
+    if not isinstance(cleanup, dict) or cleanup.get("script") != "bash scripts/codex-env-cleanup.sh":
+        return False
+    actions = data.get("actions")
+    if not isinstance(actions, list) or not actions:
+        return False
+    has_full_check = False
+    for action in actions:
+        if not isinstance(action, dict):
+            return False
+        if not all(isinstance(action.get(key), str) and action.get(key) for key in ("name", "icon", "command")):
+            return False
+        if action.get("icon") == "tool" and action.get("command") == "bash scripts/codex-env-full-check.sh":
+            has_full_check = True
+    if not has_full_check:
+        return False
+    return True
+
+
+def parse_toml(text: str) -> Dict[str, Any]:
+    try:
+        import tomllib  # type: ignore
+
+        return tomllib.loads(text)
+    except ModuleNotFoundError:
+        return parse_simple_toml(text)
+    except Exception as exc:
+        raise ValueError(str(exc)) from exc
+
+
+def parse_simple_toml(text: str) -> Dict[str, Any]:
+    data: Dict[str, Any] = {}
+    current: Dict[str, Any] = data
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("[[") and line.endswith("]]"):
+            name = line[2:-2].strip()
+            if not name or "[" in name or "]" in name:
+                raise ValueError("invalid TOML array table")
+            actions = data.setdefault(name, [])
+            if not isinstance(actions, list):
+                raise ValueError("array table conflicts with scalar")
+            current = {}
+            actions.append(current)
+            continue
+        if line.startswith("[") and line.endswith("]"):
+            name = line[1:-1].strip()
+            if not name or "[" in name or "]" in name:
+                raise ValueError("invalid TOML table")
+            section = data.setdefault(name, {})
+            if not isinstance(section, dict):
+                raise ValueError("table conflicts with scalar")
+            current = section
+            continue
+        if "=" not in line:
+            raise ValueError("invalid TOML assignment")
+        key, raw_value = line.split("=", 1)
+        key = key.strip()
+        value = raw_value.strip()
+        if not key:
+            raise ValueError("invalid TOML key")
+        if value.startswith('"'):
+            if len(value) < 2 or not value.endswith('"'):
+                raise ValueError("unterminated TOML string")
+            current[key] = value[1:-1]
+            continue
+        try:
+            current[key] = int(value)
+        except ValueError as exc:
+            raise ValueError("unsupported TOML value") from exc
+    return data
+
+
+def tracked_private_path_hits(root: str) -> List[str]:
+    return private_path_hits(root, tracked_text_files(root))
+
+
+def tracked_text_files(root: str) -> List[str]:
+    try:
+        proc = subprocess.run(
+            ["git", "-C", root, "ls-files"],
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except Exception:
+        return []
+
+    out: List[str] = []
+    allowed_suffixes = (
+        ".json",
+        ".md",
+        ".py",
+        ".sh",
+        ".toml",
+        ".txt",
+        ".yaml",
+        ".yml",
+    )
+    allowed_names = {
+        ".gitignore",
+        "hooks.json",
+        "plugin.lock.json",
+        "skill.json",
+    }
+    ignored_prefixes = (
+        "data/ato_knowledge_base/raw/",
+        "data/ato_knowledge_base/text/",
+    )
+    scanner_files = {
+        ".github/workflows/ci.yml",
+        "scripts/check-publication-ready.sh",
+        "scripts/taxmate_validate.py",
+    }
+    for rel in proc.stdout.splitlines():
+        if rel in scanner_files:
+            continue
+        if rel.startswith(ignored_prefixes):
+            continue
+        if rel in allowed_names or rel.endswith(allowed_suffixes) or "/SKILL.md" in rel:
+            out.append(os.path.join(root, rel))
+    return out
+
+
+def gitleaks_no_broad_cache_allowlist(root: str) -> bool:
+    text = read_text(os.path.join(root, ".gitleaks.toml"))
+    broad_needles = [
+        "data/ato_knowledge_base/raw",
+        "data/ato_knowledge_base/text",
+        ".cache/ato",
+    ]
+    return not contains_any(text, broad_needles)
 
 
 def audit_is_read_only(root: str) -> bool:

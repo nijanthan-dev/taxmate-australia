@@ -10,13 +10,34 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  validate:
-    name: Validate
+  python:
+    name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: PYTHONPYCACHEPREFIX="$RUNNER_TEMP/pycache" python3 -m py_compile scripts/*.py tests/*.py
+      - run: PYTHONPYCACHEPREFIX="$RUNNER_TEMP/pycache" python3 -m unittest discover -s tests -p 'test_*.py'
+
+  repo-validation:
+    name: Repo Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,15 +46,35 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: python3 -m py_compile scripts/*.py
       - run: bash scripts/bootstrap-dev-env.sh
       - run: ./scripts/taxmate skills validate
       - run: ./scripts/taxmate validate
+
+  generated-sources:
+    name: Generated Sources
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - run: ./scripts/taxmate skills generate --check
       - run: ./scripts/taxmate skills audit --check
       - run: ./scripts/taxmate skills audit --format markdown --output "$RUNNER_TEMP/source-coverage.md"
-      - run: bash scripts/test-skills-install.sh
-      - run: scripts/check-publication-ready.sh
+
+  cli-smoke:
+    name: CLI Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - run: ./scripts/taxmate calc payg --gross-pay 1500 --periods 52 --tax-free-threshold
       - run: |
           cat > /tmp/taxmate-finance-sample.csv <<'CSV'
@@ -43,9 +84,50 @@ jobs:
           CSV
           ./scripts/taxmate finance --input /tmp/taxmate-finance-sample.csv --format json >/tmp/taxmate-finance-review.json
 
+  environment:
+    name: Environment Guardrails
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: test -f hooks.json
+      - run: test -f .codex/environments/environment.toml
+      - run: test -f scripts/clean-source-cache.sh
+      - run: test -f scripts/codex-env-setup.sh
+      - run: test -f scripts/codex-env-cleanup.sh
+      - run: test -f scripts/codex-env-full-check.sh
+      - run: test -f scripts/codex-cloud-post-task-cleanup.sh
+      - run: bash -n scripts/*.sh scripts/taxmate
+      - run: bash scripts/test-codex-env-cleanup.sh
+      - run: bash scripts/test-codex-env-setup-clean.sh
+
+  macos-smoke:
+    name: macOS Smoke
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: bash -n scripts/*.sh scripts/taxmate
+      - run: PYTHONPYCACHEPREFIX="$RUNNER_TEMP/pycache" python3 -m py_compile scripts/*.py tests/*.py
+      - run: PYTHONPYCACHEPREFIX="$RUNNER_TEMP/pycache" python3 -m unittest discover -s tests -p 'test_*.py'
+      - run: bash scripts/bootstrap-dev-env.sh
+
   plugin-package:
     name: Plugin Package
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -55,20 +137,6 @@ jobs:
         with:
           python-version: "3.11"
       - run: test -f .codex-plugin/plugin.json
-      - run: test -f hooks.json
-      - run: test -f scripts/clean-source-cache.sh
-      - run: test -f scripts/codex-env-setup.sh
-      - run: test -f scripts/codex-env-cleanup.sh
-      - run: test -f scripts/codex-env-full-check.sh
-      - run: test -f scripts/codex-cloud-post-task-cleanup.sh
-      - run: bash -n scripts/codex-env-setup.sh
-      - run: bash -n scripts/codex-env-cleanup.sh
-      - run: bash -n scripts/codex-env-full-check.sh
-      - run: bash -n scripts/codex-cloud-post-task-cleanup.sh
-      - run: bash -n scripts/test-codex-env-cleanup.sh
-      - run: bash -n scripts/test-codex-env-setup-clean.sh
-      - run: bash scripts/test-codex-env-cleanup.sh
-      - run: bash scripts/test-codex-env-setup-clean.sh
       - run: test -f data/ato_knowledge_base/source_registry.json
       - run: test -f data/ato_knowledge_base/source_coverage.json
       - run: test -f config/public-skills.json
@@ -84,16 +152,28 @@ jobs:
       - run: test -f skills/taxpack/SKILL.md
       - run: test ! -d data/ato_knowledge_base/raw
       - run: test ! -d data/ato_knowledge_base/text
-      - run: bash scripts/test-skills-install.sh
-      - run: bash scripts/clean-source-cache.sh
-      - run: bash scripts/check-publication-ready.sh
       - run: "! git grep -nE 'public[-]work|taxmate-australia-public[-]work' -- . ':!data/ato_knowledge_base/raw/**' ':!data/ato_knowledge_base/text/**'"
       - run: "! git grep -nE '/Users/[[:alnum:]_.-]+|custom[_]apps/skills[_]and[_]plugins|Developer/custom[_]apps' -- README.md .codex-plugin agents skills docs"
       - run: "! git ls-files 'bin/*' | grep -q ."
 
+  publication:
+    name: Publication Guardrails
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: bash scripts/check-publication-ready.sh
+
   gitleaks:
     name: Gitleaks
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: read
@@ -104,3 +184,24 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      - python
+      - repo-validation
+      - generated-sources
+      - cli-smoke
+      - environment
+      - macos-smoke
+      - plugin-package
+      - publication
+      - gitleaks
+    if: always()
+    steps:
+      - run: |
+          for result in ${{ join(needs.*.result, ' ') }}; do
+            test "$result" = success
+          done

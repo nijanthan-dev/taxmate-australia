@@ -8,6 +8,7 @@ Contributor prerequisites:
 - jq.
 - Bash.
 - Python 3.9+.
+- Gitleaks for full local release checks.
 
 Core plugin checks:
 
@@ -116,7 +117,7 @@ Do not commit private user tax records.
 
 ## CI
 
-CI runs bash+python runtime checks, publication validation, and Gitleaks.
+CI runs bash+python runtime checks, generated-source checks, environment guardrails, macOS smoke, publication validation, and Gitleaks.
 
 ## Release (semver on merge to main)
 

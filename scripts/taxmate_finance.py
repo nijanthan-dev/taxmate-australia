@@ -324,14 +324,10 @@ def read_csv(handle) -> List[Transaction]:
         for name, header_idx in header.items():
             if header_idx < len(row):
                 tx.raw[name] = row[header_idx].strip()
-        tx.amount = parse_money(
-            first_non_empty(
-                get(row, header, "amount", "value", "netamount"),
-                signed_amount(row, header),
-            )
-        )
-        tx.gst = parse_money(get(row, header, "gst", "gstamount", "tax", "taxamount"))
-        tx.units = parse_money(get(row, header, "units", "quantity"))
+        amount = get(row, header, "amount", "value", "netamount")
+        tx.amount = parse_money(amount) if amount else parse_money(signed_amount(row, header))
+        tx.gst = parse_optional_money(get(row, header, "gst", "gstamount", "tax", "taxamount"))
+        tx.units = parse_optional_money(get(row, header, "units", "quantity"))
         tx.direction = direction(row, header, tx.amount)
         transactions.append(tx)
     if not transactions:
@@ -433,6 +429,19 @@ def classify(tx: Transaction, mode: str) -> Finding:
         )
         return finding
     if contains_any(text, "work from home", "wfh", "internet", "phone", "electricity", "stationery", "computer consumables"):
+        if is_business(tx, text):
+            set_finding(
+                finding,
+                "abn_business_home_office",
+                "accountant_review",
+                0,
+                "medium",
+                True,
+                "ABN home-office running costs need business-use apportionment and home-business review",
+            )
+            finding.records_needed = ["tax invoice", "business-use apportionment", "home-business facts", "GST status"]
+            apply_gst(finding, tx, True)
+            return finding
         set_finding(
             finding,
             "employee_wfh",
@@ -458,6 +467,18 @@ def classify(tx: Transaction, mode: str) -> Finding:
         apply_gst(finding, tx, is_business(tx, text))
         return finding
     if contains_any(text, "meal", "coffee", "restaurant", "entertainment", "grocery", "clothes", "fitness", "gym", "medical", "commute", "parking fine"):
+        if is_business(tx, text) and contains_any(text, "meal", "coffee", "restaurant", "entertainment"):
+            set_finding(
+                finding,
+                "business_entertainment_fbt",
+                "accountant_review",
+                0,
+                "medium",
+                True,
+                "business meals or entertainment may be private, non-deductible, or FBT-sensitive",
+            )
+            finding.records_needed = ["tax invoice", "attendees", "business purpose", "FBT/accountant review"]
+            return finding
         set_finding(
             finding,
             "private_or_excluded",
@@ -543,7 +564,7 @@ def set_finding(
 
 
 def apply_gst(finding: Finding, tx: Transaction, business: bool) -> None:
-    if business and tx.gst > 0:
+    if business and tx.gst != 0:
         finding.gst_credit_candidate = True
         finding.gst_credit_amount = round2(abs_float(tx.gst))
         finding.reasons.append("GST credit candidate only if valid tax invoice and creditable purpose")
@@ -632,8 +653,6 @@ def health(transactions: List[Transaction], findings: List[Finding]) -> List[Hea
             missing_owner.append(tx.row)
         if not tx.evidence.strip():
             missing_evidence.append(tx.row)
-        if tx.gst > 0 and not contains_any(tx.evidence.lower(), "tax invoice", "invoice", "receipt"):
-            gst_invoice_rows.append(tx.row)
         key = f"{tx.date}|{norm(tx.description)}|{tx.amount:.2f}"
         first = seen.get(key)
         if first is None:
@@ -641,9 +660,14 @@ def health(transactions: List[Transaction], findings: List[Finding]) -> List[Hea
         else:
             duplicate_rows.extend([first, tx.row])
 
+    transactions_by_row = {tx.row: tx for tx in transactions}
     for finding in findings:
         if finding.accountant_review:
             review_rows.append(finding.row)
+        tx = transactions_by_row.get(finding.row)
+        evidence = tx.evidence.lower() if tx is not None else ""
+        if finding.gst_credit_candidate and not contains_any(evidence, "tax invoice", "invoice", "receipt"):
+            gst_invoice_rows.append(finding.row)
 
     return [
         check(
@@ -692,13 +716,32 @@ def direction(row: List[str], header: Dict[str, int], amount: float) -> str:
 
 
 def signed_amount(row: List[str], header: Dict[str, int]) -> str:
-    debit = parse_money(get(row, header, "debit", "withdrawal", "spent"))
-    credit = parse_money(get(row, header, "credit", "deposit", "received"))
-    if debit != 0:
-        return f"{-abs(debit):.2f}"
-    if credit != 0:
-        return f"{abs(credit):.2f}"
+    errors: List[ValueError] = []
+    debit_value = get(row, header, "debit", "withdrawal", "spent")
+    if debit_value and not money_placeholder(debit_value):
+        try:
+            debit = parse_money(debit_value)
+        except ValueError as exc:
+            errors.append(exc)
+        else:
+            if debit != 0:
+                return f"{-abs(debit):.2f}"
+    credit_value = get(row, header, "credit", "deposit", "received")
+    if credit_value and not money_placeholder(credit_value):
+        try:
+            credit = parse_money(credit_value)
+        except ValueError as exc:
+            errors.append(exc)
+        else:
+            if credit != 0:
+                return f"{abs(credit):.2f}"
+    if errors:
+        raise errors[0]
     return ""
+
+
+def money_placeholder(raw_value: str) -> bool:
+    return raw_value.strip().lower() in {"-", "--", "n/a", "na", "nil", "none", "null"}
 
 def get(row: List[str], header: Dict[str, int], *names: str) -> str:
     for name in names:
@@ -726,12 +769,18 @@ def parse_money(raw_value: str) -> float:
     try:
         number = float(value)
     except ValueError:
-        return 0.0
+        raise ValueError(f"invalid money value: {raw_value!r}")
     if not math.isfinite(number):
         raise ValueError(f"invalid finite money value: {raw_value!r}")
     if neg:
         number = -number
     return round2(number)
+
+
+def parse_optional_money(raw_value: str) -> float:
+    if money_placeholder(raw_value):
+        return 0.0
+    return parse_money(raw_value)
 
 
 def is_business(tx: Transaction, text: str) -> bool:

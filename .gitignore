@@ -25,7 +25,3 @@ __pycache__/
 .env
 .env.*
 !.env.example
-
-# Go
-*.test
-*.out

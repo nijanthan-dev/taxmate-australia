@@ -25,7 +25,10 @@ fi
 before_status="$(git -C "$WORKTREE" status --short --untracked-files=all)"
 bash "$WORKTREE/scripts/codex-env-setup.sh" >/dev/null
 
-if find "$WORKTREE/scripts" -type d -name '__pycache__' | grep -q .; then
+if find "$WORKTREE" \
+  -path "$WORKTREE/.git" -prune -o \
+  -path "$WORKTREE/.venv" -prune -o \
+  \( -type d -name '__pycache__' -o -type f \( -name '*.pyc' -o -name '*.pyo' \) \) -print | grep -q .; then
   echo "error: setup wrote Python bytecode cache" >&2
   exit 1
 fi
