@@ -1,6 +1,7 @@
 ---
 name: calculators
-description: Run TaxMate Australia bounded calculator scaffolds for PAYG estimates, BAS arithmetic, CGT gains, FBT gross-up arithmetic, super guarantee minimums, and stamp-duty source routing.
+description: Run TaxMate Australia bounded calculator scaffolds for PAYG estimates, BAS arithmetic, CGT gains, FBT gross-up arithmetic, super guarantee minimums, and stamp-duty source routing. Use when full-runtime estimate scaffolds are needed.
+compatibility: Full-runtime skill for Claude Code, Cowork, and Codex. Requires repo checkout, bash, and Python 3.9+.
 metadata:
   internal: true
   priority: 4

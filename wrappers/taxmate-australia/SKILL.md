@@ -1,6 +1,7 @@
 ---
 name: taxmate-australia
-description: Entry-point wrapper for TaxMate Australia's full ATO-backed tax prep workflow across research, review, calculators, and handoff outputs.
+description: Entry-point wrapper for TaxMate Australia's full ATO-backed tax prep workflow across research, review, calculators, and handoff outputs. Use when a local helper must route general TaxMate requests into the full runtime.
+compatibility: Local wrapper for Claude Code, Cowork, and Codex. Requires repo checkout and the full TaxMate Australia runtime.
 metadata:
   internal: true
 ---

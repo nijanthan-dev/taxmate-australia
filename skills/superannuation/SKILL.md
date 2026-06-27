@@ -1,6 +1,7 @@
 ---
 name: superannuation
-description: Personal super contributions, caps, SG touchpoints, deductions, and contribution records.
+description: Personal super contributions, caps, SG touchpoints, deductions, and contribution records. Use for super contribution and record questions.
+compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
 # Superannuation

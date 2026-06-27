@@ -1,6 +1,7 @@
 ---
 name: taxmate-australia-workbook
-description: Workbook wrapper for converting reviewed TaxMate Australia data into structured, accountant-facing Excel outputs.
+description: Workbook wrapper for converting reviewed TaxMate Australia data into structured, accountant-facing Excel outputs. Use when a local helper must route workbook requests into the installed skill.
+compatibility: Local wrapper for Claude Code, Cowork, and Codex. Requires repo checkout and the TaxMate Australia workbook skill.
 metadata:
   internal: true
 ---

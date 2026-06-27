@@ -1,6 +1,7 @@
 ---
 name: records-evidence
-description: Cross-topic records, receipts, substantiation, logbooks, and evidence gaps.
+description: Cross-topic records, receipts, substantiation, logbooks, and evidence gaps. Use for records and proof standards.
+compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
 # Records Evidence

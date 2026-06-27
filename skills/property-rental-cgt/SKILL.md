@@ -1,6 +1,7 @@
 ---
 name: property-rental-cgt
-description: Rental property records, repairs versus capital works, private use, disposal, and property CGT review.
+description: Rental property records, repairs versus capital works, private use, disposal, and property CGT review. Use for rental property records and property-related CGT.
+compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
 # Property Rental CGT

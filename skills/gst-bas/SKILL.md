@@ -1,6 +1,7 @@
 ---
 name: gst-bas
-description: GST registration, credits, tax invoices, BAS reporting, PAYG instalment intersections, and guardrails.
+description: GST registration, credits, tax invoices, BAS reporting, PAYG instalment intersections, and guardrails. Use for GST registration, credits, tax invoices, and BAS preparation.
+compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
 # GST BAS

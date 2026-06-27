@@ -1,6 +1,7 @@
 ---
 name: payg-employer
-description: PAYG withholding, STP, TPAR, and employer reporting obligations.
+description: PAYG withholding, STP, TPAR, and employer reporting obligations. Use for employer withholding and reporting obligations.
+compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
 # PAYG Employer

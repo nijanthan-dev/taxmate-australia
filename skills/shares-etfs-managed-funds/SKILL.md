@@ -1,6 +1,7 @@
 ---
 name: shares-etfs-managed-funds
-description: Shares, ETFs, managed funds, DRP, AMIT, distributions, and investment CGT records.
+description: Shares, ETFs, managed funds, DRP, AMIT, distributions, and investment CGT records. Use for shares, ETFs, managed funds, investment income and related CGT records.
+compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
 # Shares ETFs Managed Funds

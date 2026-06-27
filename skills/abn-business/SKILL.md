@@ -1,6 +1,7 @@
 ---
 name: abn-business
-description: Sole trader and small business income, deductions, PSI, business-versus-hobby, losses, and evidence.
+description: Sole trader and small business income, deductions, PSI, business-versus-hobby, losses, and evidence. Use for ABN and business income or expenses.
+compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
 # ABN Business
