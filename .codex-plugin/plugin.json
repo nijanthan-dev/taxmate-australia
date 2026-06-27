@@ -42,6 +42,12 @@
   "license": "Apache-2.0",
   "name": "taxmate-australia",
   "repository": "https://github.com/nijanthan-dev/taxmate-australia",
+  "safety": {
+    "humanReviewRequired": true,
+    "noLodgment": true,
+    "noLodgmentBoundary": "Never lodge, file, submit, transmit, or finalise any tax return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency.",
+    "preserveReviewFlags": true
+  },
   "skills": "./skills/",
   "version": "0.1.0"
 }

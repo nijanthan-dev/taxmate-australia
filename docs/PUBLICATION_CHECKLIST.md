@@ -15,8 +15,6 @@ Use this before publishing TaxMate Australia outside a local install.
 - if publishing, add `.agents/plugins/marketplace.json` sample and point `source.path` to an actual path for this repository.
 - Confirm plugin docs include installation notes and plugin structure for onboarding.
 - Confirm README has install commands and usage examples suitable for OpenAgentSkill review.
-- Confirm `CONTRIBUTING.md`, `.github/pull_request_template.md`, issue templates, CODEOWNERS, and `docs/REPO_GUARDRAILS.md` describe the current PR process.
-- Run `scripts/check-repo-guardrails.sh`.
 - Do not add an OpenAgentSkill badge until the listing is approved.
 - Run `./scripts/taxmate validate` and require every check to pass (`score: 100.0`).
 - Refresh or recrawl ATO sources near release date.

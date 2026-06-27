@@ -107,8 +107,4 @@ Remove all TaxMate skills:
 npx skills@1.5.13 remove --skill '*' --agent codex --global --yes
 ```
 
-## Safety
-
-Portable skills preserve `Accountant review` flags, source URLs, and effective periods.
-They only preserve metadata links and must mark missing or stale values as uncertain.
-When web access is not trusted or content is unavailable, do not infer tax treatment from metadata.
+For boundaries and professional-review expectations, see [DISCLAIMER.md](../DISCLAIMER.md).

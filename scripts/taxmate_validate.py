@@ -103,6 +103,21 @@ def validate(root: str) -> Tuple[Dict[str, Any], bool]:
 
 def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifest_err: Optional[Exception], manifest_text: str) -> None:
     add("codex_plugin_manifest_exists", manifest_err is None, str(manifest_err) if manifest_err else "")
+    plugin_safety = False
+    try:
+        raw_manifest = json.loads(manifest_text)
+        safety = raw_manifest.get("safety", {})
+        if isinstance(safety, dict):
+            boundary = str(safety.get("noLodgmentBoundary", ""))
+            plugin_safety = (
+                safety.get("humanReviewRequired") is True
+                and safety.get("noLodgment") is True
+                and safety.get("preserveReviewFlags") is True
+                and "Never lodge" in boundary
+                and "ATO" in boundary
+            )
+    except Exception:
+        plugin_safety = False
     add(
         "public_manifest_polished",
         "TaxMate Australia Maintainers" in manifest_text and '"Local"' not in manifest_text and '"Private"' not in manifest_text and '"repository": "local"' not in manifest_text,
@@ -122,6 +137,7 @@ def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifes
     )
     website_url = manifest.get("interface.websiteURL", "")
     add("plugin_website_is_repository", website_url == manifest.get("repository"), website_url)
+    add("plugin_safety_boundary_metadata", plugin_safety, "")
     add("codex_plugin_no_root_monolith", not file_exists(os.path.join(root, "SKILL.md")), "")
     add(
         "open_plugin_backend_dirs",

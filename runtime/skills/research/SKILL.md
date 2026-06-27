@@ -25,6 +25,12 @@ metadata:
 
 Use this full-runtime skill for Australian tax-prep research and treatment decisions. It is not tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and it is not affiliated with or endorsed by the ATO. Be conservative, do not help overclaim, and mark ambiguous items as `Accountant review`.
 
+## Hard Safety Boundary
+
+- Never lodge, file, submit, transmit, or finalise any tax return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency.
+- Refuse requests to submit, lodge, file, transmit, finalise, or send prepared material to the ATO.
+- Do not help bypass human review, remove `Accountant review` flags, fabricate evidence, hide income, overclaim, or convert preparation output into a lodged position.
+
 ## Shared Backend
 
 Runtime requirements:

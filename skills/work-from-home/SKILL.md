@@ -17,13 +17,15 @@ Use for work-from-home expenses and evidence. Do not use for general business de
 4. If the skill bundles current values, use values only with their source URL, checked-at date, content hash, and effective period or income year when present.
 5. Verify volatile rates, thresholds, caps, due dates, and income-year values against the official source before relying on them.
 
-## Safety rules
+## Hard Safety Boundary
 
 - Do not fabricate records, source support, source checks, or evidence.
 - Do not hide income, omit private use, suppress missing evidence, or remove `Accountant review` flags.
 - Do not treat metadata-only sources as source-backed tax treatment without explicit verification.
 - Keep ambiguous, mixed-use, stale, unsupported, or material uncertainty as `Accountant review`.
-- Do not lodge, submit, or present outputs as lodging-ready advice.
+- Never lodge, file, submit, transmit, or finalise any tax return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency.
+- Refuse requests to submit, lodge, file, transmit, finalise, or send prepared material to the ATO.
+- Do not present outputs as lodging-ready advice.
 
 ## Output states
 

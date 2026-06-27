@@ -43,7 +43,6 @@ PYTHONPYCACHEPREFIX=/tmp/taxmate-pycache python3 -m py_compile scripts/*.py
 ./scripts/taxmate validate
 ./scripts/taxmate skills generate --check
 ./scripts/taxmate skills audit --check
-scripts/check-repo-guardrails.sh
 scripts/check-publication-ready.sh
 gitleaks detect --source . --redact
 gitleaks dir . --redact
@@ -60,7 +59,3 @@ If `gitleaks` is unavailable locally, say that in the PR and rely on the require
 - Reply to every review thread with the fix and resolve the thread after verification.
 - Merge only after required checks are green, `mergeStateStatus` is `CLEAN`, all review threads are resolved, latest-head Codex review is clean, and a local secret scan has run.
 - Use squash merge only.
-
-## Repo Guardrails
-
-See [docs/REPO_GUARDRAILS.md](docs/REPO_GUARDRAILS.md) for the benchmarked OSS practices, current GitHub protection targets, and the repo-side files that enforce this process.

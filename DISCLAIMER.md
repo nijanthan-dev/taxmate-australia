@@ -2,8 +2,6 @@
 
 TaxMate Australia is a tax-preparation aid for Australian tax workflows. It is not tax, legal, accounting, financial, investment, BAS-agent, or registered-tax-agent advice.
 
-TaxMate Australia is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office, the Commonwealth of Australia, any state or territory revenue office, any insurer, any super fund, or any financial institution.
-
 TaxMate Australia is not affiliated with, sponsored by, endorsed by, or approved by:
 - the Australian Taxation Office
 - the Commonwealth of Australia

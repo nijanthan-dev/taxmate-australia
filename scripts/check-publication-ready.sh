@@ -17,13 +17,11 @@ fail() {
 [[ -f skill.json ]] || fail "missing OpenAgentSkill skill.json"
 [[ -f SECURITY.md ]] || fail "missing SECURITY.md"
 [[ -f CONTRIBUTING.md ]] || fail "missing CONTRIBUTING.md"
-[[ -f docs/REPO_GUARDRAILS.md ]] || fail "missing repo guardrails doc"
 [[ -f .github/CODEOWNERS ]] || fail "missing CODEOWNERS"
 [[ -f .github/pull_request_template.md ]] || fail "missing PR template"
 [[ -f .github/ISSUE_TEMPLATE/bug_report.yml ]] || fail "missing bug issue template"
 [[ -f .github/ISSUE_TEMPLATE/feature_request.yml ]] || fail "missing feature issue template"
 [[ -f .github/ISSUE_TEMPLATE/config.yml ]] || fail "missing issue template config"
-[[ -f scripts/check-repo-guardrails.sh ]] || fail "missing repo guardrails check"
 [[ -f docs/PUBLICATION_CHECKLIST.md ]] || fail "missing publication checklist"
 [[ -f hooks.json ]] || fail "missing hooks.json"
 [[ -f scripts/clean-source-cache.sh ]] || fail "missing source-cache cleaner"
@@ -97,6 +95,7 @@ function fail(message) {
 if (publicManifest.skillsCliVersion !== "1.5.13") fail("skills CLI version must be pinned to 1.5.13");
 if (JSON.stringify(publicSkills) !== JSON.stringify(packaging.publicPortable)) fail("public skill manifests differ");
 if (plugin.interface.websiteURL !== plugin.repository) fail("plugin website must point to repository");
+if (!plugin.safety || plugin.safety.humanReviewRequired !== true || plugin.safety.noLodgment !== true || plugin.safety.preserveReviewFlags !== true || !/Never lodge.*ATO/.test(plugin.safety.noLodgmentBoundary || "")) fail("plugin safety boundary metadata missing");
 const expectedInstall = "npx skills@1.5.13 add nijanthan-dev/taxmate-australia --agent codex --global --skill '*' --yes";
 if (openAgentSkill.slug !== "taxmate-australia") fail("OpenAgentSkill slug mismatch");
 if (openAgentSkill.repository !== plugin.repository) fail("OpenAgentSkill repository mismatch");
@@ -205,6 +204,5 @@ bash -n scripts/test-codex-env-setup-clean.sh
 bash scripts/test-codex-env-cleanup.sh
 bash scripts/test-codex-env-setup-clean.sh
 bash scripts/clean-source-cache.sh
-scripts/check-repo-guardrails.sh
 
 echo "publication checks passed"

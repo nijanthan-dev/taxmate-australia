@@ -9,7 +9,7 @@
 
 - [ ] tax logic, generated skills, or source metadata changed
 - [ ] finance/calculator/runtime behaviour changed
-- [ ] docs/templates/CI/repo guardrails changed
+- [ ] docs/templates/CI changed
 - [ ] no user-visible behaviour changed
 
 ## Validation
@@ -19,7 +19,6 @@
 - [ ] `./scripts/taxmate validate`
 - [ ] `./scripts/taxmate skills generate --check`
 - [ ] `./scripts/taxmate skills audit --check`
-- [ ] `scripts/check-repo-guardrails.sh`
 - [ ] `scripts/check-publication-ready.sh`
 - [ ] history secret scan (`gitleaks detect --source . --redact` or required CI `Gitleaks`)
 - [ ] tree secret scan (`gitleaks dir . --redact` or required CI `Gitleaks`)
