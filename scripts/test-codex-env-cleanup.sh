@@ -18,7 +18,9 @@ git worktree add --detach "$WORKTREE" HEAD >/dev/null
   echo "error: expected linked worktree .git file" >&2
   exit 1
 }
-git diff --binary HEAD -- . | git -C "$WORKTREE" apply
+if ! git diff --quiet HEAD -- .; then
+  git diff --binary HEAD -- . | git -C "$WORKTREE" apply
+fi
 
 mkdir -p \
   "$WORKTREE/.tmp" \
