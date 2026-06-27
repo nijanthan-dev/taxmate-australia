@@ -263,6 +263,7 @@ def add_topic_checks(root: str, add, registry) -> None:
 def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("audit_is_read_only", audit_is_read_only(root), "")
     add("audit_json_stdout_single_document", audit_json_stdout_single_document(root), "")
+    add("audit_duplicates_not_unassigned", audit_duplicates_not_unassigned(root), "")
     add("audit_cgt_counts_metadata_assignments", audit_cgt_counts_metadata_assignments(root), "")
     add("audit_check_fails_missing_required_assignments", audit_check_fails_missing_required_assignments(root), "")
     add("audit_check_fails_missing_required_verified_sources", audit_check_fails_missing_required_verified_sources(root), "")
@@ -1123,6 +1124,20 @@ def audit_json_stdout_single_document(root: str) -> bool:
         return "summary" in payload and "source_coverage" in payload
     except Exception:
         return False
+
+
+def audit_duplicates_not_unassigned(root: str) -> bool:
+    try:
+        coverage = skillgen.LoadSourceCoverage(root)
+        summary = skillgen.Audit(root, coverage)
+    except Exception:
+        return False
+
+    duplicate_ids = sorted(entry.source_id for entry in coverage.sources if entry.status == skillgen.StatusDuplicate)
+    return (
+        duplicate_ids == sorted(summary.duplicate_entries)
+        and len(set(duplicate_ids).intersection(summary.not_used_entries)) == 0
+    )
 
 
 def audit_cgt_counts_metadata_assignments(root: str) -> bool:

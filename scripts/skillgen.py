@@ -383,6 +383,7 @@ class CoverageSummary:
     invalid_hashes: List[str] = field(default_factory=list)
     duplicate_evidence_issues: List[str] = field(default_factory=list)
     duplicate_chain_issues: List[str] = field(default_factory=list)
+    duplicate_entries: List[str] = field(default_factory=list)
     required_assignment_missing: List[str] = field(default_factory=list)
     required_verified_missing: List[str] = field(default_factory=list)
     volatile_missing_periods: List[str] = field(default_factory=list)
@@ -432,6 +433,13 @@ class CoverageSummary:
     @DuplicateChainIssues.setter
     def DuplicateChainIssues(self, value: List[str]) -> None:
         self.duplicate_chain_issues = value
+
+    @property
+    def DuplicateEntries(self) -> List[str]:
+        return self.duplicate_entries
+    @DuplicateEntries.setter
+    def DuplicateEntries(self, value: List[str]) -> None:
+        self.duplicate_entries = value
 
     @property
     def RequiredAssignmentMissing(self) -> List[str]:
@@ -1358,7 +1366,29 @@ def WriteCoverageReport(root: str, format: str) -> bytes:
     for skill in sorted(summary.by_skill.keys()):
         state = summary.by_skill[skill]
         lines.append(f"- {skill}: assigned={state.assigned_sources} verified={state.verified_sources} metadata_only={state.metadata_only_sources} coverage_status={state.coverage_status}")
-    lines.extend(["", "## Required topics", "", *_list_section("required tax areas with no source assignment", summary.required_assignment_missing), *_list_section("required tax areas with no verified source content", summary.required_verified_missing), *_list_section("missing destination files", summary.missing_destination_files), *_list_section("missing reverse provenance", summary.missing_reverse_provenance), *_list_section("invalid hashes", summary.invalid_hashes), *_list_section("unsupported duplicate evidence", summary.duplicate_evidence_issues), *_list_section("duplicate chain issues", summary.duplicate_chain_issues), *_list_section("volatile values missing effective periods", summary.volatile_missing_periods), *_list_section("skills missing guardrails", summary.skills_missing_guardrail), "", "## Source state", "", *_list_section("unassigned sources", summary.not_used_entries), *_list_section("review required sources", summary.review_entries), "", "## CGT coverage", ""])
+    lines.extend([
+        "",
+        "## Required topics",
+        "",
+        *_list_section("required tax areas with no source assignment", summary.required_assignment_missing),
+        *_list_section("required tax areas with no verified source content", summary.required_verified_missing),
+        *_list_section("missing destination files", summary.missing_destination_files),
+        *_list_section("missing reverse provenance", summary.missing_reverse_provenance),
+        *_list_section("invalid hashes", summary.invalid_hashes),
+        *_list_section("unsupported duplicate evidence", summary.duplicate_evidence_issues),
+        *_list_section("duplicate chain issues", summary.duplicate_chain_issues),
+        *_list_section("volatile values missing effective periods", summary.volatile_missing_periods),
+        *_list_section("skills missing guardrails", summary.skills_missing_guardrail),
+        "",
+        "## Source state",
+        "",
+        *_list_section("unassigned sources", summary.not_used_entries),
+        *_list_section("duplicate sources", summary.duplicate_entries),
+        *_list_section("review required sources", summary.review_entries),
+        "",
+        "## CGT coverage",
+        "",
+    ])
     for key in ["general", "shares_etfs_managed_funds", "crypto", "property_rental"]:
         lines.append(f"- {key}: {'covered' if summary.cgt_coverage.get(key) else 'missing'}")
     return ("\n".join(lines) + "\n").encode("utf-8")
@@ -1409,6 +1439,7 @@ def Audit(root: str, coverage: SourceCoverage) -> CoverageSummary:
             summary.missing_reverse_provenance.extend(checkReverseProvenance(root, entry))
         elif entry.status == StatusDuplicate:
             summary.Duplicate += 1
+            summary.duplicate_entries.append(entry.source_id)
             try:
                 validateDuplicateEvidence(entry)
             except Exception as e:
@@ -1437,11 +1468,12 @@ def Audit(root: str, coverage: SourceCoverage) -> CoverageSummary:
         summary.by_skill[skill] = state
 
     for entry in coverage.sources:
-        if entry.status == StatusNeedsReview:
+        if entry.status in (StatusNeedsReview, StatusDuplicate, StatusExcluded):
             continue
         if len(entry.skills) == 0:
             summary.not_used_entries.append(entry.source_id)
     summary.not_used_entries = sorted(summary.not_used_entries)
+    summary.duplicate_entries = sorted(summary.duplicate_entries)
 
     summary.volatile_missing_periods = valuesMissingPeriods(root)
     for skill in sorted(summary.by_skill.keys()):
