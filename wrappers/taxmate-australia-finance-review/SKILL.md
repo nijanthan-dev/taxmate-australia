@@ -1,6 +1,7 @@
 ---
 name: taxmate-australia-finance-review
-description: Review wrapper for cleanly classifying Australian tax records, GST candidates, evidence gaps, and accountant-review queues.
+description: Review wrapper for cleanly classifying Australian tax records, GST candidates, evidence gaps, and accountant-review queues. Use when a local helper must route finance review into the full runtime.
+compatibility: Local wrapper for Claude Code, Cowork, and Codex. Requires repo checkout and the full TaxMate Australia runtime.
 metadata:
   internal: true
 ---

@@ -1,6 +1,7 @@
 ---
 name: employment-deductions
-description: Employee income, work-related expenses, records, exclusions, and conservative claim review.
+description: Employee income, work-related expenses, records, exclusions, and conservative claim review. Use for employee income and work-related deductions.
+compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
 # Employment Deductions

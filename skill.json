@@ -26,6 +26,7 @@
   "platforms": [
     "Codex",
     "Claude Code",
+    "Cowork",
     "OpenAgentSkill CLI"
   ],
   "install": "npx skills@1.5.13 add nijanthan-dev/taxmate-australia --agent codex --global --skill '*' --yes",
@@ -45,7 +46,8 @@
   ],
   "agent_compatibility": [
     "Codex",
-    "Claude Code"
+    "Claude Code",
+    "Cowork"
   ],
   "suited_tasks": [
     "Review Australian tax records conservatively",

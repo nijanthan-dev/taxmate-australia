@@ -1,6 +1,7 @@
 ---
 name: crypto-assets
-description: Crypto disposals, swaps, rewards, transfers, records, and CGT review boundaries.
+description: Crypto disposals, swaps, rewards, transfers, records, and CGT review boundaries. Use for crypto asset events and records.
+compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
 # Crypto Assets

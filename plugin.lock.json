@@ -12,7 +12,7 @@
         "type": "local",
         "path": "runtime/skills/calculators"
       },
-      "integrity": "sha256:4c3d321747aeb2d44403c6269547a67dc0780d150435956605b1ad90bc4e68e6"
+      "integrity": "sha256:c331fe5fb63ff6e8cba89630117fd53d9876b1a5f8905cd5d796503c80b5eeac"
     },
     {
       "id": "finance-review",
@@ -21,7 +21,7 @@
         "type": "local",
         "path": "runtime/skills/finance-review"
       },
-      "integrity": "sha256:3f5f561721589f8c69e1d3cf041a994c20f46708ec8c7e08e96cfb0476d1f9d1"
+      "integrity": "sha256:69e63dcb4b91361f748ec19e36fb155f43a2b40d30f80143f71ffa64ab37e878"
     },
     {
       "id": "research",
@@ -30,7 +30,7 @@
         "type": "local",
         "path": "runtime/skills/research"
       },
-      "integrity": "sha256:ee7456d854641899468ffa464cace5187f6ec4506b22aa8b949de803ece780d1"
+      "integrity": "sha256:60324eb9ea6d6ff2c2ddf755f8eb3e631d4dde3b242a9282cff7fe9ded7a9224"
     },
     {
       "id": "abn-business",
@@ -39,7 +39,7 @@
         "type": "local",
         "path": "skills/abn-business"
       },
-      "integrity": "sha256:4589fdb460b8f3c83577268ea269e5c2f3f2d3619c6abd184fa5b648e7f378d3"
+      "integrity": "sha256:62eafffdf813deafedc021ac7fbcfd438e2a5d2aedea7db355c441eff5881c21"
     },
     {
       "id": "capital-gains-tax",
@@ -48,7 +48,7 @@
         "type": "local",
         "path": "skills/capital-gains-tax"
       },
-      "integrity": "sha256:4b62a023223e1f9378207797676eb91fdf6061047965c51b543f77a8e742a906"
+      "integrity": "sha256:5772ce53bc8402bf54a2f79787b538da422d918d20f72825ce550bcb62ea7188"
     },
     {
       "id": "crypto-assets",
@@ -57,7 +57,7 @@
         "type": "local",
         "path": "skills/crypto-assets"
       },
-      "integrity": "sha256:881f6ff1c8363fcda5ce5a74e8f3adafe07e1180104c72e671293e47518864d2"
+      "integrity": "sha256:72c0ff412a1e6dbd0790bd12408d9a8afc7fdf1e3767da4344cfcb00eefde9ce"
     },
     {
       "id": "employment-deductions",
@@ -66,7 +66,7 @@
         "type": "local",
         "path": "skills/employment-deductions"
       },
-      "integrity": "sha256:2b1d38c9fef5ebc85dedb3025d708ea3e7de3ebf141faef5c4ef4dae0d2900ae"
+      "integrity": "sha256:30019a99246bf8388dc90e41527607f32948adf28e64e7e5f86085933d3785e3"
     },
     {
       "id": "gst-bas",
@@ -75,7 +75,7 @@
         "type": "local",
         "path": "skills/gst-bas"
       },
-      "integrity": "sha256:de840bb40f526cda510bcae791ef5127147eee8db96d1c4b01b89b761e40a80d"
+      "integrity": "sha256:026d796c5bcb352478d583505d843f36cee064d30dcc58732876efdc2972168c"
     },
     {
       "id": "payg-employer",
@@ -84,7 +84,7 @@
         "type": "local",
         "path": "skills/payg-employer"
       },
-      "integrity": "sha256:3e59cd124dae94920b6e03efbe72d1fdc3c8d5349ee7909bc0aac8bd0be156f5"
+      "integrity": "sha256:c0d3b03901455ff4c99b6959664f2c892c73ac36a7d29c41d5fa6d21f5df8a5a"
     },
     {
       "id": "private-health-medicare",
@@ -93,7 +93,7 @@
         "type": "local",
         "path": "skills/private-health-medicare"
       },
-      "integrity": "sha256:f58a49358abba37266b12ac17cf6132d6f66410134c89c9b781e5939a9ec070e"
+      "integrity": "sha256:039394ce082d689efe10c544e99b205dffcfaa356b4686f52993bbacda8419fa"
     },
     {
       "id": "property-rental-cgt",
@@ -102,7 +102,7 @@
         "type": "local",
         "path": "skills/property-rental-cgt"
       },
-      "integrity": "sha256:d7cb36aad774e758336fc027dc4394e09d1fd7e8377b1af3fde7674d8149b667"
+      "integrity": "sha256:2b20109ec24ef113aeca05155592a8e2ac824733f9c8c08bfc0629cc1eb66125"
     },
     {
       "id": "records-evidence",
@@ -111,7 +111,7 @@
         "type": "local",
         "path": "skills/records-evidence"
       },
-      "integrity": "sha256:48711992a3b8b37c1cc43baf1adf4934516c90532c4d98784956cdd7dcedb7f3"
+      "integrity": "sha256:a9a568f8d3fd90aed8a0170d5b6fec4872fccdbebdbc1b9dac080c29433d16c2"
     },
     {
       "id": "shares-etfs-managed-funds",
@@ -120,7 +120,7 @@
         "type": "local",
         "path": "skills/shares-etfs-managed-funds"
       },
-      "integrity": "sha256:fdd31f439de2e281fd4dc8b8b7b5e757b71d1b13df1db7c7f70665957a3fe0df"
+      "integrity": "sha256:747531758cad2f025420701896fc0882316c968d7dd853a5beffc015303c5608"
     },
     {
       "id": "superannuation",
@@ -129,7 +129,7 @@
         "type": "local",
         "path": "skills/superannuation"
       },
-      "integrity": "sha256:aa8c2e01056a923c1206b2e2c4b09b9dd29872e409aec158a4fb93ccdf21e7f5"
+      "integrity": "sha256:d83b5e7d4b4fd1051563c180d9c98439797358be853982ff7a6bff06477852fd"
     },
     {
       "id": "taxmate-australia",
@@ -138,7 +138,7 @@
         "type": "local",
         "path": "skills/taxmate-australia"
       },
-      "integrity": "sha256:0dc26ea1a8fa52be952b44e00f94105d424059b9a8e88e8f16866b19492d068a"
+      "integrity": "sha256:507ca0c25d1f3caf2def9374fc133036249e45bde7ecbe2532cd6816dd80f9c4"
     },
     {
       "id": "taxpack",
@@ -147,7 +147,7 @@
         "type": "local",
         "path": "skills/taxpack"
       },
-      "integrity": "sha256:7d93c6f748cfbbb96bcc471c08d4942b83daa9e404fb895d5f1488ca90e03db4"
+      "integrity": "sha256:4cd966e0e703bffd6905a42c2340836336941bbd40cd496d8e11f4e61fed5173"
     },
     {
       "id": "work-from-home",
@@ -156,7 +156,7 @@
         "type": "local",
         "path": "skills/work-from-home"
       },
-      "integrity": "sha256:953eb8aacfc55630965bb9748c75280854a5c0a11d28f3fb6d356990b2826b37"
+      "integrity": "sha256:4b4ea8991e23be769e3b021196671e5710037e309dd976acfa1d0fa002530b71"
     },
     {
       "id": "workbook",
@@ -165,7 +165,7 @@
         "type": "local",
         "path": "skills/workbook"
       },
-      "integrity": "sha256:3db803170ede642f16f7262a65de5b26a576b5908898e28c71698b5bf57268b1"
+      "integrity": "sha256:bb3bb111c16efb5b9efa69f321ffcde3aeaffeb442d15a77f10e70f75b6a329c"
     }
   ]
 }

@@ -1,6 +1,7 @@
 ---
 name: taxmate-australia-calculators
-description: Calculator wrapper for conservative PAYG, BAS, CGT, FBT, super, and stamp-duty estimate scaffolds.
+description: Calculator wrapper for conservative PAYG, BAS, CGT, FBT, super, and stamp-duty estimate scaffolds. Use when a local helper must route calculator requests into the full TaxMate Australia runtime.
+compatibility: Local wrapper for Claude Code, Cowork, and Codex. Requires repo checkout and the full TaxMate Australia runtime.
 metadata:
   internal: true
 ---

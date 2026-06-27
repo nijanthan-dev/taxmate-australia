@@ -1,6 +1,7 @@
 ---
 name: research
-description: ATO-first tax research that turns tax questions into conservative treatment recommendations and clear Accountant Review flags.
+description: ATO-first tax research that turns tax questions into conservative treatment recommendations and clear Accountant Review flags. Use when full-runtime ATO refresh or source-backed treatment review is needed.
+compatibility: Full-runtime skill for Claude Code, Cowork, and Codex. Requires repo checkout, bash, Python 3.9+, Git, and network for refresh.
 metadata:
   internal: true
   priority: 5

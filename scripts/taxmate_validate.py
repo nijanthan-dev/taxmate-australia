@@ -9,6 +9,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -23,6 +24,8 @@ import taxmate_skills
 
 
 EMPTY_CONTENT = skillgen.EmptyContentHashValue
+SKILL_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+RESERVED_SKILL_PREFIXES = ("claude", "anthropic")
 
 
 def run(argv: Optional[List[str]] = None) -> int:
@@ -197,9 +200,20 @@ def add_openagentskill_checks(root: str, add, manifest: Dict[str, str], readme_t
         payload.get("install") == expected_install
         and isinstance(platforms, list)
         and "Codex" in platforms
+        and "Claude Code" in platforms
+        and "Cowork" in platforms
         and "OpenAgentSkill CLI" in platforms
         and isinstance(install_targets, list)
         and any(isinstance(target, dict) and target.get("value") == expected_install for target in install_targets),
+        "",
+    )
+    agent_compatibility = payload.get("agent_compatibility")
+    add(
+        "agent_compatibility_declares_claude_cowork_codex",
+        isinstance(agent_compatibility, list)
+        and "Codex" in agent_compatibility
+        and "Claude Code" in agent_compatibility
+        and "Cowork" in agent_compatibility,
         "",
     )
     add(
@@ -241,6 +255,12 @@ def add_skill_and_documentation_checks(
     add("public_skill_manifest_loaded", manifest_skill_err is None, str(manifest_skill_err) if manifest_skill_err else "")
     add("codex_plugin_required_skills_exist", len(missing_skills) == 0, ", ".join(missing_skills))
     add("skill_frontmatter_valid", len(bad_frontmatter) == 0, ", ".join(bad_frontmatter))
+    claude_issues = claude_skill_frontmatter_issues(root)
+    add("claude_skill_frontmatter_compatible", len(claude_issues) == 0, "; ".join(first_n(claude_issues, 8)))
+    missing_skill_docs = skill_dirs_without_skill_md(root)
+    add("skill_dirs_have_skill_md", len(missing_skill_docs) == 0, "; ".join(missing_skill_docs))
+    readme_issues = skill_folder_readmes(root)
+    add("skill_folders_do_not_contain_readme", len(readme_issues) == 0, "; ".join(readme_issues))
     add("description_nonempty", all_skill_descriptions_long(root, required_skills), "")
     add(
         "portable_root_documented",
@@ -493,6 +513,84 @@ def all_skill_descriptions_long(root: str, skills: List[str]) -> bool:
         if fm is None or len(fm.get("description", "")) < 40:
             return False
     return True
+
+
+def claude_skill_frontmatter_issues(root: str) -> List[str]:
+    issues: List[str] = []
+    for path in skill_doc_paths(root):
+        rel = relative_path(root, path)
+        text = read_text(path)
+        fm = parse_frontmatter(text)
+        fm_text = frontmatter_text(text)
+        folder_name = Path(path).parent.name
+        name = (fm or {}).get("name", "")
+        description = (fm or {}).get("description", "")
+        compatibility = (fm or {}).get("compatibility", "")
+
+        if fm is None:
+            issues.append(f"{rel}: invalid frontmatter")
+            continue
+        if name != folder_name:
+            issues.append(f"{rel}: name must match folder")
+        if not SKILL_NAME_RE.fullmatch(name):
+            issues.append(f"{rel}: name must be kebab-case")
+        if name.startswith(RESERVED_SKILL_PREFIXES):
+            issues.append(f"{rel}: reserved skill name prefix")
+        if len(description) > 1024:
+            issues.append(f"{rel}: description too long")
+        if not skill_description_has_trigger(description):
+            issues.append(f"{rel}: description missing use trigger")
+        if not compatibility or len(compatibility) > 500:
+            issues.append(f"{rel}: compatibility missing or too long")
+        if "<" in fm_text or ">" in fm_text:
+            issues.append(f"{rel}: frontmatter contains XML angle bracket")
+    return issues
+
+
+def skill_doc_paths(root: str) -> List[str]:
+    paths: List[str] = []
+    for base in ("skills", os.path.join("runtime", "skills"), "wrappers"):
+        base_path = Path(root, base)
+        if not base_path.exists():
+            continue
+        for skill_path in base_path.glob("*/SKILL.md"):
+            paths.append(str(skill_path))
+    return sorted(paths)
+
+
+def skill_description_has_trigger(description: str) -> bool:
+    lower = description.lower()
+    return "use when" in lower or "use for" in lower or "use this" in lower
+
+
+def frontmatter_text(text: str) -> str:
+    if not text.startswith("---\n"):
+        return ""
+    end = text.find("\n---\n", 4)
+    if end < 0:
+        return ""
+    return text[4:end]
+
+
+def skill_dirs_without_skill_md(root: str) -> List[str]:
+    missing: List[str] = []
+    for base in ("skills", os.path.join("runtime", "skills"), "wrappers"):
+        base_path = Path(root, base)
+        if not base_path.exists():
+            continue
+        for item in sorted(base_path.iterdir()):
+            if item.is_dir() and not (item / "SKILL.md").exists():
+                missing.append(relative_path(root, str(item)))
+    return missing
+
+
+def skill_folder_readmes(root: str) -> List[str]:
+    readmes: List[str] = []
+    for path in skill_doc_paths(root):
+        skill_dir = Path(path).parent
+        for readme in skill_dir.rglob("README.md"):
+            readmes.append(relative_path(root, str(readme)))
+    return sorted(readmes)
 
 
 def read_text(path: str) -> str:

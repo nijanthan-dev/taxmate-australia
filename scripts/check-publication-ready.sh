@@ -86,10 +86,71 @@ const publicSkills = publicManifest.portableSkills;
 const publicSet = new Set(publicSkills);
 const emptyHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 const repoOnly = /(TAXMATE_AUSTRALIA_ROOT|cmd\/|internal\/|data\/ato_knowledge_base|\.codex-plugin|\$taxmate-australia:|taxmate-australia-(skills|refresh|finance|calc|validate))/;
+const skillNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function fail(message) {
   console.error(`error: ${message}`);
   process.exit(1);
+}
+
+function frontmatter(body, label) {
+  if (!body.startsWith("---\n")) fail(`missing frontmatter ${label}`);
+  const frontmatterEnd = body.indexOf("\n---\n", 4);
+  if (frontmatterEnd < 0) fail(`invalid frontmatter ${label}`);
+  const text = body.slice(4, frontmatterEnd);
+  const data = {};
+  for (const line of text.split("\n")) {
+    if (!line.trim() || /^\s/.test(line)) continue;
+    const idx = line.indexOf(":");
+    if (idx < 0) fail(`invalid frontmatter line ${label}`);
+    data[line.slice(0, idx).trim()] = line.slice(idx + 1).trim().replace(/^"|"$/g, "");
+  }
+  return { data, text };
+}
+
+function skillPaths(base) {
+  if (!fs.existsSync(base)) return [];
+  return fs.readdirSync(base)
+    .map((entry) => path.join(base, entry))
+    .filter((entryPath) => fs.statSync(entryPath).isDirectory())
+    .map((entryPath) => path.join(entryPath, "SKILL.md"))
+    .filter((skillPath) => fs.existsSync(skillPath))
+    .sort();
+}
+
+function skillDirsWithoutSkill(base) {
+  if (!fs.existsSync(base)) return [];
+  return fs.readdirSync(base)
+    .map((entry) => path.join(base, entry))
+    .filter((entryPath) => fs.statSync(entryPath).isDirectory() && !fs.existsSync(path.join(entryPath, "SKILL.md")))
+    .sort();
+}
+
+function hasReadme(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isFile() && entry.name === "README.md") return true;
+    if (entry.isDirectory() && hasReadme(entryPath)) return true;
+  }
+  return false;
+}
+
+function assertClaudeSkillFrontmatter(skillPath) {
+  const body = fs.readFileSync(skillPath, "utf8");
+  const name = path.basename(path.dirname(skillPath));
+  const parsed = frontmatter(body, name);
+  const data = parsed.data;
+  const description = data.description || "";
+  const compatibility = data.compatibility || "";
+  if (data.name !== name) fail(`frontmatter name mismatch ${name}`);
+  if (!skillNamePattern.test(data.name || "")) fail(`skill name must be kebab-case ${name}`);
+  if (/^(claude|anthropic)/.test(data.name || "")) fail(`reserved skill name prefix ${name}`);
+  if (!description || description.length > 1024) fail(`invalid description ${name}`);
+  if (!/use (when|for|this)/i.test(description)) fail(`description missing trigger ${name}`);
+  if (!compatibility || compatibility.length > 500) fail(`missing compatibility ${name}`);
+  if (/[<>]/.test(parsed.text)) fail(`frontmatter XML angle bracket ${name}`);
+  if (hasReadme(path.dirname(skillPath))) fail(`README.md inside skill folder ${name}`);
+  return body;
 }
 
 if (publicManifest.skillsCliVersion !== "1.5.13") fail("skills CLI version must be pinned to 1.5.13");
@@ -104,7 +165,8 @@ if (openAgentSkill.license !== "Apache-2.0") fail("OpenAgentSkill license mismat
 if (!/bash/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`) || !/python/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`)) fail("OpenAgentSkill metadata must describe bash and Python runtime");
 if (openAgentSkill.category !== "business") fail("OpenAgentSkill category mismatch");
 if (!Array.isArray(openAgentSkill.tags) || openAgentSkill.tags.length === 0 || openAgentSkill.tags.length > 10) fail("OpenAgentSkill tags must be 1-10 entries");
-if (!Array.isArray(openAgentSkill.platforms) || !openAgentSkill.platforms.includes("Codex") || !openAgentSkill.platforms.includes("OpenAgentSkill CLI")) fail("OpenAgentSkill platforms missing Codex/CLI");
+if (!Array.isArray(openAgentSkill.platforms) || !openAgentSkill.platforms.includes("Codex") || !openAgentSkill.platforms.includes("Claude Code") || !openAgentSkill.platforms.includes("Cowork") || !openAgentSkill.platforms.includes("OpenAgentSkill CLI")) fail("OpenAgentSkill platforms missing Codex/Claude Code/Cowork/CLI");
+if (!Array.isArray(openAgentSkill.agent_compatibility) || !openAgentSkill.agent_compatibility.includes("Codex") || !openAgentSkill.agent_compatibility.includes("Claude Code") || !openAgentSkill.agent_compatibility.includes("Cowork")) fail("OpenAgentSkill agent compatibility missing Codex/Claude Code/Cowork");
 if (openAgentSkill.install !== expectedInstall) fail("OpenAgentSkill install command mismatch");
 if (!Array.isArray(openAgentSkill.install_targets) || !openAgentSkill.install_targets.some((target) => target.value === expectedInstall)) fail("OpenAgentSkill install target missing CLI command");
 if (!Array.isArray(openAgentSkill.do_not_use_for) || !openAgentSkill.do_not_use_for.some((item) => /lodgment|filing|submission/i.test(item))) fail("OpenAgentSkill safety boundaries missing lodgment refusal");
@@ -115,10 +177,6 @@ for (const name of publicSkills) {
   const skillPath = path.join(dir, "SKILL.md");
   if (!fs.existsSync(skillPath)) fail(`missing public skill ${name}`);
   const body = fs.readFileSync(skillPath, "utf8");
-  if (!body.startsWith("---\n")) fail(`missing frontmatter ${name}`);
-  const frontmatterEnd = body.indexOf("\n---", 4);
-  if (frontmatterEnd < 0) fail(`invalid frontmatter ${name}`);
-  if (!new RegExp(`^name:\\s*${name}$`, "m").test(body.slice(0, frontmatterEnd))) fail(`frontmatter name mismatch ${name}`);
   if (repoOnly.test(body)) fail(`repository-only reference in ${name}`);
   const refs = [...body.matchAll(/`([^`\n]+)`/g)].map((m) => m[1]).filter((p) => p.startsWith("references/"));
   for (const ref of refs) if (!fs.existsSync(path.join(dir, ref))) fail(`missing reference ${name}/${ref}`);
@@ -138,6 +196,12 @@ for (const name of publicSkills) {
 const sourceCoverage = JSON.parse(fs.readFileSync("data/ato_knowledge_base/source_coverage.json", "utf8"));
 if (!Array.isArray(sourceCoverage.sources) || sourceCoverage.sources.length === 0) fail("missing or empty source_coverage");
 if (sourceCoverage.sources.some((entry) => entry.status === "needs_review")) fail("source_coverage contains needs_review entries");
+
+for (const base of ["skills", "runtime/skills", "wrappers"]) {
+  const missing = skillDirsWithoutSkill(base);
+  if (missing.length) fail(`skill directories without SKILL.md: ${missing.join(", ")}`);
+  for (const skillPath of skillPaths(base)) assertClaudeSkillFrontmatter(skillPath);
+}
 
 const skillDirs = fs.readdirSync("skills").filter((entry) => fs.existsSync(path.join("skills", entry, "SKILL.md")));
 const unexpectedPublic = skillDirs.filter((entry) => !publicSet.has(entry) && !packaging.runtimeOnly.includes(entry));

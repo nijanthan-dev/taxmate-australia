@@ -60,3 +60,11 @@ When source content is unavailable, keep the official URL, state that the rule w
 - `records-evidence`
 
 `workbook` and `taxpack` remain output layers only.
+
+Generated topic skill frontmatter must stay portable for Claude Code, Cowork, Codex, and OpenAgentSkill CLI:
+
+- folder name and `name` stay kebab-case and identical.
+- `description` includes what the skill does and when to use it.
+- `compatibility` states portable use and checkout-free requirements.
+- frontmatter never contains XML angle brackets.
+- generated skill folders never include `README.md`; references stay under `references/`.

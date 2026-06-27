@@ -889,7 +889,8 @@ def skillMarkdown(topic_obj: Topic) -> str:
     lines = [
         "---",
         f"name: {topic_obj.slug}",
-        f"description: {topic_obj.description}",
+        f"description: {topic_obj.description} Use for {topic_obj.use}.",
+        "compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.",
         "---",
         "",
         f"# {topic_obj.title}",

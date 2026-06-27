@@ -1,6 +1,7 @@
 ---
 name: taxmate-australia-taxpack
-description: Handoff wrapper for packaging reviewed TaxMate Australia data into accountant-ready packs and future PDF/form drafts.
+description: Handoff wrapper for packaging reviewed TaxMate Australia data into accountant-ready packs and future PDF/form drafts. Use when a local helper must route taxpack requests into the installed skill.
+compatibility: Local wrapper for Claude Code, Cowork, and Codex. Requires repo checkout and the TaxMate Australia taxpack skill.
 metadata:
   internal: true
 ---

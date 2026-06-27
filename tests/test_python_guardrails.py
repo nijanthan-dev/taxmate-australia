@@ -339,6 +339,16 @@ class SkillGenerationTests(unittest.TestCase):
     def test_runtime_only_skills_have_guardrails(self) -> None:
         self.assertIsNone(skillgen.validateRuntimeOnlySkills(str(ROOT)))
 
+    def test_generated_topic_frontmatter_is_portable_skill_shape(self) -> None:
+        body = skillgen.skillMarkdown(skillgen.Topics()[0])
+        frontmatter = taxmate_validate.parse_frontmatter(body)
+
+        self.assertIsNotNone(frontmatter)
+        self.assertEqual(frontmatter["name"], skillgen.Topics()[0].slug)
+        self.assertIn("Use for", frontmatter["description"])
+        self.assertIn("Claude Code", frontmatter["compatibility"])
+        self.assertIn("Cowork", frontmatter["compatibility"])
+
     def test_source_coverage_error_is_returned_not_thrown(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             Path(tmp, "data", "ato_knowledge_base").mkdir(parents=True)
@@ -353,6 +363,36 @@ class ValidatorAndCliTests(unittest.TestCase):
     def test_parse_frontmatter_requires_valid_block(self) -> None:
         self.assertEqual(taxmate_validate.parse_frontmatter("---\nname: sample\n---\nBody\n"), {"name": "sample"})
         self.assertIsNone(taxmate_validate.parse_frontmatter("name: sample\nBody\n"))
+
+    def test_claude_skill_frontmatter_issues_catches_bad_skill_shape(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            skill_dir = Path(tmp) / "skills" / "bad_skill"
+            skill_dir.mkdir(parents=True)
+            (skill_dir / "SKILL.md").write_text(
+                "---\n"
+                "name: Bad Skill\n"
+                "description: Helps things.\n"
+                "compatibility: x\n"
+                "---\n"
+                "# Bad\n",
+                encoding="utf-8",
+            )
+
+            issues = taxmate_validate.claude_skill_frontmatter_issues(tmp)
+
+        self.assertTrue(any("name must match folder" in issue for issue in issues))
+        self.assertTrue(any("name must be kebab-case" in issue for issue in issues))
+        self.assertTrue(any("description missing use trigger" in issue for issue in issues))
+
+    def test_skill_dirs_without_skill_md_catches_orphan_skill_dir(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            orphan = Path(tmp) / "skills" / "research" / "agents"
+            orphan.mkdir(parents=True)
+            (orphan / "openai.yaml").write_text("interface: {}\n", encoding="utf-8")
+
+            missing = taxmate_validate.skill_dirs_without_skill_md(tmp)
+
+        self.assertEqual(missing, ["skills/research"])
 
     def test_validate_json_uses_check_field(self) -> None:
         self.assertTrue(taxmate_validate.validate_json_uses_check_field())

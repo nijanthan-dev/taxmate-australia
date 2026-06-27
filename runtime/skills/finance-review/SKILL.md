@@ -1,6 +1,7 @@
 ---
 name: finance-review
-description: Review Australian tax records and transaction CSVs for accountant handoff using TaxMate Australia.
+description: Review Australian tax records and transaction CSVs for accountant handoff using TaxMate Australia. Use when full-runtime finance review, GST candidate triage, or evidence-gap classification is needed.
+compatibility: Full-runtime skill for Claude Code, Cowork, and Codex. Requires repo checkout, bash, Python 3.9+, and Git.
 metadata:
   internal: true
   priority: 5

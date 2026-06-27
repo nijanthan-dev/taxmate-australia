@@ -1,6 +1,7 @@
 ---
 name: taxpack
 description: Prepare accountant handoff packs and future PDF/form outputs from reviewed TaxMate Australia data. Use for summary PDFs, checklists, source bundles, and later tax-form drafts from accountant-reviewed structured data.
+compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 metadata:
   priority: 3
   promptSignals:

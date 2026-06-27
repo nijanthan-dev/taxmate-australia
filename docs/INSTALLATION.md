@@ -61,6 +61,22 @@ npx skills@1.5.13 use nijanthan-dev/taxmate-australia \
 - Project install: `.agents/skills/`
 - Global install with `skills@1.5.13`: `~/.agents/skills/`
 
+## Claude Code and Cowork
+
+TaxMate portable skills use the standard skill folder shape from the Claude guide:
+
+```text
+skill-name/
+  SKILL.md
+  references/
+```
+
+For Claude Code or Cowork, use the same public portable skill folders listed below. Each folder is self-contained, has `SKILL.md` with YAML frontmatter, and avoids checkout-only runtime commands.
+
+Install by downloading or copying the selected `skills/<name>` folder into the skill location supported by your Claude Code or Cowork setup, or upload the zipped skill folder when the product UI asks for a skill package. Do not zip the whole repository when you only want portable skill access.
+
+Use the full plugin runtime only when you need ATO refresh, finance review scripts, calculators, or repository validation.
+
 ## Public portable skills
 
 The source of truth is `config/public-skills.json`.
