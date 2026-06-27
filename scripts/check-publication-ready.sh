@@ -24,6 +24,7 @@ fail() {
 [[ -f scripts/codex-env-full-check.sh ]] || fail "missing Codex environment full check"
 [[ -f scripts/codex-cloud-post-task-cleanup.sh ]] || fail "missing Codex Cloud cleanup wrapper"
 [[ -f scripts/test-codex-env-cleanup.sh ]] || fail "missing Codex environment cleanup test"
+[[ -f scripts/test-codex-env-setup-clean.sh ]] || fail "missing Codex environment setup clean-worktree test"
 [[ -f data/ato_knowledge_base/source_registry.json ]] || fail "missing source_registry.json"
 [[ -f data/ato_knowledge_base/source_coverage.json ]] || fail "missing source_coverage.json"
 [[ -f config/public-skills.json ]] || fail "missing public skills manifest"
@@ -166,7 +167,9 @@ bash -n scripts/codex-env-cleanup.sh
 bash -n scripts/codex-env-full-check.sh
 bash -n scripts/codex-cloud-post-task-cleanup.sh
 bash -n scripts/test-codex-env-cleanup.sh
+bash -n scripts/test-codex-env-setup-clean.sh
 bash scripts/test-codex-env-cleanup.sh
+bash scripts/test-codex-env-setup-clean.sh
 bash scripts/clean-source-cache.sh
 
 echo "publication checks passed"

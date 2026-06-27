@@ -6,6 +6,8 @@
 /.tmp/
 /dist/
 /coverage/
+__pycache__/
+*.py[cod]
 *.log
 
 # Refreshed official-source cache; generated references are committed instead.

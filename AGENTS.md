@@ -19,6 +19,7 @@
 - Cleanup and environment scripts must work in linked Git worktrees where `.git` is a file. Validate with `git rev-parse --show-toplevel`, not `.git` directory checks.
 - Do not combine `find -delete` with `-prune`; GNU find treats `-delete` as depth-first. Use `-exec rm -f {} +` or a tested portable pattern.
 - Cleanup script changes must include a regression test that runs against a linked `git worktree add` checkout.
+- Environment setup scripts must not dirty a fresh worktree. Disable Python bytecode writes or route caches outside the repo, then test `git status --short --untracked-files=all`.
 - After fixing PR review feedback, reply in the inline thread and resolve the thread after verification.
 - Keep source state in `data/ato_knowledge_base/source_registry.json` and `data/ato_knowledge_base/source_coverage.json`.
 - Do not reintroduce migration artifacts, `source_index`, `source_manifest`, committed raw snapshots, or `data/ato_knowledge_base/text`.
