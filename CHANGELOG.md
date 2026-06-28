@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.1.1...v0.1.2) (2026-06-28)
+
+
+### Bug Fixes
+
+* ato curl fetch ([1ad2114](https://github.com/nijanthan-dev/taxmate-australia/commit/1ad21140e3dfb61acb75bb61433023a73e1ed677))
+
 ## [0.1.1](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.1.0...v0.1.1) (2026-06-28)
 
 
