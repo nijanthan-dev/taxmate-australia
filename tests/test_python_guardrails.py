@@ -471,6 +471,25 @@ class ValidatorAndCliTests(unittest.TestCase):
 
         self.assertEqual(hits, ["docs/DISCOVERY.md:backed by ATO"])
 
+    def test_ato_endorsement_scan_includes_all_wrapper_skills(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            wrapper = Path(tmp) / "wrappers" / "taxmate-australia-extra" / "SKILL.md"
+            wrapper.parent.mkdir(parents=True)
+            wrapper.write_text("description: ATO-supported workflow.\n", encoding="utf-8")
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, ["wrappers/taxmate-australia-extra/SKILL.md:ATO-supported"])
+
+    def test_ato_endorsement_scan_includes_skill_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = Path(tmp) / "skill.json"
+            manifest.write_text('{"description":"ATO partner"}\n', encoding="utf-8")
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, ["skill.json:ATO partner"])
+
 
 if __name__ == "__main__":
     unittest.main()

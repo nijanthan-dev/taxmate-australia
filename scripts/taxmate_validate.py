@@ -1292,17 +1292,61 @@ def stale_committed_source_cache_claim_hits(root: str) -> List[str]:
 
 
 def ato_endorsement_claim_hits(root: str) -> List[str]:
-    files = public_runtime_claim_scan_files() + [
-        os.path.join("agents", "openai.yaml"),
-        os.path.join("docs", "DISCOVERY.md"),
-        os.path.join("skills", "taxmate-australia", "SKILL.md"),
-        os.path.join("wrappers", "taxmate-australia", "SKILL.md"),
+    files = public_ato_claim_scan_files(root)
+    banned = [
+        "ATO-" + "backed",
+        "ATO " + "backed",
+        "Australian Taxation Office-" + "backed",
+        "backed by " + "ATO",
+        "backed by the " + "ATO",
+        "backed by the Australian Taxation Office",
+        "supported by " + "ATO",
+        "supported by the " + "ATO",
+        "supported by the Australian Taxation Office",
+        "ATO-" + "supported",
+        "ATO " + "supported",
+        "ATO-" + "endorsed",
+        "ATO " + "endorsed",
+        "ATO-" + "approved",
+        "ATO " + "approved",
+        "ATO partner",
+        "official ATO partner",
     ]
-    banned = ["ATO-" + "backed", "ATO " + "backed", "backed by " + "ATO", "supported by " + "ATO"]
     hits: List[str] = []
     for rel in files:
         hits.extend(text_hits(root, rel, banned))
     return hits
+
+
+def public_ato_claim_scan_files(root: str) -> List[str]:
+    files = set(public_runtime_claim_scan_files())
+    files.update(
+        [
+            "skill.json",
+            "hooks.json",
+            os.path.join(".github", "workflows", "ci.yml"),
+            os.path.join(".github", "workflows", "release.yml"),
+            os.path.join(".github", "dependabot.yml"),
+            os.path.join(".github", "dependabot.yaml"),
+        ]
+    )
+    for base in [
+        "agents",
+        "docs",
+        "skills",
+        "runtime/skills",
+        "wrappers",
+        ".codex-plugin",
+        ".agents",
+    ]:
+        abs_base = os.path.join(root, base)
+        if not os.path.isdir(abs_base):
+            continue
+        for dirpath, _, filenames in os.walk(abs_base):
+            for filename in filenames:
+                if filename.endswith((".md", ".json", ".yaml", ".yml")) or filename == "SKILL.md":
+                    files.add(os.path.relpath(os.path.join(dirpath, filename), root))
+    return sorted(rel for rel in files if file_exists(os.path.join(root, rel)))
 
 
 def go_tooling_scan_files() -> List[str]:
