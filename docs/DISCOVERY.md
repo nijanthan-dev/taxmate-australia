@@ -51,4 +51,4 @@ tax-records
 - Keep prep-only/no-advice/no-lodgment boundaries visible.
 - Do not imply ATO, government, insurer, super fund, or financial-institution endorsement.
 - Do not claim marketplace approval or official listing until verified.
-- Do not reintroduce Go runtime wording.
+- Do not reintroduce stale compiled-backend wording.

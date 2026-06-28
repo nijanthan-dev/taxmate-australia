@@ -1557,6 +1557,7 @@ def public_runtime_claim_scan_files() -> List[str]:
         "CONTRIBUTING.md",
         "SECURITY.md",
         os.path.join("docs", "DEVELOPMENT.md"),
+        os.path.join("docs", "DISCOVERY.md"),
         os.path.join("docs", "FULL_PLUGIN_INSTALL.md"),
         os.path.join("docs", "INSTALLATION.md"),
         os.path.join("docs", "PUBLICATION_CHECKLIST.md"),

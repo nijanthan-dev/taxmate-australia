@@ -47,6 +47,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: bash scripts/bootstrap-dev-env.sh
+      - run: ./scripts/taxmate review-guardrails
       - run: ./scripts/taxmate skills validate
       - run: ./scripts/taxmate validate
 

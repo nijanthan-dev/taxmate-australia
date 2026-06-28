@@ -21,8 +21,20 @@ import skillgen  # noqa: E402
 import taxmate  # noqa: E402
 import taxmate_calc  # noqa: E402
 import taxmate_finance  # noqa: E402
+import taxmate_review_guardrails  # noqa: E402
 import taxmate_taxpack  # noqa: E402
 import taxmate_validate  # noqa: E402
+
+
+class ReviewGuardrailTests(unittest.TestCase):
+    def test_review_guardrails_pass_current_repo(self) -> None:
+        self.assertEqual([], taxmate_review_guardrails.run(ROOT))
+
+    def test_review_guardrails_detect_taxpack_truthiness_fallback(self) -> None:
+        text = 'def scalar_text(): pass\nvalue = raw.get("answer") or ""\n'
+        findings = taxmate_review_guardrails.check_taxpack_output_layer_text(text)
+
+        self.assertTrue(any("forbidden pattern" in finding.detail for finding in findings))
 
 
 class CalculatorTests(unittest.TestCase):
