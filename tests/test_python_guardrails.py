@@ -735,6 +735,39 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("User says &lt;yes&gt;", body)
         self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
 
+    def test_guide_preserves_skipped_statuses(self) -> None:
+        payload = {
+            "income_year": "2025-26",
+            "generated_date": "28 Jun 2026",
+            "items": [
+                {
+                    "number": "10",
+                    "ato_area": "Other",
+                    "question": "Not applicable?",
+                    "answer": "Skipped by user",
+                    "why_included": "Question was not applicable.",
+                    "status": "N/A skipped",
+                    "status_kind": "grey",
+                    "tab_title": "Row 10 skipped",
+                    "tab_text": "Skipped item.",
+                    "tab_kind": "N/A skipped",
+                }
+            ],
+        }
+        data = taxmate_taxpack.GuideData(
+            income_year=payload["income_year"],
+            generated_date=payload["generated_date"],
+            summary_note="Skipped regression.",
+            items=[taxmate_taxpack.guide_item(payload["items"][0])],
+        )
+
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn("<span class=\"status skipped\">N/A skipped</span>", body)
+        self.assertIn("class=\"tab grey\"", body)
+        self.assertIn("No review-only items supplied.", body)
+        self.assertNotIn("<span class=\"status review-badge\">", body)
+
     def test_guide_rejects_forbidden_visible_taxpack_language(self) -> None:
         data = taxmate_taxpack.load_guide_data(None)
         bad = taxmate_taxpack.render_html(data).replace("Prepared by user", "Prepared by " + "TaxMate")
