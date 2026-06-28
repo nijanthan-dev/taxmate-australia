@@ -14,6 +14,16 @@ from typing import Callable, Iterable, List
 
 
 ROOT_MARKER = os.path.join(".codex-plugin", "plugin.json")
+TAXPACK_OUTPUT_LAYER = "taxpack_output_layer_contract"
+ATO_FETCH_BOUNDARY = "ato_fetch_boundary"
+GENERATED_ARTIFACT_CONTRACT = "generated_artifact_contract"
+FINANCE_JSON_WIRE_CONTRACT = "finance_json_wire_contract"
+CALCULATOR_NUMERIC_CONTRACT = "calculator_numeric_contract"
+PUBLIC_CLAIM_SURFACE_CONTRACT = "public_claim_surface_contract"
+RELEASE_GUARDRAIL_CONTRACT = "release_guardrail_contract"
+ENVIRONMENT_WORKTREE_CONTRACT = "environment_worktree_contract"
+PRE_COMMIT_CONTRACT = "pre_commit_contract"
+REVIEW_PATTERN_DOCS = "review_pattern_docs"
 
 
 @dataclass
@@ -54,6 +64,10 @@ def fail_if_missing(check: str, text: str, tokens: Iterable[str]) -> List[Findin
     return []
 
 
+def fail_if_file_missing(root: Path, check: str, rel: str, tokens: Iterable[str]) -> List[Finding]:
+    return fail_if_missing(check, read(root, rel), tokens)
+
+
 def check_taxpack_output_layer_text(text: str) -> List[Finding]:
     findings: List[Finding] = []
     required = [
@@ -71,7 +85,7 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "default_generated_date()",
         "canonical_status(item_status_kind)",
     ]
-    findings.extend(fail_if_missing("taxpack_output_layer_contract", text, required))
+    findings.extend(fail_if_missing(TAXPACK_OUTPUT_LAYER, text, required))
     forbidden = [
         'querySelector(`[data-anchor="${',
         "querySelector('[data-anchor=\"' +",
@@ -82,7 +96,7 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
     ]
     hits = [token for token in forbidden if token in text]
     if hits:
-        findings.append(Finding("taxpack_output_layer_contract", "forbidden pattern: " + ", ".join(hits)))
+        findings.append(Finding(TAXPACK_OUTPUT_LAYER, "forbidden pattern: " + ", ".join(hits)))
     return findings
 
 
@@ -94,28 +108,31 @@ def check_fetch_boundary(root: Path) -> List[Finding]:
     text = read(root, "scripts/atodata.py")
     findings: List[Finding] = []
     if "urllib.request.urlopen" in text:
-        findings.append(Finding("ato_fetch_boundary", "urllib.request.urlopen must not return"))
+        findings.append(Finding(ATO_FETCH_BOUNDARY, "urllib.request.urlopen must not return"))
     if not contains_in_order(text, ['"curl"', '"--disable"', '"-L"']):
-        findings.append(Finding("ato_fetch_boundary", "curl command must start curl, --disable, -L"))
+        findings.append(Finding(ATO_FETCH_BOUNDARY, "curl command must start curl, --disable, -L"))
     required = ['"--write-out"', '"%{http_code}\\n%{url_effective}"', "FetchResult(status=status, final_url=final_url, body=body)"]
-    findings.extend(fail_if_missing("ato_fetch_boundary", text, required))
+    findings.extend(fail_if_missing(ATO_FETCH_BOUNDARY, text, required))
     return findings
 
 
 def check_generated_artifact_contract(root: Path) -> List[Finding]:
-    text = read(root, "scripts/skillgen.py")
-    required = [
-        "def gitTrackedGeneratedArtifacts(",
-        "def trackedGeneratedArtifacts(",
-        "expected_files = set(trackedGeneratedArtifacts(root))",
-        "generated_files = set(trackedGeneratedArtifacts(generated_root))",
-        "isGeneratedArtifactPath",
-        "current-values.json",
-        "source_id",
-        "checked_at",
-        "content_hash",
-    ]
-    return fail_if_missing("generated_artifact_contract", text, required)
+    return fail_if_file_missing(
+        root,
+        GENERATED_ARTIFACT_CONTRACT,
+        "scripts/skillgen.py",
+        [
+            "def gitTrackedGeneratedArtifacts(",
+            "def trackedGeneratedArtifacts(",
+            "expected_files = set(trackedGeneratedArtifacts(root))",
+            "generated_files = set(trackedGeneratedArtifacts(generated_root))",
+            "isGeneratedArtifactPath",
+            "current-values.json",
+            "source_id",
+            "checked_at",
+            "content_hash",
+        ],
+    )
 
 
 def check_finance_and_calc_wire_contract(root: Path) -> List[Finding]:
@@ -124,7 +141,7 @@ def check_finance_and_calc_wire_contract(root: Path) -> List[Finding]:
     findings: List[Finding] = []
     findings.extend(
         fail_if_missing(
-            "finance_json_wire_contract",
+            FINANCE_JSON_WIRE_CONTRACT,
             finance,
             [
                 '"generated_at"',
@@ -139,7 +156,7 @@ def check_finance_and_calc_wire_contract(root: Path) -> List[Finding]:
     )
     findings.extend(
         fail_if_missing(
-            "calculator_numeric_contract",
+            CALCULATOR_NUMERIC_CONTRACT,
             calc,
             [
                 "def finite_float(",
@@ -150,23 +167,26 @@ def check_finance_and_calc_wire_contract(root: Path) -> List[Finding]:
         )
     )
     if re.search(r"\bround\([^)]*\)", calc) or re.search(r"\bround\([^)]*\)", finance):
-        findings.append(Finding("calculator_numeric_contract", "use Decimal ROUND_HALF_UP, not builtin round"))
+        findings.append(Finding(CALCULATOR_NUMERIC_CONTRACT, "use Decimal ROUND_HALF_UP, not builtin round"))
     return findings
 
 
 def check_public_claim_surfaces(root: Path) -> List[Finding]:
-    validate = read(root, "scripts/taxmate_validate.py")
-    required = [
-        'os.path.join("docs", "DISCOVERY.md")',
-        '"wrappers"',
-        '"docs"',
-        'os.path.join(".github", "workflows", "ci.yml")',
-        'os.path.join(".github", "workflows", "release.yml")',
-        'os.path.join(".github", "dependabot.yml")',
-        "ato_endorsement_claim_hits",
-        "public_metadata_no_go_runtime_claims",
-    ]
-    return fail_if_missing("public_claim_surface_contract", validate, required)
+    return fail_if_file_missing(
+        root,
+        PUBLIC_CLAIM_SURFACE_CONTRACT,
+        "scripts/taxmate_validate.py",
+        [
+            'os.path.join("docs", "DISCOVERY.md")',
+            '"wrappers"',
+            '"docs"',
+            'os.path.join(".github", "workflows", "ci.yml")',
+            'os.path.join(".github", "workflows", "release.yml")',
+            'os.path.join(".github", "dependabot.yml")',
+            "ato_endorsement_claim_hits",
+            "public_metadata_no_go_runtime_claims",
+        ],
+    )
 
 
 def check_release_contract(root: Path) -> List[Finding]:
@@ -185,12 +205,12 @@ def check_release_contract(root: Path) -> List[Finding]:
         "target-branch: main",
         "manifest-file: .release-please-manifest.json",
     ]
-    findings.extend(fail_if_missing("release_guardrail_contract", release, required))
+    findings.extend(fail_if_missing(RELEASE_GUARDRAIL_CONTRACT, release, required))
     bootstrap_sha = config.get("bootstrap-sha")
     if not isinstance(bootstrap_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", bootstrap_sha):
-        findings.append(Finding("release_guardrail_contract", "release-please-config.json missing 40-char bootstrap-sha"))
+        findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "release-please-config.json missing 40-char bootstrap-sha"))
     if "workflow_run:" not in release and "automatically" in development.lower():
-        findings.append(Finding("release_guardrail_contract", "manual release workflow must not be documented as automatic"))
+        findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "manual release workflow must not be documented as automatic"))
     return findings
 
 
@@ -201,7 +221,7 @@ def check_environment_contract(root: Path) -> List[Finding]:
     findings: List[Finding] = []
     findings.extend(
         fail_if_missing(
-            "environment_worktree_contract",
+            ENVIRONMENT_WORKTREE_CONTRACT,
             ci,
             [
                 "bash scripts/test-codex-env-cleanup.sh",
@@ -212,11 +232,11 @@ def check_environment_contract(root: Path) -> List[Finding]:
     )
     for rel, text in [("scripts/codex-env-setup.sh", setup), ("scripts/codex-env-cleanup.sh", cleanup)]:
         if "rev-parse --show-toplevel" not in text:
-            findings.append(Finding("environment_worktree_contract", f"{rel} must resolve linked worktree root with git rev-parse"))
+            findings.append(Finding(ENVIRONMENT_WORKTREE_CONTRACT, f"{rel} must resolve linked worktree root with git rev-parse"))
     if "find " in cleanup and " -delete" in cleanup:
-        findings.append(Finding("environment_worktree_contract", "cleanup must not combine find -delete with prune"))
+        findings.append(Finding(ENVIRONMENT_WORKTREE_CONTRACT, "cleanup must not combine find -delete with prune"))
     if "PYTHONDONTWRITEBYTECODE" not in setup:
-        findings.append(Finding("environment_worktree_contract", "setup must disable Python bytecode writes"))
+        findings.append(Finding(ENVIRONMENT_WORKTREE_CONTRACT, "setup must disable Python bytecode writes"))
     return findings
 
 
@@ -225,18 +245,18 @@ def check_precommit_contract(root: Path) -> List[Finding]:
     for rel in [".pre-commit-config.yaml", ".githooks/pre-commit"]:
         path = root.joinpath(rel)
         if not path.exists():
-            findings.append(Finding("pre_commit_contract", f"missing {rel}"))
+            findings.append(Finding(PRE_COMMIT_CONTRACT, f"missing {rel}"))
             continue
         text = path.read_text(encoding="utf-8")
         if "./scripts/taxmate review-guardrails" not in text:
-            findings.append(Finding("pre_commit_contract", f"{rel} must run ./scripts/taxmate review-guardrails"))
+            findings.append(Finding(PRE_COMMIT_CONTRACT, f"{rel} must run ./scripts/taxmate review-guardrails"))
     return findings
 
 
 def check_pattern_docs(root: Path) -> List[Finding]:
     path = root.joinpath("docs", "CODEX_REVIEW_PATTERNS.md")
     if not path.exists():
-        return [Finding("review_pattern_docs", "missing docs/CODEX_REVIEW_PATTERNS.md")]
+        return [Finding(REVIEW_PATTERN_DOCS, "missing docs/CODEX_REVIEW_PATTERNS.md")]
     text = path.read_text(encoding="utf-8")
     required = [
         "PR #7",
@@ -248,7 +268,7 @@ def check_pattern_docs(root: Path) -> List[Finding]:
         "public claim",
         "Release guardrails",
     ]
-    return fail_if_missing("review_pattern_docs", text, required)
+    return fail_if_missing(REVIEW_PATTERN_DOCS, text, required)
 
 
 CHECKS: List[Callable[[Path], List[Finding]]] = [
