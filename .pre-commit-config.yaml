@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: taxmate-review-guardrails
+        name: TaxMate review guardrails
+        entry: ./scripts/taxmate review-guardrails
+        language: system
+        pass_filenames: false

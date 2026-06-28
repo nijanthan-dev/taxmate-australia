@@ -1,10 +1,6 @@
 name: Release
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -16,12 +12,7 @@ permissions:
 jobs:
   release:
     name: Release
-    if: >
-      (github.event_name == 'workflow_dispatch' &&
-      github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_run' &&
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'main')
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     concurrency:
       group: release-main
@@ -29,19 +20,10 @@ jobs:
     steps:
       - name: Resolve release target
         id: target
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          WORKFLOW_RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: |
-          if [ "$EVENT_NAME" = "workflow_run" ]; then
-            echo "sha=$WORKFLOW_RUN_HEAD_SHA" >> "$GITHUB_OUTPUT"
-          else
-            echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-          fi
-      - uses: actions/checkout@v4
+        run: echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-          ref: ${{ steps.target.outputs.sha }}
       - name: Require green CI
         env:
           GH_TOKEN: ${{ github.token }}
@@ -69,7 +51,7 @@ jobs:
             echo "Set RELEASE_PLEASE_TOKEN to a token allowed to create release pull requests."
             exit 1
           fi
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@c2a5a2bd6a758a0937f1ddb1e8950609867ed15c # v4.3.0
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           target-branch: main

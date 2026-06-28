@@ -14,7 +14,7 @@ Use this before publishing TaxMate Australia outside a local install.
   - all path fields are relative (`./...`).
   - optional app/MCP files are present only if actually used.
   - plugin entry in marketplace is explicit (`name`, `source`, `policy`, `category`).
-- if publishing, add `.agents/plugins/marketplace.json` sample and point `source.path` to an actual path for this repository.
+- if publishing, keep `.agents/plugins/marketplace.json` scanner-safe by pointing `source.path` to a repo-local `./...` path.
 - Confirm plugin docs include installation notes and plugin structure for onboarding.
 - Confirm README has install commands and usage examples suitable for OpenAgentSkill review.
 - Confirm README first paragraph includes Australian tax prep, linked official ATO source wording, GST/BAS, CGT, accountant handoff, and supported agent surfaces.

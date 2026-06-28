@@ -20,7 +20,12 @@
     "composerIcon": "./assets/icon.png",
     "logo": "./assets/icon.png",
     "longDescription": "TaxMate Australia turns messy tax records into clear, conservative preparation workflows for Australian taxpayers, ABN operators, and accountant handoff. It combines ATO source-page refresh, GST/BAS and CGT triage, transaction review, calculator scaffolds, and output-focused skills (workbook and taxpack) on a bash and Python runtime. It supports Codex full-plugin workflows and portable skill use in Claude Code, Cowork, and OpenAgentSkill CLI. It is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and is not affiliated with or endorsed by the Australian Taxation Office.",
+    "privacyPolicyURL": "https://github.com/nijanthan-dev/taxmate-australia/blob/main/SECURITY.md",
+    "screenshots": [
+      "./assets/icon.png"
+    ],
     "shortDescription": "Australian tax prep with ATO source links",
+    "termsOfServiceURL": "https://github.com/nijanthan-dev/taxmate-australia/blob/main/DISCLAIMER.md",
     "websiteURL": "https://github.com/nijanthan-dev/taxmate-australia"
   },
   "keywords": [

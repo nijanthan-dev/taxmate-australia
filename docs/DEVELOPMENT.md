@@ -14,6 +14,7 @@ Core plugin checks:
 
 ```bash
 PYTHONPYCACHEPREFIX=/tmp/taxmate-pycache python3 -m py_compile scripts/*.py
+./scripts/taxmate review-guardrails
 ./scripts/taxmate validate
 ./scripts/taxmate skills generate --check
 ./scripts/taxmate skills audit --check
@@ -32,6 +33,20 @@ Before requesting another Codex review after review feedback:
 - For falsey output bugs, cover top-level metadata, row fields, list fields, provenance, fallback labels, anchors, and direct constructors.
 - Update AGENTS, relevant skills, generated docs, tests, validator, and plugin lock when behavior changes.
 - Regenerate skills, run publication checks, and run secret scans.
+
+Run `./scripts/taxmate review-guardrails` before opening or updating a PR. It encodes repeated Codex review classes documented in `docs/CODEX_REVIEW_PATTERNS.md`.
+
+To enable the repo-local hook:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Or install the local `pre-commit` config:
+
+```bash
+pre-commit install
+```
 
 ## Cloud (Codex) and local build environments (Mac-independent)
 
@@ -135,11 +150,10 @@ CI runs bash+python runtime checks, generated-source checks, environment guardra
 
 ## Release
 
-- After a successful merge to `main`, main CI triggers `[.github/workflows/release.yml](/.github/workflows/release.yml)` automatically.
-- The workflow can also be run manually from `main`.
+- After a successful merge to `main`, wait for main CI to pass, then run `[.github/workflows/release.yml](/.github/workflows/release.yml)` manually from `main`.
 - The workflow requires `RELEASE_PLEASE_TOKEN`, a repo secret whose token can create release pull requests and write contents/issues.
 - Versions are calculated from Conventional Commits:
   - `feat:` -> minor
   - `fix:` / `perf:` -> patch
   - `feat!:` / `BREAKING CHANGE:` -> major
-- The workflow creates or updates the Release PR. After that PR is merged and main CI passes, the workflow runs again and publishes the GitHub release artifact.
+- The workflow creates or updates the Release PR. After that PR is merged and main CI passes, run the workflow manually again to publish the GitHub release artifact.

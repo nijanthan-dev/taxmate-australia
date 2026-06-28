@@ -6,6 +6,7 @@
 /.tmp/
 /dist/
 /coverage/
+/.playwright-mcp/
 __pycache__/
 *.py[cod]
 *.log
