@@ -793,6 +793,32 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("Unknown status needs review.", body)
         self.assertNotIn(">Claimable<", body)
 
+    def test_guide_canonicalizes_color_status_aliases(self) -> None:
+        aliases = {
+            "red": "Accountant review",
+            "yellow": "Evidence",
+            "green": "Used",
+            "blue": "ATO label",
+            "grey": "N/A skipped",
+        }
+
+        for alias, expected in aliases.items():
+            with self.subTest(alias=alias):
+                item = taxmate_taxpack.guide_item(
+                    {
+                        "number": alias,
+                        "ato_area": "Other",
+                        "question": "Alias?",
+                        "answer": "Alias input",
+                        "why_included": "Color alias regression.",
+                        "status": alias,
+                        "tab_text": "Alias item.",
+                    }
+                )
+
+                self.assertEqual(expected, item.status)
+                self.assertNotEqual(alias, item.status)
+
     def test_guide_rejects_forbidden_visible_taxpack_language(self) -> None:
         data = taxmate_taxpack.load_guide_data(None)
         bad = taxmate_taxpack.render_html(data).replace("Prepared by user", "Prepared by " + "TaxMate")

@@ -148,14 +148,13 @@ def guide_item(raw: Dict[str, Any]) -> GuideItem:
         raise ValueError("guide item missing number")
     status_kind = normal_kind(str(raw.get("status_kind") or raw.get("status") or "review"))
     tab_kind = normal_kind(str(raw.get("tab_kind") or status_kind))
-    raw_status = str(raw.get("status") or status_kind)
     return GuideItem(
         number=number,
         ato_area=str(raw.get("ato_area") or ""),
         question=str(raw.get("question") or ""),
         answer=str(raw.get("answer") or ""),
         why_included=str(raw.get("why_included") or ""),
-        status=display_status(raw_status, status_kind),
+        status=canonical_status(status_kind),
         status_kind=status_kind,
         tab_title=str(raw.get("tab_title") or f"Row {number} {short_status(status_kind)}"),
         tab_text=str(raw.get("tab_text") or raw.get("why_included") or ""),
@@ -182,10 +181,16 @@ def known_kind(value: str) -> Optional[str]:
     return None
 
 
-def display_status(value: str, status_kind: str) -> str:
-    if status_kind == "review" and known_kind(value) is None:
-        return "Accountant review"
-    return short_status(value)
+def canonical_status(kind: str) -> str:
+    if kind == "evidence":
+        return "Evidence"
+    if kind == "answer":
+        return "Used"
+    if kind == "ato":
+        return "ATO label"
+    if kind == "skipped":
+        return "N/A skipped"
+    return "Accountant review"
 
 
 def short_status(value: str) -> str:
