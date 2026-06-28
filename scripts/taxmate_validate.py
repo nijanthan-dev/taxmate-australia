@@ -2036,27 +2036,59 @@ def stale_bash5_prereq_hits(root: str) -> List[str]:
     return hits
 
 
+def text_contains_all(text: str, required: List[str]) -> bool:
+    return all(item in text for item in required)
+
+
+def release_workflow_has_common_guards(text: str) -> bool:
+    return text_contains_all(
+        text,
+        [
+            "steps.target.outputs.sha",
+            "--commit \"$TARGET_SHA\"",
+            "Require main unchanged",
+            "git ls-remote origin refs/heads/main",
+            "main moved from $TARGET_SHA",
+            "RELEASE_PLEASE_TOKEN",
+            "target-branch: main",
+            "config-file: release-please-config.json",
+            "manifest-file: .release-please-manifest.json",
+        ],
+    )
+
+
+def release_workflow_has_auto_trigger(text: str) -> bool:
+    return text_contains_all(
+        text,
+        [
+            "workflow_run:",
+            'workflows: ["CI"]',
+            "types: [completed]",
+            "branches: [main]",
+            "github.event.workflow_run.conclusion == 'success'",
+            "github.event.workflow_run.head_branch == 'main'",
+            "github.event.workflow_run.head_sha",
+        ],
+    )
+
+
+def release_workflow_has_manual_trigger(text: str) -> bool:
+    return text_contains_all(
+        text,
+        [
+            "workflow_dispatch:",
+            "github.event_name == 'workflow_dispatch'",
+            "github.ref == 'refs/heads/main'",
+            'echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"',
+        ],
+    )
+
+
 def release_workflow_auto_after_ci(root: str) -> bool:
     text = read_text(os.path.join(root, ".github", "workflows", "release.yml"))
-    required = [
-        "workflow_run:",
-        'workflows: ["CI"]',
-        "types: [completed]",
-        "branches: [main]",
-        "github.event.workflow_run.conclusion == 'success'",
-        "github.event.workflow_run.head_branch == 'main'",
-        "github.event.workflow_run.head_sha",
-        "steps.target.outputs.sha",
-        "--commit \"$TARGET_SHA\"",
-        "Require main unchanged",
-        "git ls-remote origin refs/heads/main",
-        "main moved from $TARGET_SHA",
-        "RELEASE_PLEASE_TOKEN",
-        "target-branch: main",
-        "config-file: release-please-config.json",
-        "manifest-file: .release-please-manifest.json",
-    ]
-    return all(item in text for item in required)
+    return release_workflow_has_common_guards(text) and (
+        release_workflow_has_auto_trigger(text) or release_workflow_has_manual_trigger(text)
+    )
 
 
 def release_config_tracks_manifest_versions(root: str) -> bool:
