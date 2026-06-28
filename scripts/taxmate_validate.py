@@ -1303,6 +1303,15 @@ def ato_endorsement_claim_hits(root: str) -> List[str]:
         "supported by " + "ATO",
         "supported by the " + "ATO",
         "supported by the Australian Taxation Office",
+        "endorsed by " + "ATO",
+        "endorsed by the " + "ATO",
+        "endorsed by the Australian Taxation Office",
+        "approved by " + "ATO",
+        "approved by the " + "ATO",
+        "approved by the Australian Taxation Office",
+        "affiliated with " + "ATO",
+        "affiliated with the " + "ATO",
+        "affiliated with the Australian Taxation Office",
         "ATO-" + "supported",
         "ATO " + "supported",
         "ATO-" + "endorsed",
@@ -1314,8 +1323,38 @@ def ato_endorsement_claim_hits(root: str) -> List[str]:
     ]
     hits: List[str] = []
     for rel in files:
-        hits.extend(text_hits(root, rel, banned))
+        hits.extend(ato_endorsement_text_hits(root, rel, banned))
     return hits
+
+
+def ato_endorsement_text_hits(root: str, rel: str, needles: List[str]) -> List[str]:
+    text = read_text(os.path.join(root, rel))
+    lowered = text.lower()
+    hits: List[str] = []
+    if not lowered:
+        return hits
+    for needle in needles:
+        lowered_needle = needle.lower()
+        start = 0
+        while True:
+            index = lowered.find(lowered_needle, start)
+            if index == -1:
+                break
+            if not is_negated_ato_claim(lowered, index):
+                hits.append(f"{rel}:{needle}")
+            start = index + 1
+    return hits
+
+
+def is_negated_ato_claim(lowered_text: str, start_index: int) -> bool:
+    sentence_start = max(
+        lowered_text.rfind(".", 0, start_index),
+        lowered_text.rfind("!", 0, start_index),
+        lowered_text.rfind("?", 0, start_index),
+        lowered_text.rfind("\n", 0, start_index),
+    )
+    prefix = lowered_text[sentence_start + 1 : start_index]
+    return any(marker in prefix for marker in ["not ", "never ", "do not ", "does not ", "must not "])
 
 
 def public_ato_claim_scan_files(root: str) -> List[str]:

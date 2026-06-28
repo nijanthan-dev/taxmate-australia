@@ -490,6 +490,36 @@ class ValidatorAndCliTests(unittest.TestCase):
 
         self.assertEqual(hits, ["skill.json:ATO partner"])
 
+    def test_ato_endorsement_scan_blocks_verb_before_ato(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text(
+                "TaxMate is endorsed by ATO and approved by the Australian Taxation Office.\n",
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(
+            hits,
+            [
+                "README.md:endorsed by ATO",
+                "README.md:approved by the Australian Taxation Office",
+            ],
+        )
+
+    def test_ato_endorsement_scan_allows_negated_disclaimer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text(
+                "TaxMate is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office.\n",
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, [])
+
 
 if __name__ == "__main__":
     unittest.main()
