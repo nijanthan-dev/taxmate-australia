@@ -1294,6 +1294,7 @@ def stale_committed_source_cache_claim_hits(root: str) -> List[str]:
 def ato_endorsement_claim_hits(root: str) -> List[str]:
     files = public_runtime_claim_scan_files() + [
         os.path.join("agents", "openai.yaml"),
+        os.path.join("docs", "DISCOVERY.md"),
         os.path.join("skills", "taxmate-australia", "SKILL.md"),
         os.path.join("wrappers", "taxmate-australia", "SKILL.md"),
     ]

@@ -461,6 +461,16 @@ class ValidatorAndCliTests(unittest.TestCase):
 
         self.assertEqual(hits, ["README.md:ATO-backed"])
 
+    def test_ato_endorsement_scan_includes_discovery_docs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            discovery = Path(tmp) / "docs" / "DISCOVERY.md"
+            discovery.parent.mkdir(parents=True)
+            discovery.write_text("TaxMate is backed by ATO.\n", encoding="utf-8")
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, ["docs/DISCOVERY.md:backed by ATO"])
+
 
 if __name__ == "__main__":
     unittest.main()
