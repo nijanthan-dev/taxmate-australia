@@ -670,6 +670,13 @@ class ValidatorAndCliTests(unittest.TestCase):
 
 
 class TaxpackGuideTests(unittest.TestCase):
+    def test_sample_guide_uses_current_generated_date(self) -> None:
+        self.assertNotIn("generated_date", taxmate_taxpack.sample_payload())
+        self.assertEqual(
+            taxmate_taxpack.default_generated_date(),
+            taxmate_taxpack.load_guide_data(None).generated_date,
+        )
+
     def test_sample_guide_matches_approved_tab_contract(self) -> None:
         data = taxmate_taxpack.load_guide_data(None)
 

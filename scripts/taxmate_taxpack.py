@@ -63,7 +63,6 @@ class GuideData:
 def sample_payload() -> Dict[str, Any]:
     return {
         "income_year": DEFAULT_INCOME_YEAR,
-        "generated_date": "28 Jun 2026",
         "summary_note": "Tabs point directly to the exact item they explain. Hide tabs when you want a clean copy.",
         "items": [
             {
