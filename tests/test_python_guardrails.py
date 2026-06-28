@@ -735,10 +735,42 @@ class TaxpackGuideTests(unittest.TestCase):
 
         body = taxmate_taxpack.render_html(data)
 
-        self.assertIn('data-anchor="row-D&quot;1"', body)
-        self.assertIn('data-target="row-D&quot;1"', body)
+        self.assertIn('data-anchor="row-1-D&quot;1"', body)
+        self.assertIn('data-target="row-1-D&quot;1"', body)
         self.assertIn("findTarget(spread,tab.dataset.target)", body)
         self.assertNotIn("tab.dataset.target+'", body)
+
+    def test_guide_anchors_stay_unique_for_duplicate_item_numbers(self) -> None:
+        item_payload = {
+            "number": "D1",
+            "ato_area": "Other",
+            "question": "Duplicate number?",
+            "answer": "User-entered value",
+            "why_included": "Duplicate anchor regression.",
+            "status": "Evidence",
+            "tab_text": "Duplicate row should keep its own target.",
+        }
+        data = taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date="28 Jun 2026",
+            summary_note="Duplicate regression.",
+            items=[
+                taxmate_taxpack.guide_item(item_payload),
+                taxmate_taxpack.guide_item(item_payload),
+            ],
+        )
+
+        body = taxmate_taxpack.render_html(data)
+        row_anchors = re.findall(r'<td data-anchor="([^"]+)"', body)
+        row_targets = [
+            target
+            for target in re.findall(r'<div class="tab [^"]+" data-target="([^"]+)"', body)
+            if target.startswith("row-")
+        ]
+
+        self.assertEqual(["row-1-D1", "row-2-D1"], row_anchors)
+        self.assertEqual(["row-1-D1", "row-2-D1"], row_targets)
+        self.assertEqual(len(row_anchors), len(set(row_anchors)))
 
     def test_custom_guide_input_escapes_values_and_shortens_status(self) -> None:
         payload = {

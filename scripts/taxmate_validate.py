@@ -2197,11 +2197,41 @@ def taxpack_guide_html_contract() -> bool:
             items=[quoted],
         )
     )
-    return (
-        'data-anchor="row-D&quot;1"' in quoted_body
-        and 'data-target="row-D&quot;1"' in quoted_body
+    quoted_ok = (
+        'data-anchor="row-1-D&quot;1"' in quoted_body
+        and 'data-target="row-1-D&quot;1"' in quoted_body
         and "findTarget(spread,tab.dataset.target)" in quoted_body
         and "tab.dataset.target+'" not in quoted_body
+    )
+    duplicate = taxmate_taxpack.guide_item(
+        {
+            "number": "D1",
+            "ato_area": "Other",
+            "question": "Duplicate number?",
+            "answer": "User-entered value",
+            "why_included": "Duplicate anchor regression.",
+            "status": "Evidence",
+            "tab_text": "Duplicate row should keep its own target.",
+        }
+    )
+    duplicate_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Duplicate regression.",
+            items=[duplicate, duplicate],
+        )
+    )
+    duplicate_anchors = re.findall(r'<td data-anchor="([^"]+)"', duplicate_body)
+    duplicate_targets = [
+        target
+        for target in re.findall(r'<div class="tab [^"]+" data-target="([^"]+)"', duplicate_body)
+        if target.startswith("row-")
+    ]
+    return (
+        quoted_ok
+        and duplicate_anchors == ["row-1-D1", "row-2-D1"]
+        and duplicate_targets == ["row-1-D1", "row-2-D1"]
     )
 
 

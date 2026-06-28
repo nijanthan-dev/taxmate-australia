@@ -211,8 +211,9 @@ def default_generated_date() -> str:
 
 
 def render_html(data: GuideData) -> str:
-    rows = "\n".join(render_row(item) for item in data.items)
-    row_tabs = "\n".join(render_item_tab(item) for item in data.items)
+    indexed_items = list(enumerate(data.items, start=1))
+    rows = "\n".join(render_row(item, row_index) for row_index, item in indexed_items)
+    row_tabs = "\n".join(render_item_tab(item, row_index) for row_index, item in indexed_items)
     review_items = [
         item.tab_text
         for item in data.items
@@ -231,8 +232,8 @@ def render_html(data: GuideData) -> str:
     return output
 
 
-def render_row(item: GuideItem) -> str:
-    anchor = row_anchor(item)
+def render_row(item: GuideItem, row_index: int) -> str:
+    anchor = row_anchor(item, row_index)
     return (
         "<tr>"
         f"<td>{esc(item.number)}</td>"
@@ -245,20 +246,20 @@ def render_row(item: GuideItem) -> str:
     )
 
 
-def render_item_tab(item: GuideItem) -> str:
+def render_item_tab(item: GuideItem, row_index: int) -> str:
     color = tab_color(item.tab_kind)
     extra = " review" if item.tab_kind == "review" else ""
     extra += " evidence" if item.tab_kind in {"evidence", "answer"} else ""
     return (
-        f'<div class="tab {color}{extra}" data-target="{row_anchor(item)}">'
+        f'<div class="tab {color}{extra}" data-target="{row_anchor(item, row_index)}">'
         f"<b>{esc(item.tab_title)}</b>"
         f"<p>{esc(item.tab_text)}</p>"
         "</div>"
     )
 
 
-def row_anchor(item: GuideItem) -> str:
-    return f"row-{html.escape(item.number, quote=True)}"
+def row_anchor(item: GuideItem, row_index: int) -> str:
+    return f"row-{row_index}-{html.escape(item.number, quote=True)}"
 
 
 def status_class(kind: str) -> str:
