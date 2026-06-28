@@ -14,7 +14,7 @@
 
 - Taxpack is output-only. It does not lodge, file, or create final advice.
 - Include reviewed summaries, source URLs, evidence status, income-year labels, open questions, and `Accountant review` queues.
-- If guide input fields conflict, preserve the most conservative state: `Accountant review` overrides stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
+- If guide input fields conflict, preserve the most conservative state: explicit or review-like `Accountant review` overrides stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 - Guide rows with supplied source URLs or checked-at dates must keep that provenance visible in the worksheet.
 - ATO-aligned guide PDFs must be custom manual guides, not filled or modified official ATO PDFs.
 - Reference ATO labels only to help users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff.

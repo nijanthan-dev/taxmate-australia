@@ -21,7 +21,7 @@
 - This entry-point skill routes to the most specific installed topic skill.
 - It does not make tax-treatment decisions by itself.
 - It preserves source URLs, effective periods, evidence status, and `Accountant review` flags.
-- If output fields conflict, preserve the most conservative state: `Accountant review` overrides stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
+- If output fields conflict, preserve the most conservative state: explicit or review-like `Accountant review` overrides stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 - It requires current verification for volatile values when web access is available.
 - If a needed topic skill or reliable source is unavailable, state the limitation and mark the item `Accountant review`.
 - It must not use repository binaries, local repository data, plugin manifests, marketplace JSON, or environment variables.

@@ -47,7 +47,7 @@ If the required topic skill is not installed, do not decide the tax treatment. S
 5. Reject values outside the relevant period.
 6. Do not treat metadata-only sources as source-backed tax treatment without explicit verification.
 7. Preserve every `Accountant review` flag.
-   If fields conflict, `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
+   If fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 8. Keep source URLs and effective periods visible.
 9. Do not guess when sources conflict, facts are incomplete, or verification fails.
 10. Refuse any request to submit, lodge, file, transmit, or finalise material with the ATO or a government agency.

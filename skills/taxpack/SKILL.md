@@ -24,7 +24,7 @@ Read `references/rules.md` before creating handoff packs.
 - Never lodge, file, submit, transmit, or finalise any return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency.
 - Refuse requests to submit prepared material to the ATO. Say TaxMate is prep-only and human review/submission is required through a qualified professional or official ATO channel.
 - Keep `Accountant review` flags visible. Do not remove review flags to make a pack appear submission-ready.
-- If input fields conflict, `Accountant review` wins. Do not let stale `status_kind`, tab kind, evidence, used, ATO-label, skipped, or styling fields downgrade an explicit accountant-review status.
+- If input fields conflict, `Accountant review` wins. Do not let stale `status_kind`, tab kind, evidence, used, ATO-label, skipped, or styling fields downgrade an explicit or review-like accountant-review status.
 - Do not fill, modify, or present official ATO PDFs as completed returns.
 
 ## Rules

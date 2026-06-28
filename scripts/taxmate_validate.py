@@ -2330,6 +2330,43 @@ def taxpack_guide_html_contract() -> bool:
             and not any(badge in conflicting_body for badge in downgraded_badges)
         ):
             conflicting_ok = False
+    review_like_labels = [
+        "Accountant review required",
+        "Requires accountant review",
+        "Review required",
+        "Needs review",
+        "Tax agent review required",
+    ]
+    for label in review_like_labels:
+        conflicting = taxmate_taxpack.guide_item(
+            {
+                "number": "R1",
+                "ato_area": "Other",
+                "question": "Review-like label?",
+                "answer": "User-entered value",
+                "why_included": "Review-like status labels must not be downgraded.",
+                "status": label,
+                "status_kind": "evidence",
+                "tab_kind": "answer",
+                "tab_text": "Review-like label requires accountant review.",
+            }
+        )
+        conflicting_body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date=taxmate_taxpack.default_generated_date(),
+                summary_note="Review-like status regression.",
+                items=[conflicting],
+            )
+        )
+        if not (
+            conflicting.status_kind == "review"
+            and conflicting.tab_kind == "review"
+            and '<span class="status review-badge">Accountant review</span>' in conflicting_body
+            and "<b>Accountant review queue:</b> Review-like label requires accountant review." in conflicting_body
+            and not any(badge in conflicting_body for badge in downgraded_badges)
+        ):
+            conflicting_ok = False
     return (
         quoted_ok
         and duplicate_anchors == ["row-1-D1", "row-2-D1"]

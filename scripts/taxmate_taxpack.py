@@ -215,11 +215,22 @@ def known_kind(value: str) -> Optional[str]:
         return "ato"
     if key in EVIDENCE_STATUS_KEYS:
         return "evidence"
-    if key in REVIEW_STATUS_KEYS:
+    if key in REVIEW_STATUS_KEYS or is_review_like_key(key):
         return "review"
     if key in SKIPPED_STATUS_KEYS:
         return "skipped"
     return None
+
+
+def is_review_like_key(key: str) -> bool:
+    parts = {part for part in key.split("-") if part}
+    if "accountant" in parts:
+        return True
+    if "review" in parts and parts.intersection({"required", "requires", "need", "needs", "needed", "must"}):
+        return True
+    if "review" in parts and "agent" in parts:
+        return True
+    return False
 
 
 def canonical_status(kind: str) -> str:

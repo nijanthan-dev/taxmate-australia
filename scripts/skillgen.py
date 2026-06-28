@@ -882,7 +882,7 @@ def writeOutputLayers(root: str) -> None:
         body = "# Generated Topic Inputs\n\n"
         body += "Workbook and taxpack are output layers only. They must consume reviewed classifications from topic skills and must not invent tax treatment.\n\n"
         body += "- Preserve `Accountant review` flags.\n"
-        body += "- If input fields conflict, `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.\n"
+        body += "- If input fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.\n"
         body += "- Preserve source URLs and checked-at dates.\n"
         body += "- Do not turn raw transactions into lodging-ready claims from source extracts alone.\n"
         writeText(os.path.join(ref_dir, "topic-inputs.md"), body)

@@ -25,7 +25,7 @@ Read `references/rules.md` before creating a workbook structure.
 - Never lodge, file, submit, transmit, or finalise any return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency.
 - Refuse requests to submit workbook content to the ATO. Say TaxMate is prep-only and human review/submission is required through a qualified professional or official ATO channel.
 - Keep `Accountant review` flags visible. Do not remove review flags to make a workbook appear submission-ready.
-- If input fields conflict, `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
+- If input fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 
 ## Workbook Shape
 

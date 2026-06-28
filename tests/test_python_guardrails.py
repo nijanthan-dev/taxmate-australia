@@ -970,6 +970,41 @@ class TaxpackGuideTests(unittest.TestCase):
                 self.assertEqual("review", item.tab_kind)
                 self.assertIn("<b>Accountant review queue:</b> One field still requires accountant review.", body)
 
+        review_like_labels = [
+            "Accountant review required",
+            "Requires accountant review",
+            "Review required",
+            "Needs review",
+            "Tax agent review required",
+        ]
+        for label in review_like_labels:
+            with self.subTest(review_like_label=label):
+                item = taxmate_taxpack.guide_item(
+                    {
+                        "number": "12",
+                        "ato_area": "Other",
+                        "question": "Review-like label?",
+                        "answer": "User-entered value",
+                        "why_included": "Review-like status labels must not be downgraded.",
+                        "status": label,
+                        "status_kind": "evidence",
+                        "tab_kind": "answer",
+                        "tab_text": "Review-like label requires accountant review.",
+                    }
+                )
+                body = taxmate_taxpack.render_html(
+                    taxmate_taxpack.GuideData(
+                        income_year="2025-26",
+                        generated_date="28 Jun 2026",
+                        summary_note="Review-like status regression.",
+                        items=[item],
+                    )
+                )
+                self.assertEqual("review", item.status_kind)
+                self.assertEqual("review", item.tab_kind)
+                self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
+                self.assertIn("<b>Accountant review queue:</b> Review-like label requires accountant review.", body)
+
     def test_guide_canonicalizes_color_status_aliases(self) -> None:
         aliases = {
             "red": "Accountant review",

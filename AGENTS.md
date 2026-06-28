@@ -26,7 +26,7 @@
 - Do not reintroduce migration artifacts, `source_index`, `source_manifest`, committed raw snapshots, or `data/ato_knowledge_base/text`.
 - Treat refreshed source text as ignored cache under `.cache/ato/text/`.
 - Generated topic skills must keep source workflow, anti-overclaim rules, current-value provenance, and `Accountant review` flags.
-- Output layers must never let stale or conflicting lower-risk fields downgrade an explicit `Accountant review`; review status wins over evidence/used/ATO-label/skipped fields in rendered output, tabs, filters, queues, and validation.
+- Output layers must never let stale or conflicting lower-risk fields downgrade an explicit or review-like `Accountant review`; review status wins over evidence/used/ATO-label/skipped fields in rendered output, tabs, filters, queues, and validation.
 - Taxpack guide changes must add local guardrails for the whole bug class before review: conflicting status fields, source provenance visibility, generated dates, duplicate/unsafe anchors, neutral mixed-area headings, prep-only wording, and tab target integrity.
 - Preserved `current-values.json` entries must match an assigned verified source URL and content hash, and must be refreshed to the current source title, last-updated date, and checked-at date.
 - Do not preserve a current value from metadata-only sources or by accepting a valid value hash against a blank source hash.
