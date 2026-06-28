@@ -1976,6 +1976,9 @@ def release_config_tracks_manifest_versions(root: str) -> bool:
         return False
     if not isinstance(version, str) or not version.startswith("0."):
         return False
+    bootstrap_sha = config.get("bootstrap-sha")
+    if not (isinstance(bootstrap_sha, str) and re.fullmatch(r"[0-9a-f]{40}", bootstrap_sha)):
+        return False
 
     root_package = config.get("packages", {}).get(".")
     if not isinstance(root_package, dict):

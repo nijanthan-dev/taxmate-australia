@@ -2,6 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "release-type": "simple",
   "bump-minor-pre-major": true,
+  "bootstrap-sha": "f1d74760352dd878086e5df23fcb0decbe97ef57",
   "packages": {
     ".": {
       "package-name": "taxmate-australia",

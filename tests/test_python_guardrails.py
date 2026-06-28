@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
+import shutil
 import sys
 import tempfile
 import unittest
@@ -451,6 +453,28 @@ class ValidatorAndCliTests(unittest.TestCase):
 
     def test_release_config_tracks_manifest_versions(self) -> None:
         self.assertTrue(taxmate_validate.release_config_tracks_manifest_versions(str(ROOT)))
+
+    def test_release_config_requires_bootstrap_sha(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            for rel in [
+                "release-please-config.json",
+                ".release-please-manifest.json",
+                ".codex-plugin/plugin.json",
+                "skill.json",
+                "plugin.lock.json",
+            ]:
+                src = ROOT / rel
+                dst = tmp_root / rel
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(src, dst)
+
+            config_path = tmp_root / "release-please-config.json"
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            config.pop("bootstrap-sha", None)
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+
+            self.assertFalse(taxmate_validate.release_config_tracks_manifest_versions(str(tmp_root)))
 
     def test_ato_endorsement_scan_is_case_insensitive(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
