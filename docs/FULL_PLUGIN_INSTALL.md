@@ -1,6 +1,8 @@
-# Full Plugin Runtime (Primary)
+# Full Runtime Setup
 
-Use this runtime path for the full TaxMate product experience: live ATO source refresh, source coverage governance, calculator workflows, finance review, and plugin orchestration.
+Use this runtime path for guide generation, workbook/taxpack outputs, live ATO source refresh, source coverage governance, calculator workflows, finance review, validation, and local plugin testing.
+
+If you only need quick agent prompts without a checkout, use [INSTALLATION.md](INSTALLATION.md) instead.
 
 Prerequisites:
 
@@ -11,11 +13,19 @@ Prerequisites:
 - curl.
 - jq.
 
-## Clean plugin checkout setup
+## Clean Runtime Setup
 
 ```bash
 git clone https://github.com/nijanthan-dev/taxmate-australia.git
 cd taxmate-australia
+bash scripts/bootstrap-dev-env.sh
+```
+
+Validate the checkout:
+
+```bash
+./scripts/taxmate validate
+./scripts/taxmate skills generate --check
 ```
 
 Run runtime commands through the bash launcher (python runtime under the hood):
@@ -41,7 +51,7 @@ The same commands also work by calling the Python module directly:
 ./scripts/taxmate.py refresh --help
 ```
 
-Validate:
+Full validation:
 
 ```bash
 PYTHONPYCACHEPREFIX=/tmp/taxmate-pycache python3 -m py_compile scripts/*.py
@@ -57,39 +67,22 @@ gitleaks detect --source . --redact --no-banner
 If you need local-speed, keep Python runtime wrappers and dependencies local and use the launcher directly.
 Bash + python execution is the supported default path.
 
-## Local plugin setup
+## Local Plugin Setup
 
-This repo includes `.codex-plugin/plugin.json` for advanced local plugin testing. Local marketplace configuration is development-only.
+This repo includes `.codex-plugin/plugin.json` and `.agents/plugins/marketplace.json` for advanced local Codex plugin testing. Local marketplace configuration is development-only.
 
-If you create a user-global marketplace file, its path is:
+From the repo root:
 
-```text
-~/.agents/plugins/marketplace.json
+```bash
+codex plugin marketplace add .
+codex plugin add taxmate-australia@taxmate-local-marketplace
 ```
 
-For a cloned repo at `/absolute/path/taxmate-australia`, the local plugin entry path should be that absolute repo path. The path is interpreted relative to the marketplace file only when it is relative.
+Verify available plugins:
 
-Example:
-
-```json
-{
-  "name": "taxmate-local",
-  "interface": { "displayName": "Local plugins" },
-  "plugins": [
-    {
-      "name": "taxmate-australia",
-      "source": {
-        "source": "local",
-        "path": "/absolute/path/taxmate-australia"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    }
-  ]
-}
+```bash
+codex plugin marketplace list
+codex plugin list
 ```
 
 Do not claim official plugin discovery unless a published listing has been verified.

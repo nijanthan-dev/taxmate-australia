@@ -450,7 +450,7 @@ HTML_TEMPLATE = """<!doctype html>
 <article class="page">
 <div class="watermark">DRAFT GUIDE</div>
 <div class="header"><h1>ATO-aligned manual tax guide<br>{income_year}</h1><div class="meta">Prepared by user<br>Generated {generated_date}<br>Not an ATO form</div></div>
-<div class="notice" data-anchor="global-warning"><b>Preparation aid only.</b> This self-prepared custom PDF helps you copy reviewed answers into myTax, a paper ATO form, or an accountant handoff. It is not tax, legal, financial, accounting, BAS-agent, or registered-tax-agent advice. It is not an official ATO PDF and cannot be filed, uploaded, mailed, or submitted as a tax return.</div>
+<div class="notice" data-anchor="prep-boundary"><b>Preparation aid only.</b> This self-prepared custom PDF helps you copy reviewed answers into myTax, a paper ATO form, or an accountant handoff. It is not tax, legal, financial, accounting, BAS-agent, or registered-tax-agent advice. It is not an official ATO PDF and cannot be filed, uploaded, mailed, or submitted as a tax return.</div>
 <h2>How to use this guide</h2>
 <div class="steps" data-anchor="how-to-row"><div class="step"><b>1. Review answers</b><p>Check each value against your records.</p></div><div class="step"><b>2. Follow ATO labels</b><p>Use ATO label references to find where each answer belongs.</p></div><div class="step"><b>3. Clear red flags</b><p>Ask an accountant about every Accountant review item.</p></div><div class="step"><b>4. Copy manually</b><p>Enter reviewed answers into myTax or paper form.</p></div></div>
 <h2>Sticky tab legend</h2>
@@ -460,7 +460,7 @@ HTML_TEMPLATE = """<!doctype html>
 <div class="footer"><span>Self-prepared custom guide. Not an ATO form. Not fileable.</span><span>Page 1</span></div>
 </article>
 <aside class="side">
-<div class="tab red review" data-target="global-warning"><b>Global warning</b><p>Not fileable. Copy reviewed answers into myTax/paper form or send to accountant.</p></div>
+<div class="tab red review" data-target="prep-boundary"><b>Prep boundary</b><p>Not fileable. Copy reviewed answers into myTax/paper form or send to accountant.</p></div>
 <div class="tab blue" data-target="how-to-row"><b>How-to row</b><p>Use ATO labels, then clear accountant-review flags before copying manually.</p></div>
 <div class="tab yellow evidence" data-target="summary-note"><b>Evidence needed</b><p>Points directly to the interview summary note.</p></div>
 </aside>

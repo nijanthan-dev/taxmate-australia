@@ -22,14 +22,69 @@ CALCULATOR_NUMERIC_CONTRACT = "calculator_numeric_contract"
 PUBLIC_CLAIM_SURFACE_CONTRACT = "public_claim_surface_contract"
 RELEASE_GUARDRAIL_CONTRACT = "release_guardrail_contract"
 ENVIRONMENT_WORKTREE_CONTRACT = "environment_worktree_contract"
+LOCAL_PLUGIN_MARKETPLACE_CONTRACT = "local_plugin_marketplace_contract"
 PRE_COMMIT_CONTRACT = "pre_commit_contract"
-REVIEW_PATTERN_DOCS = "review_pattern_docs"
+REVIEW_GUARDRAIL_DOCS = "review_guardrail_docs"
+MARKETPLACE_ADD_PREFIX = "codex plugin marketplace add "
+LOCAL_MARKETPLACE_ADD_COMMAND = "codex plugin marketplace add ."
+LOCAL_PLUGIN_ADD_COMMAND = "codex plugin add taxmate-australia@{name}"
 
 
 @dataclass
 class Finding:
     check: str
     detail: str
+
+
+@dataclass
+class ReviewPattern:
+    id: str
+    check: str
+    summary: str
+
+
+REVIEW_PATTERNS: List[ReviewPattern] = [
+    ReviewPattern(
+        "PR #7",
+        f"{FINANCE_JSON_WIRE_CONTRACT}, {CALCULATOR_NUMERIC_CONTRACT}, {GENERATED_ARTIFACT_CONTRACT}",
+        "Preserve public JSON wire formats, reject non-finite numbers, keep half-up cent rounding, preserve generated source provenance, compare tracked generated artifacts, and remove stale Go/runtime docs.",
+    ),
+    ReviewPattern(
+        "PR #8",
+        ENVIRONMENT_WORKTREE_CONTRACT,
+        "Keep Codex setup/cleanup safe in linked Git worktrees, do not dirty a clean checkout, and avoid unsafe find-delete patterns.",
+    ),
+    ReviewPattern(
+        "PR #10",
+        PUBLIC_CLAIM_SURFACE_CONTRACT,
+        "Public metadata must describe the real bash and Python runtime.",
+    ),
+    ReviewPattern(
+        "PR #22",
+        PUBLIC_CLAIM_SURFACE_CONTRACT,
+        "Public claim scanners must include wrappers, discovery docs, workflows, and endorsement phrasing in both directions around ATO.",
+    ),
+    ReviewPattern(
+        "PR #25",
+        ATO_FETCH_BOUNDARY,
+        "ATO fetches must call curl --disable -L so user curl config cannot alter source refreshes.",
+    ),
+    ReviewPattern(
+        "PR #27",
+        TAXPACK_OUTPUT_LAYER,
+        "Output layers must preserve Accountant review, source provenance, falsey display values, dynamic generated dates, unique anchors, safe tab target lookup, and neutral mixed-area headings.",
+    ),
+    ReviewPattern(
+        "PR #38",
+        LOCAL_PLUGIN_MARKETPLACE_CONTRACT,
+        "Local Codex plugin setup docs must point codex plugin marketplace add at the repo root when .agents/plugins/marketplace.json uses source.path ./.",
+    ),
+    ReviewPattern(
+        "Release guardrails",
+        RELEASE_GUARDRAIL_CONTRACT,
+        "Release workflow edits must preserve green-CI checks, unchanged-main checks, version manifest alignment, and the Release Please bootstrap SHA.",
+    ),
+]
 
 
 def repo_root() -> Path:
@@ -66,6 +121,22 @@ def fail_if_missing(check: str, text: str, tokens: Iterable[str]) -> List[Findin
 
 def fail_if_file_missing(root: Path, check: str, rel: str, tokens: Iterable[str]) -> List[Finding]:
     return fail_if_missing(check, read(root, rel), tokens)
+
+
+def command_lines(text: str) -> List[str]:
+    return [
+        line.strip()
+        for line in text.splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+
+
+def wrong_local_marketplace_commands(commands: Iterable[str]) -> List[str]:
+    return [
+        command
+        for command in commands
+        if command.startswith(MARKETPLACE_ADD_PREFIX) and command != LOCAL_MARKETPLACE_ADD_COMMAND
+    ]
 
 
 def check_taxpack_output_layer_text(text: str) -> List[Finding]:
@@ -240,6 +311,60 @@ def check_environment_contract(root: Path) -> List[Finding]:
     return findings
 
 
+def check_local_plugin_marketplace_contract(root: Path) -> List[Finding]:
+    marketplace_path = root.joinpath(".agents", "plugins", "marketplace.json")
+    docs = read(root, "docs/FULL_PLUGIN_INSTALL.md")
+    findings: List[Finding] = []
+    try:
+        marketplace = json.loads(marketplace_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, f"invalid .agents/plugins/marketplace.json: {exc}")]
+
+    if not isinstance(marketplace, dict):
+        return [Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, "marketplace root must be an object")]
+
+    name = marketplace.get("name")
+    plugins = marketplace.get("plugins")
+    if not isinstance(name, str) or not name:
+        findings.append(Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, "marketplace missing name"))
+    if not isinstance(plugins, list) or not plugins:
+        findings.append(Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, "marketplace missing plugins"))
+        return findings
+
+    plugin_entries = [plugin for plugin in plugins if isinstance(plugin, dict)]
+    if len(plugin_entries) != len(plugins):
+        findings.append(Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, "marketplace plugins entries must be objects"))
+
+    taxmate_plugin = next((plugin for plugin in plugin_entries if plugin.get("name") == "taxmate-australia"), None)
+    if not isinstance(taxmate_plugin, dict):
+        findings.append(Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, "marketplace missing taxmate-australia plugin"))
+        return findings
+
+    source = taxmate_plugin.get("source")
+    source_path = source.get("path") if isinstance(source, dict) else None
+    if source_path == "./":
+        commands = command_lines(docs)
+        plugin_command = LOCAL_PLUGIN_ADD_COMMAND.format(name=name)
+        for command in [LOCAL_MARKETPLACE_ADD_COMMAND, plugin_command]:
+            if command not in commands:
+                findings.append(Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, f"missing exact command: {command}"))
+        if wrong_local_marketplace_commands(commands):
+            findings.append(
+                Finding(
+                    LOCAL_PLUGIN_MARKETPLACE_CONTRACT,
+                    "docs must add repo root exactly because marketplace source.path is ./",
+                )
+            )
+    else:
+        findings.append(
+            Finding(
+                LOCAL_PLUGIN_MARKETPLACE_CONTRACT,
+                "unexpected marketplace source.path; update docs and guardrail together",
+            )
+        )
+    return findings
+
+
 def check_precommit_contract(root: Path) -> List[Finding]:
     findings: List[Finding] = []
     for rel in [".pre-commit-config.yaml", ".githooks/pre-commit"]:
@@ -253,22 +378,53 @@ def check_precommit_contract(root: Path) -> List[Finding]:
     return findings
 
 
-def check_pattern_docs(root: Path) -> List[Finding]:
-    path = root.joinpath("docs", "CODEX_REVIEW_PATTERNS.md")
+def check_review_guardrail_docs(root: Path) -> List[Finding]:
+    path = root.joinpath("docs", "DEVELOPMENT.md")
     if not path.exists():
-        return [Finding(REVIEW_PATTERN_DOCS, "missing docs/CODEX_REVIEW_PATTERNS.md")]
+        return [Finding(REVIEW_GUARDRAIL_DOCS, "missing docs/DEVELOPMENT.md")]
     text = path.read_text(encoding="utf-8")
-    required = [
-        "PR #7",
-        "PR #22",
-        "PR #27",
-        "falsey",
-        "Accountant review",
-        "generated artifacts",
-        "public claim",
-        "Release guardrails",
+    commands = command_lines(text)
+    required_commands = [
+        "./scripts/taxmate review-guardrails",
+        "./scripts/taxmate review-guardrails --list-patterns",
+        "./scripts/taxmate review-guardrails --list-patterns --format json",
     ]
-    return fail_if_missing(REVIEW_PATTERN_DOCS, text, required)
+    findings = [
+        Finding(REVIEW_GUARDRAIL_DOCS, f"missing exact command: {command}")
+        for command in required_commands
+        if command not in commands
+    ]
+    findings.extend(
+        fail_if_missing(
+            REVIEW_GUARDRAIL_DOCS,
+            text,
+            [
+                "The script is the canonical pattern inventory",
+                "Do not duplicate PR pattern bullets",
+            ],
+        )
+    )
+    if re.search(r"^- PR #\d+:", text, re.MULTILINE):
+        findings.append(Finding(REVIEW_GUARDRAIL_DOCS, "docs must not duplicate PR pattern bullets"))
+    return findings
+
+
+def review_patterns_payload() -> List[dict]:
+    return [pattern.__dict__ for pattern in REVIEW_PATTERNS]
+
+
+def render_review_patterns(fmt: str) -> str:
+    if fmt == "json":
+        return json.dumps({"patterns": review_patterns_payload()}, indent=2) + "\n"
+    if fmt == "markdown":
+        lines = ["| Pattern | Guardrail check | Contract |", "| --- | --- | --- |"]
+        for pattern in REVIEW_PATTERNS:
+            lines.append(f"| {pattern.id} | `{pattern.check}` | {pattern.summary} |")
+        return "\n".join(lines) + "\n"
+    lines = []
+    for pattern in REVIEW_PATTERNS:
+        lines.append(f"{pattern.id}: {pattern.check} - {pattern.summary}")
+    return "\n".join(lines) + "\n"
 
 
 CHECKS: List[Callable[[Path], List[Finding]]] = [
@@ -279,8 +435,9 @@ CHECKS: List[Callable[[Path], List[Finding]]] = [
     check_public_claim_surfaces,
     check_release_contract,
     check_environment_contract,
+    check_local_plugin_marketplace_contract,
     check_precommit_contract,
-    check_pattern_docs,
+    check_review_guardrail_docs,
 ]
 
 
@@ -296,8 +453,12 @@ def main(argv: List[str]) -> int:
         prog="./scripts/taxmate review-guardrails",
         description="Run static guardrails learned from repeated Codex PR review comments.",
     )
-    parser.add_argument("--format", choices=["text", "json"], default="text")
+    parser.add_argument("--format", choices=["text", "json", "markdown"], default="text")
+    parser.add_argument("--list-patterns", action="store_true", help="Print canonical review-pattern inventory and exit.")
     args = parser.parse_args(argv)
+    if args.list_patterns:
+        sys.stdout.write(render_review_patterns(args.format))
+        return 0
     findings = run(repo_root())
     if args.format == "json":
         payload = {"ok": not findings, "findings": [finding.__dict__ for finding in findings]}

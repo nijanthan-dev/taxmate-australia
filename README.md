@@ -5,64 +5,17 @@ TaxMate Australia is an Australian tax prep skill pack and plugin linked to offi
 > [!WARNING]
 > **Not tax advice.** TaxMate Australia is a preparation aid, not professional advice or lodgment software. For complex situations, binding decisions, or lodgment, consult a registered tax agent or use the official ATO channel directly. See [DISCLAIMER.md](DISCLAIMER.md).
 
-## What it helps with
+## Choose Your Install
 
-- Australian tax prep workflows for employees, ABN/sole-trader records, investments, rental property, crypto, superannuation, and private health.
-- ATO source refresh, source coverage checks, and generated topic skills with source URLs and checked-at dates.
-- GST/BAS, PAYG, FBT, CGT, super guarantee, and stamp-duty source-routing scaffolds.
-- Conservative finance review for CSV tax records, missing evidence, mixed-use items, and `Accountant review` queues.
-- Accountant-facing Excel workbook and taxpack outputs from reviewed data.
-- ATO-aligned manual guide PDFs that help users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff. TaxMate does not fill official ATO PDFs or create returns users can submit directly to the ATO.
+Pick the smallest path that matches what you need:
 
-## Install in 60 seconds
+| Need | Install | What you get |
+| --- | --- | --- |
+| Quick use in Codex, Claude Code, Cowork, or OpenAgentSkill CLI | Portable skills | Topic guidance, source-backed review prompts, and `Accountant review` flags. No checkout required. |
+| HTML guide, workbook/taxpack output, source refresh, finance review, calculators, or validation | Full runtime checkout | Bash + Python runtime, source pipeline, guide generation, and audit tooling. |
+| Development, CI, or local plugin testing | Full runtime checkout + dev checks | Same runtime plus publication checks and local plugin metadata validation. |
 
-Primary install is the full plugin runtime (full feature set, CI-safe source pipeline, and audit tooling).
-
-Prerequisites:
-
-- Node.js 20 or newer.
-- Bash, Python 3.9+, Git, curl, and jq.
-- Codex for full plugin workflows; Claude Code, Cowork, or OpenAgentSkill CLI for portable skill workflows.
-
-- Clone and wire locally:
-
-```bash
-git clone https://github.com/nijanthan-dev/taxmate-australia.git
-cd taxmate-australia
-```
-
-Run plugin bootstrap and validation:
-
-```bash
-bash scripts/bootstrap-dev-env.sh
-```
-
-Validate plugin and generated artifacts:
-
-```bash
-./scripts/taxmate validate
-./scripts/taxmate skills generate --check
-```
-
-Run a full runtime command:
-
-```bash
-./scripts/taxmate skills generate
-```
-
-Create a self-prepared HTML guide users can save as PDF from their browser:
-
-```bash
-./scripts/taxmate taxpack sample-json --output /tmp/taxmate-guide-input.json
-./scripts/taxmate taxpack guide-html \
-  --input /tmp/taxmate-guide-input.json \
-  --output /tmp/taxmate-guide.html
-```
-
-Open the HTML in a browser and use print/save as PDF. The printed PDF keeps the same guide layout and hides the preview toolbar.
-Rows can include `source_url`, `source_urls`, and `checked_at`; the guide keeps those provenance fields visible in the worksheet.
-
-Optional: install one or more portable skills for ad-hoc use without checkout:
+Fast portable install:
 
 ```bash
 npx skills@1.5.13 add nijanthan-dev/taxmate-australia --list
@@ -70,7 +23,57 @@ npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
   --agent codex --global --skill '*' --yes
 ```
 
-## First use
+Portable details: [docs/INSTALLATION.md](docs/INSTALLATION.md).
+Full runtime details: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md).
+
+## Preview
+
+![Example TaxMate Australia self-prepared guide output for synthetic John Doe data](assets/readme/taxmate-guide-john-doe.png)
+
+Example guide from synthetic John Doe data. Shows interview answers, source-backed evidence prompts, and `Accountant review` flags. Not an ATO form. Not fileable.
+
+![Example TaxMate Australia manual-copy worksheet for synthetic John Doe data](assets/readme/taxmate-guide-john-doe-worksheet.png)
+
+The worksheet page shows manual-copy rows, source provenance, evidence prompts, and `Accountant review` flags.
+
+## What It Does
+
+- Reviews Australian tax prep records for employees, ABN/sole-trader work, investments, rental property, crypto, superannuation, and private health.
+- Keeps ATO source URLs, checked-at dates, source coverage checks, and generated topic skills visible.
+- Flags GST/BAS, PAYG, FBT, CGT, super guarantee, and stamp-duty source-routing items for conservative review.
+- Builds accountant-facing workbook and taxpack outputs from reviewed data.
+- Creates ATO-aligned manual guide PDFs that help users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff. TaxMate does not fill official ATO PDFs or create returns users can submit directly to the ATO.
+
+## Full Runtime Quickstart
+
+Use this path when you need generated guides, workbook/taxpack outputs, source refresh, finance review, calculators, validation, or local plugin testing.
+
+Prerequisites:
+
+- Node.js 20 or newer.
+- Bash, Python 3.9+, Git, curl, and jq.
+- Codex for full plugin workflows; Claude Code, Cowork, or OpenAgentSkill CLI for portable skill workflows.
+
+Clone and bootstrap:
+
+```bash
+git clone https://github.com/nijanthan-dev/taxmate-australia.git
+cd taxmate-australia
+bash scripts/bootstrap-dev-env.sh
+```
+
+Validate the checkout:
+
+```bash
+./scripts/taxmate validate
+./scripts/taxmate skills generate --check
+```
+
+Full setup details: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md).
+
+## Use It
+
+Ask for a specific portable skill when the topic is clear:
 
 ```text
 Use the capital-gains-tax skill to review this disposal conservatively.
@@ -84,9 +87,28 @@ Use the gst-bas skill to identify missing evidence and accountant-review items.
 Use the work-from-home skill for the 2025-26 income year and verify current rates before calculating anything.
 ```
 
-## Public portable skills (optional)
+Run full-runtime commands from a checkout:
 
-If you need ad-hoc access without checkout, the public portable entry points remain available:
+```bash
+./scripts/taxmate skills generate
+./scripts/taxmate refresh --query "payg"
+./scripts/taxmate finance --help
+```
+
+Create a self-prepared HTML guide users can save as PDF from their browser:
+
+```bash
+./scripts/taxmate taxpack sample-json --output /tmp/taxmate-guide-input.json
+./scripts/taxmate taxpack guide-html \
+  --input /tmp/taxmate-guide-input.json \
+  --output /tmp/taxmate-guide.html
+```
+
+Open the HTML in a browser and use print/save as PDF. The printed PDF keeps the same guide layout and hides the preview toolbar. Rows can include `source_url`, `source_urls`, and `checked_at`; the guide keeps those provenance fields visible in the worksheet.
+
+## Skills Included
+
+Public portable entry points:
 
 - `taxmate-australia`
 - `employment-deductions`
@@ -103,29 +125,30 @@ If you need ad-hoc access without checkout, the public portable entry points rem
 - `records-evidence`
 - `workbook`
 - `taxpack`
+
 Source artifacts are tracked in `data/ato_knowledge_base/source_coverage.json`, derived from `data/ato_knowledge_base/source_registry.json`.
 
-## Installation modes
+## Development
 
-Full plugin path is recommended for production and plugin users:
+Core checks:
 
 ```bash
-cd /path/to/taxmate-australia
-./scripts/taxmate skills validate
-./scripts/taxmate refresh --query "payg"
-./scripts/taxmate finance --help
+PYTHONPYCACHEPREFIX=/tmp/taxmate-pycache python3 -m py_compile scripts/*.py
+./scripts/taxmate validate
+./scripts/taxmate skills generate --check
+./scripts/taxmate skills audit --check
+scripts/check-publication-ready.sh
 ```
 
-## Update and remove (portable only)
-
-Portable skills are optional. Update/remove portable skills with the `skills@1.5.13` package as needed, then keep plugin checkout refreshed for plugin/runtime parity.
+Contributor flow and release checks: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Troubleshooting
 
-- `npx: command not found`: install Node.js 20 or newer for full-runtime workflows.
+- `npx: command not found`: install Node.js. Portable skills need Node.js 18 or newer; full-runtime workflows need Node.js 20 or newer.
 - Plugin command not working: re-run `bash scripts/bootstrap-dev-env.sh` and verify `python3` + `bash` are available.
+- Need portable-only access: use [docs/INSTALLATION.md](docs/INSTALLATION.md), not the full checkout path.
 
-## More docs
+## More Docs
 
 - Full plugin setup: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md)
 - Optional portable install: [docs/INSTALLATION.md](docs/INSTALLATION.md)

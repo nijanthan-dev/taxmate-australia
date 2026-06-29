@@ -10,6 +10,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any, Optional
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +27,40 @@ import taxmate_taxpack  # noqa: E402
 import taxmate_validate  # noqa: E402
 
 
+MARKETPLACE_NAME = "taxmate-local-marketplace"
+PLUGIN_ADD_COMMAND = f"codex plugin add taxmate-australia@{MARKETPLACE_NAME}"
+
+
+def write_local_marketplace_fixture(root: Path, docs_text: str, plugins: Optional[list[Any]] = None) -> None:
+    marketplace_dir = root / ".agents" / "plugins"
+    docs_dir = root / "docs"
+    marketplace_dir.mkdir(parents=True)
+    docs_dir.mkdir()
+    (root / ".codex-plugin").mkdir()
+    (root / ".codex-plugin" / "plugin.json").write_text("{}", encoding="utf-8")
+    (marketplace_dir / "marketplace.json").write_text(
+        json.dumps(
+            {
+                "name": MARKETPLACE_NAME,
+                "plugins": plugins
+                if plugins is not None
+                else [
+                    {
+                        "name": "taxmate-australia",
+                        "source": {"source": "local", "path": "./"},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (docs_dir / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
+
+
+def local_marketplace_docs(marketplace_command: str) -> str:
+    return marketplace_command + "\n" + PLUGIN_ADD_COMMAND + "\n"
+
+
 class ReviewGuardrailTests(unittest.TestCase):
     def test_review_guardrails_pass_current_repo(self) -> None:
         self.assertEqual([], taxmate_review_guardrails.run(ROOT))
@@ -35,6 +70,106 @@ class ReviewGuardrailTests(unittest.TestCase):
         findings = taxmate_review_guardrails.check_taxpack_output_layer_text(text)
 
         self.assertTrue(any("forbidden pattern" in finding.detail for finding in findings))
+
+    def test_review_guardrails_detect_wrong_local_marketplace_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_local_marketplace_fixture(
+                root,
+                local_marketplace_docs("codex plugin marketplace add .agents/plugins"),
+            )
+
+            findings = taxmate_review_guardrails.check_local_plugin_marketplace_contract(root)
+
+        self.assertTrue(any("repo root" in finding.detail for finding in findings))
+
+    def test_review_guardrails_rejects_marketplace_command_prefix(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_local_marketplace_fixture(
+                root,
+                local_marketplace_docs("codex plugin marketplace add ./marketplace"),
+            )
+
+            findings = taxmate_review_guardrails.check_local_plugin_marketplace_contract(root)
+
+        self.assertTrue(
+            any("missing exact command: codex plugin marketplace add ." in finding.detail for finding in findings)
+        )
+        self.assertTrue(any("repo root exactly" in finding.detail for finding in findings))
+
+    def test_review_guardrails_reports_malformed_marketplace_plugin_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_local_marketplace_fixture(
+                root,
+                local_marketplace_docs("codex plugin marketplace add ."),
+                plugins=[
+                    "bad entry",
+                    {
+                        "name": "taxmate-australia",
+                        "source": {"source": "local", "path": "./"},
+                    },
+                ],
+            )
+
+            findings = taxmate_review_guardrails.check_local_plugin_marketplace_contract(root)
+
+        self.assertTrue(any("plugins entries must be objects" in finding.detail for finding in findings))
+
+    def test_review_guardrails_list_patterns_as_json(self) -> None:
+        payload = json.loads(taxmate_review_guardrails.render_review_patterns("json"))
+
+        patterns = payload["patterns"]
+
+        self.assertTrue(any(pattern["id"] == "PR #38" for pattern in patterns))
+        self.assertTrue(any(pattern["check"] == "local_plugin_marketplace_contract" for pattern in patterns))
+
+    def test_review_guardrails_list_patterns_as_markdown(self) -> None:
+        rendered = taxmate_review_guardrails.render_review_patterns("markdown")
+
+        self.assertIn("| Pattern | Guardrail check | Contract |", rendered)
+        self.assertIn("| PR #38 | `local_plugin_marketplace_contract` |", rendered)
+
+    def test_review_guardrail_docs_rejects_duplicated_pr_list(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            docs = root / "docs"
+            docs.mkdir()
+            (docs / "DEVELOPMENT.md").write_text(
+                "./scripts/taxmate review-guardrails\n"
+                "./scripts/taxmate review-guardrails --list-patterns\n"
+                "./scripts/taxmate review-guardrails --list-patterns --format json\n"
+                "The script is the canonical pattern inventory\n"
+                "- PR #38: duplicate\n",
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_review_guardrail_docs(root)
+
+        self.assertTrue(any("must not duplicate" in finding.detail for finding in findings))
+
+    def test_review_guardrail_docs_require_exact_base_command(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            docs = root / "docs"
+            docs.mkdir()
+            (docs / "DEVELOPMENT.md").write_text(
+                "./scripts/taxmate review-guardrails --list-patterns\n"
+                "./scripts/taxmate review-guardrails --list-patterns --format json\n"
+                "The script is the canonical pattern inventory\n"
+                "Do not duplicate PR pattern bullets\n",
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_review_guardrail_docs(root)
+
+        self.assertTrue(
+            any(
+                "missing exact command: ./scripts/taxmate review-guardrails" in finding.detail
+                for finding in findings
+            )
+        )
 
 
 class CalculatorTests(unittest.TestCase):
@@ -698,6 +833,7 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("Prepared by user", body)
         self.assertIn("Not an ATO form", body)
         self.assertIn("Not fileable", body)
+        self.assertIn("Prep boundary", body)
         self.assertIn("--bg:#e9eef4", body)
         self.assertIn("background:#fff0f1", body)
         self.assertIn("background:#eef5ff", body)
@@ -716,6 +852,7 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertNotIn("ATO-aligned deduction worksheet", body)
         self.assertNotIn("target-dot", body)
         self.assertNotIn("border-radius:50%", body)
+        self.assertNotIn("Global warning", body)
         self.assertNotIn("Prepared by " + "TaxMate", body)
 
     def test_guide_tabs_resolve_to_existing_anchors(self) -> None:

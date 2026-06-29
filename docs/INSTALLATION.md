@@ -1,7 +1,10 @@
-# Portable Skills Access (Optional)
+# Portable Skills Install
 
-Use portable skills only when you need quick ad-hoc use without the full plugin checkout.
+This is the fastest path for most users who want TaxMate inside an agent.
+Use portable skills when you need quick ad-hoc guidance without the full plugin checkout.
 Portable install needs Node.js 18 or newer and does not need a repository checkout, runtime binaries, marketplace JSON, plugin manifests, or environment variables.
+
+Use the full runtime checkout only when you need guide generation, workbook/taxpack output, ATO source refresh, finance review scripts, calculators, or repository validation.
 
 Pinned CLI version: `skills@1.5.13`.
 
@@ -75,7 +78,7 @@ For Claude Code or Cowork, use the same public portable skill folders listed bel
 
 Install by downloading or copying the selected `skills/skill-name` folder into the skill location supported by your Claude Code or Cowork setup, or upload the zipped skill folder when the product UI asks for a skill package. Do not zip the whole repository when you only want portable skill access.
 
-Use the full plugin runtime only when you need ATO refresh, finance review scripts, calculators, or repository validation.
+Use the full plugin runtime only when you need guide generation, workbook/taxpack output, ATO refresh, finance review scripts, calculators, or repository validation.
 
 ## Public portable skills
 
