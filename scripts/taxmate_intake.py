@@ -29,6 +29,24 @@ EMBEDDED_UNKNOWN_PHRASES = (
     "unsure",
     "no receipt",
 )
+STATE_ALIASES = {
+    "VIC": "VIC",
+    "VICTORIA": "VIC",
+    "NSW": "NSW",
+    "NEW SOUTH WALES": "NSW",
+    "QLD": "QLD",
+    "QUEENSLAND": "QLD",
+    "SA": "SA",
+    "SOUTH AUSTRALIA": "SA",
+    "WA": "WA",
+    "WESTERN AUSTRALIA": "WA",
+    "TAS": "TAS",
+    "TASMANIA": "TAS",
+    "ACT": "ACT",
+    "AUSTRALIAN CAPITAL TERRITORY": "ACT",
+    "NT": "NT",
+    "NORTHERN TERRITORY": "NT",
+}
 
 PUBLIC_HOLIDAY_SOURCE = "https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays"
 PUBLIC_HOLIDAY_SOURCES = [
@@ -328,6 +346,9 @@ def wfh_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     enriched = dict(raw)
     if is_missing(enriched.get("state")) and not is_missing(answers.get("state")):
         enriched["state"] = answers.get("state")
+    state_key = normalize_state(enriched.get("state"))
+    if state_key is not None:
+        enriched["state"] = state_key
     return enriched
 
 
@@ -402,10 +423,13 @@ def calculate_wfh_hours(raw: Dict[str, Any]) -> Optional[float]:
     hours_per_day = money_value(raw.get("hours_per_day"), unknown_as_missing=True)
     if hours_per_day is None:
         return None
+    state_key = normalize_state(raw.get("state"))
+    if state_key is None:
+        return None
     leave = parse_dates(raw.get("leave_dates", []))
     worked_public = parse_dates(raw.get("worked_public_holidays", []))
     worked_weekends = parse_dates(raw.get("worked_weekends", []))
-    holidays = public_holidays(raw.get("state", ""))
+    holidays = public_holidays(state_key)
     work_days = 0
     current = start
     while current <= end:
@@ -430,7 +454,9 @@ def parse_weekdays(raw: Dict[str, Any]) -> Optional[Set[int]]:
 
 
 def public_holidays(state: Any) -> Set[date]:
-    state_key = text(state).upper()
+    state_key = normalize_state(state)
+    if state_key is None:
+        return set()
     national = {
         "2025-12-25",
         "2025-12-26",
@@ -453,6 +479,11 @@ def public_holidays(state: Any) -> Set[date]:
     values = set(national)
     values.update(state_days.get(state_key, set()))
     return {date.fromisoformat(value) for value in values}
+
+
+def normalize_state(value: Any) -> Optional[str]:
+    canonical = text(value).strip().upper()
+    return STATE_ALIASES.get(canonical)
 
 
 def asset_rows(raw_assets: Any) -> List[Dict[str, Any]]:

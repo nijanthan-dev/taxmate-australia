@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 from typing import Any, Optional
 
@@ -62,6 +63,10 @@ def local_marketplace_docs(marketplace_command: str) -> str:
     return marketplace_command + "\n" + PLUGIN_ADD_COMMAND + "\n"
 
 
+def date_weekday(value: str) -> int:
+    return date.fromisoformat(value).weekday()
+
+
 class ReviewGuardrailTests(unittest.TestCase):
     def test_review_guardrails_pass_current_repo(self) -> None:
         self.assertEqual([], taxmate_review_guardrails.run(ROOT))
@@ -112,6 +117,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             findings = taxmate_review_guardrails.check_individual_intake_contract(root)
 
         self.assertTrue(any("contains_unknown" in finding.detail for finding in findings))
+        self.assertTrue(any("normalize_state" in finding.detail for finding in findings))
         self.assertTrue(any("wfh_answers" in finding.detail for finding in findings))
         self.assertTrue(any("has_abn_inputs" in finding.detail for finding in findings))
         self.assertTrue(any("has_bas_inputs" in finding.detail for finding in findings))
@@ -522,6 +528,66 @@ class IndividualIntakeTests(unittest.TestCase):
         wfh = next(row for row in payload["items"] if row["number"] == "WFH")
 
         self.assertIn("0.00 hours", wfh["answer"])
+
+    def test_wfh_normalizes_full_state_names(self) -> None:
+        expectations = {
+            " vic ": ("2026-06-08", 0),
+            "Victoria": ("2026-06-08", 0),
+            "New South Wales": ("2026-06-08", 0),
+            "Queensland": ("2025-10-06", 0),
+            "South Australia": ("2026-06-08", 0),
+            "Western Australia": ("2026-06-01", 0),
+            "Tasmania": ("2026-06-08", 0),
+            "Australian Capital Territory": ("2026-06-08", 0),
+            "Northern Territory": ("2026-06-08", 0),
+        }
+        for state, (holiday, expected_hours) in expectations.items():
+            with self.subTest(state=state):
+                raw = {
+                    "state": state,
+                    "start": holiday,
+                    "end": holiday,
+                    "weekdays": [date_weekday(holiday)],
+                    "hours_per_day": 8,
+                    "leave_dates": [],
+                    "worked_public_holidays": [],
+                    "worked_weekends": [],
+                }
+
+                self.assertEqual(expected_hours, taxmate_intake.calculate_wfh_hours(raw))
+
+    def test_wfh_normalizes_taxpayer_state_fallback(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["state"] = " Victoria "
+        answers["wfh"] = {
+            "start": "2026-06-08",
+            "end": "2026-06-08",
+            "weekdays": [0],
+            "hours_per_day": 8,
+            "records": "timesheet",
+            "actual_cost_records": "none",
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        wfh = next(row for row in payload["items"] if row["number"] == "WFH")
+
+        self.assertIn("0.00 hours", wfh["answer"])
+
+    def test_unknown_wfh_state_remains_evidence(self) -> None:
+        rows = taxmate_intake.wfh_rows(
+            {
+                "state": "unknown place",
+                "start": "2026-06-08",
+                "end": "2026-06-08",
+                "weekdays": [0],
+                "hours_per_day": 8,
+                "records": "timesheet",
+                "actual_cost_records": "none",
+            }
+        )
+
+        self.assertEqual("Evidence", rows[0]["status"])
+        self.assertIn("unknown hours; fixed-rate candidate unknown", rows[0]["answer"])
 
     def test_wfh_unknown_hours_remain_evidence(self) -> None:
         rows = taxmate_intake.wfh_rows(
