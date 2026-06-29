@@ -698,6 +698,7 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("Prepared by user", body)
         self.assertIn("Not an ATO form", body)
         self.assertIn("Not fileable", body)
+        self.assertIn("Prep boundary", body)
         self.assertIn("--bg:#e9eef4", body)
         self.assertIn("background:#fff0f1", body)
         self.assertIn("background:#eef5ff", body)
@@ -716,6 +717,7 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertNotIn("ATO-aligned deduction worksheet", body)
         self.assertNotIn("target-dot", body)
         self.assertNotIn("border-radius:50%", body)
+        self.assertNotIn("Global warning", body)
         self.assertNotIn("Prepared by " + "TaxMate", body)
 
     def test_guide_tabs_resolve_to_existing_anchors(self) -> None:

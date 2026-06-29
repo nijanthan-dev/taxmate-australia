@@ -5,6 +5,10 @@ TaxMate Australia is an Australian tax prep skill pack and plugin linked to offi
 > [!WARNING]
 > **Not tax advice.** TaxMate Australia is a preparation aid, not professional advice or lodgment software. For complex situations, binding decisions, or lodgment, consult a registered tax agent or use the official ATO channel directly. See [DISCLAIMER.md](DISCLAIMER.md).
 
+![Example TaxMate Australia self-prepared guide output for synthetic John Doe data](assets/readme/taxmate-guide-john-doe.png)
+
+Example guide from synthetic John Doe data. Shows interview answers, source-backed evidence prompts, and `Accountant review` flags. Not an ATO form. Not fileable.
+
 ## What it helps with
 
 - Australian tax prep workflows for employees, ABN/sole-trader records, investments, rental property, crypto, superannuation, and private health.
