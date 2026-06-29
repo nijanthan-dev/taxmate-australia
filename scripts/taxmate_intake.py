@@ -47,6 +47,25 @@ STATE_ALIASES = {
     "NT": "NT",
     "NORTHERN TERRITORY": "NT",
 }
+WEEKDAY_ALIASES = {
+    "MON": 0,
+    "MONDAY": 0,
+    "TUE": 1,
+    "TUES": 1,
+    "TUESDAY": 1,
+    "WED": 2,
+    "WEDNESDAY": 2,
+    "THU": 3,
+    "THUR": 3,
+    "THURS": 3,
+    "THURSDAY": 3,
+    "FRI": 4,
+    "FRIDAY": 4,
+    "SAT": 5,
+    "SATURDAY": 5,
+    "SUN": 6,
+    "SUNDAY": 6,
+}
 
 PUBLIC_HOLIDAY_SOURCE = "https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays"
 PUBLIC_HOLIDAY_SOURCES = [
@@ -413,8 +432,10 @@ def wfh_rows(raw: Any) -> List[Dict[str, Any]]:
 
 
 def calculate_wfh_hours(raw: Dict[str, Any]) -> Optional[float]:
-    start = parse_iso_date(raw.get("start", "2025-07-01"))
-    end = parse_iso_date(raw.get("end", "2026-06-30"))
+    if "start" not in raw or "end" not in raw:
+        return None
+    start = parse_iso_date(raw.get("start"))
+    end = parse_iso_date(raw.get("end"))
     if start is None or end is None or end < start:
         return None
     weekdays = parse_weekdays(raw)
@@ -429,6 +450,8 @@ def calculate_wfh_hours(raw: Dict[str, Any]) -> Optional[float]:
     leave = parse_dates(raw.get("leave_dates", []))
     worked_public = parse_dates(raw.get("worked_public_holidays", []))
     worked_weekends = parse_dates(raw.get("worked_weekends", []))
+    if leave is None or worked_public is None or worked_weekends is None:
+        return None
     holidays = public_holidays(state_key)
     work_days = 0
     current = start
@@ -448,9 +471,27 @@ def parse_weekdays(raw: Dict[str, Any]) -> Optional[Set[int]]:
     if "weekdays" not in raw or contains_unknown(raw.get("weekdays")):
         return None
     weekdays = raw.get("weekdays")
-    if not isinstance(weekdays, list):
+    if not isinstance(weekdays, list) or not weekdays:
         return None
-    return {int(day) for day in weekdays if isinstance(day, int) or str(day).isdigit()}
+    parsed_days: Set[int] = set()
+    for day in weekdays:
+        parsed_day = parse_weekday(day)
+        if parsed_day is None:
+            return None
+        parsed_days.add(parsed_day)
+    return parsed_days or None
+
+
+def parse_weekday(value: Any) -> Optional[int]:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if 0 <= value <= 6 else None
+    canonical = text(value).strip().upper()
+    if canonical.isdigit():
+        day = int(canonical)
+        return day if 0 <= day <= 6 else None
+    return WEEKDAY_ALIASES.get(canonical)
 
 
 def public_holidays(state: Any) -> Set[date]:
@@ -585,15 +626,17 @@ def parse_iso_date(value: Any) -> Optional[date]:
         return None
 
 
-def parse_dates(raw_values: Any) -> Set[date]:
+def parse_dates(raw_values: Any) -> Optional[Set[date]]:
+    if contains_unknown(raw_values):
+        return None
     if not isinstance(raw_values, list):
-        return set()
+        return None
     dates: Set[date] = set()
     for value in raw_values:
         try:
             dates.add(date.fromisoformat(str(value)))
         except ValueError:
-            continue
+            return None
     return dates
 
 

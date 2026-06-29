@@ -118,6 +118,8 @@ class ReviewGuardrailTests(unittest.TestCase):
 
         self.assertTrue(any("contains_unknown" in finding.detail for finding in findings))
         self.assertTrue(any("normalize_state" in finding.detail for finding in findings))
+        self.assertTrue(any("WEEKDAY_ALIASES" in finding.detail for finding in findings))
+        self.assertTrue(any("parse_weekday" in finding.detail for finding in findings))
         self.assertTrue(any("wfh_answers" in finding.detail for finding in findings))
         self.assertTrue(any("has_abn_inputs" in finding.detail for finding in findings))
         self.assertTrue(any("has_bas_inputs" in finding.detail for finding in findings))
@@ -128,7 +130,26 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("work_use != 100" in finding.detail for finding in findings))
         self.assertTrue(any("2026-04-04" in finding.detail for finding in findings))
         self.assertTrue(any("parse_iso_date" in finding.detail for finding in findings))
+        self.assertTrue(any("parse_dates" in finding.detail for finding in findings))
         self.assertTrue(any("generation_checked_at" in finding.detail for finding in findings))
+
+    def test_review_guardrails_detect_wfh_parser_fallbacks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            scripts = root / "scripts"
+            scripts.mkdir()
+            (scripts / "taxmate_intake.py").write_text(
+                'start = parse_iso_date(raw.get("start", "2025-07-01"))\n'
+                'end = parse_iso_date(raw.get("end", "2026-06-30"))\n'
+                "return {int(day) for day in weekdays if isinstance(day, int) or str(day).isdigit()}\n",
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_individual_intake_contract(root)
+
+        self.assertTrue(any('raw.get("start", "2025-07-01")' in finding.detail for finding in findings))
+        self.assertTrue(any('raw.get("end", "2026-06-30")' in finding.detail for finding in findings))
+        self.assertTrue(any("return {int(day) for day in weekdays" in finding.detail for finding in findings))
 
     def test_review_guardrails_detect_wrong_local_marketplace_root(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -588,6 +609,104 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertEqual("Evidence", rows[0]["status"])
         self.assertIn("unknown hours; fixed-rate candidate unknown", rows[0]["answer"])
+
+    def test_wfh_missing_period_remains_evidence(self) -> None:
+        for omitted_key in ["start", "end"]:
+            with self.subTest(omitted_key=omitted_key):
+                raw = {
+                    "state": "VIC",
+                    "start": "2025-07-01",
+                    "end": "2026-06-30",
+                    "weekdays": [0, 1, 2, 3, 4],
+                    "hours_per_day": 8,
+                    "records": "timesheet",
+                    "actual_cost_records": "none",
+                }
+                del raw[omitted_key]
+
+                rows = taxmate_intake.wfh_rows(raw)
+
+                self.assertEqual("Evidence", rows[0]["status"])
+                self.assertIn("unknown hours; fixed-rate candidate unknown", rows[0]["answer"])
+
+    def test_wfh_weekday_names_parse_without_zeroing_hours(self) -> None:
+        rows = taxmate_intake.wfh_rows(
+            {
+                "state": "VIC",
+                "start": "2026-06-09",
+                "end": "2026-06-10",
+                "weekdays": ["Tuesday", "Wednesday"],
+                "hours_per_day": 8,
+                "records": "timesheet",
+                "actual_cost_records": "none",
+            }
+        )
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("16.00 hours; fixed-rate candidate 11.20", rows[0]["answer"])
+
+    def test_wfh_unparseable_weekdays_remain_evidence(self) -> None:
+        for weekdays in [["Monday", "Funday"], [], [7], [True]]:
+            with self.subTest(weekdays=weekdays):
+                rows = taxmate_intake.wfh_rows(
+                    {
+                        "state": "VIC",
+                        "start": "2026-06-09",
+                        "end": "2026-06-10",
+                        "weekdays": weekdays,
+                        "hours_per_day": 8,
+                        "records": "timesheet",
+                        "actual_cost_records": "none",
+                    }
+                )
+
+                self.assertEqual("Evidence", rows[0]["status"])
+                self.assertIn("unknown hours; fixed-rate candidate unknown", rows[0]["answer"])
+
+    def test_wfh_unparseable_adjustment_dates_remain_evidence(self) -> None:
+        for key in ["leave_dates", "worked_public_holidays", "worked_weekends"]:
+            with self.subTest(key=key):
+                raw = {
+                    "state": "VIC",
+                    "start": "2026-06-09",
+                    "end": "2026-06-10",
+                    "weekdays": [1, 2],
+                    "hours_per_day": 8,
+                    "records": "timesheet",
+                    "actual_cost_records": "none",
+                    "leave_dates": [],
+                    "worked_public_holidays": [],
+                    "worked_weekends": [],
+                }
+                raw[key] = ["not-a-date"]
+
+                rows = taxmate_intake.wfh_rows(raw)
+
+                self.assertEqual("Evidence", rows[0]["status"])
+                self.assertIn("unknown hours; fixed-rate candidate unknown", rows[0]["answer"])
+
+    def test_intake_cli_keeps_unparseable_wfh_as_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["wfh"] = {
+            "state": "VIC",
+            "start": "2026-06-09",
+            "end": "2026-06-10",
+            "weekdays": ["Funday"],
+            "hours_per_day": 8,
+            "records": "timesheet",
+            "actual_cost_records": "none",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            answers_path = Path(tmp) / "answers.json"
+            output_path = Path(tmp) / "pack.html"
+            answers_path.write_text(json.dumps(answers), encoding="utf-8")
+
+            result = taxmate_intake.main(["individual", "--answers", str(answers_path), "--output", str(output_path)])
+
+            self.assertEqual(0, result)
+            body = output_path.read_text(encoding="utf-8")
+            self.assertIn("unknown hours; fixed-rate candidate unknown", body)
+            self.assertNotIn("0.00 hours; fixed-rate candidate 0.00", body)
 
     def test_wfh_unknown_hours_remain_evidence(self) -> None:
         rows = taxmate_intake.wfh_rows(

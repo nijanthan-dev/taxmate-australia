@@ -78,7 +78,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "PR #53 intake",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Individual intake must keep missing or nested unknown answers as Evidence, require literal boolean AI confirmation, preserve BAS values as review, use taxpayer state plus full-year state holidays for WFH, keep unknown WFH periods/hours as evidence, avoid stale checked-at literals, and keep mixed-use assets under review.",
+        "Individual intake must keep missing, unparseable, or nested unknown answers as Evidence, require literal boolean AI confirmation, preserve BAS values as review, use taxpayer state plus full-year state holidays for WFH, keep unknown WFH parser inputs as evidence, avoid stale checked-at literals, and keep mixed-use assets under review.",
     ),
     ReviewPattern(
         "PR #38",
@@ -211,6 +211,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
             [
                 "def contains_unknown(",
                 "STATE_ALIASES = {",
+                "WEEKDAY_ALIASES = {",
                 "def normalize_state(",
                 "def wfh_answers(",
                 "def has_abn_inputs(",
@@ -247,16 +248,25 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "*PUBLIC_HOLIDAY_SOURCES",
                 "holiday_not_worked = current in holidays and current not in worked_public",
                 "holiday_worked = current in worked_public",
+                "if \"start\" not in raw or \"end\" not in raw:",
+                "start = parse_iso_date(raw.get(\"start\"))",
+                "end = parse_iso_date(raw.get(\"end\"))",
                 "weekdays = parse_weekdays(raw)",
                 "if weekdays is None:",
                 "def parse_weekdays(",
                 '"weekdays" not in raw',
+                "parsed_day = parse_weekday(day)",
+                "if parsed_day is None:",
+                "def parse_weekday(",
                 "hours_per_day = money_value(raw.get(\"hours_per_day\"), unknown_as_missing=True)",
                 "if hours_per_day is None:",
+                "if leave is None or worked_public is None or worked_weekends is None:",
                 "fixed_rate_text = money_text(fixed_candidate)",
                 "work_use != 100",
                 "mixed-use",
                 "def parse_iso_date(",
+                "def parse_dates(raw_values: Any) -> Optional[Set[date]]:",
+                "if contains_unknown(raw_values):",
                 "if start is None or end is None or end < start:",
                 "def generation_checked_at(",
                 '"checked_at": generation_checked_at()',
@@ -265,6 +275,9 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     )
     if '"checked_at": "2026-06-29"' in text:
         findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "forbidden stale checked_at literal"))
+    for forbidden in ['raw.get("start", "2025-07-01")', 'raw.get("end", "2026-06-30")', "return {int(day) for day in weekdays"]:
+        if forbidden in text:
+            findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, f"forbidden parser fallback: {forbidden}"))
     stale_holiday_source = "https://data.gov.au/data/dataset/australian-holidays-machine-readable-dataset"
     if stale_holiday_source in text or stale_holiday_source in skill_rules:
         findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "forbidden inactive public holiday source"))
