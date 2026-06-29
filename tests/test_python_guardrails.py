@@ -69,6 +69,38 @@ class ReviewGuardrailTests(unittest.TestCase):
 
         self.assertTrue(any("repo root" in finding.detail for finding in findings))
 
+    def test_review_guardrails_list_patterns_as_json(self) -> None:
+        payload = json.loads(taxmate_review_guardrails.render_review_patterns("json"))
+
+        patterns = payload["patterns"]
+
+        self.assertTrue(any(pattern["id"] == "PR #38" for pattern in patterns))
+        self.assertTrue(any(pattern["check"] == "local_plugin_marketplace_contract" for pattern in patterns))
+
+    def test_review_guardrails_list_patterns_as_markdown(self) -> None:
+        rendered = taxmate_review_guardrails.render_review_patterns("markdown")
+
+        self.assertIn("| Pattern | Guardrail check | Contract |", rendered)
+        self.assertIn("| PR #38 | `local_plugin_marketplace_contract` |", rendered)
+
+    def test_review_pattern_docs_rejects_duplicated_pr_list(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            docs = root / "docs"
+            docs.mkdir()
+            (docs / "CODEX_REVIEW_PATTERNS.md").write_text(
+                "canonical pattern inventory\n"
+                "./scripts/taxmate review-guardrails --list-patterns\n"
+                "./scripts/taxmate review-guardrails --list-patterns --format json\n"
+                "Do not duplicate the pattern list\n"
+                "- PR #38: duplicate\n",
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_pattern_docs(root)
+
+        self.assertTrue(any("must not duplicate" in finding.detail for finding in findings))
+
 
 class CalculatorTests(unittest.TestCase):
     def test_cgt_discount_rejects_exact_calendar_year(self) -> None:

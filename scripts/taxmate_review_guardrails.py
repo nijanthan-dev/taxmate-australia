@@ -33,6 +33,57 @@ class Finding:
     detail: str
 
 
+@dataclass
+class ReviewPattern:
+    id: str
+    check: str
+    summary: str
+
+
+REVIEW_PATTERNS: List[ReviewPattern] = [
+    ReviewPattern(
+        "PR #7",
+        f"{FINANCE_JSON_WIRE_CONTRACT}, {CALCULATOR_NUMERIC_CONTRACT}, {GENERATED_ARTIFACT_CONTRACT}",
+        "Preserve public JSON wire formats, reject non-finite numbers, keep half-up cent rounding, preserve generated source provenance, compare tracked generated artifacts, and remove stale Go/runtime docs.",
+    ),
+    ReviewPattern(
+        "PR #8",
+        ENVIRONMENT_WORKTREE_CONTRACT,
+        "Keep Codex setup/cleanup safe in linked Git worktrees, do not dirty a clean checkout, and avoid unsafe find-delete patterns.",
+    ),
+    ReviewPattern(
+        "PR #10",
+        PUBLIC_CLAIM_SURFACE_CONTRACT,
+        "Public metadata must describe the real bash and Python runtime.",
+    ),
+    ReviewPattern(
+        "PR #22",
+        PUBLIC_CLAIM_SURFACE_CONTRACT,
+        "Public claim scanners must include wrappers, discovery docs, workflows, and endorsement phrasing in both directions around ATO.",
+    ),
+    ReviewPattern(
+        "PR #25",
+        ATO_FETCH_BOUNDARY,
+        "ATO fetches must call curl --disable -L so user curl config cannot alter source refreshes.",
+    ),
+    ReviewPattern(
+        "PR #27",
+        TAXPACK_OUTPUT_LAYER,
+        "Output layers must preserve Accountant review, source provenance, falsey display values, dynamic generated dates, unique anchors, safe tab target lookup, and neutral mixed-area headings.",
+    ),
+    ReviewPattern(
+        "PR #38",
+        LOCAL_PLUGIN_MARKETPLACE_CONTRACT,
+        "Local Codex plugin setup docs must point codex plugin marketplace add at the repo root when .agents/plugins/marketplace.json uses source.path ./.",
+    ),
+    ReviewPattern(
+        "Release guardrails",
+        RELEASE_GUARDRAIL_CONTRACT,
+        "Release workflow edits must preserve green-CI checks, unchanged-main checks, version manifest alignment, and the Release Please bootstrap SHA.",
+    ),
+]
+
+
 def repo_root() -> Path:
     for candidate in [Path.cwd(), *Path.cwd().parents]:
         if candidate.joinpath(ROOT_MARKER).exists():
@@ -304,18 +355,33 @@ def check_pattern_docs(root: Path) -> List[Finding]:
         return [Finding(REVIEW_PATTERN_DOCS, "missing docs/CODEX_REVIEW_PATTERNS.md")]
     text = path.read_text(encoding="utf-8")
     required = [
-        "PR #7",
-        "PR #22",
-        "PR #27",
-        "PR #38",
-        "falsey",
-        "Accountant review",
-        "generated artifacts",
-        "public claim",
-        "marketplace",
-        "Release guardrails",
+        "canonical pattern inventory",
+        "./scripts/taxmate review-guardrails --list-patterns",
+        "./scripts/taxmate review-guardrails --list-patterns --format json",
+        "Do not duplicate the pattern list",
     ]
-    return fail_if_missing(REVIEW_PATTERN_DOCS, text, required)
+    findings = fail_if_missing(REVIEW_PATTERN_DOCS, text, required)
+    if re.search(r"^- PR #\d+:", text, re.MULTILINE):
+        findings.append(Finding(REVIEW_PATTERN_DOCS, "docs must not duplicate PR pattern bullets"))
+    return findings
+
+
+def review_patterns_payload() -> List[dict]:
+    return [pattern.__dict__ for pattern in REVIEW_PATTERNS]
+
+
+def render_review_patterns(fmt: str) -> str:
+    if fmt == "json":
+        return json.dumps({"patterns": review_patterns_payload()}, indent=2) + "\n"
+    if fmt == "markdown":
+        lines = ["| Pattern | Guardrail check | Contract |", "| --- | --- | --- |"]
+        for pattern in REVIEW_PATTERNS:
+            lines.append(f"| {pattern.id} | `{pattern.check}` | {pattern.summary} |")
+        return "\n".join(lines) + "\n"
+    lines = []
+    for pattern in REVIEW_PATTERNS:
+        lines.append(f"{pattern.id}: {pattern.check} - {pattern.summary}")
+    return "\n".join(lines) + "\n"
 
 
 CHECKS: List[Callable[[Path], List[Finding]]] = [
@@ -344,8 +410,12 @@ def main(argv: List[str]) -> int:
         prog="./scripts/taxmate review-guardrails",
         description="Run static guardrails learned from repeated Codex PR review comments.",
     )
-    parser.add_argument("--format", choices=["text", "json"], default="text")
+    parser.add_argument("--format", choices=["text", "json", "markdown"], default="text")
+    parser.add_argument("--list-patterns", action="store_true", help="Print canonical review-pattern inventory and exit.")
     args = parser.parse_args(argv)
+    if args.list_patterns:
+        sys.stdout.write(render_review_patterns(args.format))
+        return 0
     findings = run(repo_root())
     if args.format == "json":
         payload = {"ok": not findings, "findings": [finding.__dict__ for finding in findings]}
