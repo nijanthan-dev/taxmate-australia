@@ -30,7 +30,11 @@ EMBEDDED_UNKNOWN_PHRASES = (
     "no receipt",
 )
 
-PUBLIC_HOLIDAY_SOURCE = "https://data.gov.au/data/dataset/australian-holidays-machine-readable-dataset"
+PUBLIC_HOLIDAY_SOURCE = "https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays"
+PUBLIC_HOLIDAY_SOURCES = [
+    "https://www.fairwork.gov.au/employment-conditions/public-holidays/2025-public-holidays",
+    PUBLIC_HOLIDAY_SOURCE,
+]
 ATO_INDIVIDUAL_SOURCE = "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-instructions-2026"
 ATO_WFH_FIXED_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/fixed-rate-method"
 ATO_WFH_ACTUAL_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/actual-cost-method"
@@ -380,7 +384,7 @@ def wfh_rows(raw: Any) -> List[Dict[str, Any]]:
             f"{hours_text} hours; fixed-rate candidate {fixed_rate_text}; actual-cost records {display_value(raw.get('actual_cost_records'))}",
             "Calendar helper excludes non-work public holidays and leave, includes confirmed weekends/holidays worked, and still requires records/method review.",
             status,
-            [ATO_WFH_FIXED_SOURCE, ATO_WFH_ACTUAL_SOURCE, PUBLIC_HOLIDAY_SOURCE],
+            [ATO_WFH_FIXED_SOURCE, ATO_WFH_ACTUAL_SOURCE, *PUBLIC_HOLIDAY_SOURCES],
             tab_text="WFH amount is not copy-ready without records and method review.",
         )
     ]
@@ -391,7 +395,9 @@ def calculate_wfh_hours(raw: Dict[str, Any]) -> Optional[float]:
     end = parse_iso_date(raw.get("end", "2026-06-30"))
     if start is None or end is None or end < start:
         return None
-    weekdays = {int(day) for day in raw.get("weekdays", []) if isinstance(day, int) or str(day).isdigit()}
+    weekdays = parse_weekdays(raw)
+    if weekdays is None:
+        return None
     hours_per_day = money_value(raw.get("hours_per_day"), unknown_as_missing=True)
     if hours_per_day is None:
         return None
@@ -413,6 +419,15 @@ def calculate_wfh_hours(raw: Dict[str, Any]) -> Optional[float]:
     return round(work_days * hours_per_day, 2)
 
 
+def parse_weekdays(raw: Dict[str, Any]) -> Optional[Set[int]]:
+    if "weekdays" not in raw or contains_unknown(raw.get("weekdays")):
+        return None
+    weekdays = raw.get("weekdays")
+    if not isinstance(weekdays, list):
+        return None
+    return {int(day) for day in weekdays if isinstance(day, int) or str(day).isdigit()}
+
+
 def public_holidays(state: Any) -> Set[date]:
     state_key = text(state).upper()
     national = {
@@ -426,10 +441,10 @@ def public_holidays(state: Any) -> Set[date]:
     }
     state_days = {
         "VIC": {"2025-09-26", "2025-11-04", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"},
-        "NSW": {"2025-10-06", "2026-04-27", "2026-06-08"},
-        "QLD": {"2025-10-06", "2026-05-04"},
-        "SA": {"2025-10-06", "2026-03-09", "2026-06-08"},
-        "WA": {"2025-09-29", "2026-03-02", "2026-04-27", "2026-06-01"},
+        "NSW": {"2025-10-06", "2026-04-04", "2026-04-05", "2026-04-27", "2026-06-08"},
+        "QLD": {"2025-10-06", "2026-04-04", "2026-04-05", "2026-05-04"},
+        "SA": {"2025-10-06", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"},
+        "WA": {"2025-09-29", "2026-03-02", "2026-04-05", "2026-04-27", "2026-06-01"},
         "TAS": {"2025-11-03", "2026-02-09", "2026-03-09", "2026-04-07", "2026-06-08"},
         "ACT": {"2025-10-06", "2026-03-09", "2026-04-27", "2026-06-01", "2026-06-08"},
         "NT": {"2025-08-04", "2026-05-04", "2026-06-08"},

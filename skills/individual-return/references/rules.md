@@ -10,7 +10,8 @@ This orchestration skill does not bundle extracted tax-treatment summaries. It c
 - ATO working from home fixed-rate method: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/fixed-rate-method
 - ATO working from home actual-cost method: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/actual-cost-method
 - ATO business activity statements: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas
-- Australian public holidays dataset: https://data.gov.au/data/dataset/australian-holidays-machine-readable-dataset
+- Fair Work 2025 public holidays: https://www.fairwork.gov.au/employment-conditions/public-holidays/2025-public-holidays
+- Fair Work 2026 public holidays: https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays
 
 Metadata-only links are routing and verification leads, not enough by themselves for a copy-ready tax treatment.
 

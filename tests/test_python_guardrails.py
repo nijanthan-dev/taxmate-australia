@@ -439,6 +439,41 @@ class IndividualIntakeTests(unittest.TestCase):
         raw["worked_public_holidays"] = ["2026-04-04"]
         self.assertEqual(8, taxmate_intake.calculate_wfh_hours(raw))
 
+    def test_wfh_calendar_excludes_non_vic_easter_weekend(self) -> None:
+        expectations = {
+            "NSW": 0,
+            "QLD": 0,
+            "SA": 0,
+            "WA": 8,
+        }
+        for state, expected_hours in expectations.items():
+            with self.subTest(state=state):
+                raw = {
+                    "state": state,
+                    "start": "2026-04-04",
+                    "end": "2026-04-05",
+                    "weekdays": [5, 6],
+                    "hours_per_day": 8,
+                    "leave_dates": [],
+                    "worked_public_holidays": [],
+                    "worked_weekends": [],
+                }
+
+                self.assertEqual(expected_hours, taxmate_intake.calculate_wfh_hours(raw))
+
+    def test_wfh_uses_current_public_holiday_source(self) -> None:
+        self.assertEqual(
+            "https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays",
+            taxmate_intake.PUBLIC_HOLIDAY_SOURCE,
+        )
+        self.assertEqual(
+            [
+                "https://www.fairwork.gov.au/employment-conditions/public-holidays/2025-public-holidays",
+                "https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays",
+            ],
+            taxmate_intake.PUBLIC_HOLIDAY_SOURCES,
+        )
+
     def test_wfh_calendar_excludes_kings_birthday_states(self) -> None:
         for state in ["VIC", "NSW", "SA", "TAS", "ACT", "NT"]:
             with self.subTest(state=state):
@@ -511,6 +546,21 @@ class IndividualIntakeTests(unittest.TestCase):
                 "start": "not a date",
                 "end": "2026-06-09",
                 "weekdays": [1],
+                "hours_per_day": 8,
+                "records": "timesheet",
+                "actual_cost_records": "none",
+            }
+        )
+
+        self.assertEqual("Evidence", rows[0]["status"])
+        self.assertIn("unknown hours; fixed-rate candidate unknown", rows[0]["answer"])
+
+    def test_wfh_missing_weekdays_remain_evidence(self) -> None:
+        rows = taxmate_intake.wfh_rows(
+            {
+                "state": "VIC",
+                "start": "2026-06-09",
+                "end": "2026-06-09",
                 "hours_per_day": 8,
                 "records": "timesheet",
                 "actual_cost_records": "none",
@@ -1717,6 +1767,48 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
         self.assertIn("class=\"tab red review\"", body)
         self.assertIn("<b>Accountant review queue:</b> Row 15: Accountant review.", body)
+
+    def test_extended_review_rows_appear_in_tabs_and_review_queue(self) -> None:
+        missing_review = taxmate_taxpack.guide_item(
+            {
+                "number": "MISS-1",
+                "ato_area": "Missing facts",
+                "question": "Confirm WFH pattern",
+                "answer": "Missing weekdays",
+                "status": "Accountant review",
+                "tab_text": "Missing WFH pattern requires accountant review.",
+            }
+        )
+        evidence_review = taxmate_taxpack.guide_item(
+            {
+                "number": "EVID-1",
+                "ato_area": "Evidence",
+                "question": "Receipt gap",
+                "answer": "Mixed-use asset receipt",
+                "status": "Accountant review",
+                "tab_text": "Evidence gap requires accountant review.",
+            }
+        )
+
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="29 Jun 2026",
+                summary_note="Extended review regression.",
+                items=[],
+                missing_facts=[missing_review],
+                evidence_items=[evidence_review],
+            )
+        )
+
+        self.assertIn('data-target="row-401-MISS-1"', body)
+        self.assertIn('data-target="row-501-EVID-1"', body)
+        self.assertIn("Missing WFH pattern requires accountant review.", body)
+        self.assertIn("Evidence gap requires accountant review.", body)
+        self.assertIn(
+            "<b>Accountant review queue:</b> Missing WFH pattern requires accountant review.; Evidence gap requires accountant review.",
+            body,
+        )
 
     def test_guide_canonicalizes_color_status_aliases(self) -> None:
         aliases = {

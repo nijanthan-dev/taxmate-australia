@@ -104,6 +104,11 @@ def read(root: Path, rel: str) -> str:
     return root.joinpath(rel).read_text(encoding="utf-8")
 
 
+def read_optional(root: Path, rel: str) -> str:
+    path = root.joinpath(rel)
+    return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
 def contains_in_order(text: str, tokens: Iterable[str]) -> bool:
     offset = 0
     for token in tokens:
@@ -162,6 +167,10 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "def rendered_tab_items(",
         "data.abn_items",
         "data.bas_items",
+        "data.missing_facts",
+        "data.evidence_items",
+        "400 + index",
+        "500 + index",
         "for item, row_index in tab_items",
         "findTarget(spread,value)",
         "el.dataset.anchor===value",
@@ -189,6 +198,7 @@ def check_taxpack_output_layer(root: Path) -> List[Finding]:
 
 def check_individual_intake_contract(root: Path) -> List[Finding]:
     text = read(root, "scripts/taxmate_intake.py")
+    skill_rules = read_optional(root, "skills/individual-return/references/rules.md")
     findings: List[Finding] = []
     findings.extend(
         fail_if_missing(
@@ -212,14 +222,22 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "confirmed = raw.get(\"confirmed\") is True",
                 "if is_missing(enriched.get(\"state\")) and not is_missing(answers.get(\"state\")):",
                 '"VIC": {"2025-09-26", "2025-11-04", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"}',
-                '"NSW": {"2025-10-06", "2026-04-27", "2026-06-08"}',
-                '"SA": {"2025-10-06", "2026-03-09", "2026-06-08"}',
+                '"NSW": {"2025-10-06", "2026-04-04", "2026-04-05", "2026-04-27", "2026-06-08"}',
+                '"QLD": {"2025-10-06", "2026-04-04", "2026-04-05", "2026-05-04"}',
+                '"SA": {"2025-10-06", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"}',
                 '"TAS": {"2025-11-03", "2026-02-09", "2026-03-09", "2026-04-07", "2026-06-08"}',
-                '"WA": {"2025-09-29", "2026-03-02", "2026-04-27", "2026-06-01"}',
+                '"WA": {"2025-09-29", "2026-03-02", "2026-04-05", "2026-04-27", "2026-06-01"}',
                 '"ACT": {"2025-10-06", "2026-03-09", "2026-04-27", "2026-06-01", "2026-06-08"}',
                 '"NT": {"2025-08-04", "2026-05-04", "2026-06-08"}',
+                "https://www.fairwork.gov.au/employment-conditions/public-holidays/2025-public-holidays",
+                "https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays",
+                "*PUBLIC_HOLIDAY_SOURCES",
                 "holiday_not_worked = current in holidays and current not in worked_public",
                 "holiday_worked = current in worked_public",
+                "weekdays = parse_weekdays(raw)",
+                "if weekdays is None:",
+                "def parse_weekdays(",
+                '"weekdays" not in raw',
                 "hours_per_day = money_value(raw.get(\"hours_per_day\"), unknown_as_missing=True)",
                 "if hours_per_day is None:",
                 "fixed_rate_text = money_text(fixed_candidate)",
@@ -234,6 +252,9 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     )
     if '"checked_at": "2026-06-29"' in text:
         findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "forbidden stale checked_at literal"))
+    stale_holiday_source = "https://data.gov.au/data/dataset/australian-holidays-machine-readable-dataset"
+    if stale_holiday_source in text or stale_holiday_source in skill_rules:
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "forbidden inactive public holiday source"))
     return findings
 
 

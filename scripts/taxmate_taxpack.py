@@ -438,6 +438,8 @@ def rendered_tab_items(data: GuideData) -> List[tuple[GuideItem, int]]:
     items = [(item, index) for index, item in enumerate(data.items, start=1)]
     items.extend((item, 200 + index) for index, item in enumerate(data.abn_items, start=1))
     items.extend((item, 300 + index) for index, item in enumerate(data.bas_items, start=1))
+    items.extend((item, 400 + index) for index, item in enumerate(data.missing_facts, start=1))
+    items.extend((item, 500 + index) for index, item in enumerate(data.evidence_items, start=1))
     return items
 
 
