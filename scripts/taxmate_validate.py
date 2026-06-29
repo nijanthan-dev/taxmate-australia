@@ -2556,6 +2556,53 @@ def taxpack_guide_html_contract() -> bool:
         and 'class="tab red review"' in direct_conflict_body
         and "<b>Accountant review queue:</b> Row R4: Accountant review." in direct_conflict_body
     )
+    extended_review_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Extended review regression.",
+            items=[],
+            abn_items=[
+                taxmate_taxpack.GuideItem(
+                    number="ABN",
+                    ato_area="Sole-trader ABN",
+                    question="ABN review row?",
+                    answer="Income 100.00; expenses 40.00",
+                    why_included="Extended ABN review must appear in side tabs and queue.",
+                    source_urls=[],
+                    checked_at="",
+                    status="Accountant review",
+                    status_kind="review",
+                    tab_title="ABN review",
+                    tab_text="ABN review queue text.",
+                    tab_kind="review",
+                )
+            ],
+            bas_items=[
+                taxmate_taxpack.GuideItem(
+                    number="BAS",
+                    ato_area="BAS worksheet",
+                    question="BAS review row?",
+                    answer="1A 10.00; 1B 5.00; net GST 5.00",
+                    why_included="Extended BAS review must appear in side tabs and queue.",
+                    source_urls=[],
+                    checked_at="",
+                    status="Accountant review",
+                    status_kind="review",
+                    tab_title="BAS review",
+                    tab_text="BAS review queue text.",
+                    tab_kind="review",
+                )
+            ],
+        )
+    )
+    extended_review_ok = (
+        'data-anchor="row-201-ABN"' in extended_review_body
+        and 'data-target="row-201-ABN"' in extended_review_body
+        and 'data-anchor="row-301-BAS"' in extended_review_body
+        and 'data-target="row-301-BAS"' in extended_review_body
+        and "<b>Accountant review queue:</b> ABN review queue text.; BAS review queue text." in extended_review_body
+    )
     falsey = taxmate_taxpack.guide_item(
         {
             "number": 0,
@@ -2691,6 +2738,7 @@ def taxpack_guide_html_contract() -> bool:
         and blank_review_ok
         and direct_blank_ok
         and direct_conflict_ok
+        and extended_review_ok
         and falsey_ok
         and falsey_file_ok
         and direct_falsey_ok

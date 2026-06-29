@@ -15,6 +15,7 @@ from typing import Callable, Iterable, List
 
 ROOT_MARKER = os.path.join(".codex-plugin", "plugin.json")
 TAXPACK_OUTPUT_LAYER = "taxpack_output_layer_contract"
+INDIVIDUAL_INTAKE_CONTRACT = "individual_intake_contract"
 ATO_FETCH_BOUNDARY = "ato_fetch_boundary"
 GENERATED_ARTIFACT_CONTRACT = "generated_artifact_contract"
 FINANCE_JSON_WIRE_CONTRACT = "finance_json_wire_contract"
@@ -70,9 +71,14 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
         "ATO fetches must call curl --disable -L so user curl config cannot alter source refreshes.",
     ),
     ReviewPattern(
-        "PR #27",
+        "PR #27 / PR #53",
         TAXPACK_OUTPUT_LAYER,
-        "Output layers must preserve Accountant review, source provenance, falsey display values, dynamic generated dates, unique anchors, safe tab target lookup, and neutral mixed-area headings.",
+        "Output layers must preserve Accountant review in main and extended sections, source provenance, falsey display values, dynamic generated dates, unique anchors, safe tab target lookup, and neutral mixed-area headings.",
+    ),
+    ReviewPattern(
+        "PR #53 intake",
+        INDIVIDUAL_INTAKE_CONTRACT,
+        "Individual intake must keep missing or nested unknown answers as Evidence, require literal boolean AI confirmation, preserve BAS values as review, and use taxpayer state plus full-year state holidays for WFH.",
     ),
     ReviewPattern(
         "PR #38",
@@ -151,6 +157,10 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "def effective_tab_kind(",
         "def review_text(",
         "def row_anchor(item: GuideItem, row_index: int)",
+        "def rendered_tab_items(",
+        "data.abn_items",
+        "data.bas_items",
+        "for item, row_index in tab_items",
         "findTarget(spread,value)",
         "el.dataset.anchor===value",
         "default_generated_date()",
@@ -173,6 +183,36 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
 
 def check_taxpack_output_layer(root: Path) -> List[Finding]:
     return check_taxpack_output_layer_text(read(root, "scripts/taxmate_taxpack.py"))
+
+
+def check_individual_intake_contract(root: Path) -> List[Finding]:
+    text = read(root, "scripts/taxmate_intake.py")
+    findings: List[Finding] = []
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            text,
+            [
+                "def contains_unknown(",
+                "def wfh_answers(",
+                "def has_bas_inputs(",
+                "status = \"Evidence\" if is_missing(value) or contains_unknown(value) else \"Used\"",
+                "items.extend(wfh_rows(wfh_answers(answers)))",
+                "status = \"Accountant review\" if has_bas_inputs(answers) else \"N/A skipped\"",
+                "confirmed = raw.get(\"confirmed\") is True",
+                "if is_missing(enriched.get(\"state\")) and not is_missing(answers.get(\"state\")):",
+                '"VIC": {"2025-09-26", "2025-11-04", "2026-03-09", "2026-06-08"}',
+                '"NSW": {"2025-10-06", "2026-06-08"}',
+                '"SA": {"2025-10-06", "2026-03-09", "2026-06-08"}',
+                '"TAS": {"2025-11-03", "2026-02-09", "2026-03-09", "2026-04-07", "2026-06-08"}',
+                '"ACT": {"2025-10-06", "2026-03-09", "2026-06-01", "2026-06-08"}',
+                '"NT": {"2025-08-04", "2026-05-04", "2026-06-08"}',
+                "holiday_not_worked = current in holidays and current not in worked_public",
+                "holiday_worked = current in worked_public",
+            ],
+        )
+    )
+    return findings
 
 
 def check_fetch_boundary(root: Path) -> List[Finding]:
@@ -436,6 +476,7 @@ def render_review_patterns(fmt: str) -> str:
 
 CHECKS: List[Callable[[Path], List[Finding]]] = [
     check_taxpack_output_layer,
+    check_individual_intake_contract,
     check_fetch_boundary,
     check_generated_artifact_contract,
     check_finance_and_calc_wire_contract,

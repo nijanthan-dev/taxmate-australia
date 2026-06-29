@@ -14,6 +14,7 @@ from typing import List
 COMMANDS = {
     "calc": "taxmate_calc.py",
     "finance": "taxmate_finance.py",
+    "intake": "taxmate_intake.py",
     "refresh": "taxmate_refresh.py",
     "review-guardrails": "taxmate_review_guardrails.py",
     "skills": "taxmate_skills.py",

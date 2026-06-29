@@ -22,6 +22,7 @@ import skillgen  # noqa: E402
 import taxmate  # noqa: E402
 import taxmate_calc  # noqa: E402
 import taxmate_finance  # noqa: E402
+import taxmate_intake  # noqa: E402
 import taxmate_review_guardrails  # noqa: E402
 import taxmate_taxpack  # noqa: E402
 import taxmate_validate  # noqa: E402
@@ -70,6 +71,51 @@ class ReviewGuardrailTests(unittest.TestCase):
         findings = taxmate_review_guardrails.check_taxpack_output_layer_text(text)
 
         self.assertTrue(any("forbidden pattern" in finding.detail for finding in findings))
+
+    def test_review_guardrails_require_extended_taxpack_review_tabs(self) -> None:
+        text = (
+            "def scalar_text(): pass\n"
+            "def text_value(): pass\n"
+            "def source_urls(): pass\n"
+            "def render_provenance(): pass\n"
+            "def is_review_like_key(): pass\n"
+            "def effective_status_kind(): pass\n"
+            "def effective_tab_kind(): pass\n"
+            "def review_text(): pass\n"
+            "def row_anchor(item: GuideItem, row_index: int): pass\n"
+            "row_tabs = ''.join(render_item_tab(item, row_index) for row_index, item in indexed_items)\n"
+            "review_items = [review_text(item) for item in data.items]\n"
+            "findTarget(spread,value)\n"
+            "el.dataset.anchor===value\n"
+            "default_generated_date()\n"
+            "canonical_status(item_status_kind)\n"
+        )
+
+        findings = taxmate_review_guardrails.check_taxpack_output_layer_text(text)
+
+        self.assertTrue(any("def rendered_tab_items(" in finding.detail for finding in findings))
+        self.assertTrue(any("data.abn_items" in finding.detail for finding in findings))
+        self.assertTrue(any("data.bas_items" in finding.detail for finding in findings))
+
+    def test_review_guardrails_require_individual_intake_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            scripts = root / "scripts"
+            scripts.mkdir()
+            (scripts / "taxmate_intake.py").write_text(
+                "status = \"Used\" if not is_unknown(value) else \"Evidence\"\n"
+                '"VIC": {"2025-11-04", "2026-03-09"}\n',
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_individual_intake_contract(root)
+
+        self.assertTrue(any("contains_unknown" in finding.detail for finding in findings))
+        self.assertTrue(any("wfh_answers" in finding.detail for finding in findings))
+        self.assertTrue(any("has_bas_inputs" in finding.detail for finding in findings))
+        self.assertTrue(any("confirmed" in finding.detail for finding in findings))
+        self.assertTrue(any("2025-09-26" in finding.detail for finding in findings))
+        self.assertTrue(any("2026-06-08" in finding.detail for finding in findings))
 
     def test_review_guardrails_detect_wrong_local_marketplace_root(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -123,6 +169,8 @@ class ReviewGuardrailTests(unittest.TestCase):
         patterns = payload["patterns"]
 
         self.assertTrue(any(pattern["id"] == "PR #38" for pattern in patterns))
+        self.assertTrue(any(pattern["id"] == "PR #27 / PR #53" for pattern in patterns))
+        self.assertTrue(any(pattern["id"] == "PR #53 intake" for pattern in patterns))
         self.assertTrue(any(pattern["check"] == "local_plugin_marketplace_contract" for pattern in patterns))
 
     def test_review_guardrails_list_patterns_as_markdown(self) -> None:
@@ -229,6 +277,234 @@ class CalculatorTests(unittest.TestCase):
 
         self.assertEqual(result["outputs"]["estimated_bas_total"], 0)
         self.assertFalse(result["outputs"]["nil_bas"])
+
+
+class IndividualIntakeTests(unittest.TestCase):
+    def test_launcher_exposes_intake_command(self) -> None:
+        self.assertEqual(taxmate.COMMANDS["intake"], "taxmate_intake.py")
+
+    def test_omitted_scope_issues_are_individual_and_prep_only(self) -> None:
+        issues = taxmate_intake.omitted_scope_issues()
+        titles = {item["title"] for item in issues}
+
+        self.assertIn("feat: add company return intake", titles)
+        self.assertIn("feat: add advanced document extraction", titles)
+        self.assertEqual(12, len(issues))
+        for item in issues:
+            self.assertIn("Omitted from V1", item["body"])
+            self.assertIn("prep-only", item["body"])
+
+    def test_long_checklist_covers_required_sections(self) -> None:
+        sections = {spec.section for spec in taxmate_intake.question_specs()}
+        keys = {spec.key for spec in taxmate_intake.question_specs()}
+
+        self.assertTrue(
+            {
+                "Taxpayer",
+                "Spouse",
+                "Private health",
+                "PAYG",
+                "Income",
+                "ABN",
+                "BAS",
+                "Deductions",
+                "WFH",
+                "Assets",
+            }.issubset(sections)
+        )
+        self.assertTrue({"resident", "state", "spouse_had", "gst_registered", "asset_items"}.issubset(keys))
+
+    def test_missing_required_answers_block_without_allow_missing(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("resident")
+
+        missing = taxmate_intake.missing_required_answers(answers)
+
+        self.assertEqual(["resident"], [item.key for item in missing])
+
+    def test_missing_required_answers_render_as_evidence_when_allowed(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("resident")
+
+        rows = taxmate_intake.base_items(answers)
+        resident = next(row for row in rows if row["number"] == "resident")
+
+        self.assertEqual("Evidence", resident["status"])
+        self.assertEqual("", resident["answer"])
+
+    def test_nested_unknown_answers_render_as_evidence(self) -> None:
+        rows = taxmate_intake.base_items(taxmate_intake.sample_answers())
+        deductions = next(row for row in rows if row["number"] == "employee_deductions")
+
+        self.assertEqual("Evidence", deductions["status"])
+
+    def test_ai_extracted_values_require_confirmation(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        data = taxmate_taxpack.load_guide_payload(payload)
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn("AI extraction confirmation table", body)
+        self.assertIn("PAYG gross", body)
+        self.assertIn("<span class=\"status gap\">Evidence</span>", body)
+
+    def test_ai_extracted_values_require_literal_true_confirmation(self) -> None:
+        rows = taxmate_intake.extraction_rows(
+            [
+                {"field": "gross", "value": "100", "confirmed": "false"},
+                {"field": "tax", "value": "30", "confirmed": True},
+            ]
+        )
+
+        self.assertEqual("Evidence", rows[0]["status"])
+        self.assertEqual("Used", rows[1]["status"])
+
+    def test_wfh_calendar_excludes_leave_and_unworked_public_holidays(self) -> None:
+        raw = {
+            "state": "VIC",
+            "start": "2026-01-23",
+            "end": "2026-01-27",
+            "weekdays": [0, 1, 2, 3, 4],
+            "hours_per_day": 8,
+            "leave_dates": ["2026-01-27"],
+            "worked_public_holidays": [],
+            "worked_weekends": ["2026-01-24"],
+        }
+
+        self.assertEqual(taxmate_intake.calculate_wfh_hours(raw), 16)
+
+        raw["worked_public_holidays"] = ["2026-01-26"]
+        self.assertEqual(taxmate_intake.calculate_wfh_hours(raw), 24)
+
+    def test_wfh_calendar_excludes_vic_kings_birthday(self) -> None:
+        raw = {
+            "state": "VIC",
+            "start": "2026-06-08",
+            "end": "2026-06-08",
+            "weekdays": [0],
+            "hours_per_day": 8,
+            "leave_dates": [],
+            "worked_public_holidays": [],
+            "worked_weekends": [],
+        }
+
+        self.assertEqual(0, taxmate_intake.calculate_wfh_hours(raw))
+
+        raw["worked_public_holidays"] = ["2026-06-08"]
+        self.assertEqual(8, taxmate_intake.calculate_wfh_hours(raw))
+
+    def test_wfh_calendar_excludes_vic_grand_final_friday(self) -> None:
+        raw = {
+            "state": "VIC",
+            "start": "2025-09-26",
+            "end": "2025-09-26",
+            "weekdays": [4],
+            "hours_per_day": 8,
+            "leave_dates": [],
+            "worked_public_holidays": [],
+            "worked_weekends": [],
+        }
+
+        self.assertEqual(0, taxmate_intake.calculate_wfh_hours(raw))
+
+        raw["worked_public_holidays"] = ["2025-09-26"]
+        self.assertEqual(8, taxmate_intake.calculate_wfh_hours(raw))
+
+    def test_wfh_calendar_excludes_kings_birthday_states(self) -> None:
+        for state in ["VIC", "NSW", "SA", "TAS", "ACT", "NT"]:
+            with self.subTest(state=state):
+                raw = {
+                    "state": state,
+                    "start": "2026-06-08",
+                    "end": "2026-06-08",
+                    "weekdays": [0],
+                    "hours_per_day": 8,
+                    "leave_dates": [],
+                    "worked_public_holidays": [],
+                    "worked_weekends": [],
+                }
+
+                self.assertEqual(0, taxmate_intake.calculate_wfh_hours(raw))
+
+    def test_wfh_uses_taxpayer_state_when_nested_state_missing(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["state"] = "VIC"
+        answers["wfh"] = {
+            "start": "2026-06-08",
+            "end": "2026-06-08",
+            "weekdays": [0],
+            "hours_per_day": 8,
+            "records": "timesheet",
+            "actual_cost_records": "none",
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        wfh = next(row for row in payload["items"] if row["number"] == "WFH")
+
+        self.assertIn("0.00 hours", wfh["answer"])
+
+    def test_monitor_over_300_is_not_full_immediate_claim(self) -> None:
+        rows = taxmate_intake.asset_rows(
+            [
+                {
+                    "description": "$400 monitor",
+                    "cost": 400,
+                    "work_use_percent": 80,
+                    "method_preference": "depreciation",
+                    "evidence": "receipt",
+                }
+            ]
+        )
+
+        self.assertEqual(rows[0]["status"], "Accountant review")
+        self.assertIn("work-use amount 320.00", rows[0]["answer"])
+        self.assertIn("not full immediate claim", rows[0]["answer"])
+
+    def test_bas_worksheet_calculates_totals_and_stays_review(self) -> None:
+        rows = taxmate_intake.bas_rows(
+            {
+                "gst_registered": True,
+                "gst_collected": 300,
+                "gst_credits": 110,
+            }
+        )
+
+        self.assertEqual(rows[0]["status"], "Accountant review")
+        self.assertIn("net GST 190.00", rows[0]["answer"])
+        self.assertIn("BAS worksheet only", rows[0]["why_included"])
+
+    def test_bas_amounts_stay_review_when_registration_flag_missing(self) -> None:
+        rows = taxmate_intake.bas_rows({"gst_collected": 300, "gst_credits": 110})
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+
+    def test_individual_html_pack_has_print_boundary_sections(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("Manual copy only", body)
+        self.assertIn("AI extraction confirmation table", body)
+        self.assertIn("ABN prep section", body)
+        self.assertIn("BAS worksheet", body)
+        self.assertIn("Missing facts queue", body)
+        self.assertIn("Evidence queue", body)
+        self.assertIn("Source/provenance appendix", body)
+        self.assertNotIn("lodgment-ready", body)
+        self.assertNotIn("Prepared by " + "TaxMate", body)
+
+    def test_extended_review_rows_appear_in_tabs_and_queue(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["abn_income"] = 1000
+        answers["gst_registered"] = True
+        answers["gst_collected"] = 110
+        answers["gst_credits"] = 55
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn('data-target="row-201-ABN"', body)
+        self.assertIn('data-target="row-301-BAS"', body)
+        self.assertIn("ABN figures are prep-only and not a final business schedule.", body)
+        self.assertIn("BAS prep only. No BAS lodgment support.", body)
 
 
 class FinanceTests(unittest.TestCase):
