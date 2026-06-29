@@ -94,6 +94,7 @@ class ReviewGuardrailTests(unittest.TestCase):
         findings = taxmate_review_guardrails.check_taxpack_output_layer_text(text)
 
         self.assertTrue(any("def rendered_tab_items(" in finding.detail for finding in findings))
+        self.assertTrue(any("queue_item_text" in finding.detail for finding in findings))
         self.assertTrue(any("data.abn_items" in finding.detail for finding in findings))
         self.assertTrue(any("data.bas_items" in finding.detail for finding in findings))
 
@@ -488,6 +489,20 @@ class IndividualIntakeTests(unittest.TestCase):
         rows = taxmate_intake.abn_rows({"abn_income": 0, "abn_expenses": 0})
 
         self.assertEqual("Accountant review", rows[0]["status"])
+
+    def test_abn_and_bas_base_answers_stay_review(self) -> None:
+        rows = taxmate_intake.base_items(taxmate_intake.sample_answers())
+        by_number = {row["number"]: row for row in rows}
+
+        self.assertEqual("Accountant review", by_number["abn_income"]["status"])
+        self.assertEqual("Accountant review", by_number["gst_collected"]["status"])
+        self.assertEqual("Accountant review", by_number["gst_credits"]["status"])
+
+    def test_non_finite_intake_money_rejected(self) -> None:
+        for raw in ["nan", "inf", "-inf"]:
+            with self.subTest(raw=raw):
+                with self.assertRaises(ValueError):
+                    taxmate_intake.money(raw)
 
     def test_embedded_unconfirmed_answers_create_evidence_rows(self) -> None:
         rows = taxmate_intake.evidence_rows(taxmate_intake.sample_answers())
@@ -1520,6 +1535,32 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertEqual("Row 13: Accountant review.", blank_review.tab_text)
         self.assertIn("<b>Accountant review queue:</b> Row 13: Accountant review.", body)
         self.assertIn("<p>Row 13: Accountant review.</p>", body)
+
+        blank_queue = taxmate_taxpack.GuideItem(
+            number="Q1",
+            ato_area="Other",
+            question="",
+            answer="",
+            why_included="",
+            source_urls=[],
+            checked_at="",
+            status="Evidence",
+            status_kind="evidence",
+            tab_kind="evidence",
+            tab_text="",
+            tab_title="",
+        )
+        queue_body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="28 Jun 2026",
+                summary_note="Blank queue regression.",
+                items=[],
+                missing_facts=[blank_queue],
+            )
+        )
+        self.assertIn("<li>Row Q1: Evidence.</li>", queue_body)
+        self.assertNotIn("<li>:  (Evidence)</li>", queue_body)
 
         direct_blank = taxmate_taxpack.GuideItem(
             number="14",

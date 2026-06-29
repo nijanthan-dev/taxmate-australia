@@ -377,8 +377,21 @@ def render_section(title: str, items: List[GuideItem], offset: int) -> str:
 def render_queue(title: str, items: List[GuideItem]) -> str:
     if not items:
         return f"<h2>{esc(title)}</h2><p class=\"summary-note\">No items supplied.</p>"
-    entries = "".join(f"<li>{esc(item.question)}: {esc(item.answer)} ({esc(item.status)})</li>" for item in items)
+    entries = "".join(f"<li>{esc(queue_item_text(item))}</li>" for item in items)
     return f"<h2>{esc(title)}</h2><ul class=\"queue-list\">{entries}</ul>"
+
+
+def queue_item_text(item: GuideItem) -> str:
+    question = scalar_text(item.question).strip()
+    answer = scalar_text(item.answer).strip()
+    status = canonical_status(effective_status_kind(item))
+    if question and answer:
+        return f"{question}: {answer} ({status})"
+    if question:
+        return f"{question} ({status})"
+    if answer:
+        return f"{answer} ({status})"
+    return fallback_tab_text(item.number, effective_status_kind(item))
 
 
 def render_extraction_table(values: List[Dict[str, Any]]) -> str:

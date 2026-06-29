@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -218,7 +219,7 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     for spec in question_specs():
         value = answers.get(spec.key)
         if spec.required or not is_missing(value):
-            status = "Evidence" if is_missing(value) or contains_unknown(value) else "Used"
+            status = base_item_status(spec.key, value)
             rows.append(
                 guide_row(
                     spec.key,
@@ -232,6 +233,12 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                 )
             )
     return rows
+
+
+def base_item_status(key: str, value: Any) -> str:
+    if key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == "gst_registered":
+        return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
+    return "Evidence" if is_missing(value) or contains_unknown(value) else "Used"
 
 
 def abn_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -522,9 +529,12 @@ def money(value: Any) -> float:
     if isinstance(value, bool):
         return 0.0
     try:
-        return float(str(value).replace("$", "").replace(",", ""))
+        amount = float(str(value).replace("$", "").replace(",", ""))
     except ValueError:
         return 0.0
+    if not math.isfinite(amount):
+        raise ValueError(f"non-finite money value: {value}")
+    return amount
 
 
 def is_unknown(value: Any) -> bool:
