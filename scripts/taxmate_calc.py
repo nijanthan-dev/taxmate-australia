@@ -11,6 +11,8 @@ from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+SUPPORTED_INCOME_YEAR = "2025-26"
+SUPPORTED_FBT_YEAR = "2026"
 SG_RATE_2025_26 = 12.0
 FBT_RATE_2025_26 = 47.0
 FBT_TYPE_1_GROSS_UP = 2.0802
@@ -63,7 +65,71 @@ def round2(value: float) -> float:
     return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
-def bas(sales_gst: float, purchase_gst: float, payg_withheld: float, fuel_tax_credit: float, adjustments: float) -> Dict[str, Any]:
+def supported_income_year(value: Any) -> bool:
+    return str(value or SUPPORTED_INCOME_YEAR).strip() == SUPPORTED_INCOME_YEAR
+
+
+def supported_fbt_year(value: Any) -> bool:
+    year = str(value or SUPPORTED_FBT_YEAR).strip().lower()
+    return year in {SUPPORTED_FBT_YEAR, "2025-26", "year ending 31 march 2026", "2026-03-31"}
+
+
+def not_calculated_result(
+    tool: str,
+    temporal_label: str,
+    inputs: Dict[str, Any],
+    reason: str,
+    sources: List[str],
+) -> Dict[str, Any]:
+    return {
+        "tool": titlecase_tool(tool),
+        "income_year": temporal_label,
+        "inputs": inputs,
+        "outputs": {
+            "calculation": "not_calculated",
+            "reason": reason,
+        },
+        "assumptions": [],
+        "review_flags": [reason],
+        "sources": sources,
+    }
+
+
+def normalize_fbt_type(benefit_type: str) -> str:
+    if benefit_type.lower() in {"type1", "type-1", "1"}:
+        return "type1"
+    return "type2"
+
+
+def bas(
+    sales_gst: float,
+    purchase_gst: float,
+    payg_withheld: float,
+    fuel_tax_credit: float,
+    adjustments: float,
+    income_year: str = SUPPORTED_INCOME_YEAR,
+) -> Dict[str, Any]:
+    inputs = {
+        "gst_collected": sales_gst,
+        "gst_credits": purchase_gst,
+        "payg_withheld": payg_withheld,
+        "fuel_tax_credit": fuel_tax_credit,
+        "gst_adjustments": adjustments,
+        "amounts_are_gst": True,
+        "cash_or_accruals": "user supplied",
+    }
+    sources = [
+        "https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas",
+        "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/claiming-gst-credits",
+    ]
+    if not supported_income_year(income_year):
+        return not_calculated_result(
+            "bas",
+            income_year,
+            inputs,
+            "BAS calculator supports 2025-26 only; use accountant review or current ATO BAS instructions for other periods.",
+            sources,
+        )
     net_gst = round2(sales_gst - purchase_gst + adjustments)
     net_payable = round2(net_gst + payg_withheld - fuel_tax_credit)
     nil_activity = (
@@ -75,16 +141,8 @@ def bas(sales_gst: float, purchase_gst: float, payg_withheld: float, fuel_tax_cr
     )
     return {
         "tool": titlecase_tool("bas"),
-        "income_year": "2025-26",
-        "inputs": {
-            "gst_collected": sales_gst,
-            "gst_credits": purchase_gst,
-            "payg_withheld": payg_withheld,
-            "fuel_tax_credit": fuel_tax_credit,
-            "gst_adjustments": adjustments,
-            "amounts_are_gst": True,
-            "cash_or_accruals": "user supplied",
-        },
+        "income_year": income_year,
+        "inputs": inputs,
         "outputs": {
             "net_gst_payable": net_gst,
             "estimated_bas_total": net_payable,
@@ -96,23 +154,33 @@ def bas(sales_gst: float, purchase_gst: float, payg_withheld: float, fuel_tax_cr
         "review_flags": [
             "Confirm BAS reporting cycle, accounting basis, labels, and whether GST credits have valid tax invoices."
         ],
-        "sources": [
-            "https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas",
-            "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/claiming-gst-credits",
-        ],
+        "sources": sources,
     }
 
 
-def super_guarantee(ote: float, rate: float) -> Dict[str, Any]:
+def super_guarantee(ote: float, rate: float, income_year: str = SUPPORTED_INCOME_YEAR) -> Dict[str, Any]:
+    sources = [
+        "https://www.ato.gov.au/businesses-and-organisations/super-for-employers/paying-super-contributions/how-much-super-to-pay",
+    ]
+    inputs = {
+        "ordinary_time_earnings": ote,
+        "sg_rate_percent": rate,
+    }
+    if not supported_income_year(income_year):
+        return not_calculated_result(
+            "super",
+            income_year,
+            inputs,
+            "Super guarantee calculator supports 2025-26 only; confirm the payment date and rate before calculating.",
+            sources,
+        )
     if rate == 0:
         rate = SG_RATE_2025_26
+        inputs["sg_rate_percent"] = rate
     return {
         "tool": titlecase_tool("super"),
-        "income_year": "2025-26",
-        "inputs": {
-            "ordinary_time_earnings": ote,
-            "sg_rate_percent": rate,
-        },
+        "income_year": income_year,
+        "inputs": inputs,
         "outputs": {
             "minimum_sg": round2(ote * rate / 100),
         },
@@ -122,31 +190,44 @@ def super_guarantee(ote: float, rate: float) -> Dict[str, Any]:
         "review_flags": [
             "Check award/agreement higher rates, OTE classification, quarterly due date, and late-payment SGC exposure."
         ],
-        "sources": [
-            "https://www.ato.gov.au/businesses-and-organisations/super-for-employers/paying-super-contributions/how-much-super-to-pay",
-        ],
+        "sources": sources,
     }
 
 
-def fbt(taxable_value: float, benefit_type: str) -> Dict[str, Any]:
-    if benefit_type.lower() in {"type1", "type-1", "1"}:
+def fbt(taxable_value: float, benefit_type: str, fbt_year: str = SUPPORTED_FBT_YEAR) -> Dict[str, Any]:
+    benefit_type = normalize_fbt_type(benefit_type)
+    sources = [
+        "https://www.ato.gov.au/tax-rates-and-codes/fringe-benefits-tax-rates-and-thresholds",
+        "https://www.ato.gov.au/businesses-and-organisations/hiring-and-paying-your-workers/fringe-benefits-tax",
+    ]
+    if not supported_fbt_year(fbt_year):
+        return not_calculated_result(
+            "fbt",
+            f"FBT year {fbt_year}",
+            {
+                "taxable_value": taxable_value,
+                "benefit_type": benefit_type,
+            },
+            "FBT calculator supports the year ending 31 March 2026 only; confirm current FBT rates before calculating.",
+            sources,
+        )
+    if benefit_type == "type1":
         gross_up = FBT_TYPE_1_GROSS_UP
-        benefit_type = "type1"
     else:
         gross_up = FBT_TYPE_2_GROSS_UP
-        benefit_type = "type2"
 
+    inputs = {
+        "taxable_value": taxable_value,
+        "benefit_type": benefit_type,
+        "gross_up_rate": gross_up,
+        "fbt_rate": FBT_RATE_2025_26,
+        "fbt_year_basis": "year ending 31 March 2026",
+    }
     grossed_up = round2(taxable_value * gross_up)
     return {
         "tool": titlecase_tool("fbt"),
         "income_year": "2025-26",
-        "inputs": {
-            "taxable_value": taxable_value,
-            "benefit_type": benefit_type,
-            "gross_up_rate": gross_up,
-            "fbt_rate": FBT_RATE_2025_26,
-            "fbt_year_basis": "year ending 31 March 2026",
-        },
+        "inputs": inputs,
         "outputs": {
             "grossed_up_taxable_value": grossed_up,
             "estimated_fbt": round2(grossed_up * FBT_RATE_2025_26 / 100),
@@ -155,14 +236,19 @@ def fbt(taxable_value: float, benefit_type: str) -> Dict[str, Any]:
         "review_flags": [
             "Does not determine car statutory formula, operating cost method, exemptions, employee contributions, or reportable fringe benefit treatment."
         ],
-        "sources": [
-            "https://www.ato.gov.au/tax-rates-and-codes/fringe-benefits-tax-rates-and-thresholds",
-            "https://www.ato.gov.au/businesses-and-organisations/hiring-and-paying-your-workers/fringe-benefits-tax",
-        ],
+        "sources": sources,
     }
 
 
-def cgt(proceeds: float, cost_base: float, capital_losses: float, acquired: str, disposed: str, discount: bool) -> Dict[str, Any]:
+def cgt(
+    proceeds: float,
+    cost_base: float,
+    capital_losses: float,
+    acquired: str,
+    disposed: str,
+    discount: bool,
+    income_year: str = SUPPORTED_INCOME_YEAR,
+) -> Dict[str, Any]:
     raw_gain = round2(proceeds - cost_base)
     net_before = round2(raw_gain - capital_losses)
     held_months = months_held(acquired, disposed)
@@ -171,7 +257,7 @@ def cgt(proceeds: float, cost_base: float, capital_losses: float, acquired: str,
     net = round2(net_before - discount_amount)
     return {
         "tool": titlecase_tool("cgt"),
-        "income_year": "2025-26",
+        "income_year": income_year,
         "inputs": {
             "capital_proceeds": proceeds,
             "cost_base": cost_base,
@@ -211,10 +297,36 @@ def _payg_tax(annual: float) -> float:
     return 51638 + (annual - 190000) * 0.45
 
 
-def payg_estimate(gross_pay: float, periods_per_year: int, tax_free_threshold: bool, medicare: bool) -> Dict[str, Any]:
+def payg_estimate(
+    gross_pay: float,
+    periods_per_year: int,
+    tax_free_threshold: bool,
+    medicare: bool,
+    income_year: str = SUPPORTED_INCOME_YEAR,
+) -> Dict[str, Any]:
     if periods_per_year <= 0:
         periods_per_year = 52
     annual = gross_pay * float(periods_per_year)
+    inputs = {
+        "gross_pay": gross_pay,
+        "periods_per_year": periods_per_year,
+        "annualised_pay": round2(annual),
+        "tax_free_threshold": tax_free_threshold,
+        "medicare_levy_added": medicare,
+    }
+    sources = [
+        "https://www.ato.gov.au/tax-rates-and-codes/tax-rates-australian-residents",
+        "https://www.ato.gov.au/tax-rates-and-codes/tax-tables-overview",
+        "https://www.ato.gov.au/businesses-and-organisations/hiring-and-paying-your-workers/payg-withholding",
+    ]
+    if not supported_income_year(income_year):
+        return not_calculated_result(
+            "payg",
+            income_year,
+            inputs,
+            "PAYG estimate supports 2025-26 resident rates only; use official ATO withholding tables for other years.",
+            sources,
+        )
     tax = _payg_tax(annual)
     if medicare:
         tax += annual * MEDICARE_LEVY_DEFAULT / 100
@@ -223,14 +335,8 @@ def payg_estimate(gross_pay: float, periods_per_year: int, tax_free_threshold: b
     withhold = round2(tax / float(periods_per_year))
     return {
         "tool": titlecase_tool("payg"),
-        "income_year": "2025-26",
-        "inputs": {
-            "gross_pay": gross_pay,
-            "periods_per_year": periods_per_year,
-            "annualised_pay": round2(annual),
-            "tax_free_threshold": tax_free_threshold,
-            "medicare_levy_added": medicare,
-        },
+        "income_year": income_year,
+        "inputs": inputs,
         "outputs": {
             "estimated_withholding_per_period": withhold,
             "estimated_annual_tax": round2(tax),
@@ -239,11 +345,7 @@ def payg_estimate(gross_pay: float, periods_per_year: int, tax_free_threshold: b
         "review_flags": [
             "Use official ATO withholding tables for payroll, HELP/STSL, Medicare variations, no-TFN cases, bonuses, commissions, termination payments, allowances, foreign residents, and rounding."
         ],
-        "sources": [
-            "https://www.ato.gov.au/tax-rates-and-codes/tax-rates-australian-residents",
-            "https://www.ato.gov.au/tax-rates-and-codes/tax-tables-overview",
-            "https://www.ato.gov.au/businesses-and-organisations/hiring-and-paying-your-workers/payg-withholding",
-        ],
+        "sources": sources,
     }
 
 
@@ -260,13 +362,13 @@ def state_revenue_sources() -> Dict[str, str]:
     }
 
 
-def stamp_duty_router(state: str, value: float) -> Dict[str, Any]:
+def stamp_duty_router(state: str, value: float, income_year: str = SUPPORTED_INCOME_YEAR) -> Dict[str, Any]:
     state = (state or "").strip().upper()
     sources = state_revenue_sources()
     source = sources.get(state, "unknown state; use the relevant state or territory revenue office")
     return {
         "tool": titlecase_tool("stamp-duty"),
-        "income_year": "2025-26",
+        "income_year": income_year,
         "inputs": {
             "state": state,
             "dutiable_value": value,
@@ -325,24 +427,35 @@ def main(argv: Optional[List[str]] = None) -> int:
     tool_args = argv[1:]
 
     if tool == "bas":
+        parser.add_argument("--income-year", default=SUPPORTED_INCOME_YEAR)
         parser.add_argument("--gst-collected", type=finite_float, default=0)
         parser.add_argument("--gst-credits", type=finite_float, default=0)
         parser.add_argument("--payg-withheld", type=finite_float, default=0)
         parser.add_argument("--fuel-tax-credit", type=finite_float, default=0)
         parser.add_argument("--adjustments", type=finite_float, default=0)
         args = parser.parse_args(tool_args)
-        result = bas(args.gst_collected, args.gst_credits, args.payg_withheld, args.fuel_tax_credit, args.adjustments)
+        result = bas(
+            args.gst_collected,
+            args.gst_credits,
+            args.payg_withheld,
+            args.fuel_tax_credit,
+            args.adjustments,
+            args.income_year,
+        )
     elif tool == "super":
+        parser.add_argument("--income-year", default=SUPPORTED_INCOME_YEAR)
         parser.add_argument("--ote", type=finite_float, default=0)
         parser.add_argument("--rate", type=finite_float, default=0)
         args = parser.parse_args(tool_args)
-        result = super_guarantee(args.ote, args.rate)
+        result = super_guarantee(args.ote, args.rate, args.income_year)
     elif tool == "fbt":
         parser.add_argument("--taxable-value", type=finite_float, default=0)
         parser.add_argument("--type", default="type2")
+        parser.add_argument("--fbt-year", default=SUPPORTED_FBT_YEAR)
         args = parser.parse_args(tool_args)
-        result = fbt(args.taxable_value, args.type)
+        result = fbt(args.taxable_value, args.type, args.fbt_year)
     elif tool == "cgt":
+        parser.add_argument("--income-year", default=SUPPORTED_INCOME_YEAR)
         parser.add_argument("--proceeds", type=finite_float, default=0)
         parser.add_argument("--cost-base", type=finite_float, default=0)
         parser.add_argument("--capital-losses", type=finite_float, default=0)
@@ -350,8 +463,17 @@ def main(argv: Optional[List[str]] = None) -> int:
         parser.add_argument("--disposed", default="")
         parser.add_argument("--discount", action="store_true")
         args = parser.parse_args(tool_args)
-        result = cgt(args.proceeds, args.cost_base, args.capital_losses, args.acquired, args.disposed, args.discount)
+        result = cgt(
+            args.proceeds,
+            args.cost_base,
+            args.capital_losses,
+            args.acquired,
+            args.disposed,
+            args.discount,
+            args.income_year,
+        )
     elif tool == "payg":
+        parser.add_argument("--income-year", default=SUPPORTED_INCOME_YEAR)
         parser.add_argument("--gross-pay", type=finite_float, default=0)
         parser.add_argument("--periods", type=int, default=52)
         parser.add_argument(
@@ -364,12 +486,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
         parser.add_argument("--medicare", action="store_true")
         args = parser.parse_args(tool_args)
-        result = payg_estimate(args.gross_pay, args.periods, args.tax_free_threshold, args.medicare)
+        result = payg_estimate(args.gross_pay, args.periods, args.tax_free_threshold, args.medicare, args.income_year)
     else:  # stamp-duty
+        parser.add_argument("--income-year", default=SUPPORTED_INCOME_YEAR)
         parser.add_argument("--state", default="")
         parser.add_argument("--value", type=finite_float, default=0)
         args = parser.parse_args(tool_args)
-        result = stamp_duty_router(args.state, args.value)
+        result = stamp_duty_router(args.state, args.value, args.income_year)
 
     write_json(result, sys.stdout)
     return 0

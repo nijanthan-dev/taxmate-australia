@@ -20,6 +20,7 @@ ATO_FETCH_BOUNDARY = "ato_fetch_boundary"
 GENERATED_ARTIFACT_CONTRACT = "generated_artifact_contract"
 FINANCE_JSON_WIRE_CONTRACT = "finance_json_wire_contract"
 CALCULATOR_NUMERIC_CONTRACT = "calculator_numeric_contract"
+CALCULATOR_TEMPORAL_CONTRACT = "calculator_temporal_scope_contract"
 PUBLIC_CLAIM_SURFACE_CONTRACT = "public_claim_surface_contract"
 RELEASE_GUARDRAIL_CONTRACT = "release_guardrail_contract"
 ENVIRONMENT_WORKTREE_CONTRACT = "environment_worktree_contract"
@@ -47,8 +48,8 @@ class ReviewPattern:
 REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "PR #7",
-        f"{FINANCE_JSON_WIRE_CONTRACT}, {CALCULATOR_NUMERIC_CONTRACT}, {GENERATED_ARTIFACT_CONTRACT}",
-        "Preserve public JSON wire formats, reject non-finite numbers, keep half-up cent rounding, preserve generated source provenance, compare tracked generated artifacts, and remove stale Go/runtime docs.",
+        f"{FINANCE_JSON_WIRE_CONTRACT}, {CALCULATOR_NUMERIC_CONTRACT}, {CALCULATOR_TEMPORAL_CONTRACT}, {GENERATED_ARTIFACT_CONTRACT}",
+        "Preserve public JSON wire formats, reject non-finite numbers, keep half-up cent rounding, gate year-specific calculators by supported temporal scope, preserve generated source provenance, compare tracked generated artifacts, and remove stale Go/runtime docs.",
     ),
     ReviewPattern(
         "PR #8",
@@ -78,7 +79,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "PR #53 intake",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Individual intake must keep missing, malformed, unparseable, or nested unknown answers as Evidence/review, require literal boolean AI confirmation, preserve BAS values as review, use taxpayer state plus full-year state holidays for WFH, keep unknown WFH parser inputs and incomplete records out of calculated candidates, avoid stale checked-at literals, and keep mixed-use assets under review.",
+        "Individual intake must keep missing, malformed, unparseable, or nested unknown answers as Evidence/review, require literal boolean AI confirmation while preserving review-like extraction metadata, keep BAS values as review, use taxpayer state plus full-year state holidays only for supported WFH income years/date ranges, keep unknown WFH parser inputs and incomplete records out of calculated candidates, avoid stale checked-at literals, and keep mixed-use assets under review.",
     ),
     ReviewPattern(
         "PR #38",
@@ -236,12 +237,22 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 '"not confirmed"',
                 "confirmed = raw.get(\"confirmed\") is True",
                 '"confirmed": confirmed',
+                "def extraction_status(",
+                "def contains_review_status(",
+                'taxmate_taxpack.known_kind(value) == "review"',
+                "def preserve_review_kinds(",
+                "for key in (\"status\", \"status_kind\", \"tab_kind\")",
+                "for key in (\"status_kind\", \"tab_kind\")",
+                "row[key] = raw.get(key)",
                 "state_key = normalize_state(enriched.get(\"state\"))",
                 "if state_key is not None:",
+                "enriched[\"income_year\"] = text(answers.get(\"income_year\"), DEFAULT_INCOME_YEAR)",
                 "state_key = normalize_state(raw.get(\"state\"))",
                 "if state_key is None:",
                 "state_key = normalize_state(state)",
                 "def normalize_state(value: Any) -> Optional[str]:",
+                "SUPPORTED_WFH_START = date(2025, 7, 1)",
+                "SUPPORTED_WFH_END = date(2026, 6, 30)",
                 '"VIC": {"2025-09-26", "2025-11-04", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"}',
                 '"NSW": {"2025-10-06", "2026-04-04", "2026-04-05", "2026-04-27", "2026-06-08"}',
                 '"QLD": {"2025-10-06", "2026-04-04", "2026-04-05", "2026-05-04"}',
@@ -258,6 +269,10 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "if \"start\" not in raw or \"end\" not in raw:",
                 "start = parse_iso_date(raw.get(\"start\"))",
                 "end = parse_iso_date(raw.get(\"end\"))",
+                "if not supported_wfh_income_year(raw):",
+                "if not dates_within_supported_income_year(start, end):",
+                "def supported_wfh_income_year(",
+                "def dates_within_supported_income_year(",
                 "weekdays = parse_weekdays(raw)",
                 "if weekdays is None:",
                 "def parse_weekdays(",
@@ -301,6 +316,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
         'raw.get("worked_weekends", [])',
         "return {int(day) for day in weekdays",
         "round(hours * WFH_FIXED_RATE_2025_26, 2)",
+        '"status": "Used" if confirmed else "Evidence"',
     ]:
         if forbidden in text:
             findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, f"forbidden parser fallback: {forbidden}"))
@@ -369,6 +385,25 @@ def check_finance_and_calc_wire_contract(root: Path) -> List[Finding]:
                 "math.isfinite",
                 "ROUND_HALF_UP",
                 "json.dump(result, out, indent=2, allow_nan=False)",
+            ],
+        )
+    )
+    findings.extend(
+        fail_if_missing(
+            CALCULATOR_TEMPORAL_CONTRACT,
+            calc,
+            [
+                'SUPPORTED_INCOME_YEAR = "2025-26"',
+                'SUPPORTED_FBT_YEAR = "2026"',
+                "def supported_income_year(",
+                "def supported_fbt_year(",
+                "def not_calculated_result(",
+                "def normalize_fbt_type(",
+                "if not supported_income_year(income_year):",
+                "if not supported_fbt_year(fbt_year):",
+                '"calculation": "not_calculated"',
+                'parser.add_argument("--income-year", default=SUPPORTED_INCOME_YEAR)',
+                'parser.add_argument("--fbt-year", default=SUPPORTED_FBT_YEAR)',
             ],
         )
     )

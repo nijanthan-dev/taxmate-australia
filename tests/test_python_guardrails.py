@@ -162,6 +162,28 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("round(hours * WFH_FIXED_RATE_2025_26, 2)" in finding.detail for finding in findings))
         self.assertTrue(any("return {int(day) for day in weekdays" in finding.detail for finding in findings))
 
+    def test_review_guardrails_require_calculator_temporal_scope(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            scripts = root / "scripts"
+            scripts.mkdir()
+            (scripts / "taxmate_finance.py").write_text(
+                '"generated_at"\n"findings"\ntax_treatment\n"bas_summary"\n'
+                "json.dump(payload, out, indent=2, allow_nan=False)\nROUND_HALF_UP\nmath.isfinite\n",
+                encoding="utf-8",
+            )
+            (scripts / "taxmate_calc.py").write_text(
+                "def finite_float(): pass\n"
+                "math.isfinite\n"
+                "ROUND_HALF_UP\n"
+                "json.dump(result, out, indent=2, allow_nan=False)\n",
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_finance_and_calc_wire_contract(root)
+
+        self.assertTrue(any(taxmate_review_guardrails.CALCULATOR_TEMPORAL_CONTRACT == finding.check for finding in findings))
+
     def test_review_guardrails_detect_wrong_local_marketplace_root(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -311,6 +333,23 @@ class CalculatorTests(unittest.TestCase):
         self.assertEqual(result["inputs"]["periods_per_year"], 52)
         self.assertGreater(result["outputs"]["estimated_withholding_per_period"], 0)
 
+    def test_year_specific_calculators_reject_unsupported_years(self) -> None:
+        cases = [
+            taxmate_calc.bas(100, 20, 0, 0, 0, income_year="2024-25"),
+            taxmate_calc.super_guarantee(1000, 0, income_year="2024-25"),
+            taxmate_calc.fbt(1000, "type2", fbt_year="2025"),
+            taxmate_calc.payg_estimate(1500, 52, True, True, income_year="2024-25"),
+        ]
+
+        for result in cases:
+            with self.subTest(tool=result["tool"]):
+                self.assertEqual("not_calculated", result["outputs"]["calculation"])
+                self.assertTrue(result["review_flags"])
+
+        self.assertEqual(0, cases[1]["inputs"]["sg_rate_percent"])
+        self.assertNotIn("fbt_rate", cases[2]["inputs"])
+        self.assertNotIn("estimated_fbt", cases[2]["outputs"])
+
     def test_bas_is_not_nil_when_gst_activity_cancels_out(self) -> None:
         result = taxmate_calc.bas(
             sales_gst=100,
@@ -458,6 +497,32 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("Evidence", rows[0]["status"])
         self.assertEqual("Used", rows[1]["status"])
 
+    def test_ai_extracted_values_preserve_review_tags(self) -> None:
+        rows = taxmate_intake.extraction_rows(
+            [
+                {"field": "gross", "value": "100", "confirmed": True, "status": "Accountant review"},
+                {"field": "tax", "value": "30", "confirmed": True, "status_kind": "review"},
+                {"field": "label", "value": "D5", "confirmed": True, "tab_kind": "review"},
+                {"field": "flag", "value": "D5", "confirmed": True, "status": "red"},
+            ]
+        )
+
+        for row in rows:
+            self.assertEqual("Accountant review", row["status"])
+        self.assertEqual("review", rows[1]["status_kind"])
+        self.assertEqual("review", rows[2]["tab_kind"])
+
+    def test_confirmed_ai_review_tags_render_as_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        payload["extracted_values"] = taxmate_intake.extraction_rows(
+            [{"field": "GST credits", "value": "140", "confirmed": True, "status_kind": "review"}]
+        )
+        data = taxmate_taxpack.load_guide_payload(payload)
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn("GST credits", body)
+        self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
+
     def test_wfh_calendar_excludes_leave_and_unworked_public_holidays(self) -> None:
         raw = {
             "state": "VIC",
@@ -474,6 +539,65 @@ class IndividualIntakeTests(unittest.TestCase):
 
         raw["worked_public_holidays"] = ["2026-01-26"]
         self.assertEqual(taxmate_intake.calculate_wfh_hours(raw), 24)
+
+    def test_wfh_rejects_unsupported_income_year(self) -> None:
+        rows = taxmate_intake.wfh_rows(
+            {
+                "income_year": "2024-25",
+                "state": "VIC",
+                "start": "2024-12-25",
+                "end": "2024-12-25",
+                "weekdays": [2],
+                "hours_per_day": 8,
+                "records": "timesheet",
+                "actual_cost_records": "none",
+                "leave_dates": [],
+                "worked_public_holidays": [],
+                "worked_weekends": [],
+            }
+        )
+
+        self.assertEqual("Evidence", rows[0]["status"])
+        self.assertIn("unknown hours; fixed-rate candidate unknown", rows[0]["answer"])
+
+    def test_wfh_rejects_dates_outside_supported_year(self) -> None:
+        raw = {
+            "income_year": "2025-26",
+            "state": "VIC",
+            "start": "2024-12-25",
+            "end": "2024-12-25",
+            "weekdays": [2],
+            "hours_per_day": 8,
+            "records": "timesheet",
+            "actual_cost_records": "none",
+            "leave_dates": [],
+            "worked_public_holidays": [],
+            "worked_weekends": [],
+        }
+
+        self.assertIsNone(taxmate_intake.calculate_wfh_hours(raw))
+
+    def test_wfh_uses_top_level_income_year_for_support_gate(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["income_year"] = "2024-25"
+        answers["wfh"] = {
+            "state": "VIC",
+            "start": "2024-12-25",
+            "end": "2024-12-25",
+            "weekdays": [2],
+            "hours_per_day": 8,
+            "records": "timesheet",
+            "actual_cost_records": "none",
+            "leave_dates": [],
+            "worked_public_holidays": [],
+            "worked_weekends": [],
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        wfh = next(row for row in payload["items"] if row["number"] == "WFH")
+
+        self.assertEqual("Evidence", wfh["status"])
+        self.assertIn("unknown hours; fixed-rate candidate unknown", wfh["answer"])
 
     def test_wfh_calendar_excludes_vic_kings_birthday(self) -> None:
         raw = {

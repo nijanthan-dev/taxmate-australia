@@ -16,6 +16,8 @@ import taxmate_taxpack
 
 
 DEFAULT_INCOME_YEAR = "2025-26"
+SUPPORTED_WFH_START = date(2025, 7, 1)
+SUPPORTED_WFH_END = date(2026, 6, 30)
 WFH_FIXED_RATE_2025_26 = 0.70
 REVIEWABLE_ABN_FIELDS = ("abn_income", "abn_expenses")
 REVIEWABLE_BAS_FIELDS = ("bas_period", "gst_collected", "gst_credits")
@@ -330,20 +332,40 @@ def extraction_rows(raw_values: Any) -> List[Dict[str, Any]]:
         if not isinstance(raw, dict):
             continue
         confirmed = raw.get("confirmed") is True
-        rows.append(
-            {
-                "document": display_value(raw.get("document")),
-                "page": display_value(raw.get("page")),
-                "field": display_value(raw.get("field")),
-                "value": display_value(raw.get("value")),
-                "confidence": display_value(raw.get("confidence")),
-                "target_label": display_value(raw.get("target_label")),
-                "status": "Used" if confirmed else "Evidence",
-                "confirmed": confirmed,
-                "number": f"AI{idx}",
-            }
-        )
+        row = {
+            "document": display_value(raw.get("document")),
+            "page": display_value(raw.get("page")),
+            "field": display_value(raw.get("field")),
+            "value": display_value(raw.get("value")),
+            "confidence": display_value(raw.get("confidence")),
+            "target_label": display_value(raw.get("target_label")),
+            "status": extraction_status(raw, confirmed),
+            "confirmed": confirmed,
+            "number": f"AI{idx}",
+        }
+        preserve_review_kinds(row, raw)
+        rows.append(row)
     return rows
+
+
+def extraction_status(raw: Dict[str, Any], confirmed: bool) -> str:
+    if contains_review_status(raw):
+        return "Accountant review"
+    return "Used" if confirmed else "Evidence"
+
+
+def contains_review_status(raw: Dict[str, Any]) -> bool:
+    return any(is_review_status(raw.get(key)) for key in ("status", "status_kind", "tab_kind"))
+
+
+def is_review_status(value: Any) -> bool:
+    return taxmate_taxpack.known_kind(value) == "review"
+
+
+def preserve_review_kinds(row: Dict[str, Any], raw: Dict[str, Any]) -> None:
+    for key in ("status_kind", "tab_kind"):
+        if not is_missing(raw.get(key)):
+            row[key] = raw.get(key)
 
 
 def missing_fact_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -373,6 +395,7 @@ def wfh_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
         enriched["records"] = answers.get("wfh_records")
     if is_missing(enriched.get("state")) and not is_missing(answers.get("state")):
         enriched["state"] = answers.get("state")
+    enriched["income_year"] = text(answers.get("income_year"), DEFAULT_INCOME_YEAR)
     state_key = normalize_state(enriched.get("state"))
     if state_key is not None:
         enriched["state"] = state_key
@@ -472,6 +495,10 @@ def calculate_wfh_hours(raw: Dict[str, Any]) -> Optional[float]:
     end = parse_iso_date(raw.get("end"))
     if start is None or end is None or end < start:
         return None
+    if not supported_wfh_income_year(raw):
+        return None
+    if not dates_within_supported_income_year(start, end):
+        return None
     weekdays = parse_weekdays(raw)
     if weekdays is None:
         return None
@@ -500,6 +527,14 @@ def calculate_wfh_hours(raw: Dict[str, Any]) -> Optional[float]:
             work_days += 1
         current += timedelta(days=1)
     return round(work_days * hours_per_day, 2)
+
+
+def supported_wfh_income_year(raw: Dict[str, Any]) -> bool:
+    return text(raw.get("income_year"), DEFAULT_INCOME_YEAR) == DEFAULT_INCOME_YEAR
+
+
+def dates_within_supported_income_year(start: date, end: date) -> bool:
+    return SUPPORTED_WFH_START <= start <= end <= SUPPORTED_WFH_END
 
 
 def has_complete_wfh_records(raw: Dict[str, Any]) -> bool:
