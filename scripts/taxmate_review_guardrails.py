@@ -24,7 +24,10 @@ RELEASE_GUARDRAIL_CONTRACT = "release_guardrail_contract"
 ENVIRONMENT_WORKTREE_CONTRACT = "environment_worktree_contract"
 LOCAL_PLUGIN_MARKETPLACE_CONTRACT = "local_plugin_marketplace_contract"
 PRE_COMMIT_CONTRACT = "pre_commit_contract"
-REVIEW_PATTERN_DOCS = "review_pattern_docs"
+REVIEW_GUARDRAIL_DOCS = "review_guardrail_docs"
+MARKETPLACE_ADD_PREFIX = "codex plugin marketplace add "
+LOCAL_MARKETPLACE_ADD_COMMAND = "codex plugin marketplace add ."
+LOCAL_PLUGIN_ADD_COMMAND = "codex plugin add taxmate-australia@{name}"
 
 
 @dataclass
@@ -118,6 +121,22 @@ def fail_if_missing(check: str, text: str, tokens: Iterable[str]) -> List[Findin
 
 def fail_if_file_missing(root: Path, check: str, rel: str, tokens: Iterable[str]) -> List[Finding]:
     return fail_if_missing(check, read(root, rel), tokens)
+
+
+def command_lines(text: str) -> List[str]:
+    return [
+        line.strip()
+        for line in text.splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+
+
+def wrong_local_marketplace_commands(commands: Iterable[str]) -> List[str]:
+    return [
+        command
+        for command in commands
+        if command.startswith(MARKETPLACE_ADD_PREFIX) and command != LOCAL_MARKETPLACE_ADD_COMMAND
+    ]
 
 
 def check_taxpack_output_layer_text(text: str) -> List[Finding]:
@@ -317,13 +336,16 @@ def check_local_plugin_marketplace_contract(root: Path) -> List[Finding]:
     source = taxmate_plugin.get("source")
     source_path = source.get("path") if isinstance(source, dict) else None
     if source_path == "./":
-        required = ["codex plugin marketplace add .", f"codex plugin add taxmate-australia@{name}"]
-        findings.extend(fail_if_missing(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, docs, required))
-        if "codex plugin marketplace add .agents/plugins" in docs:
+        commands = command_lines(docs)
+        plugin_command = LOCAL_PLUGIN_ADD_COMMAND.format(name=name)
+        for command in [LOCAL_MARKETPLACE_ADD_COMMAND, plugin_command]:
+            if command not in commands:
+                findings.append(Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, f"missing exact command: {command}"))
+        if wrong_local_marketplace_commands(commands):
             findings.append(
                 Finding(
                     LOCAL_PLUGIN_MARKETPLACE_CONTRACT,
-                    "docs must add repo root because marketplace source.path is ./",
+                    "docs must add repo root exactly because marketplace source.path is ./",
                 )
             )
     else:
@@ -349,20 +371,34 @@ def check_precommit_contract(root: Path) -> List[Finding]:
     return findings
 
 
-def check_pattern_docs(root: Path) -> List[Finding]:
-    path = root.joinpath("docs", "CODEX_REVIEW_PATTERNS.md")
+def check_review_guardrail_docs(root: Path) -> List[Finding]:
+    path = root.joinpath("docs", "DEVELOPMENT.md")
     if not path.exists():
-        return [Finding(REVIEW_PATTERN_DOCS, "missing docs/CODEX_REVIEW_PATTERNS.md")]
+        return [Finding(REVIEW_GUARDRAIL_DOCS, "missing docs/DEVELOPMENT.md")]
     text = path.read_text(encoding="utf-8")
-    required = [
-        "canonical pattern inventory",
+    commands = command_lines(text)
+    required_commands = [
+        "./scripts/taxmate review-guardrails",
         "./scripts/taxmate review-guardrails --list-patterns",
         "./scripts/taxmate review-guardrails --list-patterns --format json",
-        "Do not duplicate the pattern list",
     ]
-    findings = fail_if_missing(REVIEW_PATTERN_DOCS, text, required)
+    findings = [
+        Finding(REVIEW_GUARDRAIL_DOCS, f"missing exact command: {command}")
+        for command in required_commands
+        if command not in commands
+    ]
+    findings.extend(
+        fail_if_missing(
+            REVIEW_GUARDRAIL_DOCS,
+            text,
+            [
+                "The script is the canonical pattern inventory",
+                "Do not duplicate PR pattern bullets",
+            ],
+        )
+    )
     if re.search(r"^- PR #\d+:", text, re.MULTILINE):
-        findings.append(Finding(REVIEW_PATTERN_DOCS, "docs must not duplicate PR pattern bullets"))
+        findings.append(Finding(REVIEW_GUARDRAIL_DOCS, "docs must not duplicate PR pattern bullets"))
     return findings
 
 
@@ -394,7 +430,7 @@ CHECKS: List[Callable[[Path], List[Finding]]] = [
     check_environment_contract,
     check_local_plugin_marketplace_contract,
     check_precommit_contract,
-    check_pattern_docs,
+    check_review_guardrail_docs,
 ]
 
 

@@ -34,7 +34,17 @@ Before requesting another Codex review after review feedback:
 - Update AGENTS, relevant skills, generated docs, tests, validator, and plugin lock when behavior changes.
 - Regenerate skills, run publication checks, and run secret scans.
 
-Run `./scripts/taxmate review-guardrails` before opening or updating a PR. It encodes repeated Codex review classes. Use `./scripts/taxmate review-guardrails --list-patterns --format json` for compact review context.
+Run `./scripts/taxmate review-guardrails` before opening or updating a PR. The script is the canonical pattern inventory and executable guardrail surface. Do not duplicate PR pattern bullets in docs.
+
+List the inventory from the script:
+
+```bash
+./scripts/taxmate review-guardrails --list-patterns
+./scripts/taxmate review-guardrails --list-patterns --format markdown
+./scripts/taxmate review-guardrails --list-patterns --format json
+```
+
+Use `./scripts/taxmate review-guardrails --list-patterns --format json` for compact review context.
 
 To enable the repo-local hook:
 
