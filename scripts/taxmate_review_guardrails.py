@@ -267,16 +267,23 @@ def check_release_contract(root: Path) -> List[Finding]:
     findings: List[Finding] = []
     required = [
         "workflow_dispatch:",
+        "workflow_run:",
+        'workflows: ["CI"]',
+        "types: [completed]",
+        "branches: [main]",
         "Require green CI",
+        "GH_REPO: nijanthan-dev/taxmate-australia",
         "--workflow CI --branch main --commit",
         "Require main unchanged",
-        "git ls-remote origin refs/heads/main",
+        "git ls-remote https://github.com/nijanthan-dev/taxmate-australia.git refs/heads/main",
         "RELEASE_PLEASE_TOKEN",
         "release-please-action@",
         "target-branch: main",
         "manifest-file: .release-please-manifest.json",
     ]
     findings.extend(fail_if_missing(RELEASE_GUARDRAIL_CONTRACT, release, required))
+    if "workflow_run:" in release and "actions/checkout@" in release:
+        findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "release workflow_run must not checkout repository code"))
     bootstrap_sha = config.get("bootstrap-sha")
     if not isinstance(bootstrap_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", bootstrap_sha):
         findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "release-please-config.json missing 40-char bootstrap-sha"))

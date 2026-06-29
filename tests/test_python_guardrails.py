@@ -660,6 +660,57 @@ class ValidatorAndCliTests(unittest.TestCase):
     def test_release_workflow_auto_runs_after_green_ci(self) -> None:
         self.assertTrue(taxmate_validate.release_workflow_auto_after_ci(str(ROOT)))
 
+    def test_release_workflow_rejects_manual_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            workflow = tmp_root / ".github" / "workflows" / "release.yml"
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text(
+                (ROOT / ".github" / "workflows" / "release.yml")
+                .read_text(encoding="utf-8")
+                .replace(
+                    '  workflow_run:\n    workflows: ["CI"]\n    types: [completed]\n    branches: [main]\n',
+                    "",
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertFalse(taxmate_validate.release_workflow_auto_after_ci(tmp))
+
+    def test_release_workflow_rejects_privileged_head_checkout(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            workflow = tmp_root / ".github" / "workflows" / "release.yml"
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text(
+                (ROOT / ".github" / "workflows" / "release.yml")
+                .read_text(encoding="utf-8")
+                .replace(
+                    "      - name: Require green CI\n",
+                    "      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683\n"
+                    "        with:\n"
+                    "          ref: ${{ steps.target.outputs.sha }}\n"
+                    "      - name: Require green CI\n",
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertFalse(taxmate_validate.release_workflow_auto_after_ci(tmp))
+
+    def test_release_workflow_requires_gh_repo_without_checkout(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            workflow = tmp_root / ".github" / "workflows" / "release.yml"
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text(
+                (ROOT / ".github" / "workflows" / "release.yml")
+                .read_text(encoding="utf-8")
+                .replace("          GH_REPO: nijanthan-dev/taxmate-australia\n", ""),
+                encoding="utf-8",
+            )
+
+            self.assertFalse(taxmate_validate.release_workflow_auto_after_ci(tmp))
+
     def test_release_config_tracks_manifest_versions(self) -> None:
         self.assertTrue(taxmate_validate.release_config_tracks_manifest_versions(str(ROOT)))
 
