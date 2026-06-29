@@ -2046,9 +2046,10 @@ def release_workflow_has_common_guards(text: str) -> bool:
         text,
         [
             "steps.target.outputs.sha",
+            "GH_REPO: nijanthan-dev/taxmate-australia",
             "--commit \"$TARGET_SHA\"",
             "Require main unchanged",
-            "git ls-remote origin refs/heads/main",
+            "git ls-remote https://github.com/nijanthan-dev/taxmate-australia.git refs/heads/main",
             "main moved from $TARGET_SHA",
             "RELEASE_PLEASE_TOKEN",
             "target-branch: main",
@@ -2073,6 +2074,10 @@ def release_workflow_has_auto_trigger(text: str) -> bool:
     )
 
 
+def release_workflow_avoids_privileged_checkout(text: str) -> bool:
+    return "actions/checkout@" not in text
+
+
 def release_workflow_has_manual_trigger(text: str) -> bool:
     return text_contains_all(
         text,
@@ -2087,8 +2092,11 @@ def release_workflow_has_manual_trigger(text: str) -> bool:
 
 def release_workflow_auto_after_ci(root: str) -> bool:
     text = read_text(os.path.join(root, ".github", "workflows", "release.yml"))
-    return release_workflow_has_common_guards(text) and (
-        release_workflow_has_auto_trigger(text) or release_workflow_has_manual_trigger(text)
+    return (
+        release_workflow_has_common_guards(text)
+        and release_workflow_has_auto_trigger(text)
+        and release_workflow_has_manual_trigger(text)
+        and release_workflow_avoids_privileged_checkout(text)
     )
 
 

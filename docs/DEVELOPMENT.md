@@ -160,10 +160,10 @@ CI runs bash+python runtime checks, generated-source checks, environment guardra
 
 ## Release
 
-- After a successful merge to `main`, wait for main CI to pass, then run `[.github/workflows/release.yml](/.github/workflows/release.yml)` manually from `main`.
+- After a successful merge to `main`, the Release workflow runs after main CI passes. It can also be run manually from `main`.
 - The workflow requires `RELEASE_PLEASE_TOKEN`, a repo secret whose token can create release pull requests and write contents/issues.
 - Versions are calculated from Conventional Commits:
   - `feat:` -> minor
   - `fix:` / `perf:` -> patch
   - `feat!:` / `BREAKING CHANGE:` -> major
-- The workflow creates or updates the Release PR. After that PR is merged and main CI passes, run the workflow manually again to publish the GitHub release artifact.
+- The workflow creates or updates the Release PR. After that PR is merged and main CI passes, the workflow runs again to publish the GitHub release artifact.
