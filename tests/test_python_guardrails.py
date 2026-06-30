@@ -3555,6 +3555,89 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("private-use apportionment evidence", row["tab_text"])
         self.assertIn("private days unknown", row["answer"])
 
+    def test_rental_property_true_private_use_requires_positive_private_days(self) -> None:
+        cases = [
+            {
+                "rental_property": {
+                    "address": "Example rental",
+                    "ownership": "individual",
+                    "income": 12000,
+                    "records": "agent statement held",
+                    "private_use": True,
+                    "private_use_days": 0,
+                    "available_days": 365,
+                }
+            },
+            {
+                "rental_property_address": "Example rental",
+                "rental_property_ownership": "individual",
+                "rental_property_income": 12000,
+                "rental_property_records": "agent statement held",
+                "rental_property_private_use": "yes",
+                "rental_property_private_use_days": 0,
+                "rental_property_available_days": 365,
+            },
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+                self.assertEqual("Accountant review", row["status"])
+                self.assertIn("private-use apportionment evidence", row["tab_text"])
+                self.assertIn("private days 0", row["answer"])
+                self.assertIn("private-use review", row["tab_text"])
+
+    def test_rental_property_true_private_use_requires_valid_available_days(self) -> None:
+        cases = [
+            {"private_use_days": 10, "available_days": 0},
+            {"private_use_days": 20, "available_days": 10},
+        ]
+        for override in cases:
+            with self.subTest(override=override):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "rental_property": {
+                            "address": "Example rental",
+                            "ownership": "individual",
+                            "income": 12000,
+                            "records": "agent statement held",
+                            "private_use": True,
+                            **override,
+                        }
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+                self.assertEqual("Accountant review", row["status"])
+                self.assertIn("private-use apportionment evidence", row["tab_text"])
+                self.assertIn("private-use review", row["tab_text"])
+
+    def test_rental_property_item_true_private_use_requires_positive_private_days(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_records": "agent statement held",
+                "rental_property_items": [
+                    {
+                        "address": "Unit 1",
+                        "ownership": "individual",
+                        "income": 12000,
+                        "records": "agent statement held",
+                        "private_use": True,
+                        "private_use_days": 0,
+                        "available_days": 365,
+                    }
+                ],
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("private-use apportionment evidence", row["tab_text"])
+        self.assertIn("Unit 1: owner individual", row["answer"])
+        self.assertIn("private days 0", row["answer"])
+        self.assertIn("private-use review", row["tab_text"])
+
     def test_rental_property_flat_unknown_answers_render_workflow(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload({"rental_property_income": "unknown"})
         row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")

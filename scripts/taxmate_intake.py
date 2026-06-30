@@ -4301,13 +4301,22 @@ def rental_property_private_use_needs_evidence(raw: Dict[str, Any], items: List[
     if any(rental_property_private_use_uncertain(record.get("private_use")) for record in meaningful):
         return True
     if any(rental_property_private_use_signal(record) for record in meaningful):
-        return any(
-            rental_property_usable_amount_value(record.get("private_use_days"), "private_use_days") is None
-            or rental_property_usable_amount_value(record.get("available_days"), "available_days") is None
-            for record in meaningful
-            if rental_property_private_use_signal(record)
-        )
+        return any(rental_property_apportionment_needs_evidence(record) for record in meaningful)
     return False
+
+
+def rental_property_apportionment_needs_evidence(record: Dict[str, Any]) -> bool:
+    if not rental_property_private_use_signal(record):
+        return False
+    private_days = rental_property_usable_amount_value(record.get("private_use_days"), "private_use_days")
+    available_days = rental_property_usable_amount_value(record.get("available_days"), "available_days")
+    if private_days is None or available_days is None:
+        return True
+    if rental_property_private_use_true(record.get("private_use")) and private_days <= 0:
+        return True
+    if available_days <= 0:
+        return True
+    return private_days > available_days
 
 
 def rental_property_has_capital_or_depreciation(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
