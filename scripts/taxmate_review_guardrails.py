@@ -322,6 +322,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "if isinstance(value, bool):",
                 "return True",
                 "spec.required or has_meaningful_value(value)",
+                "if key == \"ess_statement\" and ess_statement_missing(value):",
                 "if not has_meaningful_value(raw):",
                 "not has_meaningful_value(enriched.get(\"records\"))",
                 "not has_meaningful_value(enriched.get(\"state\"))",

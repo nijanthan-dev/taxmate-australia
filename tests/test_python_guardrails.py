@@ -439,6 +439,17 @@ class IndividualIntakeTests(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual("Accountant review", by_number[key]["status"])
 
+    def test_missing_ess_statement_base_rows_stay_evidence(self) -> None:
+        for value in [False, "no ESS statement", "statement not received"]:
+            with self.subTest(value=value):
+                answers = taxmate_intake.sample_answers()
+                answers["ess_statement"] = value
+
+                rows = taxmate_intake.base_items(answers)
+                ess_statement = next(row for row in rows if row["number"] == "ess_statement")
+
+                self.assertEqual("Evidence", ess_statement["status"])
+
     def test_asset_items_alias_gets_typed_asset_review(self) -> None:
         answers = taxmate_intake.sample_answers()
         answers.pop("assets")

@@ -348,6 +348,8 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def base_item_status(key: str, value: Any) -> str:
     if key in REVIEWABLE_ESS_FIELDS:
+        if key == "ess_statement" and ess_statement_missing(value):
+            return "Evidence"
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == "gst_registered":
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
