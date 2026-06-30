@@ -3808,6 +3808,10 @@ class IndividualIntakeTests(unittest.TestCase):
         row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
 
         self.assertIn("worksheet net -2000.00", row["answer"])
+        self.assertIn("Unit 1: owner individual, income 10000.00", row["answer"])
+        self.assertIn("net loss -1500.00", row["answer"])
+        self.assertIn("Unit 2: owner individual, income 8000.00", row["answer"])
+        self.assertIn("net loss -500.00", row["answer"])
         self.assertIn("net rental loss review", row["tab_text"])
 
     def test_rental_property_mixed_item_net_loss_uses_all_item_nets(self) -> None:
@@ -3826,7 +3830,45 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("income 20000.00", row["answer"])
         self.assertIn("interest 2000.00", row["answer"])
         self.assertIn("worksheet net 6500.00", row["answer"])
+        self.assertIn("Unit 1: owner individual, income 10000.00", row["answer"])
+        self.assertIn("net loss -1500.00", row["answer"])
         self.assertIn("net rental loss review", row["tab_text"])
+
+    def test_rental_property_item_detail_renders_all_item_amount_facts(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_records": "agent statement held",
+                "rental_property_private_use": False,
+                "rental_property_items": [
+                    {
+                        "address": "Unit 1",
+                        "ownership": "individual",
+                        "income": 10000,
+                        "interest": 2000,
+                        "repairs": 300,
+                        "capital_works": 400,
+                        "depreciation": 500,
+                        "other_expenses": 600,
+                        "private_use_days": 7,
+                        "available_days": 365,
+                        "net_loss": "no",
+                    }
+                ],
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertIn("income 10000.00", row["answer"])
+        self.assertIn("interest 2000.00", row["answer"])
+        self.assertIn("repairs 300.00", row["answer"])
+        self.assertIn("capital works 400.00", row["answer"])
+        self.assertIn("depreciation 500.00", row["answer"])
+        self.assertIn("other expenses 600.00", row["answer"])
+        self.assertIn("private days 7", row["answer"])
+        self.assertIn("available days 365", row["answer"])
+        self.assertIn("net loss none", row["answer"])
+        self.assertIn("private use false", row["answer"])
+        self.assertIn("records agent statement held", row["answer"])
 
     def test_rental_property_item_loss_overrides_positive_aggregate_net(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(

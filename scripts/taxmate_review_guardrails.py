@@ -109,7 +109,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #45 rental property",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Rental intake must preserve explicit unknown, records-none, boolean-true amount, and missing-document answers as Evidence, calculate worksheet net from the same flat/item facts shown to the user only when supplied amount facts are parseable or clearly absent, exclude any amount that needs Evidence from field totals, worksheet net math, item net math, and private-use day completeness checks including raw or item net_loss evidence gaps, treat serialized false/no/n/0/off/unchecked net_loss answers as absent rather than malformed standalone worksheet facts, preserve Accountant review status and review-queue routing whenever rental review flags exist even if evidence gaps also exist, normalize positive net_loss fields as losses, require per-property income evidence before any aggregate-income short-circuit, keep standalone, item-level, and mixed net-loss flags visible before aggregate worksheet math, treat positive private-use days and serialized true/on/checked private-use answers as private-use review even when the boolean field is false, treat negated private-use and serialized false/off/unchecked holiday-home text as false without adding private-use review, keep uncertain private-use wording including maybe/possibly/unclear/not clear as Evidence, and keep completed rental rows under Accountant review.",
+        "Rental intake must preserve explicit unknown, records-none, boolean-true amount, and missing-document answers as Evidence, calculate worksheet net from the same flat/item facts shown to the user only when supplied amount facts are parseable or clearly absent, exclude any amount that needs Evidence from field totals, worksheet net math, item net math, and private-use day completeness checks including raw or item net_loss evidence gaps, render item-level amount facts that affect worksheet math or review routing including other expenses, private days, available days, and net loss, show inherited top-level ownership, private-use, and records facts in item details when those facts satisfy item evidence, treat serialized false/no/n/0/off/unchecked net_loss answers as absent rather than malformed standalone worksheet facts, preserve Accountant review status and review-queue routing whenever rental review flags exist even if evidence gaps also exist, normalize positive net_loss fields as losses, require per-property income evidence before any aggregate-income short-circuit, keep standalone, item-level, and mixed net-loss flags visible before aggregate worksheet math, treat positive private-use days and serialized true/on/checked private-use answers as private-use review even when the boolean field is false, treat negated private-use and serialized false/off/unchecked holiday-home text as false without adding private-use review, keep uncertain private-use wording including maybe/possibly/unclear/not clear as Evidence, and keep completed rental rows under Accountant review.",
     ),
     ReviewPattern(
         "PR #38",
@@ -902,6 +902,12 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def rental_property_supplied_field_needs_evidence(",
                 "return rental_property_amount_needs_evidence(value, key)",
                 "def rental_property_item_amount_text(",
+                "def rental_property_item_net_loss_text(",
+                "def rental_property_item_text_or_inherited(",
+                "f\"other expenses {rental_property_item_amount_text(item, 'other_expenses')}, \"",
+                "f\"private days {rental_property_item_amount_text(item, 'private_use_days', money=False)}, \"",
+                "f\"available days {rental_property_item_amount_text(item, 'available_days', money=False)}, \"",
+                "f\"net loss {rental_property_item_net_loss_text(item)}, \"",
                 "if items:\n        return any(rental_property_item_income_needs_evidence(item) for item in items)",
                 "def rental_property_item_income_needs_evidence(",
                 "def rental_property_net_loss_signal(",

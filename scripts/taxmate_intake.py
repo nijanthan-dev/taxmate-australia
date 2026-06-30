@@ -4034,7 +4034,7 @@ def rental_property_rows(raw: Any) -> List[Dict[str, Any]]:
         f"records {rental_property_field_text(raw, items, 'records')}; "
         f"worksheet net {rental_property_net_text(raw, items)}"
     )
-    item_text = rental_property_items_text(items)
+    item_text = rental_property_items_text(raw, items)
     if item_text:
         answer = f"{answer}; properties {item_text}"
     decline_text = rental_property_decline_signal_text(raw)
@@ -4706,25 +4706,50 @@ def rental_property_net_loss_amount_value(value: Any) -> Optional[float]:
     return -amount if amount > 0 else amount
 
 
-def rental_property_items_text(items: List[Dict[str, Any]]) -> str:
+def rental_property_items_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
     details: List[str] = []
     for idx, item in enumerate(items, start=1):
         label = rental_property_record_field_text(item, "address") or f"property {idx}"
         details.append(
-            f"{label}: owner {rental_property_text_or_unknown(item, 'ownership')}, "
+            f"{label}: owner {rental_property_item_text_or_inherited(raw, item, 'ownership')}, "
             f"income {rental_property_item_amount_text(item, 'income')}, "
             f"interest {rental_property_item_amount_text(item, 'interest')}, "
             f"repairs {rental_property_item_amount_text(item, 'repairs')}, "
             f"capital works {rental_property_item_amount_text(item, 'capital_works')}, "
             f"depreciation {rental_property_item_amount_text(item, 'depreciation')}, "
-            f"private use {rental_property_text_or_unknown(item, 'private_use')}, "
-            f"records {rental_property_text_or_unknown(item, 'records')}"
+            f"other expenses {rental_property_item_amount_text(item, 'other_expenses')}, "
+            f"private days {rental_property_item_amount_text(item, 'private_use_days', money=False)}, "
+            f"available days {rental_property_item_amount_text(item, 'available_days', money=False)}, "
+            f"net loss {rental_property_item_net_loss_text(item)}, "
+            f"private use {rental_property_item_text_or_inherited(raw, item, 'private_use')}, "
+            f"records {rental_property_item_text_or_inherited(raw, item, 'records')}"
         )
     return " | ".join(details)
 
 
-def rental_property_item_amount_text(item: Dict[str, Any], key: str) -> str:
-    return money_text(rental_property_usable_amount_value(item.get(key), key))
+def rental_property_item_amount_text(item: Dict[str, Any], key: str, money: bool = True) -> str:
+    amount = rental_property_usable_amount_value(item.get(key), key)
+    return money_text(amount) if money else rental_property_number_text(amount)
+
+
+def rental_property_item_net_loss_text(item: Dict[str, Any]) -> str:
+    value = item.get("net_loss")
+    amount = rental_property_net_loss_amount_value(value)
+    if amount is not None:
+        return money_text(amount)
+    if rental_property_net_loss_false(value):
+        return "none"
+    if rental_property_net_loss_signal(value) or rental_property_amount_needs_evidence(value, "net_loss"):
+        return display_value(value)
+    return "unknown"
+
+
+def rental_property_item_text_or_inherited(raw: Dict[str, Any], item: Dict[str, Any], key: str) -> str:
+    value = rental_property_record_field_text(item, key)
+    if value:
+        return value
+    value = rental_property_record_field_text(raw, key)
+    return value if value else "unknown"
 
 
 def rental_property_text_or_unknown(record: Dict[str, Any], key: str) -> str:
