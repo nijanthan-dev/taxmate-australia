@@ -451,6 +451,56 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("Accountant review", asset["status"])
         self.assertIn("mixed-use", asset["answer"])
 
+    def test_ess_workflow_renders_statement_backed_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        ess = next(row for row in payload["items"] if row["number"] == "ESS")
+
+        self.assertEqual("Accountant review", ess["status"])
+        self.assertIn("taxed-upfront discount 1500.00", ess["answer"])
+        self.assertIn("deferred discount 2400.00", ess["answer"])
+        self.assertIn("foreign-source discount 300.00", ess["answer"])
+        self.assertIn("TFN amount withheld 0.00", ess["answer"])
+        self.assertIn(taxmate_intake.ATO_ESS_SOURCE, ess["source_urls"])
+        self.assertIn(taxmate_intake.ATO_ESS_STATEMENT_SOURCE, ess["source_urls"])
+
+    def test_ess_missing_statement_stays_evidence(self) -> None:
+        rows = taxmate_intake.ess_rows(
+            {
+                "taxed_upfront_discount": 500,
+                "deferred_discount": 0,
+                "foreign_source_discount": "unknown",
+                "tfn_amount_withheld": 0,
+            }
+        )
+
+        self.assertEqual("Evidence", rows[0]["status"])
+        self.assertIn("deferred discount 0.00", rows[0]["answer"])
+        self.assertIn("foreign-source discount unknown", rows[0]["answer"])
+
+    def test_ess_flat_answers_get_typed_review_row(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("ess")
+        answers["ess_statement"] = "ESS statement held"
+        answers["ess_taxed_upfront_discount"] = 100
+        answers["ess_deferred_discount"] = 0
+        answers["ess_foreign_source_discount"] = 25
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        ess = next(row for row in payload["items"] if row["number"] == "ESS")
+
+        self.assertEqual("Accountant review", ess["status"])
+        self.assertIn("taxed-upfront discount 100.00", ess["answer"])
+        self.assertIn("deferred discount 0.00", ess["answer"])
+
+    def test_ess_review_row_appears_in_html_pack(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("Employee share schemes", body)
+        self.assertIn("ESS discounts need statement-backed accountant review.", body)
+        self.assertIn("foreign-source discount 300.00", body)
+        self.assertNotIn("lodgment-ready", body)
+
     def test_wfh_work_pattern_alias_gets_typed_wfh_review(self) -> None:
         answers = taxmate_intake.sample_answers()
         answers.pop("wfh")

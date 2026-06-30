@@ -21,7 +21,13 @@ SUPPORTED_WFH_END = date(2026, 6, 30)
 WFH_FIXED_RATE_2025_26 = 0.70
 REVIEWABLE_ABN_FIELDS = ("abn_income", "abn_expenses")
 REVIEWABLE_BAS_FIELDS = ("bas_period", "gst_collected", "gst_credits")
-REVIEWABLE_COMPLEX_FIELDS = ("employee_deductions", "wfh_work_pattern", "wfh_records", "asset_items")
+REVIEWABLE_ESS_FIELDS = (
+    "ess_statement",
+    "ess_taxed_upfront_discount",
+    "ess_deferred_discount",
+    "ess_foreign_source_discount",
+)
+REVIEWABLE_COMPLEX_FIELDS = ("employee_deductions", "wfh_work_pattern", "wfh_records", "asset_items", "ess_items")
 EXACT_UNKNOWN_PHRASES = frozenset({"unknown", "missing", "not sure", "unsure"})
 EMBEDDED_UNKNOWN_PHRASES = (
     "not confirmed",
@@ -90,6 +96,8 @@ ATO_WFH_ACTUAL_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-
 ATO_ASSET_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work"
 ATO_BAS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas"
 ATO_GST_CREDITS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/claiming-gst-credits"
+ATO_ESS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/employee-share-schemes"
+ATO_ESS_STATEMENT_SOURCE = "https://www.ato.gov.au/forms-and-instructions/employee-share-scheme-statement"
 OMITTED_SCOPE_ITEMS = [
     ("feat: add company return intake", "Company/entity return prep, company tax labels, directors, dividends, franking, retained earnings."),
     ("feat: add trust return intake", "Trust return prep, beneficiary distributions, trustee-assessed income, family trust items."),
@@ -146,6 +154,10 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("interest_income", "Income", "Gross interest", "10 Gross interest", False),
         QuestionSpec("dividend_income", "Income", "Dividends or ETF distributions", "11 Dividends", False),
         QuestionSpec("government_payments", "Income", "Government payments or allowances", "5/6 Government payments", False),
+        QuestionSpec("ess_statement", "ESS", "ESS statement held?", "Employee share schemes", False),
+        QuestionSpec("ess_taxed_upfront_discount", "ESS", "ESS taxed-upfront discount", "Employee share schemes", False),
+        QuestionSpec("ess_deferred_discount", "ESS", "ESS deferred discount", "Employee share schemes", False),
+        QuestionSpec("ess_foreign_source_discount", "ESS", "ESS foreign-source discount", "Employee share schemes", False),
         QuestionSpec("abn_income", "ABN", "Sole-trader ABN income", "Business income / supplementary gate", False),
         QuestionSpec("abn_expenses", "ABN", "Sole-trader ABN expenses", "Business expenses / supplementary gate", False),
         QuestionSpec("gst_registered", "BAS", "GST registered?", "BAS worksheet", False),
@@ -177,6 +189,14 @@ def sample_answers() -> Dict[str, Any]:
         "interest_income": 120,
         "dividend_income": 430,
         "government_payments": 0,
+        "ess": {
+            "employer": "Example Pty Ltd",
+            "statement": "ESS statement held",
+            "taxed_upfront_discount": 1500,
+            "deferred_discount": 2400,
+            "foreign_source_discount": 300,
+            "tfn_amount_withheld": 0,
+        },
         "abn_income": 9000,
         "abn_expenses": 2200,
         "gst_registered": True,
@@ -254,6 +274,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     evidence_items = evidence_rows(answers)
     items.extend(wfh_rows(wfh_answers(answers)))
     items.extend(asset_rows(asset_answers(answers)))
+    items.extend(ess_rows(ess_answers(answers)))
     items.extend(uncommon_income_rows(answers.get("uncommon_income", [])))
     return {
         "income_year": text(answers.get("income_year"), DEFAULT_INCOME_YEAR),
@@ -289,6 +310,8 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 def base_item_status(key: str, value: Any) -> str:
+    if key in REVIEWABLE_ESS_FIELDS:
+        return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == "gst_registered":
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_COMPLEX_FIELDS or isinstance(value, (dict, list)):
@@ -726,6 +749,58 @@ def asset_claim_basis(cost: Optional[float], work_use: Optional[float], preferen
     if work_use != 100:
         return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; mixed-use immediate/depreciation method needs review"
     return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; immediate deduction candidate if evidence supports"
+
+
+def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
+    raw = answers.get("ess")
+    if isinstance(raw, dict):
+        return raw
+    fields = {
+        "statement": answers.get("ess_statement"),
+        "taxed_upfront_discount": answers.get("ess_taxed_upfront_discount"),
+        "deferred_discount": answers.get("ess_deferred_discount"),
+        "foreign_source_discount": answers.get("ess_foreign_source_discount"),
+        "items": answers.get("ess_items"),
+    }
+    return {key: value for key, value in fields.items() if not is_missing(value)}
+
+
+def ess_rows(raw: Any) -> List[Dict[str, Any]]:
+    if not has_ess_inputs(raw):
+        return []
+    if not isinstance(raw, dict):
+        return []
+    taxed_upfront = money_value(raw.get("taxed_upfront_discount"), unknown_as_missing=True)
+    deferred = money_value(raw.get("deferred_discount"), unknown_as_missing=True)
+    foreign_source = money_value(raw.get("foreign_source_discount"), unknown_as_missing=True)
+    tfn_withheld = money_value(raw.get("tfn_amount_withheld"), unknown_as_missing=True)
+    statement = raw.get("statement")
+    status = "Evidence" if is_missing(statement) or contains_unknown(statement) else "Accountant review"
+    answer = (
+        f"Employer {display_value(raw.get('employer')) or 'unknown'}; "
+        f"taxed-upfront discount {money_text(taxed_upfront)}; "
+        f"deferred discount {money_text(deferred)}; "
+        f"foreign-source discount {money_text(foreign_source)}; "
+        f"TFN amount withheld {money_text(tfn_withheld)}"
+    )
+    return [
+        guide_row(
+            "ESS",
+            "Employee share schemes",
+            "ESS statement and discount workflow",
+            answer,
+            "ESS discounts need the ESS statement, deferred taxing-point timing, foreign-source split, and label mapping reviewed before manual copy.",
+            status,
+            [ATO_ESS_SOURCE, ATO_ESS_STATEMENT_SOURCE],
+            tab_text="ESS discounts need statement-backed accountant review.",
+        )
+    ]
+
+
+def has_ess_inputs(raw: Any) -> bool:
+    if not isinstance(raw, dict):
+        return False
+    return any(not is_missing(value) for value in raw.values())
 
 
 def uncommon_income_rows(raw_values: Any) -> List[Dict[str, Any]]:
