@@ -4125,7 +4125,7 @@ def rental_property_declines_without_facts(raw: Dict[str, Any]) -> bool:
 
 def rental_property_has_signal(key: str, value: Any) -> bool:
     if key in RENTAL_PROPERTY_AMOUNT_FIELDS and isinstance(value, bool):
-        return False
+        return key == "net_loss" and value is True
     if key == "private_use" and rental_property_private_use_false(value):
         return False
     if key in RENTAL_PROPERTY_SOURCE_KEY_FACTS and (

@@ -862,6 +862,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "rental records",
                 "repairs versus capital classification",
                 "private-use apportionment evidence",
+                "def rental_property_has_signal(",
                 "def rental_property_review_flags(",
                 "capital works or depreciation review",
                 "net rental loss review",

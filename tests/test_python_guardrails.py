@@ -3328,6 +3328,20 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("income true", row["answer"])
         self.assertIn("income unknown", row["answer"])
 
+    def test_rental_property_standalone_net_loss_flag_renders_review(self) -> None:
+        cases = [
+            {"rental_property_net_loss": True},
+            {"rental_property": {"net_loss": True}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("net rental loss review", row["tab_text"])
+                self.assertIn("worksheet net unknown", row["answer"])
+
     def test_rental_property_items_render_and_review_queue(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
