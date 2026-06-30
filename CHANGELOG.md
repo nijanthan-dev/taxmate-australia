@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.3.0...v0.4.0) (2026-06-30)
+
+
+### Features
+
+* add ESS workflow ([#55](https://github.com/nijanthan-dev/taxmate-australia/issues/55)) ([5228c53](https://github.com/nijanthan-dev/taxmate-australia/commit/5228c53d0a13b38a73363370a8db106d9495d4f3))
+
 ## [0.3.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.2.2...v0.3.0) (2026-06-30)
 
 
