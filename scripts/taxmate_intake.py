@@ -543,6 +543,20 @@ RENTAL_PROPERTY_FIELD_ABSENCE_PHRASES = (
     "na",
     "none",
 )
+RENTAL_PROPERTY_NET_LOSS_FALSE_PHRASES = frozenset(
+    {
+        "false",
+        "no",
+        "n",
+        "0",
+        "off",
+        "unchecked",
+        "no loss",
+        "no net loss",
+        "no rental loss",
+        "not a loss",
+    }
+)
 RENTAL_PROPERTY_DECLINE_SIGNAL_KEY = "_decline_signals"
 REVIEWABLE_COMPLEX_FIELDS = (
     "employee_deductions",
@@ -4049,6 +4063,8 @@ def rental_property_status(evidence: List[str], review: List[str]) -> str:
 def has_meaningful_rental_property_flat_value(key: str, value: Any) -> bool:
     if key == "items":
         return bool(rental_property_item_values(value))
+    if key == "net_loss" and rental_property_net_loss_false(value):
+        return False
     if key in RENTAL_PROPERTY_AMOUNT_FIELDS and isinstance(value, bool):
         return key == "net_loss" and value is True
     if key in RENTAL_PROPERTY_SOURCE_KEY_FACTS and (
@@ -4073,6 +4089,8 @@ def rental_property_answer_values(record: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def has_explicit_rental_property_evidence_gap(key: str, value: Any) -> bool:
+    if key == "net_loss" and rental_property_net_loss_false(value):
+        return False
     if key in RENTAL_PROPERTY_SOURCE_KEY_FACTS and (
         rental_property_source_declines_workflow(key, value) or rental_property_field_absence_value(key, value)
     ):
@@ -4139,6 +4157,8 @@ def rental_property_declines_without_facts(raw: Dict[str, Any]) -> bool:
 
 
 def rental_property_has_signal(key: str, value: Any) -> bool:
+    if key == "net_loss" and rental_property_net_loss_false(value):
+        return False
     if key in RENTAL_PROPERTY_AMOUNT_FIELDS and isinstance(value, bool):
         return key == "net_loss" and value is True
     if key == "private_use" and rental_property_private_use_false(value):
@@ -4439,6 +4459,8 @@ def rental_property_amount_missing_document_value(value: Any) -> bool:
 
 def rental_property_has_field_value(record: Dict[str, Any], key: str) -> bool:
     value = record.get(key)
+    if key == "net_loss" and rental_property_net_loss_false(value):
+        return False
     if key in RENTAL_PROPERTY_AMOUNT_FIELDS and isinstance(value, bool):
         return key == "net_loss" and value is True
     return (
@@ -4450,6 +4472,8 @@ def rental_property_has_field_value(record: Dict[str, Any], key: str) -> bool:
 
 def rental_property_amount_needs_evidence(value: Any, key: str = "") -> bool:
     if is_missing(value):
+        return False
+    if key == "net_loss" and rental_property_net_loss_false(value):
         return False
     if rental_property_boolean_amount_evidence_gap(value, key):
         return True
@@ -4466,6 +4490,8 @@ def rental_property_boolean_amount_evidence_gap(value: Any, key: str = "") -> bo
 
 def rental_property_amount_malformed(value: Any, key: str = "") -> bool:
     if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    if key == "net_loss" and rental_property_net_loss_false(value):
         return False
     if rental_property_field_absence_value(key, value):
         return False
@@ -4560,10 +4586,23 @@ def rental_property_private_use_conflict(record: Dict[str, Any]) -> bool:
 
 
 def rental_property_net_loss_signal(value: Any) -> bool:
+    if rental_property_net_loss_false(value):
+        return False
     if isinstance(value, bool):
         return value
     lowered = text(value).strip().lower()
     return "loss" in lowered and not rental_property_field_absence_value("net_loss", value)
+
+
+def rental_property_net_loss_false(value: Any) -> bool:
+    if isinstance(value, bool):
+        return not value
+    if isinstance(value, (int, float)):
+        return value == 0
+    if contains_unknown(value):
+        return False
+    lowered = text(value).strip().lower()
+    return lowered in RENTAL_PROPERTY_NET_LOSS_FALSE_PHRASES
 
 
 def rental_property_field_text(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> str:
@@ -4604,6 +4643,8 @@ def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str
     explicit = rental_property_net_loss_amount_value(raw.get("net_loss"))
     if explicit is not None:
         return explicit
+    if rental_property_supplied_amount_needs_evidence(raw, items, "net_loss"):
+        return None
     if any(rental_property_net_loss_amount_value(item.get("net_loss")) is not None for item in items):
         item_net_values = [rental_property_net_amount(item) for item in items]
         real_item_net_values = [value for value in item_net_values if value is not None]
@@ -4643,6 +4684,8 @@ def rental_property_supplied_field_needs_evidence(record: Dict[str, Any], key: s
     if key not in record:
         return False
     value = record.get(key)
+    if key == "net_loss" and rental_property_net_loss_false(value):
+        return False
     if rental_property_field_absence_value(key, value):
         return False
     return rental_property_amount_needs_evidence(value, key)
@@ -4655,6 +4698,8 @@ def rental_property_usable_amount_value(value: Any, key: str) -> Optional[float]
 
 
 def rental_property_net_loss_amount_value(value: Any) -> Optional[float]:
+    if rental_property_net_loss_false(value):
+        return None
     amount = rental_property_amount_value(value)
     if amount is None:
         return None
