@@ -26,6 +26,7 @@ REVIEWABLE_ESS_FIELDS = (
     "ess_taxed_upfront_discount",
     "ess_deferred_discount",
     "ess_foreign_source_discount",
+    "ess_tfn_amount_withheld",
 )
 ESS_AMOUNT_FIELDS = (
     "taxed_upfront_discount",
@@ -34,6 +35,23 @@ ESS_AMOUNT_FIELDS = (
     "tfn_amount_withheld",
 )
 ESS_ITEM_SIGNAL_FIELDS = ("statement", "employer", "scheme", "provider", *ESS_AMOUNT_FIELDS)
+ESS_STATEMENT_MISSING_PHRASES = (
+    "do not have",
+    "don't have",
+    "no ess statement",
+    "no employee share scheme statement",
+    "statement not held",
+    "statement not available",
+    "statement not provided",
+    "statement not received",
+    "not provided",
+    "not received",
+    "not supplied",
+    "ess statement not held",
+    "ess statement not available",
+    "ess statement not provided",
+    "ess statement not received",
+)
 REVIEWABLE_COMPLEX_FIELDS = ("employee_deductions", "wfh_work_pattern", "wfh_records", "asset_items", "ess_items")
 EXACT_UNKNOWN_PHRASES = frozenset({"unknown", "missing", "not sure", "unsure"})
 EMBEDDED_UNKNOWN_PHRASES = (
@@ -164,6 +182,7 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("ess_taxed_upfront_discount", "ESS", "ESS taxed-upfront discount", "Employee share schemes", False),
         QuestionSpec("ess_deferred_discount", "ESS", "ESS deferred discount", "Employee share schemes", False),
         QuestionSpec("ess_foreign_source_discount", "ESS", "ESS foreign-source discount", "Employee share schemes", False),
+        QuestionSpec("ess_tfn_amount_withheld", "ESS", "ESS TFN amount withheld", "Employee share schemes", False),
         QuestionSpec("abn_income", "ABN", "Sole-trader ABN income", "Business income / supplementary gate", False),
         QuestionSpec("abn_expenses", "ABN", "Sole-trader ABN expenses", "Business expenses / supplementary gate", False),
         QuestionSpec("gst_registered", "BAS", "GST registered?", "BAS worksheet", False),
@@ -776,10 +795,14 @@ def asset_claim_basis(cost: Optional[float], work_use: Optional[float], preferen
 def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     raw = answers.get("ess")
     fields = {
+        "employer": answers.get("ess_employer"),
+        "scheme": answers.get("ess_scheme"),
+        "provider": answers.get("ess_provider"),
         "statement": answers.get("ess_statement"),
         "taxed_upfront_discount": answers.get("ess_taxed_upfront_discount"),
         "deferred_discount": answers.get("ess_deferred_discount"),
         "foreign_source_discount": answers.get("ess_foreign_source_discount"),
+        "tfn_amount_withheld": answers.get("ess_tfn_amount_withheld"),
         "items": answers.get("ess_items"),
     }
     flat_values = {key: value for key, value in fields.items() if has_meaningful_value(value)}
@@ -882,13 +905,16 @@ def ess_statement_missing(statement: Any) -> bool:
         return not statement
     if is_missing(statement) or contains_unknown(statement):
         return True
-    return text(statement).strip().lower() in {"no", "n", "false", "not held", "not available", "none"}
+    lowered = text(statement).strip().lower()
+    if lowered in {"no", "n", "false", "not held", "not available", "none"}:
+        return True
+    return any(phrase in lowered for phrase in ESS_STATEMENT_MISSING_PHRASES)
 
 
 def ess_items_text(items: List[Dict[str, Any]]) -> str:
     details: List[str] = []
     for idx, item in enumerate(items, start=1):
-        name = display_value(item.get("employer")) or display_value(item.get("scheme")) or f"item {idx}"
+        name = ess_label_text(item) or f"item {idx}"
         details.append(
             f"{name}: taxed-upfront {money_text(money_value(item.get('taxed_upfront_discount'), unknown_as_missing=True))}, "
             f"deferred {money_text(money_value(item.get('deferred_discount'), unknown_as_missing=True))}, "
@@ -899,14 +925,18 @@ def ess_items_text(items: List[Dict[str, Any]]) -> str:
 
 
 def ess_employer_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
-    direct = display_value(raw.get("employer"))
+    direct = ess_label_text(raw)
     if direct:
         return direct
     for item in items:
-        name = display_value(item.get("employer")) or display_value(item.get("scheme"))
+        name = ess_label_text(item)
         if name:
             return name
     return "unknown"
+
+
+def ess_label_text(raw: Dict[str, Any]) -> str:
+    return display_value(raw.get("employer")) or display_value(raw.get("scheme")) or display_value(raw.get("provider"))
 
 
 def has_ess_inputs(raw: Any) -> bool:

@@ -481,17 +481,58 @@ class IndividualIntakeTests(unittest.TestCase):
     def test_ess_flat_answers_get_typed_review_row(self) -> None:
         answers = taxmate_intake.sample_answers()
         answers.pop("ess")
+        answers["ess_employer"] = "Acme Pty Ltd"
         answers["ess_statement"] = "ESS statement held"
         answers["ess_taxed_upfront_discount"] = 100
         answers["ess_deferred_discount"] = 0
         answers["ess_foreign_source_discount"] = 25
+        answers["ess_tfn_amount_withheld"] = 12
 
         payload = taxmate_intake.answers_to_pack_payload(answers)
         ess = next(row for row in payload["items"] if row["number"] == "ESS")
 
         self.assertEqual("Accountant review", ess["status"])
+        self.assertIn("Employer Acme Pty Ltd", ess["answer"])
         self.assertIn("taxed-upfront discount 100.00", ess["answer"])
         self.assertIn("deferred discount 0.00", ess["answer"])
+        self.assertIn("TFN amount withheld 12.00", ess["answer"])
+
+    def test_ess_natural_language_missing_statement_stays_evidence(self) -> None:
+        cases = [
+            {"ess_statement": "no ESS statement", "ess_taxed_upfront_discount": 100},
+            {"ess": {"statement": "statement not held", "taxed_upfront_discount": 100}},
+            {"ess_items": [{"statement": "statement not available", "taxed_upfront_discount": 100}]},
+            {"ess_statement": "statement not received", "ess_taxed_upfront_discount": 100},
+            {"ess": {"statement": "statement not provided", "taxed_upfront_discount": 100}},
+            {"ess_items": [{"statement": "not supplied", "taxed_upfront_discount": 100}]},
+            {"ess_statement": "I do not have the ESS statement", "ess_taxed_upfront_discount": 100},
+            {"ess": {"statement": "I don't have the ESS statement", "taxed_upfront_discount": 100}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                ess = next(row for row in payload["items"] if row["number"] == "ESS")
+
+                self.assertEqual("Evidence", ess["status"])
+                self.assertEqual("ESS discounts need ESS statement evidence before accountant review.", ess["tab_text"])
+
+    def test_ess_supported_labels_remain_visible(self) -> None:
+        cases = [
+            ("Acme Pty Ltd", {"ess_employer": "Acme Pty Ltd", "ess_taxed_upfront_discount": 100}),
+            ("Acme scheme", {"ess_scheme": "Acme scheme", "ess_taxed_upfront_discount": 100}),
+            ("Acme provider", {"ess_provider": "Acme provider", "ess_taxed_upfront_discount": 100}),
+            ("Nested scheme", {"ess": {"scheme": "Nested scheme", "taxed_upfront_discount": 100}}),
+            ("Nested provider", {"ess": {"provider": "Nested provider", "taxed_upfront_discount": 100}}),
+            ("Item provider", {"ess_items": [{"provider": "Item provider", "taxed_upfront_discount": 100}]}),
+        ]
+        for expected_label, answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                ess = next(row for row in payload["items"] if row["number"] == "ESS")
+
+                self.assertIn(f"Employer {expected_label}", ess["answer"])
+                self.assertNotIn("Employer unknown", ess["answer"])
+                self.assertNotIn("items item 1", ess["answer"])
 
     def test_empty_ess_items_do_not_render_workflow_row(self) -> None:
         for ess_value in [{"items": []}, {"items": [{}]}, {}, []]:
