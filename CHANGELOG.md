@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.6.0...v0.7.0) (2026-06-30)
+
+
+### Features
+
+* add PSI workflow ([6967b44](https://github.com/nijanthan-dev/taxmate-australia/commit/6967b440c2af0ffc802ae861e342cdef499a89b9))
+
 ## [0.6.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.5.0...v0.6.0) (2026-06-30)
 
 
