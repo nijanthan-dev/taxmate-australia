@@ -4703,7 +4703,13 @@ def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str
         return explicit
     if rental_property_supplied_amount_needs_evidence(raw, items, "net_loss"):
         return None
-    if any(rental_property_net_loss_amount_value(item.get("net_loss")) is not None for item in items):
+    item_explicit_net_values = [rental_property_net_loss_amount_value(item.get("net_loss")) for item in items]
+    real_item_explicit_net_values = [value for value in item_explicit_net_values if value is not None]
+    if real_item_explicit_net_values:
+        if len(real_item_explicit_net_values) == len(items):
+            return round(sum(real_item_explicit_net_values), 2)
+        if rental_property_private_use_expense_apportionment_blocks_net(raw, items):
+            return None
         item_net_values = [rental_property_net_amount(item) for item in items]
         real_item_net_values = [value for value in item_net_values if value is not None]
         if len(real_item_net_values) == len(items):
