@@ -4220,16 +4220,27 @@ def rental_property_identity_needs_evidence(raw: Dict[str, Any], items: List[Dic
 
 def rental_property_income_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
     if items:
-        return any(rental_property_item_income_needs_evidence(item) for item in items)
+        return rental_property_items_income_need_evidence(items)
     if rental_property_has_field_value(raw, "income"):
         return rental_property_amount_needs_evidence(raw.get("income"), "income")
     return rental_property_has_facts(raw) or bool(items)
+
+
+def rental_property_items_income_need_evidence(items: List[Dict[str, Any]]) -> bool:
+    return any(rental_property_item_income_needs_evidence(item) for item in items)
 
 
 def rental_property_item_income_needs_evidence(item: Dict[str, Any]) -> bool:
     if not rental_property_has_field_value(item, "income"):
         return True
     return rental_property_amount_needs_evidence(item.get("income"), "income")
+
+
+def rental_property_items_income_partially_incomplete(items: List[Dict[str, Any]]) -> bool:
+    if not items:
+        return False
+    complete = [not rental_property_item_income_needs_evidence(item) for item in items]
+    return any(complete) and not all(complete)
 
 
 def rental_property_records_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
@@ -4296,6 +4307,8 @@ def rental_property_private_use_needs_evidence(raw: Dict[str, Any], items: List[
     meaningful = [record for record in records if rental_property_has_facts(record)]
     if any(rental_property_private_use_conflict(record) for record in meaningful):
         return True
+    if rental_property_private_use_summary_conflict(raw, items):
+        return True
     if meaningful and not any(rental_property_has_field_value(record, "private_use") for record in meaningful):
         return True
     if any(rental_property_private_use_uncertain(record.get("private_use")) for record in meaningful):
@@ -4317,6 +4330,15 @@ def rental_property_apportionment_needs_evidence(record: Dict[str, Any]) -> bool
     if available_days <= 0:
         return True
     return private_days > available_days
+
+
+def rental_property_private_use_summary_conflict(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    if rental_property_private_use_false(raw.get("private_use")):
+        return any(rental_property_private_use_signal(item) for item in items)
+    if rental_property_private_use_true(raw.get("private_use")) and items:
+        item_private_use_values = [item for item in items if rental_property_has_field_value(item, "private_use")]
+        return bool(item_private_use_values) and not any(rental_property_private_use_signal(item) for item in items)
+    return False
 
 
 def rental_property_has_capital_or_depreciation(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
@@ -4623,6 +4645,8 @@ def rental_property_net_loss_false(value: Any) -> bool:
 
 
 def rental_property_field_text(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> str:
+    if key == "private_use" and rental_property_private_use_summary_conflict(raw, items):
+        return "unknown"
     direct = rental_property_record_field_text(raw, key)
     if direct:
         return direct
@@ -4638,6 +4662,8 @@ def rental_property_amount_field_text(
 ) -> str:
     if rental_property_amount_missing_document_value(raw.get(key)):
         return display_value(raw.get(key))
+    if key == "income" and rental_property_items_income_partially_incomplete(items):
+        return "unknown"
     if rental_property_amount_conflict(raw, items, key):
         return "unknown"
     direct = rental_property_usable_amount_value(raw.get(key), key)
@@ -4672,6 +4698,8 @@ def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str
         if len(real_item_net_values) == len(items):
             return round(sum(real_item_net_values), 2)
         return None
+    if rental_property_private_use_expense_apportionment_blocks_net(raw, items):
+        return None
     if rental_property_supplied_amount_needs_evidence(raw, items, "income"):
         return None
     income = rental_property_display_amount_value(raw, items, "income")
@@ -4686,7 +4714,19 @@ def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str
     return round(income - sum(known_expenses), 2)
 
 
+def rental_property_private_use_expense_apportionment_blocks_net(
+    raw: Dict[str, Any],
+    items: List[Dict[str, Any]],
+) -> bool:
+    if not rental_property_has_private_use(raw, items):
+        return False
+    expense_values = [rental_property_display_amount_value(raw, items, key) for key in RENTAL_PROPERTY_EXPENSE_FIELDS]
+    return any(amount is not None and amount > 0 for amount in expense_values)
+
+
 def rental_property_display_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> Optional[float]:
+    if key == "income" and rental_property_items_income_partially_incomplete(items):
+        return None
     if rental_property_amount_conflict(raw, items, key):
         return None
     direct = rental_property_usable_amount_value(raw.get(key), key)
@@ -4699,7 +4739,8 @@ def rental_property_display_amount_value(raw: Dict[str, Any], items: List[Dict[s
 
 def rental_property_supplied_amount_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> bool:
     return (
-        rental_property_supplied_field_needs_evidence(raw, key)
+        (key == "income" and rental_property_items_income_partially_incomplete(items))
+        or rental_property_supplied_field_needs_evidence(raw, key)
         or any(rental_property_supplied_field_needs_evidence(item, key) for item in items)
         or rental_property_amount_conflict(raw, items, key)
     )
@@ -4730,12 +4771,27 @@ def rental_property_amount_conflict(raw: Dict[str, Any], items: List[Dict[str, A
     direct = rental_property_reconciliation_amount_value(raw.get(key), key)
     if direct is None:
         return False
-    item_values = [rental_property_reconciliation_amount_value(item.get(key), key) for item in items]
+    item_values = rental_property_reconciliation_item_amount_values(items, key)
     real_item_values = [value for value in item_values if value is not None]
+    if key == "net_loss" and items and len(real_item_values) != len(items):
+        return True
     if not real_item_values:
         return False
     item_total = round(sum(real_item_values), 2)
     return round(direct, 2) != item_total
+
+
+def rental_property_reconciliation_item_amount_values(items: List[Dict[str, Any]], key: str) -> List[Optional[float]]:
+    if key == "net_loss":
+        return [rental_property_item_net_loss_reconciliation_value(item) for item in items]
+    return [rental_property_reconciliation_amount_value(item.get(key), key) for item in items]
+
+
+def rental_property_item_net_loss_reconciliation_value(item: Dict[str, Any]) -> Optional[float]:
+    explicit = rental_property_net_loss_amount_value(item.get("net_loss"))
+    if explicit is not None:
+        return explicit
+    return rental_property_net_amount(item)
 
 
 def rental_property_reconciliation_amount_value(value: Any, key: str) -> Optional[float]:
@@ -4768,7 +4824,7 @@ def rental_property_items_text(raw: Dict[str, Any], items: List[Dict[str, Any]])
             f"private days {rental_property_item_amount_text(item, 'private_use_days', money=False)}, "
             f"available days {rental_property_item_amount_text(item, 'available_days', money=False)}, "
             f"net loss {rental_property_item_net_loss_text(item)}, "
-            f"private use {rental_property_item_text_or_inherited(raw, item, 'private_use')}, "
+            f"private use {rental_property_item_private_use_text(raw, item)}, "
             f"records {rental_property_item_text_or_inherited(raw, item, 'records')}"
         )
     return " | ".join(details)
@@ -4792,6 +4848,18 @@ def rental_property_item_net_loss_text(item: Dict[str, Any]) -> str:
     if rental_property_net_loss_signal(value) or rental_property_amount_needs_evidence(value, "net_loss"):
         return display_value(value)
     return "unknown"
+
+
+def rental_property_item_private_use_text(raw: Dict[str, Any], item: Dict[str, Any]) -> str:
+    if rental_property_private_use_conflict(item):
+        return "unknown"
+    value = rental_property_record_field_text(item, "private_use")
+    if value:
+        return value
+    if rental_property_private_use_signal(item):
+        return "true"
+    value = rental_property_record_field_text(raw, "private_use")
+    return value if value else "unknown"
 
 
 def rental_property_item_text_or_inherited(raw: Dict[str, Any], item: Dict[str, Any], key: str) -> str:
