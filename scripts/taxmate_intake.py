@@ -27,6 +27,13 @@ REVIEWABLE_ESS_FIELDS = (
     "ess_deferred_discount",
     "ess_foreign_source_discount",
 )
+ESS_AMOUNT_FIELDS = (
+    "taxed_upfront_discount",
+    "deferred_discount",
+    "foreign_source_discount",
+    "tfn_amount_withheld",
+)
+ESS_ITEM_SIGNAL_FIELDS = ("employer", "scheme", "provider", *ESS_AMOUNT_FIELDS)
 REVIEWABLE_COMPLEX_FIELDS = ("employee_deductions", "wfh_work_pattern", "wfh_records", "asset_items", "ess_items")
 EXACT_UNKNOWN_PHRASES = frozenset({"unknown", "missing", "not sure", "unsure"})
 EMBEDDED_UNKNOWN_PHRASES = (
@@ -783,7 +790,7 @@ def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
         return flat_values
     merged = dict(flat_values)
     for key, value in raw.items():
-        if has_meaningful_value(value):
+        if has_meaningful_ess_override(key, value):
             merged[key] = value
     return merged
 
@@ -793,18 +800,30 @@ def ess_rows(raw: Any) -> List[Dict[str, Any]]:
         return []
     if not isinstance(raw, dict):
         return []
-    taxed_upfront = money_value(raw.get("taxed_upfront_discount"), unknown_as_missing=True)
-    deferred = money_value(raw.get("deferred_discount"), unknown_as_missing=True)
-    foreign_source = money_value(raw.get("foreign_source_discount"), unknown_as_missing=True)
-    tfn_withheld = money_value(raw.get("tfn_amount_withheld"), unknown_as_missing=True)
+    items = ess_item_values(raw.get("items"))
+    taxed_upfront = ess_amount_value(raw, items, "taxed_upfront_discount")
+    deferred = ess_amount_value(raw, items, "deferred_discount")
+    foreign_source = ess_amount_value(raw, items, "foreign_source_discount")
+    tfn_withheld = ess_amount_value(raw, items, "tfn_amount_withheld")
     statement = raw.get("statement")
-    status = "Evidence" if is_missing(statement) or contains_unknown(statement) else "Accountant review"
+    if not has_meaningful_value(statement):
+        statement = next((item.get("statement") for item in items if has_meaningful_value(item.get("statement"))), None)
+    status = "Evidence" if ess_statement_missing(statement) else "Accountant review"
+    item_text = ess_items_text(items)
+    employer = ess_employer_text(raw, items)
     answer = (
-        f"Employer {display_value(raw.get('employer')) or 'unknown'}; "
+        f"Employer {employer}; "
         f"taxed-upfront discount {money_text(taxed_upfront)}; "
         f"deferred discount {money_text(deferred)}; "
         f"foreign-source discount {money_text(foreign_source)}; "
         f"TFN amount withheld {money_text(tfn_withheld)}"
+    )
+    if item_text:
+        answer = f"{answer}; items {item_text}"
+    tab_text = (
+        "ESS discounts need ESS statement evidence before accountant review."
+        if status == "Evidence"
+        else "ESS discounts need statement-backed accountant review."
     )
     return [
         guide_row(
@@ -815,15 +834,86 @@ def ess_rows(raw: Any) -> List[Dict[str, Any]]:
             "ESS discounts need the ESS statement, deferred taxing-point timing, foreign-source split, and label mapping reviewed before manual copy.",
             status,
             [ATO_ESS_SOURCE, ATO_ESS_STATEMENT_SOURCE],
-            tab_text="ESS discounts need statement-backed accountant review.",
+            tab_text=tab_text,
         )
     ]
+
+
+def ess_item_values(raw_items: Any) -> List[Dict[str, Any]]:
+    if not isinstance(raw_items, list):
+        return []
+    return [item for item in raw_items if isinstance(item, dict) and has_meaningful_ess_item(item)]
+
+
+def has_meaningful_ess_item(item: Dict[str, Any]) -> bool:
+    return any(has_meaningful_ess_signal(key, item.get(key)) for key in ESS_ITEM_SIGNAL_FIELDS)
+
+
+def has_meaningful_ess_signal(key: str, value: Any) -> bool:
+    if key in ESS_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    return has_meaningful_ess_value(value)
+
+
+def has_meaningful_ess_override(key: str, value: Any) -> bool:
+    if not has_meaningful_value(value) or contains_unknown(value):
+        return False
+    if key in ESS_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if key == "items":
+        return bool(ess_item_values(value))
+    return True
+
+
+def ess_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> Optional[float]:
+    top_level = money_value(raw.get(key), unknown_as_missing=True)
+    if top_level is not None:
+        return top_level
+    item_amounts = [money_value(item.get(key), unknown_as_missing=True) for item in items]
+    real_amounts = [amount for amount in item_amounts if amount is not None]
+    if not real_amounts:
+        return None
+    return round(sum(real_amounts), 2)
+
+
+def ess_statement_missing(statement: Any) -> bool:
+    if isinstance(statement, bool):
+        return not statement
+    if is_missing(statement) or contains_unknown(statement):
+        return True
+    return text(statement).strip().lower() in {"no", "n", "false", "not held", "not available", "none"}
+
+
+def ess_items_text(items: List[Dict[str, Any]]) -> str:
+    details: List[str] = []
+    for idx, item in enumerate(items, start=1):
+        name = display_value(item.get("employer")) or display_value(item.get("scheme")) or f"item {idx}"
+        details.append(
+            f"{name}: taxed-upfront {money_text(money_value(item.get('taxed_upfront_discount'), unknown_as_missing=True))}, "
+            f"deferred {money_text(money_value(item.get('deferred_discount'), unknown_as_missing=True))}, "
+            f"foreign-source {money_text(money_value(item.get('foreign_source_discount'), unknown_as_missing=True))}, "
+            f"TFN withheld {money_text(money_value(item.get('tfn_amount_withheld'), unknown_as_missing=True))}"
+        )
+    return " | ".join(details)
+
+
+def ess_employer_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
+    direct = display_value(raw.get("employer"))
+    if direct:
+        return direct
+    for item in items:
+        name = display_value(item.get("employer")) or display_value(item.get("scheme"))
+        if name:
+            return name
+    return "unknown"
 
 
 def has_ess_inputs(raw: Any) -> bool:
     if not isinstance(raw, dict):
         return False
-    return any(has_meaningful_ess_value(value) for value in raw.values())
+    if ess_item_values(raw.get("items")):
+        return True
+    return any(has_meaningful_ess_signal(key, raw.get(key)) for key in ESS_ITEM_SIGNAL_FIELDS)
 
 
 def has_meaningful_ess_value(value: Any) -> bool:
