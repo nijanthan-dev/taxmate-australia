@@ -4188,6 +4188,8 @@ def rental_property_evidence_gaps(raw: Dict[str, Any], items: List[Dict[str, Any
         evidence.append("repairs versus capital classification")
     if rental_property_private_use_needs_evidence(raw, items):
         evidence.append("private-use apportionment evidence")
+    if rental_property_amount_conflicts(raw, items):
+        evidence.append("top-level and per-property amount reconciliation")
     if any(rental_property_item_needs_evidence(raw, item) for item in items):
         evidence.append("per-property rental evidence")
     return evidence
@@ -4245,7 +4247,7 @@ def rental_property_item_needs_evidence(raw: Dict[str, Any], item: Dict[str, Any
         or any(rental_property_item_context_field_needs_evidence(raw, item, key) for key in ("address", "ownership"))
         or rental_property_item_records_need_evidence(raw, item)
         or any(rental_property_amount_needs_evidence(item.get(key), key) for key in RENTAL_PROPERTY_AMOUNT_FIELDS)
-        or rental_property_private_use_needs_evidence(item, [])
+        or rental_property_private_use_needs_evidence(raw, [item])
         or rental_property_repair_classification_needs_evidence(item, [])
     )
 
@@ -4265,8 +4267,14 @@ def rental_property_item_records_need_evidence(raw: Dict[str, Any], item: Dict[s
 
 
 def rental_property_amounts_need_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
-    return any(rental_property_amount_needs_evidence(raw.get(key), key) for key in RENTAL_PROPERTY_AMOUNT_FIELDS) or any(
-        rental_property_amount_needs_evidence(item.get(key), key) for item in items for key in RENTAL_PROPERTY_AMOUNT_FIELDS
+    return (
+        any(rental_property_amount_needs_evidence(raw.get(key), key) for key in RENTAL_PROPERTY_AMOUNT_FIELDS)
+        or any(
+            rental_property_amount_needs_evidence(item.get(key), key)
+            for item in items
+            for key in RENTAL_PROPERTY_AMOUNT_FIELDS
+        )
+        or rental_property_amount_conflicts(raw, items)
     )
 
 
@@ -4621,6 +4629,8 @@ def rental_property_amount_field_text(
 ) -> str:
     if rental_property_amount_missing_document_value(raw.get(key)):
         return display_value(raw.get(key))
+    if rental_property_amount_conflict(raw, items, key):
+        return "unknown"
     direct = rental_property_usable_amount_value(raw.get(key), key)
     if direct is not None:
         return money_text(direct) if money else rental_property_number_text(direct)
@@ -4640,6 +4650,8 @@ def rental_property_net_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -
 
 
 def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> Optional[float]:
+    if rental_property_amount_conflict(raw, items, "net_loss"):
+        return None
     explicit = rental_property_net_loss_amount_value(raw.get("net_loss"))
     if explicit is not None:
         return explicit
@@ -4666,6 +4678,8 @@ def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str
 
 
 def rental_property_display_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> Optional[float]:
+    if rental_property_amount_conflict(raw, items, key):
+        return None
     direct = rental_property_usable_amount_value(raw.get(key), key)
     if direct is not None:
         return direct
@@ -4675,8 +4689,10 @@ def rental_property_display_amount_value(raw: Dict[str, Any], items: List[Dict[s
 
 
 def rental_property_supplied_amount_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> bool:
-    return rental_property_supplied_field_needs_evidence(raw, key) or any(
-        rental_property_supplied_field_needs_evidence(item, key) for item in items
+    return (
+        rental_property_supplied_field_needs_evidence(raw, key)
+        or any(rental_property_supplied_field_needs_evidence(item, key) for item in items)
+        or rental_property_amount_conflict(raw, items, key)
     )
 
 
@@ -4695,6 +4711,28 @@ def rental_property_usable_amount_value(value: Any, key: str) -> Optional[float]
     if rental_property_amount_needs_evidence(value, key):
         return None
     return rental_property_amount_value(value)
+
+
+def rental_property_amount_conflicts(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return any(rental_property_amount_conflict(raw, items, key) for key in RENTAL_PROPERTY_AMOUNT_FIELDS)
+
+
+def rental_property_amount_conflict(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> bool:
+    direct = rental_property_reconciliation_amount_value(raw.get(key), key)
+    if direct is None:
+        return False
+    item_values = [rental_property_reconciliation_amount_value(item.get(key), key) for item in items]
+    real_item_values = [value for value in item_values if value is not None]
+    if not real_item_values:
+        return False
+    item_total = round(sum(real_item_values), 2)
+    return round(direct, 2) != item_total
+
+
+def rental_property_reconciliation_amount_value(value: Any, key: str) -> Optional[float]:
+    if key == "net_loss":
+        return rental_property_net_loss_amount_value(value)
+    return rental_property_usable_amount_value(value, key)
 
 
 def rental_property_net_loss_amount_value(value: Any) -> Optional[float]:
@@ -4728,7 +4766,10 @@ def rental_property_items_text(raw: Dict[str, Any], items: List[Dict[str, Any]])
 
 
 def rental_property_item_amount_text(item: Dict[str, Any], key: str, money: bool = True) -> str:
-    amount = rental_property_usable_amount_value(item.get(key), key)
+    value = item.get(key)
+    if rental_property_amount_missing_document_value(value):
+        return display_value(value)
+    amount = rental_property_usable_amount_value(value, key)
     return money_text(amount) if money else rental_property_number_text(amount)
 
 
