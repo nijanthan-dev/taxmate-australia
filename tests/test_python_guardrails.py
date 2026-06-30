@@ -3269,26 +3269,31 @@ class IndividualIntakeTests(unittest.TestCase):
                 {"repairs": "bathroom renovation and replacement"},
                 "repairs versus capital classification",
                 "repairs unknown",
+                "Evidence",
             ),
             (
                 {"private_use": True},
                 "private-use apportionment evidence",
                 "private use true",
+                "Accountant review",
             ),
             (
                 {"income": "unknown"},
                 "rental income evidence",
                 "income unknown",
+                "Evidence",
             ),
             (
                 {"interest": -10},
                 "numeric rental amount evidence",
                 "interest unknown",
+                "Evidence",
             ),
             (
                 {"private_use": None},
                 "private-use apportionment evidence",
                 "private use unknown",
+                "Evidence",
             ),
         ]
         base = {
@@ -3299,12 +3304,12 @@ class IndividualIntakeTests(unittest.TestCase):
             "records": "agent statement and loan statement held",
             "private_use": False,
         }
-        for override, expected_gap, expected_answer in cases:
+        for override, expected_gap, expected_answer, expected_status in cases:
             with self.subTest(override=override):
                 payload = taxmate_intake.answers_to_pack_payload({"rental_property": {**base, **override}})
                 row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
 
-                self.assertEqual("Evidence", row["status"])
+                self.assertEqual(expected_status, row["status"])
                 self.assertIn(expected_gap, row["tab_text"])
                 self.assertIn(expected_answer, row["answer"])
 
@@ -3415,7 +3420,7 @@ class IndividualIntakeTests(unittest.TestCase):
         )
         row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
 
-        self.assertEqual("Evidence", row["status"])
+        self.assertEqual("Accountant review", row["status"])
         self.assertIn("numeric rental amount evidence", row["tab_text"])
         self.assertIn("private-use apportionment evidence", row["tab_text"])
         self.assertIn("private days unknown", row["answer"])
@@ -3498,7 +3503,7 @@ class IndividualIntakeTests(unittest.TestCase):
                 )
                 row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
 
-                self.assertEqual("Evidence", row["status"])
+                self.assertEqual("Accountant review", row["status"])
                 self.assertIn("private-use apportionment evidence", row["tab_text"])
                 self.assertIn("private-use review", row["tab_text"])
 
@@ -3587,7 +3592,7 @@ class IndividualIntakeTests(unittest.TestCase):
 
         payload = taxmate_intake.answers_to_pack_payload({"rental_property": {"net_loss": True}})
         row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
-        self.assertEqual("Evidence", row["status"])
+        self.assertEqual("Accountant review", row["status"])
         self.assertIn("net rental loss review", row["tab_text"])
         self.assertNotIn("numeric rental amount evidence", row["tab_text"])
 
@@ -3601,7 +3606,7 @@ class IndividualIntakeTests(unittest.TestCase):
                 payload = taxmate_intake.answers_to_pack_payload(answers)
                 row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
 
-                self.assertEqual("Evidence", row["status"])
+                self.assertEqual("Accountant review", row["status"])
                 self.assertIn("net rental loss review", row["tab_text"])
                 self.assertIn("worksheet net unknown", row["answer"])
 
@@ -3640,7 +3645,7 @@ class IndividualIntakeTests(unittest.TestCase):
         )
         row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
 
-        self.assertEqual("Evidence", row["status"])
+        self.assertEqual("Accountant review", row["status"])
         self.assertIn("private use false", row["answer"])
         self.assertIn("private days 7", row["answer"])
         self.assertIn("private-use apportionment evidence", row["tab_text"])
@@ -3664,15 +3669,15 @@ class IndividualIntakeTests(unittest.TestCase):
             },
         ]
         cases = [
-            {"rental_property_items": itemized},
-            {"rental_property_income": 22000, "rental_property_items": itemized},
+            ({"rental_property_items": itemized}, "Accountant review"),
+            ({"rental_property_income": 22000, "rental_property_items": itemized}, "Evidence"),
         ]
-        for answers in cases:
+        for answers, expected_status in cases:
             with self.subTest(answers=answers):
                 payload = taxmate_intake.answers_to_pack_payload(answers)
                 row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
 
-                self.assertEqual("Evidence", row["status"])
+                self.assertEqual(expected_status, row["status"])
                 self.assertIn("rental income evidence", row["tab_text"])
 
     def test_rental_property_net_uses_displayed_item_expenses(self) -> None:
@@ -3771,11 +3776,15 @@ class IndividualIntakeTests(unittest.TestCase):
         )
         row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
 
-        self.assertEqual("Evidence", row["status"])
+        self.assertEqual("Accountant review", row["status"])
         self.assertIn("properties Unit 1", row["answer"])
         self.assertIn("Holiday unit", row["answer"])
         self.assertIn("per-property rental evidence", row["tab_text"])
         self.assertIn("private-use apportionment evidence", row["tab_text"])
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+        self.assertIn("<b>Accountant review queue:</b>", body)
+        self.assertIn("Rental property worksheet needs", body)
+        self.assertIn("stays accountant review", body)
 
     def test_rental_property_review_row_appears_in_html_pack(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())

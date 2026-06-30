@@ -4004,7 +4004,7 @@ def rental_property_rows(raw: Any) -> List[Dict[str, Any]]:
     items = rental_property_item_values(raw.get("items"))
     evidence = rental_property_evidence_gaps(raw, items)
     review = rental_property_review_flags(raw, items)
-    status = "Evidence" if evidence else "Accountant review"
+    status = rental_property_status(evidence, review)
     answer = (
         f"Property {rental_property_field_text(raw, items, 'address')}; "
         f"owner {rental_property_field_text(raw, items, 'ownership')}; "
@@ -4038,6 +4038,12 @@ def rental_property_rows(raw: Any) -> List[Dict[str, Any]]:
             tab_text=rental_property_tab_text(evidence, review),
         )
     ]
+
+
+def rental_property_status(evidence: List[str], review: List[str]) -> str:
+    if review:
+        return "Accountant review"
+    return "Evidence" if evidence else "Accountant review"
 
 
 def has_meaningful_rental_property_flat_value(key: str, value: Any) -> bool:

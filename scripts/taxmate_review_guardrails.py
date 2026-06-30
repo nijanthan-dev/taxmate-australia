@@ -109,7 +109,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #45 rental property",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Rental intake must preserve explicit unknown, records-none, boolean-true amount, and missing-document answers as Evidence, calculate worksheet net from the same flat/item facts shown to the user only when supplied amount facts are parseable or clearly absent, exclude any amount that needs Evidence from field totals, worksheet net math, item net math, and private-use day completeness checks, normalize positive net_loss fields as losses, require per-property income evidence before any aggregate-income short-circuit, keep standalone, item-level, and mixed net-loss flags visible before aggregate worksheet math, treat positive private-use days and serialized true/on/checked private-use answers as private-use review even when the boolean field is false, treat negated private-use and serialized false/off/unchecked holiday-home text as false without adding private-use review, keep uncertain private-use wording including maybe/possibly/unclear/not clear as Evidence, and keep completed rental rows under Accountant review.",
+        "Rental intake must preserve explicit unknown, records-none, boolean-true amount, and missing-document answers as Evidence, calculate worksheet net from the same flat/item facts shown to the user only when supplied amount facts are parseable or clearly absent, exclude any amount that needs Evidence from field totals, worksheet net math, item net math, and private-use day completeness checks, preserve Accountant review status and review-queue routing whenever rental review flags exist even if evidence gaps also exist, normalize positive net_loss fields as losses, require per-property income evidence before any aggregate-income short-circuit, keep standalone, item-level, and mixed net-loss flags visible before aggregate worksheet math, treat positive private-use days and serialized true/on/checked private-use answers as private-use review even when the boolean field is false, treat negated private-use and serialized false/off/unchecked holiday-home text as false without adding private-use review, keep uncertain private-use wording including maybe/possibly/unclear/not clear as Evidence, and keep completed rental rows under Accountant review.",
     ),
     ReviewPattern(
         "PR #38",
@@ -862,6 +862,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def rental_property_answers(",
                 "flat_values = rental_property_answer_values(fields)",
                 "def rental_property_rows(",
+                "status = rental_property_status(evidence, review)",
+                "def rental_property_status(",
                 "Rental income, interest, repairs/capital, private use, depreciation, and net loss review",
                 "def rental_property_evidence_gaps(",
                 "no-rental answer with rental facts",
