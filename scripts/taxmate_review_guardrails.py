@@ -873,6 +873,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def rental_property_has_field_value(",
                 "if key in RENTAL_PROPERTY_AMOUNT_FIELDS and isinstance(value, bool):",
                 "return key == \"net_loss\" and value is True",
+                "def rental_property_display_amount_value(",
+                "def rental_property_item_income_needs_evidence(",
                 "def rental_property_net_loss_signal(",
                 "def rental_property_text_or_unknown(",
                 "def rental_property_tab_text(",

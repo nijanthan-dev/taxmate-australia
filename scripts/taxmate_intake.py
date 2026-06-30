@@ -4184,9 +4184,15 @@ def rental_property_identity_needs_evidence(raw: Dict[str, Any], items: List[Dic
 def rental_property_income_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
     if rental_property_has_field_value(raw, "income"):
         return rental_property_amount_needs_evidence(raw.get("income"), "income")
-    if any(rental_property_has_field_value(item, "income") for item in items):
-        return any(rental_property_amount_needs_evidence(item.get("income"), "income") for item in items)
+    if items:
+        return any(rental_property_item_income_needs_evidence(item) for item in items)
     return rental_property_has_facts(raw) or bool(items)
+
+
+def rental_property_item_income_needs_evidence(item: Dict[str, Any]) -> bool:
+    if not rental_property_has_field_value(item, "income"):
+        return True
+    return rental_property_amount_needs_evidence(item.get("income"), "income")
 
 
 def rental_property_records_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
@@ -4283,6 +4289,9 @@ def rental_property_has_private_use(raw: Dict[str, Any], items: List[Dict[str, A
 
 
 def rental_property_has_net_loss(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    display_net = rental_property_display_net_amount(raw, items)
+    if display_net is not None and display_net < 0:
+        return True
     for record in [raw, *items]:
         net_amount = rental_property_net_amount(record)
         if net_amount is not None and net_amount < 0:
@@ -4469,12 +4478,40 @@ def rental_property_amount_field_text(
 
 
 def rental_property_net_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
-    direct = rental_property_net_amount(raw)
+    direct = rental_property_display_net_amount(raw, items)
     if direct is not None:
         return money_text(direct)
-    values = [rental_property_net_amount(item) for item in items]
+    return "unknown"
+
+
+def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> Optional[float]:
+    explicit = rental_property_amount_value(raw.get("net_loss"))
+    if explicit is not None:
+        return explicit
+    item_net_values = [rental_property_amount_value(item.get("net_loss")) for item in items]
+    real_item_net_values = [value for value in item_net_values if value is not None]
+    if real_item_net_values:
+        return round(sum(real_item_net_values), 2)
+    income = rental_property_display_amount_value(raw, items, "income")
+    if income is None:
+        return None
+    expenses = [
+        rental_property_display_amount_value(raw, items, key)
+        for key in ("interest", "repairs", "capital_works", "depreciation", "other_expenses")
+    ]
+    known_expenses = [amount for amount in expenses if amount is not None]
+    if not known_expenses:
+        return income
+    return round(income - sum(known_expenses), 2)
+
+
+def rental_property_display_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> Optional[float]:
+    direct = rental_property_amount_value(raw.get(key))
+    if direct is not None:
+        return direct
+    values = [rental_property_amount_value(item.get(key)) for item in items]
     real_values = [value for value in values if value is not None]
-    return money_text(round(sum(real_values), 2)) if real_values else "unknown"
+    return round(sum(real_values), 2) if real_values else None
 
 
 def rental_property_items_text(items: List[Dict[str, Any]]) -> str:
