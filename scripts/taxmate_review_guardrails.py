@@ -79,7 +79,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "PR #53 intake",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Individual intake must keep missing, malformed, unparseable, or nested unknown answers as Evidence/review, require literal boolean AI confirmation while preserving review-like extraction metadata, keep BAS values as review, use taxpayer state plus full-year state holidays only for supported WFH income years/date ranges, keep unknown WFH parser inputs and incomplete records out of calculated candidates, avoid stale checked-at literals, and keep mixed-use assets under review.",
+        "Individual intake must keep missing, malformed, unparseable, or nested unknown answers as Evidence/review, require literal boolean AI confirmation while preserving review-like extraction metadata, keep BAS values as review, use taxpayer state plus state-wide holidays only for supported WFH income years/date ranges, route limited/regional/partial-day public holidays to Evidence, keep unknown WFH parser inputs and incomplete records out of calculated candidates, avoid stale checked-at literals, and keep mixed-use assets under review.",
     ),
     ReviewPattern(
         "PR #38",
@@ -207,6 +207,7 @@ def check_taxpack_output_layer(root: Path) -> List[Finding]:
 
 def check_individual_intake_contract(root: Path) -> List[Finding]:
     text = read(root, "scripts/taxmate_intake.py")
+    skill_text = read_optional(root, "skills/individual-return/SKILL.md")
     skill_rules = read_optional(root, "skills/individual-return/references/rules.md")
     findings: List[Finding] = []
     findings.extend(
@@ -253,19 +254,25 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def normalize_state(value: Any) -> Optional[str]:",
                 "SUPPORTED_WFH_START = date(2025, 7, 1)",
                 "SUPPORTED_WFH_END = date(2026, 6, 30)",
-                '"VIC": {"2025-09-26", "2025-11-04", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"}',
+                "LIMITED_PUBLIC_HOLIDAYS_BY_STATE = {",
+                '"NSW": {"2025-08-04"}',
+                '"TAS": {"2025-10-23", "2025-11-03", "2026-02-09", "2026-04-07"}',
+                '"VIC": {"2025-09-26", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"}',
                 '"NSW": {"2025-10-06", "2026-04-04", "2026-04-05", "2026-04-27", "2026-06-08"}',
                 '"QLD": {"2025-10-06", "2026-04-04", "2026-04-05", "2026-05-04"}',
                 '"SA": {"2025-10-06", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"}',
-                '"TAS": {"2025-11-03", "2026-02-09", "2026-03-09", "2026-04-07", "2026-06-08"}',
-                '"WA": {"2025-09-29", "2026-03-02", "2026-04-05", "2026-04-27", "2026-06-01"}',
-                '"ACT": {"2025-10-06", "2026-03-09", "2026-04-27", "2026-06-01", "2026-06-08"}',
-                '"NT": {"2025-08-04", "2026-05-04", "2026-06-08"}',
+                '"TAS": {"2026-03-09", "2026-06-08"}',
+                '"WA": {"2026-03-02", "2026-04-05", "2026-04-27", "2026-06-01"}',
+                '"ACT": {"2025-10-06", "2026-03-09", "2026-04-04", "2026-04-05", "2026-04-27", "2026-06-01", "2026-06-08"}',
+                '"NT": {"2025-08-04", "2026-04-04", "2026-04-05", "2026-05-04", "2026-06-08"}',
                 "https://www.fairwork.gov.au/employment-conditions/public-holidays/2025-public-holidays",
                 "https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays",
                 "*PUBLIC_HOLIDAY_SOURCES",
                 "holiday_not_worked = current in holidays and current not in worked_public",
                 "holiday_worked = current in worked_public",
+                "limited_holidays = limited_public_holidays(state_key)",
+                "def limited_public_holidays(",
+                "def limited_public_holiday_may_affect_period(",
                 "if \"start\" not in raw or \"end\" not in raw:",
                 "start = parse_iso_date(raw.get(\"start\"))",
                 "end = parse_iso_date(raw.get(\"end\"))",
@@ -323,6 +330,18 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     stale_holiday_source = "https://data.gov.au/data/dataset/australian-holidays-machine-readable-dataset"
     if stale_holiday_source in text or stale_holiday_source in skill_rules:
         findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "forbidden inactive public holiday source"))
+    holiday_guidance = skill_text + "\n" + skill_rules
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            holiday_guidance,
+            [
+                "state-wide public holidays",
+                "regional, capital-city-only, sector-only, and partial-day",
+                "Evidence or `Accountant review`",
+            ],
+        )
+    )
     return findings
 
 

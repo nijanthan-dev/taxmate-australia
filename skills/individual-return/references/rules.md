@@ -19,6 +19,8 @@ Metadata-only links are routing and verification leads, not enough by themselves
 
 Individual-return intake is a coordinator. It should collect facts, preserve evidence gaps, route to the most specific installed skill, and assemble an HTML preparation handoff. It should not duplicate detailed tax logic from PAYG, WFH, ABN, GST/BAS, private-health, superannuation, investment, records, workbook, or taxpack skills. If full-runtime tooling is available, use it for deterministic calendars, candidate rows, queues, and HTML rendering; keep portable skill output as guidance when no checkout/runtime exists.
 
+WFH calendar helpers may automatically exclude only supported income-year state-wide public holidays. Regional, capital-city-only, sector-only, and partial-day public holidays need user facts before they affect hours; otherwise keep the affected WFH period as Evidence or `Accountant review`.
+
 ## Accountant review
 
 Use `Accountant review` for ambiguity, missing evidence, mixed-use items, GST/BAS uncertainty, PSI, non-commercial losses, business-versus-hobby, home-business occupancy, CGT, FBT, uncommon income, unsupported AI extraction, unknown required facts, and any source conflict. Review status wins over evidence, used, skipped, ATO-label, tab-kind, status-kind, or styling fields in all rendered queues and guide rows.

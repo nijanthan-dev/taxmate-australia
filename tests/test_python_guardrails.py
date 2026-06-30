@@ -123,6 +123,8 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("wfh_answers" in finding.detail for finding in findings))
         self.assertTrue(any("has_abn_inputs" in finding.detail for finding in findings))
         self.assertTrue(any("has_bas_inputs" in finding.detail for finding in findings))
+        self.assertTrue(any("state-wide public holidays" in finding.detail for finding in findings))
+        self.assertTrue(any("regional, capital-city-only, sector-only, and partial-day" in finding.detail for finding in findings))
         self.assertTrue(any("parse_gst_registration" in finding.detail for finding in findings))
         self.assertTrue(any("confirmed" in finding.detail for finding in findings))
         self.assertTrue(any("2025-09-26" in finding.detail for finding in findings))
@@ -655,6 +657,8 @@ class IndividualIntakeTests(unittest.TestCase):
             "NSW": 0,
             "QLD": 0,
             "SA": 0,
+            "ACT": 0,
+            "NT": 0,
             "WA": 8,
         }
         for state, expected_hours in expectations.items():
@@ -671,6 +675,48 @@ class IndividualIntakeTests(unittest.TestCase):
                 }
 
                 self.assertEqual(expected_hours, taxmate_intake.calculate_wfh_hours(raw))
+
+    def test_wfh_limited_public_holidays_remain_evidence(self) -> None:
+        cases = [
+            (state, day)
+            for state, days in taxmate_intake.LIMITED_PUBLIC_HOLIDAYS_BY_STATE.items()
+            for day in sorted(days)
+        ]
+        for state, day in cases:
+            with self.subTest(state=state, day=day):
+                rows = taxmate_intake.wfh_rows(
+                    {
+                        "state": state,
+                        "start": day,
+                        "end": day,
+                        "weekdays": [date_weekday(day)],
+                        "hours_per_day": 8,
+                        "records": "timesheet",
+                        "actual_cost_records": "none",
+                        "leave_dates": [],
+                        "worked_public_holidays": [],
+                        "worked_weekends": [],
+                    }
+                )
+
+                self.assertEqual("Evidence", rows[0]["status"])
+                self.assertIn("unknown hours; fixed-rate candidate unknown", rows[0]["answer"])
+
+    def test_tas_statewide_holidays_still_exclude_hours(self) -> None:
+        raw = {
+            "state": "TAS",
+            "start": "2026-03-09",
+            "end": "2026-03-09",
+            "weekdays": [0],
+            "hours_per_day": 8,
+            "records": "timesheet",
+            "actual_cost_records": "none",
+            "leave_dates": [],
+            "worked_public_holidays": [],
+            "worked_weekends": [],
+        }
+
+        self.assertEqual(0, taxmate_intake.calculate_wfh_hours(raw))
 
     def test_wfh_uses_current_public_holiday_source(self) -> None:
         self.assertEqual(

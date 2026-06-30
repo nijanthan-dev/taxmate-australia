@@ -38,7 +38,7 @@ Handle individual tax return prep for the selected income year, normally 2025-26
 - sole-trader ABN income and expenses, GST registration, accounting basis, business-versus-hobby, PSI trigger, and profit or loss;
 - BAS worksheet facts: period, GST collected, GST credits, GST-free or input-taxed sales, PAYG withholding or instalments, adjustments, and tax invoices;
 - employee and ABN deductions, reimbursement, evidence, GST, work/private split, and mixed-use review;
-- WFH calendar facts, public holidays, leave, weekends worked, hours, records, fixed-rate and actual-cost support;
+- WFH calendar facts, state-wide public holidays, limited regional/sector/partial-day public holidays, leave, weekends worked, hours, records, fixed-rate and actual-cost support;
 - assets such as monitors and laptops, including cost, date, owner, work use, method facts, evidence, and review status.
 
 ## Out Of Scope
@@ -53,7 +53,7 @@ Do not fully handle company, trust, partnership, full supplementary, rental prop
 4. Keep missing required facts in a missing-facts queue. If the user marks a fact unknown, keep it visible and not copy-ready.
 5. Keep missing records in an evidence queue. Show draft values with evidence warnings, not copy-ready status.
 6. Put ambiguous, mixed-use, GST/BAS, PSI, non-commercial-loss, home-business, FBT, CGT, business-versus-hobby, and uncommon-income items in `Accountant review`.
-7. For WFH, exclude leave and public holidays unless the user worked. Include weekends only when the user says they worked. Compare fixed-rate and actual-cost candidates only when facts and records support it.
+7. For WFH, exclude leave and state-wide public holidays unless the user worked. Keep regional, capital-city-only, sector-only, and partial-day holidays as Evidence or `Accountant review` unless the user supplies facts that resolve them. Include weekends only when the user says they worked. Compare fixed-rate and actual-cost candidates only when facts and records support it.
 8. For assets, never claim full cost by default. Ask work-use and method facts, then present immediate, depreciation, low-value-pool, or review outcomes only when source-backed.
 9. For BAS, prepare a worksheet only. Calculate totals where facts are complete, but do not lodge or support BAS lodgment.
 10. When full runtime execution is available, use the runtime intake command and output one print-first HTML pack only. Do not expose internal Python script names to users.

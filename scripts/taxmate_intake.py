@@ -75,6 +75,15 @@ PUBLIC_HOLIDAY_SOURCES = [
     "https://www.fairwork.gov.au/employment-conditions/public-holidays/2025-public-holidays",
     PUBLIC_HOLIDAY_SOURCE,
 ]
+LIMITED_PUBLIC_HOLIDAYS_BY_STATE = {
+    "NSW": {"2025-08-04"},
+    "QLD": {"2025-08-13", "2025-12-24"},
+    "SA": {"2025-12-24", "2025-12-31"},
+    "NT": {"2025-12-24", "2025-12-31"},
+    "TAS": {"2025-10-23", "2025-11-03", "2026-02-09", "2026-04-07"},
+    "VIC": {"2025-11-04"},
+    "WA": {"2025-09-29"},
+}
 ATO_INDIVIDUAL_SOURCE = "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-instructions-2026"
 ATO_WFH_FIXED_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/fixed-rate-method"
 ATO_WFH_ACTUAL_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/actual-cost-method"
@@ -513,6 +522,9 @@ def calculate_wfh_hours(raw: Dict[str, Any]) -> Optional[float]:
         return None
     leave, worked_public, worked_weekends = adjustment_dates
     holidays = public_holidays(state_key)
+    limited_holidays = limited_public_holidays(state_key)
+    if limited_public_holiday_may_affect_period(start, end, weekdays, limited_holidays, leave, worked_public, worked_weekends):
+        return None
     if not valid_wfh_adjustment_dates(start, end, weekdays, holidays, leave, worked_public, worked_weekends):
         return None
     work_days = 0
@@ -535,6 +547,29 @@ def supported_wfh_income_year(raw: Dict[str, Any]) -> bool:
 
 def dates_within_supported_income_year(start: date, end: date) -> bool:
     return SUPPORTED_WFH_START <= start <= end <= SUPPORTED_WFH_END
+
+
+def limited_public_holidays(state: Any) -> Set[date]:
+    state_key = normalize_state(state)
+    if state_key is None:
+        return set()
+    return {date.fromisoformat(value) for value in LIMITED_PUBLIC_HOLIDAYS_BY_STATE.get(state_key, set())}
+
+
+def limited_public_holiday_may_affect_period(
+    start: date,
+    end: date,
+    weekdays: Set[int],
+    limited_holidays: Set[date],
+    leave: Set[date],
+    worked_public: Set[date],
+    worked_weekends: Set[date],
+) -> bool:
+    relevant_adjustments = leave | worked_public | worked_weekends
+    for day in limited_holidays:
+        if start <= day <= end and (day.weekday() in weekdays or day in relevant_adjustments):
+            return True
+    return False
 
 
 def has_complete_wfh_records(raw: Dict[str, Any]) -> bool:
@@ -622,14 +657,14 @@ def public_holidays(state: Any) -> Set[date]:
         "2026-04-25",
     }
     state_days = {
-        "VIC": {"2025-09-26", "2025-11-04", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"},
+        "VIC": {"2025-09-26", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"},
         "NSW": {"2025-10-06", "2026-04-04", "2026-04-05", "2026-04-27", "2026-06-08"},
         "QLD": {"2025-10-06", "2026-04-04", "2026-04-05", "2026-05-04"},
         "SA": {"2025-10-06", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"},
-        "WA": {"2025-09-29", "2026-03-02", "2026-04-05", "2026-04-27", "2026-06-01"},
-        "TAS": {"2025-11-03", "2026-02-09", "2026-03-09", "2026-04-07", "2026-06-08"},
-        "ACT": {"2025-10-06", "2026-03-09", "2026-04-27", "2026-06-01", "2026-06-08"},
-        "NT": {"2025-08-04", "2026-05-04", "2026-06-08"},
+        "WA": {"2026-03-02", "2026-04-05", "2026-04-27", "2026-06-01"},
+        "TAS": {"2026-03-09", "2026-06-08"},
+        "ACT": {"2025-10-06", "2026-03-09", "2026-04-04", "2026-04-05", "2026-04-27", "2026-06-01", "2026-06-08"},
+        "NT": {"2025-08-04", "2026-04-04", "2026-04-05", "2026-05-04", "2026-06-08"},
     }
     values = set(national)
     values.update(state_days.get(state_key, set()))
