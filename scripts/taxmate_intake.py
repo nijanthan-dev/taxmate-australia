@@ -44,6 +44,17 @@ REVIEWABLE_COMPLEX_PAYMENT_FIELDS = (
     "super_income_stream_taxable_amount",
     "super_income_tax_withheld",
 )
+REVIEWABLE_FOREIGN_INCOME_FIELDS = (
+    "foreign_income_statement",
+    "foreign_income_country",
+    "foreign_income_type",
+    "foreign_income_amount",
+    "foreign_tax_paid",
+    "foreign_income_exchange_rate",
+    "foreign_income_residency_status",
+    "foreign_income_tax_offset_claim",
+    "foreign_employment_exempt_claim",
+)
 COMPLEX_PAYMENT_STATEMENT_FLAT_FIELDS = (
     "etp_statement",
     "lump_sum_arrears_statement",
@@ -173,8 +184,71 @@ COMPLEX_PAYMENT_DECLINE_PHRASES_BY_GROUP = {
         "no super annuities",
     ),
 }
-REVIEWABLE_COMPLEX_FIELDS = ("employee_deductions", "wfh_work_pattern", "wfh_records", "asset_items", "ess_items")
-EXACT_UNKNOWN_PHRASES = frozenset({"unknown", "missing", "not sure", "unsure"})
+FOREIGN_INCOME_AMOUNT_FIELDS = ("amount", "foreign_tax_paid", "tax_paid", "exchange_rate")
+FOREIGN_INCOME_FLAT_AMOUNT_FIELDS = (
+    "foreign_income_amount",
+    "foreign_tax_paid",
+    "foreign_income_exchange_rate",
+)
+FOREIGN_INCOME_SIGNAL_FIELDS = (
+    "statement",
+    "country",
+    "income_type",
+    "payer",
+    "amount",
+    "foreign_tax_paid",
+    "tax_paid",
+    "exchange_rate",
+    "residency_status",
+    "foreign_tax_offset_claim",
+    "foreign_employment_exempt_claim",
+)
+FOREIGN_INCOME_BOOLEAN_SIGNAL_FIELDS = ("foreign_tax_offset_claim", "foreign_employment_exempt_claim")
+FOREIGN_INCOME_FLAT_BOOLEAN_FIELDS = ("foreign_income_tax_offset_claim", "foreign_employment_exempt_claim")
+FOREIGN_INCOME_STATEMENT_MISSING_PHRASES = (
+    "do not have",
+    "don't have",
+    "no statement",
+    "no foreign income statement",
+    "no foreign pension statement",
+    "statement not held",
+    "statement not available",
+    "statement not provided",
+    "statement not received",
+    "statement not supplied",
+    "not held",
+    "not available",
+    "not provided",
+    "not received",
+    "not supplied",
+    "payment summary not held",
+    "payment summary not available",
+    "payment summary not provided",
+    "payment summary not received",
+    "pension statement not held",
+    "pension statement not available",
+    "pension statement not provided",
+    "pension statement not received",
+)
+FOREIGN_INCOME_DECLINE_PHRASES = (
+    "no foreign income",
+    "no foreign employment",
+    "no foreign pension",
+    "no foreign pensions",
+    "not applicable",
+    "not applicable to me",
+    "n/a",
+    "na",
+)
+REVIEWABLE_COMPLEX_FIELDS = (
+    "employee_deductions",
+    "wfh_work_pattern",
+    "wfh_records",
+    "asset_items",
+    "ess_items",
+    "foreign_income_items",
+)
+EXACT_UNKNOWN_PHRASES = frozenset({"unknown", "missing", "not sure", "unsure", "uncertain"})
 EMBEDDED_UNKNOWN_PHRASES = (
     "not confirmed",
     "unconfirmed",
@@ -182,6 +256,7 @@ EMBEDDED_UNKNOWN_PHRASES = (
     "missing",
     "not sure",
     "unsure",
+    "uncertain",
     "no receipt",
 )
 STATE_ALIASES = {
@@ -249,6 +324,18 @@ ATO_LUMP_SUM_ARREARS_SOURCE = "https://www.ato.gov.au/individuals-and-families/i
 ATO_SUPER_PENSIONS_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/superannuation-pensions-and-annuities"
 ATO_SUPER_LUMP_SUM_SOURCE = "https://www.ato.gov.au/tax-rates-and-codes/schedule-12-tax-table-for-superannuation-lump-sums"
 ATO_SUPER_STREAM_SOURCE = "https://www.ato.gov.au/tax-rates-and-codes/schedule-13-tax-table-for-superannuation-income-streams"
+ATO_FOREIGN_WORLDWIDE_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income"
+ATO_FOREIGN_RESIDENT_INCOME_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/australian-resident-for-tax-purposes-foreign-and-worldwide-income"
+ATO_FOREIGN_TEMP_RESIDENT_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/foreign-and-temporary-resident-income"
+ATO_FOREIGN_EMPLOYMENT_EXEMPT_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/tax-exempt-income-from-foreign-employment"
+ATO_FOREIGN_INCOME_TAX_OFFSET_SOURCE = "https://www.ato.gov.au/forms-and-instructions/foreign-income-tax-offset-rules-guide-2026"
+ATO_FOREIGN_INCOME_SOURCES = [
+    ATO_FOREIGN_WORLDWIDE_SOURCE,
+    ATO_FOREIGN_RESIDENT_INCOME_SOURCE,
+    ATO_FOREIGN_TEMP_RESIDENT_SOURCE,
+    ATO_FOREIGN_EMPLOYMENT_EXEMPT_SOURCE,
+    ATO_FOREIGN_INCOME_TAX_OFFSET_SOURCE,
+]
 OMITTED_SCOPE_ITEMS = [
     ("feat: add company return intake", "Company/entity return prep, company tax labels, directors, dividends, franking, retained earnings."),
     ("feat: add trust return intake", "Trust return prep, beneficiary distributions, trustee-assessed income, family trust items."),
@@ -257,7 +344,6 @@ OMITTED_SCOPE_ITEMS = [
     ("feat: add rental property worksheet", "Rental income, interest, repairs versus capital, private use, depreciation, net rental loss."),
     ("feat: add full CGT schedule workflow", "CGT events, cost base, discounts, carried losses, main residence, small business concessions."),
     ("feat: add crypto CGT workflow", "Buys, sells, swaps, staking, rewards, transfers, wallet records, and cost-base tracking."),
-    ("feat: add foreign income workflow", "Foreign employment, pensions, tax offsets, and residency-specific review."),
     ("feat: add PSI deep workflow", "PSI tests, attribution, deductions, and business structure impacts."),
     ("feat: add advanced document extraction", "Robust OCR and templates for arbitrary PDFs/images beyond AI-assisted candidate extraction."),
 ]
@@ -317,6 +403,15 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("super_lump_sum_tax_free_component", "Complex income", "Super lump sum tax-free component", "Superannuation lump sums", False),
         QuestionSpec("super_income_stream_taxable_amount", "Complex income", "Super income stream taxable amount", "Superannuation income streams", False),
         QuestionSpec("super_income_tax_withheld", "Complex income", "Super tax withheld", "Superannuation lump sums and income streams", False),
+        QuestionSpec("foreign_income_statement", "Foreign income", "Foreign income statement or payment summary held?", "Foreign and worldwide income", False),
+        QuestionSpec("foreign_income_country", "Foreign income", "Foreign income country", "Foreign and worldwide income", False),
+        QuestionSpec("foreign_income_type", "Foreign income", "Foreign income type", "Foreign and worldwide income", False),
+        QuestionSpec("foreign_income_amount", "Foreign income", "Foreign income amount", "Foreign and worldwide income", False),
+        QuestionSpec("foreign_tax_paid", "Foreign income", "Foreign tax paid", "Foreign income tax offset", False),
+        QuestionSpec("foreign_income_exchange_rate", "Foreign income", "Foreign income exchange rate used", "Foreign and worldwide income", False),
+        QuestionSpec("foreign_income_residency_status", "Foreign income", "Residency or temporary-resident status for foreign income", "Foreign and worldwide income", False),
+        QuestionSpec("foreign_income_tax_offset_claim", "Foreign income", "Foreign income tax offset claimed?", "Foreign income tax offset", False),
+        QuestionSpec("foreign_employment_exempt_claim", "Foreign income", "Foreign employment exemption claimed?", "Tax-exempt foreign employment income", False),
         QuestionSpec("ess_statement", "ESS", "ESS statement held?", "Employee share schemes", False),
         QuestionSpec("ess_taxed_upfront_discount", "ESS", "ESS taxed-upfront discount", "Employee share schemes", False),
         QuestionSpec("ess_deferred_discount", "ESS", "ESS deferred discount", "Employee share schemes", False),
@@ -377,6 +472,18 @@ def sample_answers() -> Dict[str, Any]:
             "taxable_amount": 18000,
             "tax_free_component": 0,
             "tax_withheld": 2100,
+        },
+        "foreign_income": {
+            "statement": "foreign income statement held",
+            "country": "NZ",
+            "income_type": "employment",
+            "payer": "Example NZ Employer",
+            "amount": 5000,
+            "foreign_tax_paid": 0,
+            "exchange_rate": 0.92,
+            "residency_status": "Australian resident for tax purposes all year",
+            "foreign_tax_offset_claim": False,
+            "foreign_employment_exempt_claim": False,
         },
         "ess": {
             "employer": "Example Pty Ltd",
@@ -476,6 +583,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items.extend(wfh_rows(wfh_answers(answers)))
     items.extend(asset_rows(asset_answers(answers)))
     items.extend(complex_payment_rows(complex_payment_answers(answers)))
+    items.extend(foreign_income_rows(foreign_income_answers(answers)))
     items.extend(ess_rows(ess_answers(answers)))
     items.extend(uncommon_income_rows(answers.get("uncommon_income", [])))
     return {
@@ -523,6 +631,15 @@ def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
         COMPLEX_PAYMENT_FLAT_FIELD_GROUPS[spec.key],
     ):
         return False
+    if spec.key in FOREIGN_INCOME_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if spec.key == "foreign_income_statement" and foreign_income_declines_workflow(value):
+        return False
+    if spec.key in FOREIGN_INCOME_FLAT_BOOLEAN_FIELDS and foreign_income_negative_claim_signal(
+        foreign_income_nested_claim_key(spec.key),
+        value,
+    ):
+        return False
     return spec.required or has_meaningful_value(value)
 
 
@@ -538,6 +655,12 @@ def base_item_status(key: str, value: Any) -> str:
         if key in COMPLEX_PAYMENT_STATEMENT_FLAT_FIELDS and complex_payment_statement_missing(value, group):
             return "Evidence"
         if key in COMPLEX_PAYMENT_FLAT_AMOUNT_FIELDS and complex_payment_amount_malformed(value):
+            return "Evidence"
+        return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
+    if key in REVIEWABLE_FOREIGN_INCOME_FIELDS:
+        if key == "foreign_income_statement" and foreign_income_statement_missing(value):
+            return "Evidence"
+        if key in FOREIGN_INCOME_FLAT_AMOUNT_FIELDS and foreign_income_amount_malformed(value):
             return "Evidence"
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == "gst_registered":
@@ -1243,6 +1366,630 @@ def lump_sum_arrears_tab_text(statement_evidence: bool, prior_year_evidence: boo
     if evidence:
         return f"Lump sum in arrears needs {', '.join(evidence)} before accountant review."
     return "Lump sum in arrears needs source-backed accountant review."
+
+
+def foreign_income_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
+    raw = answers.get("foreign_income")
+    fields = {
+        "statement": answers.get("foreign_income_statement"),
+        "country": answers.get("foreign_income_country"),
+        "income_type": answers.get("foreign_income_type"),
+        "payer": answers.get("foreign_income_payer"),
+        "amount": answers.get("foreign_income_amount"),
+        "foreign_tax_paid": answers.get("foreign_tax_paid"),
+        "exchange_rate": answers.get("foreign_income_exchange_rate"),
+        "residency_status": answers.get("foreign_income_residency_status"),
+        "foreign_tax_offset_claim": answers.get("foreign_income_tax_offset_claim"),
+        "foreign_employment_exempt_claim": answers.get("foreign_employment_exempt_claim"),
+        "items": answers.get("foreign_income_items"),
+    }
+    flat_values = {key: value for key, value in fields.items() if has_meaningful_foreign_income_flat_value(key, value)}
+    if not isinstance(raw, dict):
+        return flat_values
+    if not has_meaningful_value(raw):
+        return flat_values
+    merged = dict(flat_values)
+    for key, value in raw.items():
+        if foreign_income_should_ignore_boolean_signal(merged, key, value):
+            continue
+        if foreign_income_should_merge_boolean_signal(merged, key, value):
+            merged[key] = value
+        elif has_meaningful_foreign_income_override(key, value):
+            merged[key] = value
+        elif key not in merged and has_explicit_foreign_income_evidence_gap(key, value):
+            merged[key] = value
+    return merged
+
+
+def foreign_income_should_merge_boolean_signal(merged: Dict[str, Any], key: str, value: Any) -> bool:
+    if key not in FOREIGN_INCOME_BOOLEAN_SIGNAL_FIELDS:
+        return False
+    if not (isinstance(value, bool) or has_meaningful_value(value)):
+        return False
+    return not foreign_income_should_ignore_boolean_signal(merged, key, value)
+
+
+def foreign_income_should_ignore_boolean_signal(merged: Dict[str, Any], key: str, value: Any) -> bool:
+    return (
+        key in FOREIGN_INCOME_BOOLEAN_SIGNAL_FIELDS
+        and merged.get(key) is True
+        and foreign_income_negative_claim_signal(key, value)
+    )
+
+
+def foreign_income_negative_claim_signal(key: str, value: Any) -> bool:
+    if value is False:
+        return True
+    if isinstance(value, str):
+        return foreign_income_claim_negative(key, value)
+    return False
+
+
+def foreign_income_nested_claim_key(key: str) -> str:
+    if key == "foreign_income_tax_offset_claim":
+        return "foreign_tax_offset_claim"
+    return key
+
+
+def has_meaningful_foreign_income_flat_value(key: str, value: Any) -> bool:
+    if key in FOREIGN_INCOME_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    return has_meaningful_value(value)
+
+
+def foreign_income_rows(raw: Any) -> List[Dict[str, Any]]:
+    if not has_foreign_income_inputs(raw):
+        return []
+    if not isinstance(raw, dict):
+        return []
+    items = foreign_income_item_values(raw.get("items"))
+    amount = foreign_income_amount_value(raw, items, "amount")
+    foreign_tax_paid = foreign_income_amount_value(raw, items, "foreign_tax_paid", "tax_paid")
+    exchange_rate = foreign_income_summary_exchange_rate_text(raw, items)
+    statement_evidence = foreign_income_statement_evidence(raw, items)
+    amount_evidence = foreign_income_amounts_need_evidence(raw, items)
+    residency_evidence = foreign_income_residency_needs_evidence(raw, items)
+    tax_paid_evidence = foreign_income_tax_paid_needs_evidence(raw, items)
+    status = "Evidence" if statement_evidence or amount_evidence or residency_evidence or tax_paid_evidence else "Accountant review"
+    answer = (
+        f"Country {foreign_income_country_text(raw, items)}; "
+        f"type {display_value(raw.get('income_type')) or 'unknown'}; "
+        f"payer {display_value(raw.get('payer')) or 'unknown'}; "
+        f"amount {money_text(amount)}; "
+        f"foreign tax paid {money_text(foreign_tax_paid)}; "
+        f"exchange rate {exchange_rate}; "
+        f"residency {foreign_income_field_text(raw, items, 'residency_status')}; "
+        f"foreign tax offset claim {foreign_income_claim_text(raw, items, 'foreign_tax_offset_claim')}; "
+        f"foreign employment exemption claim {foreign_income_claim_text(raw, items, 'foreign_employment_exempt_claim')}"
+    )
+    item_text = foreign_income_items_text(items)
+    if item_text:
+        answer = f"{answer}; items {item_text}"
+    return [
+        guide_row(
+            "FOREIGN-INCOME",
+            "Foreign and worldwide income",
+            "Foreign income, residency, and tax offset workflow",
+            answer,
+            "Foreign income needs source statement evidence, residency or temporary-resident context, foreign tax paid records, exchange-rate support, and accountant review before manual copy.",
+            status,
+            ATO_FOREIGN_INCOME_SOURCES,
+            tab_text=foreign_income_tab_text(
+                statement_evidence,
+                amount_evidence,
+                residency_evidence,
+                tax_paid_evidence,
+            ),
+        )
+    ]
+
+
+def foreign_income_item_values(raw_items: Any) -> List[Dict[str, Any]]:
+    if not isinstance(raw_items, list):
+        return []
+    return [item for item in raw_items if isinstance(item, dict) and has_meaningful_foreign_income_item(item)]
+
+
+def has_meaningful_foreign_income_item(item: Dict[str, Any]) -> bool:
+    if any(has_meaningful_foreign_income_signal(key, item.get(key)) for key in FOREIGN_INCOME_SIGNAL_FIELDS):
+        return True
+    return any(foreign_income_amount_needs_evidence(item.get(key)) for key in FOREIGN_INCOME_AMOUNT_FIELDS)
+
+
+def has_meaningful_foreign_income_override(key: str, value: Any) -> bool:
+    if key == "items":
+        return bool(foreign_income_item_values(value))
+    return has_meaningful_foreign_income_signal(key, value)
+
+
+def has_meaningful_foreign_income_signal(key: str, value: Any) -> bool:
+    if key in FOREIGN_INCOME_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if key in FOREIGN_INCOME_BOOLEAN_SIGNAL_FIELDS and isinstance(value, bool):
+        return value
+    if key in FOREIGN_INCOME_BOOLEAN_SIGNAL_FIELDS and foreign_income_claim_negative(key, value):
+        return False
+    if contains_unknown(value):
+        return False
+    if key == "statement" and foreign_income_declines_workflow(value):
+        return False
+    return has_meaningful_value(value)
+
+
+def has_explicit_foreign_income_evidence_gap(key: str, value: Any) -> bool:
+    if key in FOREIGN_INCOME_AMOUNT_FIELDS:
+        return foreign_income_amount_needs_evidence(value)
+    if key in ("statement", "residency_status"):
+        return has_meaningful_value(value) and contains_unknown(value)
+    return False
+
+
+def has_foreign_income_inputs(raw: Any) -> bool:
+    if not isinstance(raw, dict):
+        return False
+    if foreign_income_declines_without_facts(raw):
+        return False
+    if foreign_income_item_values(raw.get("items")):
+        return True
+    if any(
+        has_explicit_foreign_income_evidence_gap(key, raw.get(key))
+        for key in ("statement", "residency_status", *FOREIGN_INCOME_AMOUNT_FIELDS)
+    ):
+        return True
+    return any(has_meaningful_foreign_income_signal(key, raw.get(key)) for key in FOREIGN_INCOME_SIGNAL_FIELDS)
+
+
+def foreign_income_declines_without_facts(raw: Dict[str, Any]) -> bool:
+    if not foreign_income_declines_workflow(raw.get("statement")):
+        return False
+    if foreign_income_item_values(raw.get("items")):
+        return False
+    return not any(
+        has_meaningful_foreign_income_signal(key, value) or has_explicit_foreign_income_evidence_gap(key, value)
+        for key, value in raw.items()
+        if key != "statement"
+    )
+
+
+def foreign_income_statement_missing(statement: Any) -> bool:
+    if isinstance(statement, bool):
+        return not statement
+    if is_missing(statement) or contains_unknown(statement):
+        return True
+    if foreign_income_declines_workflow(statement):
+        return True
+    lowered = text(statement).strip().lower()
+    return lowered in {"no", "n", "false", "none", "not held", "not available"} or any(
+        phrase in lowered for phrase in FOREIGN_INCOME_STATEMENT_MISSING_PHRASES
+    ) or foreign_income_document_denial_phrase(lowered)
+
+
+def foreign_income_declines_workflow(statement: Any) -> bool:
+    if not isinstance(statement, str):
+        return False
+    if contains_unknown(statement):
+        return False
+    lowered = statement.strip().lower()
+    if foreign_income_decline_phrase_is_tax_paid_context(lowered):
+        return False
+    if foreign_income_absence_decline_phrase(lowered):
+        return True
+    if foreign_income_document_context(lowered):
+        return False
+    return any(foreign_income_decline_phrase_matches(lowered, phrase) for phrase in FOREIGN_INCOME_DECLINE_PHRASES)
+
+
+def foreign_income_absence_decline_phrase(lowered: str) -> bool:
+    if foreign_income_document_context(lowered) or foreign_income_decline_phrase_is_tax_paid_context(lowered):
+        return False
+    return any(
+        phrase in lowered
+        for phrase in (
+            "do not have any foreign income",
+            "do not have foreign income",
+            "don't have any foreign income",
+            "don't have foreign income",
+        )
+    )
+
+
+def foreign_income_document_context(lowered: str) -> bool:
+    return "statement" in lowered or "payment summary" in lowered
+
+
+def foreign_income_document_denial_phrase(lowered: str) -> bool:
+    if not foreign_income_document_context(lowered):
+        return False
+    if foreign_income_document_positive_phrase(lowered):
+        return False
+    return lowered.startswith(("no ", "without ", "missing ")) or any(
+        phrase in lowered
+        for phrase in (
+            "do not have",
+            "don't have",
+            "not held",
+            "not available",
+            "not provided",
+            "not received",
+            "not supplied",
+        )
+    )
+
+
+def foreign_income_document_positive_phrase(lowered: str) -> bool:
+    return any(
+        phrase in lowered
+        for phrase in (
+            "statement held",
+            "statement available",
+            "statement provided",
+            "statement received",
+            "statement supplied",
+            "payment summary held",
+            "payment summary available",
+            "payment summary provided",
+            "payment summary received",
+            "payment summary supplied",
+        )
+    )
+
+
+def foreign_income_decline_phrase_matches(lowered: str, phrase: str) -> bool:
+    if foreign_income_decline_phrase_is_tax_paid_context(lowered):
+        return False
+    if phrase in {"na", "n/a"}:
+        return lowered == phrase
+    return lowered == phrase or phrase in lowered
+
+
+def foreign_income_decline_phrase_is_tax_paid_context(lowered: str) -> bool:
+    return "no foreign income tax" in lowered or "foreign income tax paid" in lowered
+
+
+def foreign_income_statement_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    statement = raw.get("statement")
+    if has_meaningful_value(statement):
+        if foreign_income_statement_missing(statement):
+            return True
+        return foreign_income_items_have_explicit_statement_gap(items)
+    if items:
+        return foreign_income_items_need_statement_evidence(items)
+    return True
+
+
+def foreign_income_items_need_statement_evidence(items: List[Dict[str, Any]]) -> bool:
+    return any(foreign_income_statement_missing(item.get("statement")) for item in items)
+
+
+def foreign_income_items_have_explicit_statement_gap(items: List[Dict[str, Any]]) -> bool:
+    return any(
+        has_meaningful_value(item.get("statement")) and foreign_income_statement_missing(item.get("statement"))
+        for item in items
+    )
+
+
+def foreign_income_residency_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    residency = raw.get("residency_status")
+    if is_missing(residency):
+        if items:
+            return any(foreign_income_item_residency_missing(item) for item in items)
+        return True
+    if contains_unknown(residency):
+        return True
+    return any(
+        has_meaningful_value(item.get("residency_status")) and contains_unknown(item.get("residency_status"))
+        for item in items
+    )
+
+
+def foreign_income_item_residency_missing(item: Dict[str, Any]) -> bool:
+    residency = item.get("residency_status")
+    return is_missing(residency) or contains_unknown(residency)
+
+
+def foreign_income_tax_paid_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    raw_has_tax_paid = foreign_income_raw_has_tax_paid(raw)
+    if (
+        foreign_income_offset_claim_needs_tax_paid(raw.get("foreign_tax_offset_claim"))
+        and not raw_has_tax_paid
+        and not foreign_income_items_have_tax_paid(items)
+    ):
+        return True
+    return any(
+        foreign_income_offset_claim_needs_tax_paid(item.get("foreign_tax_offset_claim"))
+        and not raw_has_tax_paid
+        and not foreign_income_has_tax_paid_value(item.get("foreign_tax_paid"))
+        and not foreign_income_has_tax_paid_value(item.get("tax_paid"))
+        for item in items
+    )
+
+
+def foreign_income_raw_has_tax_paid(raw: Dict[str, Any]) -> bool:
+    return foreign_income_has_tax_paid_value(raw.get("foreign_tax_paid")) or foreign_income_has_tax_paid_value(
+        raw.get("tax_paid")
+    )
+
+
+def foreign_income_items_have_tax_paid(items: List[Dict[str, Any]]) -> bool:
+    return any(
+        foreign_income_has_tax_paid_value(item.get("foreign_tax_paid"))
+        or foreign_income_has_tax_paid_value(item.get("tax_paid"))
+        for item in items
+    )
+
+
+def foreign_income_has_tax_paid_value(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    amount = foreign_income_money_value(value)
+    if amount is not None:
+        return amount > 0
+    return not contains_unknown(value)
+
+
+def foreign_income_offset_claimed(value: Any) -> bool:
+    if value is True:
+        return True
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if foreign_income_offset_claim_negative(value):
+            return False
+        return lowered in {"yes", "y", "true", "claimed", "claim"} or any(
+            phrase in lowered
+            for phrase in (
+                "yes,",
+                "claiming",
+                "will claim",
+                "intend to claim",
+                "claim the offset",
+                "claim foreign income tax offset",
+            )
+        )
+    return False
+
+
+def foreign_income_offset_claim_needs_tax_paid(value: Any) -> bool:
+    if foreign_income_offset_claimed(value) or contains_unknown(value):
+        return True
+    if isinstance(value, str):
+        return has_meaningful_value(value) and not foreign_income_offset_claim_negative(value)
+    return False
+
+
+def foreign_income_claim_negative(key: str, value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    if key == "foreign_tax_offset_claim":
+        return foreign_income_offset_claim_negative(value)
+    if key == "foreign_employment_exempt_claim":
+        return foreign_income_exemption_claim_negative(value)
+    return False
+
+
+def foreign_income_offset_claim_negative(value: str) -> bool:
+    lowered = value.strip().lower()
+    return lowered in {"no", "n", "false", "not claimed"} or any(
+        phrase in lowered
+        for phrase in (
+            "no offset",
+            "no foreign income tax offset",
+            "no claim",
+            "not claim",
+            "not claiming",
+            "will not claim",
+            "do not claim",
+            "don't claim",
+        )
+    )
+
+
+def foreign_income_exemption_claim_negative(value: str) -> bool:
+    lowered = value.strip().lower()
+    return lowered in {"no", "n", "false", "not exempt", "not claimed"} or any(
+        phrase in lowered
+        for phrase in (
+            "no exemption",
+            "no foreign employment exemption",
+            "no exempt income",
+            "not exempt",
+            "not claim",
+            "not claiming",
+            "will not claim",
+            "do not claim",
+            "don't claim",
+        )
+    )
+
+
+def foreign_income_amounts_need_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    if foreign_income_amount_values_conflict(raw, items):
+        return True
+    if foreign_income_exchange_rate_missing(raw, items):
+        return True
+    if any(foreign_income_amount_needs_evidence(raw.get(key)) for key in FOREIGN_INCOME_AMOUNT_FIELDS):
+        return True
+    return any(foreign_income_amount_needs_evidence(item.get(key)) for item in items for key in FOREIGN_INCOME_AMOUNT_FIELDS)
+
+
+def foreign_income_amount_values_conflict(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return foreign_income_amount_value_conflicts(raw, items, "amount") or foreign_income_amount_value_conflicts(
+        raw, items, "foreign_tax_paid", "tax_paid"
+    )
+
+
+def foreign_income_amount_value_conflicts(
+    raw: Dict[str, Any],
+    items: List[Dict[str, Any]],
+    key: str,
+    alias: str = "",
+) -> bool:
+    direct = foreign_income_money_value(raw.get(key))
+    if direct is None and alias:
+        direct = foreign_income_money_value(raw.get(alias))
+    item_total = foreign_income_item_amount_total(items, key, alias)
+    return direct is not None and item_total is not None and abs(direct - item_total) > 0.005
+
+
+def foreign_income_exchange_rate_missing(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    item_rate_gap = any(
+        foreign_income_money_value(item.get("amount")) is not None
+        and foreign_income_exchange_rate_needs_evidence(item.get("exchange_rate"))
+        for item in items
+    )
+    if item_rate_gap:
+        return True
+    if foreign_income_money_value(raw.get("amount")) is not None:
+        if foreign_income_items_have_exchange_rate_support(items):
+            return foreign_income_exchange_rate_invalid_when_present(raw.get("exchange_rate"))
+        return foreign_income_exchange_rate_needs_evidence(raw.get("exchange_rate"))
+    return False
+
+
+def foreign_income_items_have_exchange_rate_support(items: List[Dict[str, Any]]) -> bool:
+    return bool(items) and all(
+        foreign_income_money_value(item.get("amount")) is None
+        or not foreign_income_exchange_rate_needs_evidence(item.get("exchange_rate"))
+        for item in items
+    )
+
+
+def foreign_income_exchange_rate_invalid_when_present(value: Any) -> bool:
+    if is_missing(value) or isinstance(value, bool) or contains_unknown(value):
+        return False
+    rate = foreign_income_money_value(value)
+    return rate is None or rate <= 0
+
+
+def foreign_income_exchange_rate_needs_evidence(value: Any) -> bool:
+    if is_missing(value) or isinstance(value, bool) or contains_unknown(value):
+        return True
+    rate = foreign_income_money_value(value)
+    return rate is None or rate <= 0
+
+
+def foreign_income_amount_needs_evidence(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    return contains_unknown(value) or foreign_income_amount_malformed(value)
+
+
+def foreign_income_amount_malformed(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    try:
+        money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return True
+    return False
+
+
+def foreign_income_money_value(value: Any) -> Optional[float]:
+    try:
+        return money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return None
+
+
+def foreign_income_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str, alias: str = "") -> Optional[float]:
+    item_total = foreign_income_item_amount_total(items, key, alias)
+    if item_total is not None:
+        return item_total
+    amount = foreign_income_money_value(raw.get(key))
+    if amount is not None:
+        return amount
+    return foreign_income_money_value(raw.get(alias)) if alias else None
+
+
+def foreign_income_item_amount_total(items: List[Dict[str, Any]], key: str, alias: str = "") -> Optional[float]:
+    amounts = []
+    for item in items:
+        amount = foreign_income_money_value(item.get(key))
+        if amount is None and alias:
+            amount = foreign_income_money_value(item.get(alias))
+        if amount is not None:
+            amounts.append(amount)
+    if not amounts:
+        return None
+    return round(sum(amounts), 6)
+
+
+def foreign_income_summary_exchange_rate_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
+    direct = foreign_income_money_value(raw.get("exchange_rate"))
+    if direct is not None:
+        return foreign_income_rate_text(direct)
+    rates = {
+        foreign_income_rate_text(rate)
+        for item in items
+        if (rate := foreign_income_money_value(item.get("exchange_rate"))) is not None
+    }
+    if len(rates) == 1:
+        return next(iter(rates))
+    if len(rates) > 1:
+        return "item-specific"
+    return "unknown"
+
+
+def foreign_income_country_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
+    direct = display_value(raw.get("country"))
+    if direct:
+        return direct
+    countries = [display_value(item.get("country")) for item in items if display_value(item.get("country"))]
+    return ", ".join(countries) if countries else "unknown"
+
+
+def foreign_income_field_text(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> str:
+    direct = display_value(raw.get(key))
+    if direct:
+        return direct
+    values = [display_value(item.get(key)) for item in items if display_value(item.get(key))]
+    return ", ".join(values) if values else "unknown"
+
+
+def foreign_income_claim_text(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> str:
+    if key in raw:
+        return display_value(raw.get(key)) or "unknown"
+    values = [display_value(item.get(key)) for item in items if key in item]
+    return ", ".join(values) if values else "unknown"
+
+
+def foreign_income_items_text(items: List[Dict[str, Any]]) -> str:
+    details: List[str] = []
+    for idx, item in enumerate(items, start=1):
+        label = display_value(item.get("country")) or display_value(item.get("payer")) or f"item {idx}"
+        tax_paid = item.get("foreign_tax_paid")
+        if is_missing(tax_paid):
+            tax_paid = item.get("tax_paid")
+        details.append(
+            f"{label}: type {display_value(item.get('income_type')) or 'unknown'}, "
+            f"amount {money_text(foreign_income_money_value(item.get('amount')))}, "
+            f"foreign tax paid {money_text(foreign_income_money_value(tax_paid))}, "
+            f"exchange rate {foreign_income_rate_text(foreign_income_money_value(item.get('exchange_rate')))}"
+        )
+    return " | ".join(details)
+
+
+def foreign_income_rate_text(value: Optional[float]) -> str:
+    return "unknown" if value is None else f"{value:.6g}"
+
+
+def foreign_income_tab_text(
+    statement_evidence: bool,
+    amount_evidence: bool,
+    residency_evidence: bool,
+    tax_paid_evidence: bool,
+) -> str:
+    evidence = []
+    if statement_evidence:
+        evidence.append("statement evidence")
+    if amount_evidence:
+        evidence.append("numeric amount or exchange-rate evidence")
+    if residency_evidence:
+        evidence.append("residency or temporary-resident evidence")
+    if tax_paid_evidence:
+        evidence.append("foreign tax paid evidence")
+    if evidence:
+        return f"Foreign income needs {', '.join(evidence)} before accountant review."
+    return "Foreign income needs source-backed accountant review."
 
 
 def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:

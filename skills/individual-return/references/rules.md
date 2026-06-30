@@ -17,6 +17,11 @@ This orchestration skill does not bundle extracted tax-treatment summaries. It c
 - ATO superannuation pensions and annuities: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/superannuation-pensions-and-annuities
 - ATO superannuation lump sums withholding: https://www.ato.gov.au/tax-rates-and-codes/schedule-12-tax-table-for-superannuation-lump-sums
 - ATO superannuation income streams withholding: https://www.ato.gov.au/tax-rates-and-codes/schedule-13-tax-table-for-superannuation-income-streams
+- ATO foreign and worldwide income: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income
+- ATO Australian resident foreign and worldwide income: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/australian-resident-for-tax-purposes-foreign-and-worldwide-income
+- ATO foreign and temporary resident income: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/foreign-and-temporary-resident-income
+- ATO tax-exempt foreign employment income: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/tax-exempt-income-from-foreign-employment
+- ATO foreign income tax offset rules guide: https://www.ato.gov.au/forms-and-instructions/foreign-income-tax-offset-rules-guide-2026
 - Fair Work 2025 public holidays: https://www.fairwork.gov.au/employment-conditions/public-holidays/2025-public-holidays
 - Fair Work 2026 public holidays: https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays
 
@@ -31,6 +36,8 @@ WFH calendar helpers may automatically exclude only supported income-year state-
 ESS handling is prep-only. Collect statement evidence, employer or scheme labels, taxed-upfront discount, deferred discount, foreign-source discount, TFN amount withheld, and itemized statement rows. Missing statements, malformed or conflicting amount fields, deferred taxing-point uncertainty, and foreign-source splits stay Evidence or `Accountant review`.
 
 ETP, lump sum in arrears, super lump sum, and super income stream handling is prep-only. Collect official statements, payer or fund labels, payment type, payment dates, taxable and tax-free components, prior-year allocation where relevant, and withholding. Explicit no-payment answers without facts should skip the workflow; no-payment answers plus amounts, unknown statements, malformed amounts, and incomplete prior-year allocation stay Evidence or `Accountant review`.
+
+Foreign income handling is prep-only. Collect source statements, country, income type, amount, foreign tax paid, exchange-rate support, residency-specific or temporary-resident evidence, foreign income tax offset claims, and exempt foreign employment claims. Explicit no-foreign-income answers without facts should skip the workflow; no-foreign-income plus amount facts, missing statements, unknown or malformed amounts, exchange-rate gaps, missing residency or temporary-resident evidence, and offset claims without foreign tax paid evidence stay Evidence or `Accountant review`.
 
 ## Accountant review
 

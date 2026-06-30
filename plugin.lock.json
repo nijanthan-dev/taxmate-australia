@@ -84,7 +84,7 @@
         "type": "local",
         "path": "skills/individual-return"
       },
-      "integrity": "sha256:a5652a9ff126d2c3165f761b209e8c63d94dc4101375b251cf52d5e5bb480515"
+      "integrity": "sha256:854923cf851371497524019cb27c28e3b3d6af2ea60c11b44c8b88bbef5c317b"
     },
     {
       "id": "payg-employer",
@@ -147,7 +147,7 @@
         "type": "local",
         "path": "skills/taxmate-australia"
       },
-      "integrity": "sha256:03ab29ce916d58834a71350ba4851988c53cca5a07e19c1aeb5e642e653b0e24"
+      "integrity": "sha256:fda363b12588ead34069562c0e8a2ef43399e22477a48900bbcfd895ac2500b7"
     },
     {
       "id": "taxpack",

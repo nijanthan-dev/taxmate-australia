@@ -20,6 +20,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: afef9c8ff051ebc0283143ba65eb1a31758cb42d5cbff32c7473107febfe7dab
 
+- Guide to foreign income tax offset rules 2026
+  - Source ID: ato-ae68541d0aa6
+  - URL: https://www.ato.gov.au/forms-and-instructions/foreign-income-tax-offset-rules-guide-2026
+  - Source last updated: 2026-05-29T14:00:00.000+00:00
+  - Checked at: 2026-06-30T06:30:53Z
+  - Content hash: 4478c9ba25dab85985422d3f87454e0b9124562bc99bb3625ed74b6159ab8798
+
 ## Metadata-only official-source links
 
 - No metadata-only assigned sources for this topic.

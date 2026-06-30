@@ -377,7 +377,8 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("feat: add advanced document extraction", titles)
         self.assertNotIn("feat: add ESS workflow", titles)
         self.assertNotIn("feat: add ETP and lump sum workflow", titles)
-        self.assertEqual(10, len(issues))
+        self.assertNotIn("feat: add foreign income workflow", titles)
+        self.assertEqual(9, len(issues))
         for item in issues:
             self.assertIn("Omitted from V1", item["body"])
             self.assertIn("prep-only", item["body"])
@@ -394,6 +395,7 @@ class IndividualIntakeTests(unittest.TestCase):
                 "PAYG",
                 "Income",
                 "Complex income",
+                "Foreign income",
                 "ABN",
                 "BAS",
                 "Deductions",
@@ -413,6 +415,12 @@ class IndividualIntakeTests(unittest.TestCase):
                 "lump_sum_arrears_amount",
                 "super_income_statement",
                 "super_income_stream_taxable_amount",
+                "foreign_income_statement",
+                "foreign_income_country",
+                "foreign_income_amount",
+                "foreign_tax_paid",
+                "foreign_income_residency_status",
+                "foreign_income_tax_offset_claim",
             }.issubset(keys)
         )
 
@@ -687,6 +695,846 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertIn(url, registry_urls)
                 self.assertEqual("verified", covered[url]["status"])
                 self.assertIn(skill, covered[url]["skills"])
+
+    def test_foreign_income_workflow_renders_statement_backed_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("Country NZ", row["answer"])
+        self.assertIn("type employment", row["answer"])
+        self.assertIn("amount 5000.00", row["answer"])
+        self.assertIn("foreign tax paid 0.00", row["answer"])
+        self.assertIn("exchange rate 0.92", row["answer"])
+        self.assertIn("residency Australian resident for tax purposes all year", row["answer"])
+        self.assertIn(taxmate_intake.ATO_FOREIGN_WORLDWIDE_SOURCE, row["source_urls"])
+        self.assertIn(taxmate_intake.ATO_FOREIGN_INCOME_TAX_OFFSET_SOURCE, row["source_urls"])
+
+    def test_no_foreign_income_answers_do_not_render_workflow_row(self) -> None:
+        cases = [
+            {"foreign_income_statement": "no foreign income"},
+            {"foreign_income_statement": "I had no foreign income this year"},
+            {"foreign_income_statement": "I do not have any foreign income"},
+            {"foreign_income_statement": "I don't have foreign income"},
+            {"foreign_income_statement": "no foreign employment"},
+            {"foreign_income_statement": "not applicable"},
+            {"foreign_income": {"statement": "no foreign pensions"}},
+            {"foreign_income_tax_offset_claim": False},
+            {"foreign_employment_exempt_claim": False},
+            {"foreign_income_statement": "no foreign income", "foreign_income_tax_offset_claim": "no offset"},
+            {"foreign_income_statement": "no foreign income", "foreign_employment_exempt_claim": "no exemption"},
+            {"foreign_income": {"statement": "no foreign income", "foreign_tax_offset_claim": "not claiming"}},
+            {"foreign_income": {"statement": "no foreign income", "foreign_employment_exempt_claim": "no foreign employment exemption"}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(any(row["number"] == "FOREIGN-INCOME" for row in payload["items"]))
+
+    def test_foreign_income_decline_tokens_are_exact(self) -> None:
+        cases = [
+            {"foreign_income_statement": "Canadian T4 statement held"},
+            {"foreign_income": {"statement": "statement held from Canada"}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("residency or temporary-resident evidence", row["tab_text"])
+
+    def test_ambiguous_no_foreign_income_statement_stays_visible(self) -> None:
+        for statement in ["unsure, no foreign income?", "uncertain, no foreign income"]:
+            with self.subTest(statement=statement):
+                payload = taxmate_intake.answers_to_pack_payload({"foreign_income_statement": statement})
+                rows = {item["number"]: item for item in payload["items"]}
+
+                self.assertEqual("Evidence", rows["foreign_income_statement"]["status"])
+                self.assertEqual("Evidence", rows["FOREIGN-INCOME"]["status"])
+                self.assertIn("statement evidence", rows["FOREIGN-INCOME"]["tab_text"])
+
+    def test_false_foreign_income_claim_flags_do_not_render_base_rows(self) -> None:
+        rows = taxmate_intake.base_items(
+            {
+                "foreign_income_tax_offset_claim": False,
+                "foreign_employment_exempt_claim": False,
+                "foreign_income_statement": "no foreign income",
+            }
+        )
+        rendered_numbers = {row["number"] for row in rows}
+
+        self.assertNotIn("foreign_income_tax_offset_claim", rendered_numbers)
+        self.assertNotIn("foreign_employment_exempt_claim", rendered_numbers)
+
+    def test_negative_foreign_income_claim_strings_do_not_render_base_rows(self) -> None:
+        rows = taxmate_intake.base_items(
+            {
+                "foreign_income_tax_offset_claim": "no offset",
+                "foreign_employment_exempt_claim": "no exemption",
+                "foreign_income_statement": "no foreign income",
+            }
+        )
+        rendered_numbers = {row["number"] for row in rows}
+
+        self.assertNotIn("foreign_income_tax_offset_claim", rendered_numbers)
+        self.assertNotIn("foreign_employment_exempt_claim", rendered_numbers)
+
+    def test_nested_false_foreign_income_claim_flags_are_preserved(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "foreign income statement held",
+                    "country": "NZ",
+                    "amount": 500,
+                    "foreign_tax_paid": 0,
+                    "exchange_rate": 0.92,
+                    "residency_status": "Australian resident",
+                    "foreign_tax_offset_claim": False,
+                    "foreign_employment_exempt_claim": False,
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("foreign tax offset claim false", row["answer"])
+        self.assertIn("foreign employment exemption claim false", row["answer"])
+
+    def test_no_foreign_tax_paid_wording_does_not_decline_foreign_income_workflow(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "foreign income statement held; no foreign tax paid",
+                    "country": "NZ",
+                    "amount": 500,
+                    "foreign_tax_paid": 0,
+                    "exchange_rate": 0.92,
+                    "residency_status": "Australian resident",
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertEqual("Foreign income needs source-backed accountant review.", row["tab_text"])
+        self.assertIn("foreign tax paid 0.00", row["answer"])
+
+    def test_no_foreign_income_tax_paid_wording_does_not_decline_foreign_income_workflow(self) -> None:
+        for statement in [
+            "foreign income statement held; no foreign income tax paid",
+            "I do not have foreign income tax paid",
+            "I don't have foreign income tax paid",
+        ]:
+            with self.subTest(statement=statement):
+                payload = taxmate_intake.answers_to_pack_payload({"foreign_income_statement": statement})
+                rows = {item["number"]: item for item in payload["items"]}
+
+                self.assertIn("foreign_income_statement", rows)
+                self.assertIn("FOREIGN-INCOME", rows)
+                self.assertEqual("Evidence", rows["FOREIGN-INCOME"]["status"])
+                self.assertIn("residency or temporary-resident evidence", rows["FOREIGN-INCOME"]["tab_text"])
+
+    def test_foreign_income_no_answer_with_amount_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income_statement": "no foreign income",
+                "foreign_income_amount": 100,
+                "foreign_income_residency_status": "Australian resident for tax purposes",
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("statement evidence", row["tab_text"])
+        self.assertIn("amount 100.00", row["answer"])
+
+    def test_foreign_income_no_answer_with_item_gap_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income_statement": "no foreign income",
+                "foreign_income_items": [{"country": "US", "amount": "unknown"}],
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("statement evidence", row["tab_text"])
+        self.assertIn("numeric amount or exchange-rate evidence", row["tab_text"])
+        self.assertIn("US", row["answer"])
+
+    def test_foreign_income_missing_statement_phrases_stay_evidence(self) -> None:
+        cases = [
+            {"foreign_income_statement": "statement not provided", "foreign_income_amount": 100, "foreign_income_residency_status": "resident"},
+            {"foreign_income": {"statement": "I do not have the foreign income statement", "amount": 100, "residency_status": "resident"}},
+            {"foreign_income_items": [{"statement": "payment summary not held", "country": "US", "amount": 100, "residency_status": "resident"}]},
+            {"foreign_income_statement": "no foreign income statement"},
+            {"foreign_income_statement": "no foreign pension statement"},
+            {"foreign_income_statement": "no foreign income payment summary"},
+            {"foreign_income_statement": "no foreign employment statement"},
+            {"foreign_income": {"statement": "without foreign income payment summary", "amount": 100, "residency_status": "resident"}},
+            {"foreign_income_items": [{"statement": "missing foreign employment statement", "country": "US", "amount": 100, "residency_status": "resident"}]},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                rows = {item["number"]: item for item in payload["items"]}
+                row = rows["FOREIGN-INCOME"]
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("statement evidence", row["tab_text"])
+                if "foreign_income_statement" in answers:
+                    self.assertEqual("Evidence", rows["foreign_income_statement"]["status"])
+                if "amount" in str(answers):
+                    self.assertIn("100.00", row["answer"])
+
+    def test_unknown_or_malformed_foreign_income_amounts_stay_evidence(self) -> None:
+        cases = [
+            {"foreign_income": {"statement": "statement held", "amount": "unknown", "residency_status": "resident"}},
+            {"foreign_income": {"statement": "statement held", "amount": "about $100", "residency_status": "resident"}},
+            {"foreign_income_items": [{"statement": "statement held", "country": "US", "amount": "100 AUD", "residency_status": "resident"}]},
+            {"foreign_income": {"statement": "statement held", "amount": 100, "exchange_rate": "unknown", "residency_status": "resident"}},
+            {"foreign_income": {"statement": "statement held", "amount": 100, "exchange_rate": False, "residency_status": "resident"}},
+            {"foreign_income": {"statement": "statement held", "amount": 100, "exchange_rate": 0, "residency_status": "resident"}},
+            {"foreign_income": {"statement": "statement held", "amount": 100, "exchange_rate": -0.5, "residency_status": "resident"}},
+            {"foreign_income_items": [{"statement": "statement held", "country": "US", "amount": 100, "exchange_rate": True, "residency_status": "resident"}]},
+            {"foreign_income_items": [{"statement": "statement held", "country": "US", "amount": 100, "exchange_rate": 0, "residency_status": "resident"}]},
+            {"foreign_income_items": [{"statement": "statement held", "country": "US", "amount": 100, "exchange_rate": -0.5, "residency_status": "resident"}]},
+            {"foreign_income": {"statement": "statement held", "amount": 100, "residency_status": "resident"}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("numeric amount or exchange-rate evidence", row["tab_text"])
+
+    def test_foreign_income_item_exchange_rates_support_top_level_totals(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "statement held",
+                    "amount": 300,
+                    "residency_status": "Australian resident",
+                    "items": [
+                        {
+                            "statement": "statement held",
+                            "country": "US",
+                            "amount": 100,
+                            "exchange_rate": 0.66,
+                            "residency_status": "Australian resident",
+                        },
+                        {
+                            "statement": "statement held",
+                            "country": "NZ",
+                            "amount": 200,
+                            "exchange_rate": 0.50,
+                            "residency_status": "Australian resident",
+                        },
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("exchange rate item-specific", row["answer"])
+        self.assertNotIn("numeric amount or exchange-rate evidence", row["tab_text"])
+
+    def test_foreign_income_item_exchange_rate_gaps_with_top_level_total_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "statement held",
+                    "amount": 300,
+                    "residency_status": "Australian resident",
+                    "items": [
+                        {
+                            "statement": "statement held",
+                            "country": "US",
+                            "amount": 100,
+                            "exchange_rate": 0.66,
+                            "residency_status": "Australian resident",
+                        },
+                        {
+                            "statement": "statement held",
+                            "country": "NZ",
+                            "amount": 200,
+                            "exchange_rate": "unknown",
+                            "residency_status": "Australian resident",
+                        },
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("numeric amount or exchange-rate evidence", row["tab_text"])
+
+    def test_foreign_income_invalid_aggregate_exchange_rate_with_items_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "statement held",
+                    "amount": 300,
+                    "exchange_rate": 0,
+                    "residency_status": "Australian resident",
+                    "items": [
+                        {
+                            "statement": "statement held",
+                            "country": "US",
+                            "amount": 100,
+                            "exchange_rate": 0.66,
+                            "residency_status": "Australian resident",
+                        },
+                        {
+                            "statement": "statement held",
+                            "country": "NZ",
+                            "amount": 200,
+                            "exchange_rate": 0.50,
+                            "residency_status": "Australian resident",
+                        },
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("numeric amount or exchange-rate evidence", row["tab_text"])
+
+    def test_foreign_income_missing_residency_stays_evidence(self) -> None:
+        cases = [
+            {"foreign_income": {"statement": "statement held", "country": "US", "amount": 100}},
+            {"foreign_income": {"statement": "statement held", "country": "US", "amount": 100, "residency_status": "unknown"}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("residency or temporary-resident evidence", row["tab_text"])
+
+    def test_foreign_income_offset_claim_without_tax_paid_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "statement held",
+                    "country": "US",
+                    "amount": 100,
+                    "residency_status": "Australian resident",
+                    "foreign_tax_offset_claim": True,
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("foreign tax paid evidence", row["tab_text"])
+
+    def test_foreign_income_nested_negative_does_not_clear_flat_offset_claim(self) -> None:
+        for nested_claim in [False, "no", "not claiming", "will not claim", "no offset", "no foreign income tax offset"]:
+            with self.subTest(nested_claim=nested_claim):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "foreign_income_tax_offset_claim": True,
+                        "foreign_income": {
+                            "statement": "statement held",
+                            "country": "US",
+                            "amount": 100,
+                            "exchange_rate": 0.66,
+                            "residency_status": "Australian resident",
+                            "foreign_tax_offset_claim": nested_claim,
+                        },
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("foreign tax offset claim true", row["answer"])
+                self.assertIn("foreign tax paid evidence", row["tab_text"])
+
+    def test_foreign_income_nested_negative_does_not_clear_flat_exemption_claim(self) -> None:
+        for nested_claim in [False, "no", "not claiming", "no exemption", "no foreign employment exemption"]:
+            with self.subTest(nested_claim=nested_claim):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "foreign_employment_exempt_claim": True,
+                        "foreign_income": {
+                            "statement": "statement held",
+                            "country": "US",
+                            "amount": 100,
+                            "foreign_tax_paid": 5,
+                            "exchange_rate": 0.66,
+                            "residency_status": "Australian resident",
+                            "foreign_employment_exempt_claim": nested_claim,
+                        },
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+                self.assertEqual("Accountant review", row["status"])
+                self.assertIn("foreign employment exemption claim true", row["answer"])
+
+    def test_foreign_income_negative_offset_phrases_do_not_need_tax_paid(self) -> None:
+        cases = [
+            {
+                "foreign_income_statement": "statement held",
+                "foreign_income_country": "US",
+                "foreign_income_amount": 100,
+                "foreign_income_exchange_rate": 0.66,
+                "foreign_income_residency_status": "Australian resident",
+                "foreign_income_tax_offset_claim": "no offset",
+            },
+            {
+                "foreign_income": {
+                    "statement": "statement held",
+                    "country": "US",
+                    "amount": 100,
+                    "exchange_rate": 0.66,
+                    "residency_status": "Australian resident",
+                    "foreign_tax_offset_claim": "no foreign income tax offset",
+                }
+            },
+            {
+                "foreign_income_items": [
+                    {
+                        "statement": "statement held",
+                        "country": "US",
+                        "amount": 100,
+                        "exchange_rate": 0.66,
+                        "residency_status": "Australian resident",
+                        "foreign_tax_offset_claim": "no offset",
+                    }
+                ]
+            },
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+                self.assertEqual("Accountant review", row["status"])
+                self.assertNotIn("foreign tax paid evidence", row["tab_text"])
+
+    def test_foreign_income_boolean_tax_paid_is_missing_for_offset_claim(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income_statement": "statement held",
+                "foreign_income_amount": 100,
+                "foreign_income_exchange_rate": 0.66,
+                "foreign_income_residency_status": "Australian resident",
+                "foreign_income_tax_offset_claim": True,
+                "foreign_tax_paid": False,
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("foreign tax paid evidence", row["tab_text"])
+        self.assertIn("foreign tax paid unknown", row["answer"])
+
+    def test_foreign_income_non_positive_tax_paid_is_missing_for_offset_claim(self) -> None:
+        cases = [
+            {
+                "foreign_income_statement": "statement held",
+                "foreign_income_amount": 100,
+                "foreign_income_exchange_rate": 0.66,
+                "foreign_income_residency_status": "Australian resident",
+                "foreign_income_tax_offset_claim": True,
+                "foreign_tax_paid": 0,
+            },
+            {
+                "foreign_income": {
+                    "statement": "statement held",
+                    "country": "US",
+                    "amount": 100,
+                    "exchange_rate": 0.66,
+                    "residency_status": "Australian resident",
+                    "foreign_tax_offset_claim": True,
+                    "tax_paid": -1,
+                }
+            },
+            {
+                "foreign_income": {
+                    "statement": "statement held",
+                    "residency_status": "Australian resident",
+                    "items": [
+                        {
+                            "country": "US",
+                            "amount": 100,
+                            "exchange_rate": 0.66,
+                            "foreign_tax_offset_claim": True,
+                            "foreign_tax_paid": 0,
+                        }
+                    ],
+                }
+            },
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("foreign tax paid evidence", row["tab_text"])
+
+    def test_foreign_income_affirmative_offset_claim_phrases_need_tax_paid(self) -> None:
+        cases = ["yes, claimed", "I will claim"]
+        for claim in cases:
+            with self.subTest(claim=claim):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "foreign_income": {
+                            "statement": "statement held",
+                            "country": "US",
+                            "amount": 100,
+                            "exchange_rate": 0.66,
+                            "residency_status": "Australian resident",
+                            "foreign_tax_offset_claim": claim,
+                        }
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("foreign tax paid evidence", row["tab_text"])
+
+    def test_foreign_income_uncertain_offset_claim_needs_tax_paid(self) -> None:
+        for claim in ["unsure whether I will claim", "maybe"]:
+            with self.subTest(claim=claim):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "foreign_income": {
+                            "statement": "statement held",
+                            "country": "US",
+                            "amount": 100,
+                            "exchange_rate": 0.66,
+                            "residency_status": "Australian resident",
+                            "foreign_tax_offset_claim": claim,
+                        }
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("foreign tax paid evidence", row["tab_text"])
+
+    def test_foreign_income_negative_offset_claim_phrase_does_not_need_tax_paid(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "statement held",
+                    "country": "US",
+                    "amount": 100,
+                    "exchange_rate": 0.66,
+                    "residency_status": "Australian resident",
+                    "foreign_tax_offset_claim": "not claiming",
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertNotIn("foreign tax paid evidence", row["tab_text"])
+
+    def test_foreign_income_offset_claim_accepts_item_tax_paid_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "foreign income statement held",
+                    "residency_status": "Australian resident",
+                    "foreign_tax_offset_claim": True,
+                    "items": [
+                        {
+                            "country": "US",
+                            "amount": 100,
+                            "foreign_tax_paid": 10,
+                            "exchange_rate": 0.66,
+                        }
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertEqual("Foreign income needs source-backed accountant review.", row["tab_text"])
+        self.assertIn("foreign tax paid 10.00", row["answer"])
+        self.assertNotIn("foreign tax paid evidence", row["tab_text"])
+
+    def test_foreign_income_item_offset_claim_accepts_top_level_tax_paid_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "foreign income statement held",
+                    "residency_status": "Australian resident",
+                    "foreign_tax_paid": 10,
+                    "items": [
+                        {
+                            "country": "US",
+                            "amount": 100,
+                            "exchange_rate": 0.66,
+                            "foreign_tax_offset_claim": True,
+                        }
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertEqual("Foreign income needs source-backed accountant review.", row["tab_text"])
+        self.assertIn("foreign tax paid 10.00", row["answer"])
+        self.assertNotIn("foreign tax paid evidence", row["tab_text"])
+
+    def test_foreign_income_top_level_item_total_conflicts_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "foreign income statement held",
+                    "amount": 150,
+                    "foreign_tax_paid": 20,
+                    "residency_status": "Australian resident",
+                    "items": [
+                        {
+                            "country": "US",
+                            "amount": 100,
+                            "foreign_tax_paid": 10,
+                            "exchange_rate": 0.66,
+                        }
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("numeric amount or exchange-rate evidence", row["tab_text"])
+
+    def test_foreign_income_item_uncertain_offset_claim_needs_tax_paid(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "foreign income statement held",
+                    "residency_status": "Australian resident",
+                    "items": [
+                        {
+                            "country": "US",
+                            "amount": 100,
+                            "exchange_rate": 0.66,
+                            "foreign_tax_offset_claim": "unsure",
+                        }
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("foreign tax paid evidence", row["tab_text"])
+
+    def test_foreign_income_item_boolean_tax_paid_is_missing_for_offset_claim(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "foreign income statement held",
+                    "residency_status": "Australian resident",
+                    "items": [
+                        {
+                            "country": "US",
+                            "amount": 100,
+                            "exchange_rate": 0.66,
+                            "foreign_tax_offset_claim": True,
+                            "foreign_tax_paid": False,
+                        }
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("foreign tax paid evidence", row["tab_text"])
+        self.assertIn("foreign tax paid unknown", row["answer"])
+
+    def test_foreign_income_items_render_item_values(self) -> None:
+        item = {
+            "statement": "statement held",
+            "country": "US",
+            "income_type": "pension",
+            "amount": 120,
+            "foreign_tax_paid": 0,
+            "exchange_rate": 0.65,
+            "residency_status": "Australian resident",
+            "foreign_tax_offset_claim": False,
+            "foreign_employment_exempt_claim": False,
+        }
+        for answers in [{"foreign_income_items": [item]}, {"foreign_income": {"residency_status": "Australian resident", "items": [item]}}]:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+                self.assertEqual("Accountant review", row["status"])
+                self.assertIn("Country US", row["answer"])
+                self.assertIn("amount 120.00", row["answer"])
+                self.assertIn("foreign tax paid 0.00", row["answer"])
+                self.assertIn("residency Australian resident", row["answer"])
+                self.assertIn("foreign tax offset claim false", row["answer"])
+                self.assertIn("foreign employment exemption claim false", row["answer"])
+                self.assertIn("items US: type pension, amount 120.00", row["answer"])
+
+    def test_top_level_foreign_statement_covers_itemized_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "foreign income statement held",
+                    "residency_status": "Australian resident",
+                    "items": [
+                        {
+                            "country": "US",
+                            "income_type": "employment",
+                            "amount": 100,
+                            "foreign_tax_paid": 10,
+                            "exchange_rate": 0.66,
+                        }
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertEqual("Foreign income needs source-backed accountant review.", row["tab_text"])
+        self.assertIn("items US: type employment, amount 100.00", row["answer"])
+
+    def test_foreign_income_item_exchange_rates_are_not_added(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "foreign income statement held",
+                    "residency_status": "Australian resident",
+                    "items": [
+                        {
+                            "country": "US",
+                            "income_type": "employment",
+                            "amount": 100,
+                            "foreign_tax_paid": 10,
+                            "exchange_rate": 0.66,
+                        },
+                        {
+                            "country": "Canada",
+                            "income_type": "pension",
+                            "amount": 50,
+                            "foreign_tax_paid": 5,
+                            "exchange_rate": 0.50,
+                        },
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("exchange rate item-specific", row["answer"])
+        self.assertNotIn("exchange rate 1.16", row["answer"])
+        self.assertIn("items US: type employment, amount 100.00, foreign tax paid 10.00, exchange rate 0.66", row["answer"])
+        self.assertIn("Canada: type pension, amount 50.00, foreign tax paid 5.00, exchange rate 0.5", row["answer"])
+
+    def test_foreign_income_item_missing_statement_stays_evidence_without_top_statement(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "residency_status": "Australian resident",
+                    "items": [
+                        {
+                            "statement": "statement held",
+                            "country": "US",
+                            "amount": 100,
+                            "foreign_tax_paid": 10,
+                            "exchange_rate": 0.66,
+                        },
+                        {
+                            "statement": "statement not held",
+                            "country": "Canada",
+                            "amount": 50,
+                            "foreign_tax_paid": 5,
+                            "exchange_rate": 0.50,
+                        },
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("statement evidence", row["tab_text"])
+
+    def test_foreign_income_top_statement_does_not_hide_explicit_item_statement_gap(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "foreign income statement held",
+                    "residency_status": "Australian resident",
+                    "items": [
+                        {
+                            "statement": "statement not held",
+                            "country": "US",
+                            "amount": 100,
+                            "foreign_tax_paid": 10,
+                            "exchange_rate": 0.66,
+                        }
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("statement evidence", row["tab_text"])
+
+    def test_foreign_income_review_row_appears_in_html_pack(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("Foreign and worldwide income", body)
+        self.assertIn("Foreign income needs source-backed accountant review.", body)
+        self.assertIn("foreign tax paid 0.00", body)
+        self.assertNotIn("lodgment-ready", body)
+
+    def test_foreign_income_sources_are_registered_and_covered(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        registry = json.loads((root / "data" / "ato_knowledge_base" / "source_registry.json").read_text())
+        coverage = json.loads((root / "data" / "ato_knowledge_base" / "source_coverage.json").read_text())
+        registry_urls = {item["url"] for item in registry["records"]}
+        covered = {item["canonical_url"]: item for item in coverage["sources"]}
+
+        for url in taxmate_intake.ATO_FOREIGN_INCOME_SOURCES:
+            with self.subTest(url=url):
+                self.assertIn(url, registry_urls)
+                self.assertEqual("verified", covered[url]["status"])
+                self.assertTrue(covered[url]["skills"])
+
+    def test_individual_return_portable_skill_covers_foreign_income_scope(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        skill = (root / "skills" / "individual-return" / "SKILL.md").read_text()
+        rules = (root / "skills" / "individual-return" / "references" / "rules.md").read_text()
+        out_of_scope = skill.split("## Out Of Scope", 1)[1].split("## Method", 1)[0]
+
+        self.assertIn("foreign income", skill)
+        self.assertIn("foreign employment", skill)
+        self.assertIn("foreign income tax offset", skill)
+        self.assertIn("residency-specific", skill)
+        self.assertIn(taxmate_intake.ATO_FOREIGN_WORLDWIDE_SOURCE, rules)
+        self.assertIn(taxmate_intake.ATO_FOREIGN_RESIDENT_INCOME_SOURCE, rules)
+        self.assertIn(taxmate_intake.ATO_FOREIGN_TEMP_RESIDENT_SOURCE, rules)
+        self.assertIn(taxmate_intake.ATO_FOREIGN_EMPLOYMENT_EXEMPT_SOURCE, rules)
+        self.assertIn(taxmate_intake.ATO_FOREIGN_INCOME_TAX_OFFSET_SOURCE, rules)
+        self.assertNotIn("foreign income", out_of_scope.lower())
 
     def test_asset_items_alias_gets_typed_asset_review(self) -> None:
         answers = taxmate_intake.sample_answers()
@@ -1073,7 +1921,7 @@ class IndividualIntakeTests(unittest.TestCase):
 
     def test_empty_optional_containers_do_not_render_base_rows(self) -> None:
         answers = taxmate_intake.sample_answers()
-        for key in ["employee_deductions", "wfh_work_pattern", "asset_items", "ess_items"]:
+        for key in ["employee_deductions", "wfh_work_pattern", "asset_items", "ess_items", "foreign_income_items"]:
             answers[key] = [] if key.endswith("items") or key == "employee_deductions" else {}
 
         rows = taxmate_intake.base_items(answers)
@@ -1131,6 +1979,7 @@ class IndividualIntakeTests(unittest.TestCase):
         answers["uncommon_income"] = [{}]
         answers["extracted_values"] = [{}]
         answers["ess"] = {"items": [{}]}
+        answers["foreign_income"] = {"items": [{}]}
 
         payload = taxmate_intake.answers_to_pack_payload(answers)
         rendered_numbers = {row["number"] for row in payload["items"]}
@@ -1139,6 +1988,7 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("ASSET-1", rendered_numbers)
         self.assertNotIn("UNC-1", rendered_numbers)
         self.assertNotIn("ESS", rendered_numbers)
+        self.assertNotIn("FOREIGN-INCOME", rendered_numbers)
         self.assertEqual([], payload["extracted_values"])
 
     def test_wfh_placeholder_fields_fall_back_to_flat_answers(self) -> None:

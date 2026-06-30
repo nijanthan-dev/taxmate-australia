@@ -1,6 +1,6 @@
 {
   "fetched_at": "2026-06-23T08:53:57Z",
-  "refreshed_at": "2026-06-30T03:11:40Z",
+  "refreshed_at": "2026-06-30T06:30:53Z",
   "scope": "ATO official pages relevant to Australian FY2025-26 individual, employment, ABN/sole trader, GST/BAS, PAYG instalments, PAYG withholding, STP, TPAR, FBT, CGT, ETF/investment, crypto, rental-property records, super, and private health tax preparation.",
   "records": [
     {
@@ -3566,6 +3566,54 @@
       "content_hash": "582c04058676864f2cc3c71e71e6a4e5b55d745ef7561f9f965b1b13a2c7ce77",
       "content_verified": true,
       "last_checked": "2026-06-30T03:11:40Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/forms-and-instructions/foreign-income-tax-offset-rules-guide-2026",
+      "final_url": "https://www.ato.gov.au/forms-and-instructions/foreign-income-tax-offset-rules-guide-2026",
+      "status": 200,
+      "title": "Guide to foreign income tax offset rules 2026",
+      "last_updated": "2026-05-29T14:00:00.000+00:00",
+      "raw_file": "raw/forms-and-instructions__foreign-income-tax-offset-rules-guide-2026__246bd91b.html",
+      "text_file": "text/forms-and-instructions__foreign-income-tax-offset-rules-guide-2026__246bd91b.txt",
+      "content_hash": "4478c9ba25dab85985422d3f87454e0b9124562bc99bb3625ed74b6159ab8798",
+      "content_verified": true,
+      "last_checked": "2026-06-30T06:30:53Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/australian-resident-for-tax-purposes-foreign-and-worldwide-income",
+      "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/australian-resident-for-tax-purposes-foreign-and-worldwide-income",
+      "status": 200,
+      "title": "Australian resident for tax purposes foreign and worldwide income",
+      "last_updated": "2026-06-14T14:00:00.000+00:00",
+      "raw_file": "raw/individuals-and-families__income-deductions-offsets-and-records__income-you-must-declare__foreign-and-worldwide-income__australian-resident-for-tax-purposes-for__7b26a3ff.html",
+      "text_file": "text/individuals-and-families__income-deductions-offsets-and-records__income-you-must-declare__foreign-and-worldwide-income__australian-resident-for-tax-purposes-for__7b26a3ff.txt",
+      "content_hash": "a252cf76d0bcd6eef37dec63c56a2ee8ef14e5386a307545b24688b35f6b3c96",
+      "content_verified": true,
+      "last_checked": "2026-06-30T06:30:52Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/foreign-and-temporary-resident-income",
+      "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/foreign-and-temporary-resident-income",
+      "status": 200,
+      "title": "Foreign and temporary resident income",
+      "last_updated": "2026-06-07T14:00:00.000+00:00",
+      "raw_file": "raw/individuals-and-families__income-deductions-offsets-and-records__income-you-must-declare__foreign-and-worldwide-income__foreign-and-temporary-resident-income__6941b3dd.html",
+      "text_file": "text/individuals-and-families__income-deductions-offsets-and-records__income-you-must-declare__foreign-and-worldwide-income__foreign-and-temporary-resident-income__6941b3dd.txt",
+      "content_hash": "8ed59438980647315cd5b79530811c33f0b4079cd73d6438db843f5da6efbcb3",
+      "content_verified": true,
+      "last_checked": "2026-06-30T06:30:53Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/tax-exempt-income-from-foreign-employment",
+      "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/tax-exempt-income-from-foreign-employment",
+      "status": 200,
+      "title": "Tax exempt income from foreign employment",
+      "last_updated": "2026-06-07T14:00:00.000+00:00",
+      "raw_file": "raw/individuals-and-families__income-deductions-offsets-and-records__income-you-must-declare__foreign-and-worldwide-income__tax-exempt-income-from-foreign-employmen__75b4f232.html",
+      "text_file": "text/individuals-and-families__income-deductions-offsets-and-records__income-you-must-declare__foreign-and-worldwide-income__tax-exempt-income-from-foreign-employmen__75b4f232.txt",
+      "content_hash": "6f51a62f9e9615d95f3dcca0c76d8bde7ec2cac1c295a37f2f1a14db3d29a845",
+      "content_verified": true,
+      "last_checked": "2026-06-30T06:30:53Z"
     }
   ],
   "failures": [

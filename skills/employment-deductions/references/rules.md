@@ -132,6 +132,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: d5d9b269e51d7d302a535f98d1093f9e609b698dd4c38c21e02d5f7fd3132936
 
+- Australian resident for tax purposes foreign and worldwide income
+  - Source ID: ato-548736ec2f75
+  - URL: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/australian-resident-for-tax-purposes-foreign-and-worldwide-income
+  - Source last updated: 2026-06-14T14:00:00.000+00:00
+  - Checked at: 2026-06-30T06:30:52Z
+  - Content hash: a252cf76d0bcd6eef37dec63c56a2ee8ef14e5386a307545b24688b35f6b3c96
+
 - Keeping travel expense records
   - Source ID: ato-54f21184bb21
   - URL: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel/overnight-travel-expenses-and-allowances/keeping-travel-expense-records
@@ -194,6 +201,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Source last updated: 2026-06-07T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: f4c8bbce1902d2c7cda8502442863278e7df2c52a0716d324fad48ca1f126af8
+
+- Foreign and temporary resident income
+  - Source ID: ato-849b813bcbcf
+  - URL: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/foreign-and-temporary-resident-income
+  - Source last updated: 2026-06-07T14:00:00.000+00:00
+  - Checked at: 2026-06-30T06:30:53Z
+  - Content hash: 8ed59438980647315cd5b79530811c33f0b4079cd73d6438db843f5da6efbcb3
 
 - Self-education expenses
   - Source ID: ato-8a65daaa6790
@@ -328,6 +342,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: 0f819080a949dabcbf5e57d71d0cc25a959f0a73028b2c71bef8cd364c427f15
 
+- Tax exempt income from foreign employment
+  - Source ID: ato-e1f2334c45e5
+  - URL: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/tax-exempt-income-from-foreign-employment
+  - Source last updated: 2026-06-07T14:00:00.000+00:00
+  - Checked at: 2026-06-30T06:30:53Z
+  - Content hash: 6f51a62f9e9615d95f3dcca0c76d8bde7ec2cac1c295a37f2f1a14db3d29a845
+
 - Home phone and internet expenses
   - Source ID: ato-e20dc9550574
   - URL: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/home-phone-and-internet-expenses
@@ -405,16 +426,15 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: 7e1031b53154a6e24eacf46b8f39b23bed774cdfda5919e43c59e412de2687ca
 
+## Metadata-only official-source links
+
 - Claiming deductions
   - Source ID: ato-ff8796199a01
   - URL: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/claiming-deductions
   - Source last updated: 2025-05-19T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
-  - Content hash: da4a1b486f3c85ec09c825f0b90da2f2e5ad9469d5dc5524eb1f13ba11f5e1de
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
 
-## Metadata-only official-source links
-
-- No metadata-only assigned sources for this topic.
 ## TaxMate conservative summary
 
 - Use official URLs plus source hashes to support treatment guidance.

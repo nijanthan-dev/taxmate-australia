@@ -3987,6 +3987,42 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-548736ec2f75",
+      "original_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/australian-resident-for-tax-purposes-foreign-and-worldwide-income",
+      "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/australian-resident-for-tax-purposes-foreign-and-worldwide-income",
+      "source_title": "Australian resident for tax purposes foreign and worldwide income",
+      "source_last_updated": "2026-06-14T14:00:00.000+00:00",
+      "checked_at": "2026-06-30T06:30:52Z",
+      "content_hash": "a252cf76d0bcd6eef37dec63c56a2ee8ef14e5386a307545b24688b35f6b3c96",
+      "status": "verified",
+      "skills": [
+        "employment-deductions"
+      ],
+      "references": [
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
+      ],
+      "covered_concepts": [
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
+        "records-you-need-to-keep",
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
       "source_id": "ato-549aa3fe0999",
       "original_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/acquiring-cgt-assets",
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/acquiring-cgt-assets",
@@ -5930,6 +5966,42 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-849b813bcbcf",
+      "original_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/foreign-and-temporary-resident-income",
+      "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/foreign-and-temporary-resident-income",
+      "source_title": "Foreign and temporary resident income",
+      "source_last_updated": "2026-06-07T14:00:00.000+00:00",
+      "checked_at": "2026-06-30T06:30:53Z",
+      "content_hash": "8ed59438980647315cd5b79530811c33f0b4079cd73d6438db843f5da6efbcb3",
+      "status": "verified",
+      "skills": [
+        "employment-deductions"
+      ],
+      "references": [
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
+      ],
+      "covered_concepts": [
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
+        "records-you-need-to-keep",
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
       "source_id": "ato-862b6ca5065e",
       "original_url": "https://www.ato.gov.au/businesses-and-organisations/super-for-employers/paying-super-contributions/how-much-super-to-pay/list-of-payments-that-are-ordinary-time-earnings/super-for-long-distance-drivers",
       "canonical_url": "https://www.ato.gov.au/businesses-and-organisations/super-for-employers/paying-super-contributions/how-much-super-to-pay/list-of-payments-that-are-ordinary-time-earnings/super-for-long-distance-drivers",
@@ -7375,6 +7447,39 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-ae68541d0aa6",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/foreign-income-tax-offset-rules-guide-2026",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/foreign-income-tax-offset-rules-guide-2026",
+      "source_title": "Guide to foreign income tax offset rules 2026",
+      "source_last_updated": "2026-05-29T14:00:00.000+00:00",
+      "checked_at": "2026-06-30T06:30:53Z",
+      "content_hash": "4478c9ba25dab85985422d3f87454e0b9124562bc99bb3625ed74b6159ab8798",
+      "status": "verified",
+      "skills": [
+        "records-evidence"
+      ],
+      "references": [
+        "skills/records-evidence/references/rules.md",
+        "skills/records-evidence/references/sources.json"
+      ],
+      "covered_concepts": [
+        "evidence",
+        "invoice",
+        "keeping-crypto-records",
+        "keeping-good-investment-records",
+        "logbook",
+        "receipt",
+        "record",
+        "records",
+        "records-you-need-to-keep",
+        "substantiation",
+        "tax-invoices"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
       "source_id": "ato-af694ad342bf",
       "original_url": "https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/reports-and-returns/taxable-payments-annual-report",
       "canonical_url": "https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/reports-and-returns/taxable-payments-annual-report",
@@ -7589,7 +7694,7 @@
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/claiming-deductions",
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
-      "checked_at": "2026-06-30T03:11:40Z",
+      "checked_at": "2026-06-30T06:30:53Z",
       "content_hash": "",
       "status": "duplicate",
       "skills": [],
@@ -9143,6 +9248,42 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-e1f2334c45e5",
+      "original_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/tax-exempt-income-from-foreign-employment",
+      "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/tax-exempt-income-from-foreign-employment",
+      "source_title": "Tax exempt income from foreign employment",
+      "source_last_updated": "2026-06-07T14:00:00.000+00:00",
+      "checked_at": "2026-06-30T06:30:53Z",
+      "content_hash": "6f51a62f9e9615d95f3dcca0c76d8bde7ec2cac1c295a37f2f1a14db3d29a845",
+      "status": "verified",
+      "skills": [
+        "employment-deductions"
+      ],
+      "references": [
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
+      ],
+      "covered_concepts": [
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
+        "records-you-need-to-keep",
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
       "source_id": "ato-e20dc9550574",
       "original_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/home-phone-and-internet-expenses",
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/home-phone-and-internet-expenses",
@@ -10153,7 +10294,7 @@
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
       "content_hash": "da4a1b486f3c85ec09c825f0b90da2f2e5ad9469d5dc5524eb1f13ba11f5e1de",
-      "status": "verified",
+      "status": "metadata_only",
       "skills": [
         "employment-deductions"
       ],
@@ -10179,7 +10320,7 @@
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",
-      "reason": "topic match + verified source content"
+      "reason": "matched topic metadata; source content not extracted"
     }
   ]
 }

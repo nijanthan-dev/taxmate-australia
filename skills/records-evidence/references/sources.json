@@ -28,5 +28,20 @@
     "status": "verified",
     "reason": "",
     "assignment_reason": "topic match + verified source content"
+  },
+  {
+    "source_id": "ato-ae68541d0aa6",
+    "url": "https://www.ato.gov.au/forms-and-instructions/foreign-income-tax-offset-rules-guide-2026",
+    "final_url": "https://www.ato.gov.au/forms-and-instructions/foreign-income-tax-offset-rules-guide-2026",
+    "title": "Guide to foreign income tax offset rules 2026",
+    "last_updated": "2026-05-29T14:00:00.000+00:00",
+    "checked_at": "2026-06-30T06:30:53Z",
+    "content_hash": "4478c9ba25dab85985422d3f87454e0b9124562bc99bb3625ed74b6159ab8798",
+    "assigned_skill": "records-evidence",
+    "reference": "references/rules.md",
+    "duplicate_of": "",
+    "status": "verified",
+    "reason": "",
+    "assignment_reason": "topic match + verified source content"
   }
 ]
