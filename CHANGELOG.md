@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.7.0...v0.8.0) (2026-06-30)
+
+
+### Features
+
+* add crypto CGT workflow ([b2b1df2](https://github.com/nijanthan-dev/taxmate-australia/commit/b2b1df21be48b4a133be4774696ae5f3150a0df2))
+
 ## [0.7.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.6.0...v0.7.0) (2026-06-30)
 
 
