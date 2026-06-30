@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.4.0...v0.5.0) (2026-06-30)
+
+
+### Features
+
+* add ETP lump sum workflow ([933de55](https://github.com/nijanthan-dev/taxmate-australia/commit/933de55858cdee1976229352972ba6f62b4115f9))
+
 ## [0.4.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.3.0...v0.4.0) (2026-06-30)
 
 
