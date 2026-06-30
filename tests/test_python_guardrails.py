@@ -459,6 +459,15 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertEqual("Evidence", ess_amount["status"])
 
+    def test_boolean_ess_amount_base_rows_are_skipped(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["ess_taxed_upfront_discount"] = False
+
+        rows = taxmate_intake.base_items(answers)
+        rendered_numbers = {row["number"] for row in rows}
+
+        self.assertNotIn("ess_taxed_upfront_discount", rendered_numbers)
+
     def test_asset_items_alias_gets_typed_asset_review(self) -> None:
         answers = taxmate_intake.sample_answers()
         answers.pop("assets")
@@ -907,6 +916,21 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertIn(url, registry_urls)
                 self.assertEqual("verified", covered[url]["status"])
                 self.assertIn("employment-deductions", covered[url]["skills"])
+
+    def test_individual_return_portable_skill_covers_ess_scope(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        skill = (root / "skills" / "individual-return" / "SKILL.md").read_text()
+        rules = (root / "skills" / "individual-return" / "references" / "rules.md").read_text()
+        out_of_scope = skill.split("## Out Of Scope", 1)[1].split("## Method", 1)[0]
+
+        self.assertIn("including PAYG, ESS, sole-trader ABN", skill)
+        self.assertIn("employee share scheme", skill)
+        self.assertIn("ESS statement", skill)
+        self.assertIn("taxed-upfront discount", skill)
+        self.assertIn("foreign-source discount", skill)
+        self.assertIn(taxmate_intake.ATO_ESS_SOURCE, rules)
+        self.assertIn(taxmate_intake.ATO_ESS_STATEMENT_SOURCE, rules)
+        self.assertNotIn("ESS", out_of_scope)
 
     def test_wfh_work_pattern_alias_gets_typed_wfh_review(self) -> None:
         answers = taxmate_intake.sample_answers()

@@ -10,6 +10,8 @@ This orchestration skill does not bundle extracted tax-treatment summaries. It c
 - ATO working from home fixed-rate method: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/fixed-rate-method
 - ATO working from home actual-cost method: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/actual-cost-method
 - ATO business activity statements: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas
+- ATO employee share schemes: https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/employee-share-schemes
+- ATO employee share scheme statement: https://www.ato.gov.au/forms-and-instructions/employee-share-scheme-statement
 - Fair Work 2025 public holidays: https://www.fairwork.gov.au/employment-conditions/public-holidays/2025-public-holidays
 - Fair Work 2026 public holidays: https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays
 
@@ -20,6 +22,8 @@ Metadata-only links are routing and verification leads, not enough by themselves
 Individual-return intake is a coordinator. It should collect facts, preserve evidence gaps, route to the most specific installed skill, and assemble an HTML preparation handoff. It should not duplicate detailed tax logic from PAYG, WFH, ABN, GST/BAS, private-health, superannuation, investment, records, workbook, or taxpack skills. If full-runtime tooling is available, use it for deterministic calendars, candidate rows, queues, and HTML rendering; keep portable skill output as guidance when no checkout/runtime exists.
 
 WFH calendar helpers may automatically exclude only supported income-year state-wide public holidays. Regional, capital-city-only, sector-only, and partial-day public holidays need user facts before they affect hours; otherwise keep the affected WFH period as Evidence or `Accountant review`.
+
+ESS handling is prep-only. Collect statement evidence, employer or scheme labels, taxed-upfront discount, deferred discount, foreign-source discount, TFN amount withheld, and itemized statement rows. Missing statements, malformed or conflicting amount fields, deferred taxing-point uncertainty, and foreign-source splits stay Evidence or `Accountant review`.
 
 ## Accountant review
 

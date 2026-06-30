@@ -229,6 +229,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def has_bas_inputs(",
                 "def parse_gst_registration(",
                 "def base_item_status(",
+                "def should_render_base_item(",
                 "REVIEWABLE_COMPLEX_FIELDS = (",
                 "isinstance(value, (dict, list))",
                 "key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == \"gst_registered\"",
@@ -322,7 +323,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def has_meaningful_value(",
                 "if isinstance(value, bool):",
                 "return True",
-                "spec.required or has_meaningful_value(value)",
+                "if spec.key in ESS_FLAT_AMOUNT_FIELDS and isinstance(value, bool):",
+                "return spec.required or has_meaningful_value(value)",
                 "if key == \"ess_statement\" and ess_statement_missing(value):",
                 "if key in ESS_FLAT_AMOUNT_FIELDS and ess_amount_malformed(value):",
                 "if not has_meaningful_value(raw):",
@@ -424,6 +426,30 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
             ],
         )
     )
+    ess_guidance = skill_text + "\n" + skill_rules
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            ess_guidance,
+            [
+                "including PAYG, ESS, sole-trader ABN",
+                "employee share scheme",
+                "ESS statement",
+                "taxed-upfront discount",
+                "deferred discount",
+                "foreign-source discount",
+                "TFN amount withheld",
+                "malformed or conflicting amount",
+                "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/employee-share-schemes",
+                "https://www.ato.gov.au/forms-and-instructions/employee-share-scheme-statement",
+            ],
+        )
+    )
+    out_of_scope = ""
+    if "## Out Of Scope" in skill_text and "## Method" in skill_text:
+        out_of_scope = skill_text.split("## Out Of Scope", 1)[1].split("## Method", 1)[0]
+    if "ESS" in out_of_scope or "employee share scheme" in out_of_scope.lower():
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "individual-return out-of-scope must not list ESS"))
     return findings
 
 

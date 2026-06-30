@@ -330,7 +330,7 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     for spec in question_specs():
         value = answers.get(spec.key)
-        if spec.required or has_meaningful_value(value):
+        if should_render_base_item(spec, value):
             status = base_item_status(spec.key, value)
             rows.append(
                 guide_row(
@@ -345,6 +345,12 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                 )
             )
     return rows
+
+
+def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
+    if spec.key in ESS_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    return spec.required or has_meaningful_value(value)
 
 
 def base_item_status(key: str, value: Any) -> str:
