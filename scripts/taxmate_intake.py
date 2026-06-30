@@ -4629,6 +4629,8 @@ def rental_property_net_loss_signal(value: Any) -> bool:
         return False
     if isinstance(value, bool):
         return value
+    if contains_unknown(value):
+        return False
     lowered = text(value).strip().lower()
     return "loss" in lowered and not rental_property_field_absence_value("net_loss", value)
 
@@ -4641,7 +4643,16 @@ def rental_property_net_loss_false(value: Any) -> bool:
     if contains_unknown(value):
         return False
     lowered = text(value).strip().lower()
-    return lowered in RENTAL_PROPERTY_NET_LOSS_FALSE_PHRASES
+    return lowered in RENTAL_PROPERTY_NET_LOSS_FALSE_PHRASES or rental_property_net_loss_negative_text(lowered)
+
+
+def rental_property_net_loss_negative_text(lowered: str) -> bool:
+    return bool(
+        re.search(r"\bno\W+(?:net\W+)?(?:rental\W+)?loss(?:es)?\b", lowered)
+        or re.search(r"\bnot\W+(?:a\W+)?(?:net\W+)?(?:rental\W+)?loss\b", lowered)
+        or re.search(r"\bwithout\W+(?:a\W+)?(?:net\W+)?(?:rental\W+)?loss\b", lowered)
+        or re.search(r"\bprofit(?:able)?\b", lowered)
+    )
 
 
 def rental_property_field_text(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> str:
