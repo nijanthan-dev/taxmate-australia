@@ -698,6 +698,24 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("deferred discount 0.00", ess["answer"])
         self.assertIn("foreign-source discount 25.00", ess["answer"])
 
+    def test_nested_unknown_ess_inputs_stay_visible(self) -> None:
+        cases = [
+            {"ess": {"statement": "unknown"}},
+            {"ess": {"taxed_upfront_discount": "unknown"}},
+            {"ess": {"statement": "unknown", "deferred_discount": "unknown"}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                ess = next(row for row in payload["items"] if row["number"] == "ESS")
+
+                self.assertEqual("Evidence", ess["status"])
+                self.assertEqual(
+                    "ESS discounts need ESS statement evidence before accountant review.",
+                    ess["tab_text"],
+                )
+                self.assertIn("taxed-upfront discount unknown", ess["answer"])
+
     def test_false_ess_statement_stays_evidence_with_amounts(self) -> None:
         cases = [
             {"ess_statement": False, "ess_taxed_upfront_discount": 0},

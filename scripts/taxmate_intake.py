@@ -814,6 +814,8 @@ def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     for key, value in raw.items():
         if has_meaningful_ess_override(key, value):
             merged[key] = value
+        elif key not in merged and has_explicit_ess_evidence_gap(key, value):
+            merged[key] = value
     return merged
 
 
@@ -889,6 +891,14 @@ def has_meaningful_ess_override(key: str, value: Any) -> bool:
     return True
 
 
+def has_explicit_ess_evidence_gap(key: str, value: Any) -> bool:
+    if key not in ("statement", *ESS_AMOUNT_FIELDS):
+        return False
+    if key in ESS_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    return has_meaningful_value(value) and contains_unknown(value)
+
+
 def ess_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> Optional[float]:
     item_total = ess_item_amount_total(items, key)
     if item_total is not None:
@@ -962,6 +972,11 @@ def has_ess_inputs(raw: Any) -> bool:
     if ess_item_values(raw.get("items")):
         return True
     if has_meaningful_ess_statement(raw.get("statement")):
+        return True
+    if any(
+        has_explicit_ess_evidence_gap(key, raw.get(key))
+        for key in ("statement", *ESS_AMOUNT_FIELDS)
+    ):
         return True
     return any(has_meaningful_ess_signal(key, raw.get(key)) for key in ESS_ITEM_SIGNAL_FIELDS)
 
