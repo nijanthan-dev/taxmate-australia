@@ -3439,6 +3439,47 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertIn("net rental loss review", row["tab_text"])
                 self.assertIn("worksheet net unknown", row["answer"])
 
+    def test_rental_property_net_loss_flag_overrides_positive_worksheet_net(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property": {
+                    "address": "Example rental",
+                    "ownership": "individual",
+                    "income": 10000,
+                    "records": "agent statement held",
+                    "private_use": False,
+                    "net_loss": True,
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("worksheet net 10000.00", row["answer"])
+        self.assertIn("net rental loss review", row["tab_text"])
+
+    def test_rental_property_private_days_override_false_private_use(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property": {
+                    "address": "Example rental",
+                    "ownership": "individual",
+                    "income": 12000,
+                    "records": "agent statement held",
+                    "private_use": False,
+                    "private_use_days": 7,
+                    "available_days": 358,
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("private use false", row["answer"])
+        self.assertIn("private days 7", row["answer"])
+        self.assertIn("private-use apportionment evidence", row["tab_text"])
+        self.assertIn("private-use review", row["tab_text"])
+
     def test_rental_property_items_require_income_per_property(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {

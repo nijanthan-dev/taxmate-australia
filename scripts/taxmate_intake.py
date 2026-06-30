@@ -4259,16 +4259,18 @@ def rental_property_repairs_are_ambiguous(value: Any) -> bool:
 def rental_property_private_use_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
     records = [raw, *items]
     meaningful = [record for record in records if rental_property_has_facts(record)]
+    if any(rental_property_private_use_conflict(record) for record in meaningful):
+        return True
     if meaningful and not any(rental_property_has_field_value(record, "private_use") for record in meaningful):
         return True
     if any(contains_unknown(record.get("private_use")) for record in meaningful):
         return True
-    if any(rental_property_private_use_true(record.get("private_use")) for record in meaningful):
+    if any(rental_property_private_use_signal(record) for record in meaningful):
         return any(
             rental_property_amount_value(record.get("private_use_days")) is None
             or rental_property_amount_value(record.get("available_days")) is None
             for record in meaningful
-            if rental_property_private_use_true(record.get("private_use"))
+            if rental_property_private_use_signal(record)
         )
     return False
 
@@ -4293,10 +4295,12 @@ def rental_property_has_repairs_and_capital(raw: Dict[str, Any], items: List[Dic
 
 
 def rental_property_has_private_use(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
-    return any(rental_property_private_use_true(record.get("private_use")) for record in [raw, *items])
+    return any(rental_property_private_use_signal(record) for record in [raw, *items])
 
 
 def rental_property_has_net_loss(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    if any(rental_property_net_loss_signal(record.get("net_loss")) for record in [raw, *items]):
+        return True
     display_net = rental_property_display_net_amount(raw, items)
     if display_net is not None:
         return display_net < 0
@@ -4508,6 +4512,19 @@ def rental_property_private_use_negative_text(lowered: str) -> bool:
         )
         or re.search(r"\bno\W+(?:private use|personal use|holiday[- ]home(?: use)?)\b", lowered)
     )
+
+
+def rental_property_private_use_signal(record: Dict[str, Any]) -> bool:
+    return rental_property_private_use_true(record.get("private_use")) or rental_property_positive_private_use_days(record)
+
+
+def rental_property_positive_private_use_days(record: Dict[str, Any]) -> bool:
+    days = rental_property_amount_value(record.get("private_use_days"))
+    return days is not None and days > 0
+
+
+def rental_property_private_use_conflict(record: Dict[str, Any]) -> bool:
+    return rental_property_private_use_false(record.get("private_use")) and rental_property_positive_private_use_days(record)
 
 
 def rental_property_net_loss_signal(value: Any) -> bool:

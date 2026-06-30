@@ -109,7 +109,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #45 rental property",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Rental intake must preserve explicit unknown and missing-document answers, calculate worksheet net from the same flat/item facts shown to the user, normalize positive net_loss fields as losses, require per-property income evidence, keep standalone net-loss flags visible, treat negated private-use and holiday-home text as false without adding private-use review, keep uncertain private-use wording as Evidence, and keep completed rental rows under Accountant review.",
+        "Rental intake must preserve explicit unknown and missing-document answers, calculate worksheet net from the same flat/item facts shown to the user, normalize positive net_loss fields as losses, require per-property income evidence, keep standalone and mixed net-loss flags visible before worksheet math, treat positive private-use days as private-use review even when the boolean field is false, treat negated private-use and holiday-home text as false without adding private-use review, keep uncertain private-use wording as Evidence, and keep completed rental rows under Accountant review.",
     ),
     ReviewPattern(
         "PR #38",
@@ -872,6 +872,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def rental_property_review_flags(",
                 "capital works or depreciation review",
                 "net rental loss review",
+                "if any(rental_property_net_loss_signal(record.get(\"net_loss\")) for record in [raw, *items]):\n        return True",
                 "if display_net is not None:\n        return display_net < 0",
                 "def rental_property_records_missing(",
                 "def rental_property_declines_workflow(",
@@ -891,6 +892,9 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "has_explicit_rental_property_evidence_gap(key, value)",
                 "item_net_values = [rental_property_net_amount(item) for item in items]",
                 "def rental_property_private_use_negative_text(",
+                "def rental_property_private_use_signal(",
+                "def rental_property_positive_private_use_days(",
+                "def rental_property_private_use_conflict(",
                 "not for private use",
                 "no holiday home use",
                 "if contains_unknown(value):\n        return False",
