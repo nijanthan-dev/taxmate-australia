@@ -3541,6 +3541,54 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("worksheet net unknown", row["answer"])
         self.assertNotIn("worksheet net -1000.00", row["answer"])
 
+    def test_rental_property_top_net_loss_reconciles_with_top_level_amounts(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_income": 10000,
+                "rental_property_interest": 12000,
+                "rental_property_net_loss": 1000,
+                "rental_property_ownership": "individual",
+                "rental_property_records": "agent statement held",
+                "rental_property_private_use": False,
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("net-loss amount reconciliation", row["tab_text"])
+        self.assertIn("numeric rental amount evidence", row["tab_text"])
+        self.assertIn("income 10000.00", row["answer"])
+        self.assertIn("interest 12000.00", row["answer"])
+        self.assertIn("worksheet net unknown", row["answer"])
+        self.assertNotIn("worksheet net -1000.00", row["answer"])
+
+    def test_rental_property_item_net_loss_reconciles_with_item_amounts(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_records": "agent statement held",
+                "rental_property_private_use": False,
+                "rental_property_items": [
+                    {
+                        "address": "Unit 1",
+                        "ownership": "individual",
+                        "income": 10000,
+                        "interest": 12000,
+                        "net_loss": 1000,
+                        "records": "agent statement held",
+                    }
+                ],
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("net-loss amount reconciliation", row["tab_text"])
+        self.assertIn("numeric rental amount evidence", row["tab_text"])
+        self.assertIn("Unit 1: owner individual, income 10000.00, interest 12000.00", row["answer"])
+        self.assertIn("net loss -1000.00", row["answer"])
+        self.assertIn("worksheet net unknown", row["answer"])
+        self.assertNotIn("worksheet net -1000.00", row["answer"])
+
     def test_rental_property_top_net_loss_needs_complete_item_net_reconciliation(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
@@ -4332,7 +4380,7 @@ class IndividualIntakeTests(unittest.TestCase):
                         "address": "Holiday unit",
                         "ownership": "individual",
                         "income": 12000,
-                        "interest": 5000,
+                        "interest": 12500,
                         "net_loss": 500,
                         "private_use": True,
                         "private_use_days": 0,
