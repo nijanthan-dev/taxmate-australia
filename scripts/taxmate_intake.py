@@ -265,6 +265,18 @@ def is_missing(value: Any) -> bool:
     return False
 
 
+def has_meaningful_value(value: Any) -> bool:
+    if is_missing(value):
+        return False
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, list):
+        return any(has_meaningful_value(item) for item in value)
+    if isinstance(value, dict):
+        return any(has_meaningful_value(item) for item in value.values())
+    return True
+
+
 def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items = base_items(answers)
     extracted_values = extraction_rows(answers.get("extracted_values", []))
@@ -292,7 +304,7 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     for spec in question_specs():
         value = answers.get(spec.key)
-        if spec.required or not is_missing(value):
+        if spec.required or has_meaningful_value(value):
             status = base_item_status(spec.key, value)
             rows.append(
                 guide_row(
@@ -363,6 +375,8 @@ def extraction_rows(raw_values: Any) -> List[Dict[str, Any]]:
     for idx, raw in enumerate(raw_values, start=1):
         if not isinstance(raw, dict):
             continue
+        if not has_meaningful_value(raw):
+            continue
         confirmed = raw.get("confirmed") is True
         row = {
             "document": display_value(raw.get("document")),
@@ -418,9 +432,9 @@ def missing_fact_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def wfh_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     raw = answers.get("wfh")
-    if (not isinstance(raw, dict) or not raw) and isinstance(answers.get("wfh_work_pattern"), dict):
+    if not has_meaningful_value(raw) and isinstance(answers.get("wfh_work_pattern"), dict):
         raw = answers.get("wfh_work_pattern")
-    if not isinstance(raw, dict):
+    if not isinstance(raw, dict) or not has_meaningful_value(raw):
         return {}
     enriched = dict(raw)
     if is_missing(enriched.get("records")) and not is_missing(answers.get("wfh_records")):
@@ -706,6 +720,8 @@ def asset_rows(raw_assets: Any) -> List[Dict[str, Any]]:
     for idx, asset in enumerate(raw_assets, start=1):
         if not isinstance(asset, dict):
             continue
+        if not has_meaningful_value(asset):
+            continue
         cost = money_value(asset.get("cost"), unknown_as_missing=True)
         work_use = money_value(asset.get("work_use_percent"), unknown_as_missing=True)
         claim_basis = asset_claim_basis(cost, work_use, asset.get("method_preference"))
@@ -800,7 +816,11 @@ def ess_rows(raw: Any) -> List[Dict[str, Any]]:
 def has_ess_inputs(raw: Any) -> bool:
     if not isinstance(raw, dict):
         return False
-    return any(not is_missing(value) for value in raw.values())
+    return any(has_meaningful_ess_value(value) for value in raw.values())
+
+
+def has_meaningful_ess_value(value: Any) -> bool:
+    return has_meaningful_value(value)
 
 
 def uncommon_income_rows(raw_values: Any) -> List[Dict[str, Any]]:
@@ -808,6 +828,8 @@ def uncommon_income_rows(raw_values: Any) -> List[Dict[str, Any]]:
         return []
     rows: List[Dict[str, Any]] = []
     for idx, value in enumerate(raw_values, start=1):
+        if not has_meaningful_value(value):
+            continue
         rows.append(
             guide_row(
                 f"UNC-{idx}",

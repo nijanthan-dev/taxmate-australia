@@ -492,6 +492,54 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("taxed-upfront discount 100.00", ess["answer"])
         self.assertIn("deferred discount 0.00", ess["answer"])
 
+    def test_empty_ess_items_do_not_render_workflow_row(self) -> None:
+        for ess_value in [{"items": []}, {"items": [{}]}, {}, []]:
+            with self.subTest(ess_value=ess_value):
+                answers = taxmate_intake.sample_answers()
+                answers.pop("ess")
+                answers["ess"] = ess_value
+
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(any(row["number"] == "ESS" for row in payload["items"]))
+
+    def test_zero_ess_amount_is_meaningful_input(self) -> None:
+        rows = taxmate_intake.ess_rows({"statement": "ESS statement held", "taxed_upfront_discount": 0})
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("taxed-upfront discount 0.00", rows[0]["answer"])
+
+    def test_empty_optional_containers_do_not_render_base_rows(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        for key in ["employee_deductions", "wfh_work_pattern", "asset_items", "ess_items"]:
+            answers[key] = [] if key.endswith("items") or key == "employee_deductions" else {}
+
+        rows = taxmate_intake.base_items(answers)
+        rendered_numbers = {row["number"] for row in rows}
+
+        self.assertNotIn("employee_deductions", rendered_numbers)
+        self.assertNotIn("wfh_work_pattern", rendered_numbers)
+        self.assertNotIn("asset_items", rendered_numbers)
+        self.assertNotIn("ess_items", rendered_numbers)
+
+    def test_empty_workflow_containers_do_not_render_rows(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["wfh"] = {}
+        answers["wfh_work_pattern"] = {}
+        answers["assets"] = [{}]
+        answers["uncommon_income"] = [{}]
+        answers["extracted_values"] = [{}]
+        answers["ess"] = {"items": [{}]}
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rendered_numbers = {row["number"] for row in payload["items"]}
+
+        self.assertNotIn("WFH", rendered_numbers)
+        self.assertNotIn("ASSET-1", rendered_numbers)
+        self.assertNotIn("UNC-1", rendered_numbers)
+        self.assertNotIn("ESS", rendered_numbers)
+        self.assertEqual([], payload["extracted_values"])
+
     def test_ess_review_row_appears_in_html_pack(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
