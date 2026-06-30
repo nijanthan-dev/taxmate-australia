@@ -53,6 +53,15 @@ ESS_STATEMENT_MISSING_PHRASES = (
     "ess statement not provided",
     "ess statement not received",
 )
+ESS_DECLINE_PHRASES = (
+    "no ess",
+    "no employee share scheme",
+    "no employee share schemes",
+    "not applicable",
+    "not applicable to me",
+    "n/a",
+    "na",
+)
 REVIEWABLE_COMPLEX_FIELDS = ("employee_deductions", "wfh_work_pattern", "wfh_records", "asset_items", "ess_items")
 EXACT_UNKNOWN_PHRASES = frozenset({"unknown", "missing", "not sure", "unsure"})
 EMBEDDED_UNKNOWN_PHRASES = (
@@ -349,6 +358,8 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
     if spec.key in ESS_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if spec.key == "ess_statement" and ess_statement_declines_workflow(value):
         return False
     return spec.required or has_meaningful_value(value)
 
@@ -983,6 +994,8 @@ def ess_statement_missing(statement: Any) -> bool:
         return not statement
     if is_missing(statement) or contains_unknown(statement):
         return True
+    if ess_statement_declines_workflow(statement):
+        return True
     lowered = text(statement).strip().lower()
     if lowered in {"no", "n", "false", "not held", "not available", "none"}:
         return True
@@ -1037,7 +1050,16 @@ def has_ess_inputs(raw: Any) -> bool:
 
 
 def has_meaningful_ess_statement(value: Any) -> bool:
-    return has_meaningful_value(value) and not contains_unknown(value)
+    if not has_meaningful_value(value) or contains_unknown(value):
+        return False
+    return not ess_statement_declines_workflow(value)
+
+
+def ess_statement_declines_workflow(statement: Any) -> bool:
+    if not isinstance(statement, str):
+        return False
+    lowered = statement.strip().lower()
+    return lowered in ESS_DECLINE_PHRASES
 
 
 def has_meaningful_ess_value(value: Any) -> bool:

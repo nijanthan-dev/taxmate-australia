@@ -468,6 +468,17 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertNotIn("ess_taxed_upfront_discount", rendered_numbers)
 
+    def test_no_ess_statement_base_rows_are_skipped(self) -> None:
+        for value in ["no employee share scheme", "no employee share schemes", "not applicable", "n/a"]:
+            with self.subTest(value=value):
+                answers = taxmate_intake.sample_answers()
+                answers["ess_statement"] = value
+
+                rows = taxmate_intake.base_items(answers)
+                rendered_numbers = {row["number"] for row in rows}
+
+                self.assertNotIn("ess_statement", rendered_numbers)
+
     def test_asset_items_alias_gets_typed_asset_review(self) -> None:
         answers = taxmate_intake.sample_answers()
         answers.pop("assets")
@@ -573,6 +584,31 @@ class IndividualIntakeTests(unittest.TestCase):
                 payload = taxmate_intake.answers_to_pack_payload(answers)
 
                 self.assertFalse(any(row["number"] == "ESS" for row in payload["items"]))
+
+    def test_no_ess_answers_do_not_render_workflow_row(self) -> None:
+        cases = [
+            {"ess_statement": "no employee share scheme"},
+            {"ess_statement": "no employee share schemes"},
+            {"ess_statement": "not applicable"},
+            {"ess_statement": "n/a"},
+            {"ess": {"statement": "no employee share scheme"}},
+            {"ess": {"statement": "not applicable"}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(any(row["number"] == "ESS" for row in payload["items"]))
+
+    def test_no_ess_statement_with_amount_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"ess_statement": "no employee share scheme", "ess_taxed_upfront_discount": 100}
+        )
+        ess = next(row for row in payload["items"] if row["number"] == "ESS")
+
+        self.assertEqual("Evidence", ess["status"])
+        self.assertEqual("ESS discounts need ESS statement evidence before accountant review.", ess["tab_text"])
+        self.assertIn("taxed-upfront discount 100.00", ess["answer"])
 
     def test_zero_ess_amount_is_meaningful_input(self) -> None:
         rows = taxmate_intake.ess_rows({"statement": "ESS statement held", "taxed_upfront_discount": 0})
