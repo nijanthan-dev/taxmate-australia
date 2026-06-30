@@ -109,7 +109,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #45 rental property",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Rental intake must preserve explicit unknown and missing-document answers, calculate worksheet net from the same flat/item facts shown to the user, normalize positive net_loss fields as losses, require per-property income evidence, keep standalone and mixed net-loss flags visible before worksheet math, treat positive private-use days as private-use review even when the boolean field is false, treat negated private-use and holiday-home text as false without adding private-use review, keep uncertain private-use wording as Evidence, and keep completed rental rows under Accountant review.",
+        "Rental intake must preserve explicit unknown, boolean-true amount, and missing-document answers as Evidence, calculate worksheet net from the same flat/item facts shown to the user, normalize positive net_loss fields as losses, require per-property income evidence, keep standalone, item-level, and mixed net-loss flags visible before aggregate worksheet math, treat positive private-use days as private-use review even when the boolean field is false, treat negated private-use and holiday-home text as false without adding private-use review, keep uncertain private-use wording as Evidence, and keep completed rental rows under Accountant review.",
     ),
     ReviewPattern(
         "PR #38",
@@ -872,8 +872,9 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def rental_property_review_flags(",
                 "capital works or depreciation review",
                 "net rental loss review",
-                "if any(rental_property_net_loss_signal(record.get(\"net_loss\")) for record in [raw, *items]):\n        return True",
+                "if any(rental_property_record_has_net_loss(record) for record in [raw, *items]):\n        return True",
                 "if display_net is not None:\n        return display_net < 0",
+                "def rental_property_record_has_net_loss(",
                 "def rental_property_records_missing(",
                 "def rental_property_declines_workflow(",
                 "def rental_property_source_declines_workflow(",
@@ -883,6 +884,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def rental_property_has_field_value(",
                 "if key in RENTAL_PROPERTY_AMOUNT_FIELDS and isinstance(value, bool):",
                 "return key == \"net_loss\" and value is True",
+                "def rental_property_boolean_amount_evidence_gap(",
+                "key != \"net_loss\" and value is True",
                 "def rental_property_display_amount_value(",
                 "def rental_property_item_income_needs_evidence(",
                 "def rental_property_net_loss_signal(",

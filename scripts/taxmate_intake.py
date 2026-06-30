@@ -4299,18 +4299,19 @@ def rental_property_has_private_use(raw: Dict[str, Any], items: List[Dict[str, A
 
 
 def rental_property_has_net_loss(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
-    if any(rental_property_net_loss_signal(record.get("net_loss")) for record in [raw, *items]):
+    if any(rental_property_record_has_net_loss(record) for record in [raw, *items]):
         return True
     display_net = rental_property_display_net_amount(raw, items)
     if display_net is not None:
         return display_net < 0
-    for record in [raw, *items]:
-        net_amount = rental_property_net_amount(record)
-        if net_amount is not None and net_amount < 0:
-            return True
-        if rental_property_net_loss_signal(record.get("net_loss")):
-            return True
     return False
+
+
+def rental_property_record_has_net_loss(record: Dict[str, Any]) -> bool:
+    net_amount = rental_property_net_amount(record)
+    if net_amount is not None and net_amount < 0:
+        return True
+    return rental_property_net_loss_signal(record.get("net_loss"))
 
 
 def rental_property_net_amount(record: Dict[str, Any]) -> Optional[float]:
@@ -4440,11 +4441,19 @@ def rental_property_has_field_value(record: Dict[str, Any], key: str) -> bool:
 
 
 def rental_property_amount_needs_evidence(value: Any, key: str = "") -> bool:
-    if isinstance(value, bool) or is_missing(value):
+    if is_missing(value):
+        return False
+    if rental_property_boolean_amount_evidence_gap(value, key):
+        return True
+    if isinstance(value, bool):
         return False
     if rental_property_declines_workflow(value) or rental_property_field_absence_value(key, value):
         return False
     return contains_unknown(value) or rental_property_amount_malformed(value, key)
+
+
+def rental_property_boolean_amount_evidence_gap(value: Any, key: str = "") -> bool:
+    return key in RENTAL_PROPERTY_AMOUNT_FIELDS and key != "net_loss" and value is True
 
 
 def rental_property_amount_malformed(value: Any, key: str = "") -> bool:
