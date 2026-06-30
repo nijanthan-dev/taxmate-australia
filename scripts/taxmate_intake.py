@@ -34,6 +34,7 @@ ESS_AMOUNT_FIELDS = (
     "foreign_source_discount",
     "tfn_amount_withheld",
 )
+ESS_FLAT_AMOUNT_FIELDS = tuple(f"ess_{field}" for field in ESS_AMOUNT_FIELDS)
 ESS_ITEM_SIGNAL_FIELDS = ("employer", "scheme", "provider", *ESS_AMOUNT_FIELDS)
 ESS_STATEMENT_MISSING_PHRASES = (
     "do not have",
@@ -349,6 +350,8 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 def base_item_status(key: str, value: Any) -> str:
     if key in REVIEWABLE_ESS_FIELDS:
         if key == "ess_statement" and ess_statement_missing(value):
+            return "Evidence"
+        if key in ESS_FLAT_AMOUNT_FIELDS and ess_amount_malformed(value):
             return "Evidence"
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == "gst_registered":
@@ -834,7 +837,10 @@ def ess_rows(raw: Any) -> List[Dict[str, Any]]:
     statement = raw.get("statement")
     if not has_meaningful_value(statement):
         statement = next((item.get("statement") for item in items if has_meaningful_value(item.get("statement"))), None)
-    status = "Evidence" if ess_statement_missing(statement) or ess_items_need_statement_evidence(items) or ess_amount_conflict(raw, items) else "Accountant review"
+    statement_evidence = ess_statement_missing(statement) or ess_items_need_statement_evidence(items)
+    amount_conflict = ess_amount_conflict(raw, items)
+    amount_evidence = ess_amounts_need_evidence(raw, items)
+    status = "Evidence" if statement_evidence or amount_conflict or amount_evidence else "Accountant review"
     item_text = ess_items_text(items)
     employer = ess_employer_text(raw, items)
     answer = (
@@ -846,11 +852,7 @@ def ess_rows(raw: Any) -> List[Dict[str, Any]]:
     )
     if item_text:
         answer = f"{answer}; items {item_text}"
-    tab_text = (
-        "ESS discounts need ESS statement evidence before accountant review."
-        if status == "Evidence"
-        else "ESS discounts need statement-backed accountant review."
-    )
+    tab_text = ess_tab_text(statement_evidence, amount_conflict, amount_evidence)
     return [
         guide_row(
             "ESS",
@@ -905,11 +907,11 @@ def ess_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str)
     item_total = ess_item_amount_total(items, key)
     if item_total is not None:
         return item_total
-    return money_value(raw.get(key), unknown_as_missing=True)
+    return ess_money_value(raw.get(key))
 
 
 def ess_item_amount_total(items: List[Dict[str, Any]], key: str) -> Optional[float]:
-    item_amounts = [money_value(item.get(key), unknown_as_missing=True) for item in items]
+    item_amounts = [ess_money_value(item.get(key)) for item in items]
     real_amounts = [amount for amount in item_amounts if amount is not None]
     if not real_amounts:
         return None
@@ -918,11 +920,46 @@ def ess_item_amount_total(items: List[Dict[str, Any]], key: str) -> Optional[flo
 
 def ess_amount_conflict(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
     for key in ESS_AMOUNT_FIELDS:
-        top_level = money_value(raw.get(key), unknown_as_missing=True)
+        top_level = ess_money_value(raw.get(key))
         item_total = ess_item_amount_total(items, key)
         if top_level is not None and item_total is not None and top_level != item_total:
             return True
     return False
+
+
+def ess_amounts_need_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    if any(ess_amount_malformed(raw.get(key)) for key in ESS_AMOUNT_FIELDS):
+        return True
+    return any(ess_amount_malformed(item.get(key)) for item in items for key in ESS_AMOUNT_FIELDS)
+
+
+def ess_amount_malformed(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    try:
+        money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return True
+    return False
+
+
+def ess_money_value(value: Any) -> Optional[float]:
+    try:
+        return money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return None
+
+
+def ess_tab_text(statement_evidence: bool, amount_conflict: bool, amount_evidence: bool) -> str:
+    if amount_conflict and statement_evidence:
+        return "ESS discounts need ESS statement evidence and corrected amount totals before accountant review."
+    if amount_conflict:
+        return "ESS top-level and item amounts conflict; correct ESS amount totals before accountant review."
+    if amount_evidence:
+        return "ESS amount fields need numeric evidence before accountant review."
+    if statement_evidence:
+        return "ESS discounts need ESS statement evidence before accountant review."
+    return "ESS discounts need statement-backed accountant review."
 
 
 def ess_statement_missing(statement: Any) -> bool:
@@ -945,10 +982,10 @@ def ess_items_text(items: List[Dict[str, Any]]) -> str:
     for idx, item in enumerate(items, start=1):
         name = ess_label_text(item) or f"item {idx}"
         details.append(
-            f"{name}: taxed-upfront {money_text(money_value(item.get('taxed_upfront_discount'), unknown_as_missing=True))}, "
-            f"deferred {money_text(money_value(item.get('deferred_discount'), unknown_as_missing=True))}, "
-            f"foreign-source {money_text(money_value(item.get('foreign_source_discount'), unknown_as_missing=True))}, "
-            f"TFN withheld {money_text(money_value(item.get('tfn_amount_withheld'), unknown_as_missing=True))}"
+            f"{name}: taxed-upfront {money_text(ess_money_value(item.get('taxed_upfront_discount')))}, "
+            f"deferred {money_text(ess_money_value(item.get('deferred_discount')))}, "
+            f"foreign-source {money_text(ess_money_value(item.get('foreign_source_discount')))}, "
+            f"TFN withheld {money_text(ess_money_value(item.get('tfn_amount_withheld')))}"
         )
     return " | ".join(details)
 

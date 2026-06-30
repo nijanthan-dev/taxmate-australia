@@ -450,6 +450,15 @@ class IndividualIntakeTests(unittest.TestCase):
 
                 self.assertEqual("Evidence", ess_statement["status"])
 
+    def test_malformed_ess_amount_base_rows_stay_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["ess_taxed_upfront_discount"] = "about $100"
+
+        rows = taxmate_intake.base_items(answers)
+        ess_amount = next(row for row in rows if row["number"] == "ess_taxed_upfront_discount")
+
+        self.assertEqual("Evidence", ess_amount["status"])
+
     def test_asset_items_alias_gets_typed_asset_review(self) -> None:
         answers = taxmate_intake.sample_answers()
         answers.pop("assets")
@@ -657,6 +666,25 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("Evidence", ess["status"])
         self.assertIn("taxed-upfront discount 100.00", ess["answer"])
         self.assertNotIn("taxed-upfront discount 999.00", ess["answer"])
+        self.assertEqual(
+            "ESS top-level and item amounts conflict; correct ESS amount totals before accountant review.",
+            ess["tab_text"],
+        )
+
+    def test_malformed_ess_amounts_stay_reviewable(self) -> None:
+        cases = [
+            {"ess_statement": "ESS statement held", "ess_taxed_upfront_discount": "about $100"},
+            {"ess": {"statement": "ESS statement held", "taxed_upfront_discount": "100 AUD"}},
+            {"ess_items": [{"statement": "ESS statement held", "employer": "Acme Pty Ltd", "taxed_upfront_discount": "about $100"}]},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                ess = next(row for row in payload["items"] if row["number"] == "ESS")
+
+                self.assertEqual("Evidence", ess["status"])
+                self.assertIn("taxed-upfront discount unknown", ess["answer"])
+                self.assertEqual("ESS amount fields need numeric evidence before accountant review.", ess["tab_text"])
 
     def test_item_statement_only_does_not_render_placeholder_detail(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload({"ess": {"items": [{"statement": "ESS statement held"}]}})
