@@ -12,6 +12,11 @@ This orchestration skill does not bundle extracted tax-treatment summaries. It c
 - ATO business activity statements: https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas
 - ATO employee share schemes: https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/employee-share-schemes
 - ATO employee share scheme statement: https://www.ato.gov.au/forms-and-instructions/employee-share-scheme-statement
+- ATO employment termination payments withholding: https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-11-tax-table-for-employment-termination-payments
+- ATO lump sum payment in arrears: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/lump-sum-payment-in-arrears
+- ATO superannuation pensions and annuities: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/superannuation-pensions-and-annuities
+- ATO superannuation lump sums withholding: https://www.ato.gov.au/tax-rates-and-codes/schedule-12-tax-table-for-superannuation-lump-sums
+- ATO superannuation income streams withholding: https://www.ato.gov.au/tax-rates-and-codes/schedule-13-tax-table-for-superannuation-income-streams
 - Fair Work 2025 public holidays: https://www.fairwork.gov.au/employment-conditions/public-holidays/2025-public-holidays
 - Fair Work 2026 public holidays: https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays
 
@@ -24,6 +29,8 @@ Individual-return intake is a coordinator. It should collect facts, preserve evi
 WFH calendar helpers may automatically exclude only supported income-year state-wide public holidays. Regional, capital-city-only, sector-only, and partial-day public holidays need user facts before they affect hours; otherwise keep the affected WFH period as Evidence or `Accountant review`.
 
 ESS handling is prep-only. Collect statement evidence, employer or scheme labels, taxed-upfront discount, deferred discount, foreign-source discount, TFN amount withheld, and itemized statement rows. Missing statements, malformed or conflicting amount fields, deferred taxing-point uncertainty, and foreign-source splits stay Evidence or `Accountant review`.
+
+ETP, lump sum in arrears, super lump sum, and super income stream handling is prep-only. Collect official statements, payer or fund labels, payment type, payment dates, taxable and tax-free components, prior-year allocation where relevant, and withholding. Explicit no-payment answers without facts should skip the workflow; no-payment answers plus amounts, unknown statements, malformed amounts, and incomplete prior-year allocation stay Evidence or `Accountant review`.
 
 ## Accountant review
 

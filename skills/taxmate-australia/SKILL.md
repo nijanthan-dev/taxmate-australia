@@ -21,7 +21,7 @@ Use this entry skill when the user asks generally for TaxMate Australia or when 
 
 Prefer the most specific installed skill:
 
-- `individual-return`: V1 individual return intake, PAYG, ESS, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and HTML handoff.
+- `individual-return`: V1 individual return intake, PAYG, ESS, ETP, lump sum in arrears, super income, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and HTML handoff.
 - `employment-deductions`: employee work expenses other than dedicated WFH questions.
 - `work-from-home`: employee WFH fixed-rate, actual-cost, equipment, and records.
 - `abn-business`: ABN, sole trader, business income/expenses, pre-revenue, hobby, PSI, and non-commercial losses.

@@ -28,6 +28,88 @@ REVIEWABLE_ESS_FIELDS = (
     "ess_foreign_source_discount",
     "ess_tfn_amount_withheld",
 )
+REVIEWABLE_COMPLEX_PAYMENT_FIELDS = (
+    "etp_statement",
+    "etp_taxable_component",
+    "etp_tax_free_component",
+    "etp_tax_withheld",
+    "lump_sum_arrears_statement",
+    "lump_sum_arrears_amount",
+    "lump_sum_arrears_years",
+    "lump_sum_arrears_tax_withheld",
+    "super_income_statement",
+    "super_income_payment_kind",
+    "super_lump_sum_taxable_component",
+    "super_lump_sum_tax_free_component",
+    "super_income_stream_taxable_amount",
+    "super_income_tax_withheld",
+)
+COMPLEX_PAYMENT_STATEMENT_FLAT_FIELDS = (
+    "etp_statement",
+    "lump_sum_arrears_statement",
+    "super_income_statement",
+)
+COMPLEX_PAYMENT_FLAT_FIELD_GROUPS = {
+    "etp_statement": "etp",
+    "etp_taxable_component": "etp",
+    "etp_tax_free_component": "etp",
+    "etp_tax_withheld": "etp",
+    "lump_sum_arrears_statement": "lump_sum_arrears",
+    "lump_sum_arrears_amount": "lump_sum_arrears",
+    "lump_sum_arrears_years": "lump_sum_arrears",
+    "lump_sum_arrears_tax_withheld": "lump_sum_arrears",
+    "super_income_statement": "super_income",
+    "super_income_payment_kind": "super_income",
+    "super_lump_sum_taxable_component": "super_income",
+    "super_lump_sum_tax_free_component": "super_income",
+    "super_income_stream_taxable_amount": "super_income",
+    "super_income_tax_withheld": "super_income",
+}
+COMPLEX_PAYMENT_AMOUNT_FIELDS = (
+    "taxable_component",
+    "tax_free_component",
+    "tax_withheld",
+    "amount",
+    "taxable_amount",
+)
+COMPLEX_PAYMENT_FLAT_AMOUNT_FIELDS = (
+    "etp_taxable_component",
+    "etp_tax_free_component",
+    "etp_tax_withheld",
+    "lump_sum_arrears_amount",
+    "lump_sum_arrears_tax_withheld",
+    "super_lump_sum_taxable_component",
+    "super_lump_sum_tax_free_component",
+    "super_income_stream_taxable_amount",
+    "super_income_tax_withheld",
+)
+COMPLEX_PAYMENT_STATEMENT_MISSING_PHRASES = (
+    "do not have",
+    "don't have",
+    "no statement",
+    "no payment summary",
+    "statement not held",
+    "statement not available",
+    "statement not provided",
+    "statement not received",
+    "not held",
+    "not available",
+    "not provided",
+    "not received",
+    "not supplied",
+    "payment summary not held",
+    "payment summary not available",
+    "payment summary not provided",
+    "payment summary not received",
+    "income statement not held",
+    "income statement not available",
+    "income statement not provided",
+    "income statement not received",
+    "fund statement not held",
+    "fund statement not available",
+    "fund statement not provided",
+    "fund statement not received",
+)
 ESS_AMOUNT_FIELDS = (
     "taxed_upfront_discount",
     "deferred_discount",
@@ -62,6 +144,35 @@ ESS_DECLINE_PHRASES = (
     "n/a",
     "na",
 )
+COMPLEX_PAYMENT_DECLINE_PHRASES = (
+    "not applicable",
+    "not applicable to me",
+    "n/a",
+    "na",
+)
+COMPLEX_PAYMENT_DECLINE_PHRASES_BY_GROUP = {
+    "etp": (
+        "no etp",
+        "no employment termination payment",
+        "no employment termination payments",
+    ),
+    "lump_sum_arrears": (
+        "no lump sum",
+        "no lump sums",
+        "no lump sum in arrears",
+        "no lump sums in arrears",
+    ),
+    "super_income": (
+        "no super lump sum",
+        "no super lump sums",
+        "no super income stream",
+        "no super income streams",
+        "no super pension",
+        "no super pensions",
+        "no super annuity",
+        "no super annuities",
+    ),
+}
 REVIEWABLE_COMPLEX_FIELDS = ("employee_deductions", "wfh_work_pattern", "wfh_records", "asset_items", "ess_items")
 EXACT_UNKNOWN_PHRASES = frozenset({"unknown", "missing", "not sure", "unsure"})
 EMBEDDED_UNKNOWN_PHRASES = (
@@ -133,6 +244,11 @@ ATO_BAS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/preparing-
 ATO_GST_CREDITS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/claiming-gst-credits"
 ATO_ESS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/employee-share-schemes"
 ATO_ESS_STATEMENT_SOURCE = "https://www.ato.gov.au/forms-and-instructions/employee-share-scheme-statement"
+ATO_ETP_SOURCE = "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-11-tax-table-for-employment-termination-payments"
+ATO_LUMP_SUM_ARREARS_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/lump-sum-payment-in-arrears"
+ATO_SUPER_PENSIONS_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/superannuation-pensions-and-annuities"
+ATO_SUPER_LUMP_SUM_SOURCE = "https://www.ato.gov.au/tax-rates-and-codes/schedule-12-tax-table-for-superannuation-lump-sums"
+ATO_SUPER_STREAM_SOURCE = "https://www.ato.gov.au/tax-rates-and-codes/schedule-13-tax-table-for-superannuation-income-streams"
 OMITTED_SCOPE_ITEMS = [
     ("feat: add company return intake", "Company/entity return prep, company tax labels, directors, dividends, franking, retained earnings."),
     ("feat: add trust return intake", "Trust return prep, beneficiary distributions, trustee-assessed income, family trust items."),
@@ -142,7 +258,6 @@ OMITTED_SCOPE_ITEMS = [
     ("feat: add full CGT schedule workflow", "CGT events, cost base, discounts, carried losses, main residence, small business concessions."),
     ("feat: add crypto CGT workflow", "Buys, sells, swaps, staking, rewards, transfers, wallet records, and cost-base tracking."),
     ("feat: add foreign income workflow", "Foreign employment, pensions, tax offsets, and residency-specific review."),
-    ("feat: add ETP and lump sum workflow", "ETP, lump sum in arrears, and super lump sum or stream detailed handling."),
     ("feat: add PSI deep workflow", "PSI tests, attribution, deductions, and business structure impacts."),
     ("feat: add advanced document extraction", "Robust OCR and templates for arbitrary PDFs/images beyond AI-assisted candidate extraction."),
 ]
@@ -188,6 +303,20 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("interest_income", "Income", "Gross interest", "10 Gross interest", False),
         QuestionSpec("dividend_income", "Income", "Dividends or ETF distributions", "11 Dividends", False),
         QuestionSpec("government_payments", "Income", "Government payments or allowances", "5/6 Government payments", False),
+        QuestionSpec("etp_statement", "Complex income", "ETP payment summary or income statement held?", "Employment termination payments", False),
+        QuestionSpec("etp_taxable_component", "Complex income", "ETP taxable component", "Employment termination payments", False),
+        QuestionSpec("etp_tax_free_component", "Complex income", "ETP tax-free component", "Employment termination payments", False),
+        QuestionSpec("etp_tax_withheld", "Complex income", "ETP tax withheld", "Employment termination payments", False),
+        QuestionSpec("lump_sum_arrears_statement", "Complex income", "Lump sum in arrears statement held?", "Lump sum payment in arrears", False),
+        QuestionSpec("lump_sum_arrears_amount", "Complex income", "Lump sum in arrears amount", "Lump sum payment in arrears", False),
+        QuestionSpec("lump_sum_arrears_years", "Complex income", "Lump sum in arrears prior years", "Lump sum payment in arrears", False),
+        QuestionSpec("lump_sum_arrears_tax_withheld", "Complex income", "Lump sum in arrears tax withheld", "Lump sum payment in arrears", False),
+        QuestionSpec("super_income_statement", "Complex income", "Super lump sum or income stream statement held?", "Superannuation lump sums and income streams", False),
+        QuestionSpec("super_income_payment_kind", "Complex income", "Super payment kind", "Superannuation lump sums and income streams", False),
+        QuestionSpec("super_lump_sum_taxable_component", "Complex income", "Super lump sum taxable component", "Superannuation lump sums", False),
+        QuestionSpec("super_lump_sum_tax_free_component", "Complex income", "Super lump sum tax-free component", "Superannuation lump sums", False),
+        QuestionSpec("super_income_stream_taxable_amount", "Complex income", "Super income stream taxable amount", "Superannuation income streams", False),
+        QuestionSpec("super_income_tax_withheld", "Complex income", "Super tax withheld", "Superannuation lump sums and income streams", False),
         QuestionSpec("ess_statement", "ESS", "ESS statement held?", "Employee share schemes", False),
         QuestionSpec("ess_taxed_upfront_discount", "ESS", "ESS taxed-upfront discount", "Employee share schemes", False),
         QuestionSpec("ess_deferred_discount", "ESS", "ESS deferred discount", "Employee share schemes", False),
@@ -224,6 +353,31 @@ def sample_answers() -> Dict[str, Any]:
         "interest_income": 120,
         "dividend_income": 430,
         "government_payments": 0,
+        "etp": {
+            "statement": "ETP payment summary held",
+            "payer": "Example Employer Pty Ltd",
+            "payment_type": "life benefit termination payment",
+            "payment_date": "2026-04-15",
+            "taxable_component": 12000,
+            "tax_free_component": 3000,
+            "tax_withheld": 3600,
+            "code": "R",
+        },
+        "lump_sum_arrears": {
+            "statement": "income statement held",
+            "payer": "Example Employer Pty Ltd",
+            "amount": 2400,
+            "payment_years": "2023-24 and 2024-25",
+            "tax_withheld": 500,
+        },
+        "super_income": {
+            "statement": "fund statement held",
+            "fund": "Example Super Fund",
+            "payment_kind": "income stream",
+            "taxable_amount": 18000,
+            "tax_free_component": 0,
+            "tax_withheld": 2100,
+        },
         "ess": {
             "employer": "Example Pty Ltd",
             "statement": "ESS statement held",
@@ -321,6 +475,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     evidence_items = evidence_rows(answers)
     items.extend(wfh_rows(wfh_answers(answers)))
     items.extend(asset_rows(asset_answers(answers)))
+    items.extend(complex_payment_rows(complex_payment_answers(answers)))
     items.extend(ess_rows(ess_answers(answers)))
     items.extend(uncommon_income_rows(answers.get("uncommon_income", [])))
     return {
@@ -361,6 +516,13 @@ def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
         return False
     if spec.key == "ess_statement" and ess_statement_declines_workflow(value):
         return False
+    if spec.key in COMPLEX_PAYMENT_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if spec.key in COMPLEX_PAYMENT_STATEMENT_FLAT_FIELDS and complex_payment_declines_workflow(
+        value,
+        COMPLEX_PAYMENT_FLAT_FIELD_GROUPS[spec.key],
+    ):
+        return False
     return spec.required or has_meaningful_value(value)
 
 
@@ -369,6 +531,13 @@ def base_item_status(key: str, value: Any) -> str:
         if key == "ess_statement" and ess_statement_missing(value):
             return "Evidence"
         if key in ESS_FLAT_AMOUNT_FIELDS and ess_amount_malformed(value):
+            return "Evidence"
+        return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
+    if key in REVIEWABLE_COMPLEX_PAYMENT_FIELDS:
+        group = COMPLEX_PAYMENT_FLAT_FIELD_GROUPS.get(key)
+        if key in COMPLEX_PAYMENT_STATEMENT_FLAT_FIELDS and complex_payment_statement_missing(value, group):
+            return "Evidence"
+        if key in COMPLEX_PAYMENT_FLAT_AMOUNT_FIELDS and complex_payment_amount_malformed(value):
             return "Evidence"
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == "gst_registered":
@@ -812,6 +981,268 @@ def asset_claim_basis(cost: Optional[float], work_use: Optional[float], preferen
     if work_use != 100:
         return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; mixed-use immediate/depreciation method needs review"
     return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; immediate deduction candidate if evidence supports"
+
+
+def complex_payment_answers(answers: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    return {
+        "etp": merge_payment_answers(
+            answers.get("etp"),
+            {
+                "statement": answers.get("etp_statement"),
+                "payer": answers.get("etp_payer"),
+                "payment_type": answers.get("etp_payment_type"),
+                "payment_date": answers.get("etp_payment_date"),
+                "taxable_component": answers.get("etp_taxable_component"),
+                "tax_free_component": answers.get("etp_tax_free_component"),
+                "tax_withheld": answers.get("etp_tax_withheld"),
+                "code": answers.get("etp_code"),
+            },
+            "etp",
+        ),
+        "lump_sum_arrears": merge_payment_answers(
+            answers.get("lump_sum_arrears"),
+            {
+                "statement": answers.get("lump_sum_arrears_statement"),
+                "payer": answers.get("lump_sum_arrears_payer"),
+                "amount": answers.get("lump_sum_arrears_amount"),
+                "payment_years": answers.get("lump_sum_arrears_years"),
+                "tax_withheld": answers.get("lump_sum_arrears_tax_withheld"),
+            },
+            "lump_sum_arrears",
+        ),
+        "super_income": merge_payment_answers(
+            answers.get("super_income"),
+            {
+                "statement": answers.get("super_income_statement"),
+                "fund": answers.get("super_income_fund"),
+                "payment_kind": answers.get("super_income_payment_kind"),
+                "taxable_component": answers.get("super_lump_sum_taxable_component"),
+                "tax_free_component": answers.get("super_lump_sum_tax_free_component"),
+                "taxable_amount": answers.get("super_income_stream_taxable_amount"),
+                "tax_withheld": answers.get("super_income_tax_withheld"),
+            },
+            "super_income",
+        ),
+    }
+
+
+def merge_payment_answers(raw: Any, flat: Dict[str, Any], group: Optional[str] = None) -> Dict[str, Any]:
+    merged = {key: value for key, value in flat.items() if has_meaningful_value(value)}
+    if not isinstance(raw, dict) or not has_meaningful_value(raw):
+        return merged
+    for key, value in raw.items():
+        if has_meaningful_payment_signal(key, value, group):
+            merged[key] = value
+        elif key not in merged and has_explicit_payment_evidence_gap(key, value):
+            merged[key] = value
+    return merged
+
+
+def complex_payment_rows(groups: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    rows.extend(etp_rows(groups.get("etp", {})))
+    rows.extend(lump_sum_arrears_rows(groups.get("lump_sum_arrears", {})))
+    rows.extend(super_income_rows(groups.get("super_income", {})))
+    return rows
+
+
+def etp_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
+    group = "etp"
+    if not has_complex_payment_inputs(raw, group):
+        return []
+    amount_evidence = payment_amounts_need_evidence(raw, ("taxable_component", "tax_free_component", "tax_withheld"))
+    statement_evidence = complex_payment_statement_missing(raw.get("statement"), group)
+    status = "Evidence" if amount_evidence or statement_evidence else "Accountant review"
+    answer = (
+        f"Payer {display_value(raw.get('payer'))}; "
+        f"type {display_value(raw.get('payment_type'))}; "
+        f"date {display_value(raw.get('payment_date'))}; "
+        f"code {display_value(raw.get('code'))}; "
+        f"taxable component {money_text(complex_payment_money_value(raw.get('taxable_component')))}; "
+        f"tax-free component {money_text(complex_payment_money_value(raw.get('tax_free_component')))}; "
+        f"tax withheld {money_text(complex_payment_money_value(raw.get('tax_withheld')))}"
+    )
+    return [
+        guide_row(
+            "ETP",
+            "Employment termination payments",
+            "ETP payment summary workflow",
+            answer,
+            "ETP records need payment summary/income statement evidence, payment code, component split, cap context, and accountant review before manual copy.",
+            status,
+            ATO_ETP_SOURCE,
+            tab_text=complex_payment_tab_text("ETP", statement_evidence, amount_evidence),
+        )
+    ]
+
+
+def lump_sum_arrears_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
+    group = "lump_sum_arrears"
+    if not has_complex_payment_inputs(raw, group):
+        return []
+    amount_evidence = payment_amounts_need_evidence(raw, ("amount", "tax_withheld"))
+    statement_evidence = complex_payment_statement_missing(raw.get("statement"), group)
+    prior_year_evidence = is_missing(raw.get("payment_years")) or contains_unknown(raw.get("payment_years"))
+    status = "Evidence" if amount_evidence or statement_evidence or prior_year_evidence else "Accountant review"
+    answer = (
+        f"Payer {display_value(raw.get('payer'))}; "
+        f"prior years {display_value(raw.get('payment_years'))}; "
+        f"amount {money_text(complex_payment_money_value(raw.get('amount')))}; "
+        f"tax withheld {money_text(complex_payment_money_value(raw.get('tax_withheld')))}"
+    )
+    return [
+        guide_row(
+            "LUMP-ARREARS",
+            "Lump sum payment in arrears",
+            "Lump sum in arrears workflow",
+            answer,
+            "Lump sum in arrears records need statement evidence, prior-year allocation, amount, withholding, and accountant review before manual copy.",
+            status,
+            ATO_LUMP_SUM_ARREARS_SOURCE,
+            tab_text=lump_sum_arrears_tab_text(statement_evidence, prior_year_evidence, amount_evidence),
+        )
+    ]
+
+
+def super_income_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
+    group = "super_income"
+    if not has_complex_payment_inputs(raw, group):
+        return []
+    amount_evidence = payment_amounts_need_evidence(
+        raw,
+        ("taxable_component", "tax_free_component", "taxable_amount", "tax_withheld"),
+    )
+    statement_evidence = complex_payment_statement_missing(raw.get("statement"), group)
+    status = "Evidence" if amount_evidence or statement_evidence else "Accountant review"
+    answer = (
+        f"Fund {display_value(raw.get('fund'))}; "
+        f"kind {display_value(raw.get('payment_kind'))}; "
+        f"taxable component {money_text(complex_payment_money_value(raw.get('taxable_component')))}; "
+        f"tax-free component {money_text(complex_payment_money_value(raw.get('tax_free_component')))}; "
+        f"income-stream taxable amount {money_text(complex_payment_money_value(raw.get('taxable_amount')))}; "
+        f"tax withheld {money_text(complex_payment_money_value(raw.get('tax_withheld')))}"
+    )
+    return [
+        guide_row(
+            "SUPER-INCOME",
+            "Superannuation lump sum or income stream",
+            "Super lump sum or income stream workflow",
+            answer,
+            "Super lump sums and income streams need fund statement evidence, component split, withholding, age/condition context, and accountant review before manual copy.",
+            status,
+            [ATO_SUPER_PENSIONS_SOURCE, ATO_SUPER_LUMP_SUM_SOURCE, ATO_SUPER_STREAM_SOURCE],
+            tab_text=complex_payment_tab_text("Super income", statement_evidence, amount_evidence),
+        )
+    ]
+
+
+def has_complex_payment_inputs(raw: Dict[str, Any], group: Optional[str] = None) -> bool:
+    if not isinstance(raw, dict):
+        return False
+    if payment_statement_declines_without_facts(raw, group):
+        return False
+    if any(has_explicit_payment_evidence_gap(key, raw.get(key)) for key in ("statement", *COMPLEX_PAYMENT_AMOUNT_FIELDS)):
+        return True
+    return any(has_meaningful_payment_signal(key, value, group) for key, value in raw.items())
+
+
+def payment_statement_declines_without_facts(raw: Dict[str, Any], group: Optional[str] = None) -> bool:
+    if not complex_payment_declines_workflow(raw.get("statement"), group):
+        return False
+    return not any(
+        has_meaningful_payment_signal(key, value, group) or has_explicit_payment_evidence_gap(key, value)
+        for key, value in raw.items()
+        if key != "statement"
+    )
+
+
+def has_meaningful_payment_signal(key: str, value: Any, group: Optional[str] = None) -> bool:
+    if key in COMPLEX_PAYMENT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if contains_unknown(value):
+        return False
+    if key == "statement" and complex_payment_declines_workflow(value, group):
+        return False
+    return has_meaningful_value(value)
+
+
+def has_explicit_payment_evidence_gap(key: str, value: Any) -> bool:
+    if key in COMPLEX_PAYMENT_AMOUNT_FIELDS:
+        return complex_payment_amount_needs_evidence(value)
+    if key == "statement":
+        return has_meaningful_value(value) and contains_unknown(value)
+    return False
+
+
+def complex_payment_statement_missing(statement: Any, group: Optional[str] = None) -> bool:
+    if isinstance(statement, bool):
+        return not statement
+    if is_missing(statement) or contains_unknown(statement):
+        return True
+    if complex_payment_declines_workflow(statement, group):
+        return True
+    lowered = text(statement).strip().lower()
+    return lowered in {"no", "n", "false", "none"} or any(
+        phrase in lowered for phrase in COMPLEX_PAYMENT_STATEMENT_MISSING_PHRASES
+    )
+
+
+def complex_payment_declines_workflow(statement: Any, group: Optional[str] = None) -> bool:
+    if not isinstance(statement, str):
+        return False
+    lowered = statement.strip().lower()
+    group_phrases = COMPLEX_PAYMENT_DECLINE_PHRASES_BY_GROUP.get(group or "", ())
+    return lowered in COMPLEX_PAYMENT_DECLINE_PHRASES or lowered in group_phrases
+
+
+def payment_amounts_need_evidence(raw: Dict[str, Any], amount_fields: tuple[str, ...]) -> bool:
+    return any(complex_payment_amount_needs_evidence(raw.get(key)) for key in amount_fields)
+
+
+def complex_payment_amount_needs_evidence(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    return contains_unknown(value) or complex_payment_amount_malformed(value)
+
+
+def complex_payment_amount_malformed(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    try:
+        money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return True
+    return False
+
+
+def complex_payment_money_value(value: Any) -> Optional[float]:
+    try:
+        return money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return None
+
+
+def complex_payment_tab_text(label: str, statement_evidence: bool, amount_evidence: bool) -> str:
+    if statement_evidence and amount_evidence:
+        return f"{label} needs statement evidence and numeric amount evidence before accountant review."
+    if amount_evidence:
+        return f"{label} amount fields need numeric amount evidence before accountant review."
+    if statement_evidence:
+        return f"{label} needs statement evidence before accountant review."
+    return f"{label} needs source-backed accountant review."
+
+
+def lump_sum_arrears_tab_text(statement_evidence: bool, prior_year_evidence: bool, amount_evidence: bool) -> str:
+    evidence = []
+    if statement_evidence:
+        evidence.append("statement evidence")
+    if prior_year_evidence:
+        evidence.append("prior-year allocation evidence")
+    if amount_evidence:
+        evidence.append("numeric amount evidence")
+    if evidence:
+        return f"Lump sum in arrears needs {', '.join(evidence)} before accountant review."
+    return "Lump sum in arrears needs source-backed accountant review."
 
 
 def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:

@@ -87,6 +87,11 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
         "ESS intake must normalize nested items field-by-field, preserve item amounts when sibling labels, statements, or amounts are unknown, reject placeholder-only item labels, keep concrete statement-only inputs visible for review, skip explicit no-ESS/not-applicable answers when no ESS facts exist, and keep unknown or malformed ESS amounts as Evidence instead of accountant review.",
     ),
     ReviewPattern(
+        "Issue #50 complex payments",
+        INDIVIDUAL_INTAKE_CONTRACT,
+        "ETP, lump sum in arrears, super lump sum, and super income stream intake must use group-specific no-answer handling, skip explicit no only when no facts exist, preserve zero amounts, keep no-plus-facts, unknown statements, unknown amounts, and malformed amounts as Evidence, and keep official-source-backed prep-only guidance aligned across runtime and portable skills.",
+    ),
+    ReviewPattern(
         "PR #38",
         LOCAL_PLUGIN_MARKETPLACE_CONTRACT,
         "Local Codex plugin setup docs must point codex plugin marketplace add at the repo root when .agents/plugins/marketplace.json uses source.path ./.",
@@ -402,6 +407,50 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "foreign-source discount",
                 "TFN amount withheld",
                 "ESS discounts need the ESS statement",
+                "ATO_ETP_SOURCE = \"https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-11-tax-table-for-employment-termination-payments\"",
+                "ATO_LUMP_SUM_ARREARS_SOURCE = \"https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/lump-sum-payment-in-arrears\"",
+                "ATO_SUPER_PENSIONS_SOURCE = \"https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/superannuation-pensions-and-annuities\"",
+                "ATO_SUPER_LUMP_SUM_SOURCE = \"https://www.ato.gov.au/tax-rates-and-codes/schedule-12-tax-table-for-superannuation-lump-sums\"",
+                "ATO_SUPER_STREAM_SOURCE = \"https://www.ato.gov.au/tax-rates-and-codes/schedule-13-tax-table-for-superannuation-income-streams\"",
+                "REVIEWABLE_COMPLEX_PAYMENT_FIELDS = (",
+                "COMPLEX_PAYMENT_STATEMENT_FLAT_FIELDS = (",
+                "COMPLEX_PAYMENT_FLAT_FIELD_GROUPS = {",
+                "COMPLEX_PAYMENT_AMOUNT_FIELDS = (",
+                "COMPLEX_PAYMENT_FLAT_AMOUNT_FIELDS = (",
+                "COMPLEX_PAYMENT_STATEMENT_MISSING_PHRASES = (",
+                "\"statement not received\"",
+                "\"do not have\"",
+                "COMPLEX_PAYMENT_DECLINE_PHRASES_BY_GROUP = {",
+                "items.extend(complex_payment_rows(complex_payment_answers(answers)))",
+                "if spec.key in COMPLEX_PAYMENT_FLAT_AMOUNT_FIELDS and isinstance(value, bool):",
+                "if spec.key in COMPLEX_PAYMENT_STATEMENT_FLAT_FIELDS and complex_payment_declines_workflow(",
+                "if key in REVIEWABLE_COMPLEX_PAYMENT_FIELDS:",
+                "def complex_payment_answers(",
+                "def merge_payment_answers(",
+                "def complex_payment_rows(",
+                "def etp_rows(",
+                "def lump_sum_arrears_rows(",
+                "def super_income_rows(",
+                "def has_complex_payment_inputs(",
+                "def payment_statement_declines_without_facts(",
+                "def has_meaningful_payment_signal(",
+                "def has_explicit_payment_evidence_gap(",
+                "def complex_payment_statement_missing(",
+                "phrase in lowered for phrase in COMPLEX_PAYMENT_STATEMENT_MISSING_PHRASES",
+                "def complex_payment_declines_workflow(",
+                "def payment_amounts_need_evidence(",
+                "def complex_payment_amount_needs_evidence(",
+                "def complex_payment_amount_malformed(",
+                "def complex_payment_money_value(",
+                "def complex_payment_tab_text(",
+                "def lump_sum_arrears_tab_text(",
+                "{label} needs statement evidence and numeric amount evidence before accountant review.",
+                "{label} amount fields need numeric amount evidence before accountant review.",
+                "prior-year allocation evidence",
+                "{label} needs source-backed accountant review.",
+                "Employment termination payments",
+                "Lump sum payment in arrears",
+                "Superannuation lump sum or income stream",
                 "def parse_iso_date(",
                 "def parse_dates(raw_values: Any) -> Optional[Set[date]]:",
                 "if contains_unknown(raw_values):",
@@ -446,7 +495,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
             INDIVIDUAL_INTAKE_CONTRACT,
             ess_guidance,
             [
-                "including PAYG, ESS, sole-trader ABN",
+                "including PAYG, ESS, ETP",
                 "employee share scheme",
                 "ESS statement",
                 "taxed-upfront discount",
@@ -459,11 +508,35 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
             ],
         )
     )
+    complex_payment_guidance = skill_text + "\n" + skill_rules
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            complex_payment_guidance,
+            [
+                "including PAYG, ESS, ETP",
+                "employment termination payment",
+                "ETP payment summary",
+                "lump sum in arrears",
+                "super income stream",
+                "taxable and tax-free components",
+                "prior-year allocation",
+                "contradictory no-payment plus amount facts",
+                "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-11-tax-table-for-employment-termination-payments",
+                "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/lump-sum-payment-in-arrears",
+                "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/superannuation-pensions-and-annuities",
+                "https://www.ato.gov.au/tax-rates-and-codes/schedule-12-tax-table-for-superannuation-lump-sums",
+                "https://www.ato.gov.au/tax-rates-and-codes/schedule-13-tax-table-for-superannuation-income-streams",
+            ],
+        )
+    )
     out_of_scope = ""
     if "## Out Of Scope" in skill_text and "## Method" in skill_text:
         out_of_scope = skill_text.split("## Out Of Scope", 1)[1].split("## Method", 1)[0]
     if "ESS" in out_of_scope or "employee share scheme" in out_of_scope.lower():
         findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "individual-return out-of-scope must not list ESS"))
+    if "ETP" in out_of_scope or "lump sum" in out_of_scope.lower():
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "individual-return out-of-scope must not list ETP/lump sum"))
     return findings
 
 

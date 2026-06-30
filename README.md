@@ -38,7 +38,7 @@ The worksheet page shows manual-copy rows, source provenance, evidence prompts, 
 
 ## What It Does
 
-- Reviews Australian tax prep records for employees, ESS, ABN/sole-trader work, investments, rental property, crypto, superannuation, and private health.
+- Reviews Australian tax prep records for employees, ESS, ETP/lump sum, ABN/sole-trader work, investments, rental property, crypto, superannuation, and private health.
 - Keeps ATO source URLs, checked-at dates, source coverage checks, and generated topic skills visible.
 - Flags GST/BAS, PAYG, FBT, CGT, super guarantee, and stamp-duty source-routing items for conservative review.
 - Builds accountant-facing workbook and taxpack outputs from reviewed data.

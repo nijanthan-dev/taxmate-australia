@@ -1,6 +1,6 @@
 ---
 name: individual-return
-description: Guide V1 Australian individual tax return intake, including PAYG, ESS, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and HTML handoff. Use when the user wants an individual return prep pack or a broad individual tax checklist.
+description: Guide V1 Australian individual tax return intake, including PAYG, ESS, ETP, lump sum in arrears, super income, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and HTML handoff. Use when the user wants an individual return prep pack or a broad individual tax checklist.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 metadata:
   priority: 4
@@ -11,6 +11,10 @@ metadata:
       - "ABN and BAS"
       - "employee share scheme"
       - "ESS statement"
+      - "employment termination payment"
+      - "ETP payment summary"
+      - "lump sum in arrears"
+      - "super income stream"
       - "tax intake"
       - "HTML tax pack"
 ---
@@ -38,6 +42,7 @@ Handle individual tax return prep for the selected income year, normally 2025-26
 - PAYG salary and wages, employer ABN, gross, tax withheld, occupation, allowances, RFBA, and reportable super;
 - common income gates: interest, dividends or ETF distributions, government payments, super touchpoints, and uncommon income routing;
 - employee share scheme statement facts, employer or scheme labels, taxed-upfront discount, deferred discount, foreign-source discount, TFN amount withheld, itemized statement rows, and evidence/review routing;
+- employment termination payment, lump sum in arrears, super lump sum, and super income stream facts, including statement evidence, payer or fund, payment kind, payment dates, taxable and tax-free components, prior-year allocation, tax withheld, and evidence/review routing;
 - sole-trader ABN income and expenses, GST registration, accounting basis, business-versus-hobby, PSI trigger, and profit or loss;
 - BAS worksheet facts: period, GST collected, GST credits, GST-free or input-taxed sales, PAYG withholding or instalments, adjustments, and tax invoices;
 - employee and ABN deductions, reimbursement, evidence, GST, work/private split, and mixed-use review;
@@ -46,7 +51,7 @@ Handle individual tax return prep for the selected income year, normally 2025-26
 
 ## Out Of Scope
 
-Do not fully handle company, trust, partnership, full supplementary, rental property, full CGT, crypto CGT, foreign income, ETP, lump sum, PSI deep, or advanced OCR/template extraction workflows. Detect and route those topics to the most specific installed skill or mark `Accountant review`.
+Do not fully handle company, trust, partnership, full supplementary, rental property, full CGT, crypto CGT, foreign income, PSI deep, or advanced OCR/template extraction workflows. Detect and route those topics to the most specific installed skill or mark `Accountant review`.
 
 ## Method
 
@@ -58,9 +63,10 @@ Do not fully handle company, trust, partnership, full supplementary, rental prop
 6. Put ambiguous, mixed-use, GST/BAS, PSI, non-commercial-loss, home-business, FBT, CGT, business-versus-hobby, and uncommon-income items in `Accountant review`.
 7. For WFH, exclude leave and state-wide public holidays unless the user worked. Keep regional, capital-city-only, sector-only, and partial-day holidays as Evidence or `Accountant review` unless the user supplies facts that resolve them. Include weekends only when the user says they worked. Compare fixed-rate and actual-cost candidates only when facts and records support it.
 8. For ESS, collect the ESS statement, taxed-upfront and deferred discounts, foreign-source split, TFN amount withheld, and per-employer or per-scheme item rows. Missing statements, malformed or conflicting amounts, foreign-source splits, and deferred taxing-point facts stay Evidence or `Accountant review`; never call them copy-ready.
-9. For assets, never claim full cost by default. Ask work-use and method facts, then present immediate, depreciation, low-value-pool, or review outcomes only when source-backed.
-10. For BAS, prepare a worksheet only. Calculate totals where facts are complete, but do not lodge or support BAS lodgment.
-11. When full runtime execution is available, use the runtime intake command and output one print-first HTML pack only. Do not expose internal Python script names to users.
+9. For ETP, lump sum in arrears, super lump sum, and super income stream, collect source statements, payer or fund, payment type, taxable and tax-free components, prior-year allocation where relevant, and withholding. Missing statements, unknown or malformed amounts, and contradictory no-payment plus amount facts stay Evidence or `Accountant review`; never call them copy-ready.
+10. For assets, never claim full cost by default. Ask work-use and method facts, then present immediate, depreciation, low-value-pool, or review outcomes only when source-backed.
+11. For BAS, prepare a worksheet only. Calculate totals where facts are complete, but do not lodge or support BAS lodgment.
+12. When full runtime execution is available, use the runtime intake command and output one print-first HTML pack only. Do not expose internal Python script names to users.
 
 ## Output Contract
 

@@ -376,7 +376,8 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("feat: add company return intake", titles)
         self.assertIn("feat: add advanced document extraction", titles)
         self.assertNotIn("feat: add ESS workflow", titles)
-        self.assertEqual(11, len(issues))
+        self.assertNotIn("feat: add ETP and lump sum workflow", titles)
+        self.assertEqual(10, len(issues))
         for item in issues:
             self.assertIn("Omitted from V1", item["body"])
             self.assertIn("prep-only", item["body"])
@@ -392,6 +393,7 @@ class IndividualIntakeTests(unittest.TestCase):
                 "Private health",
                 "PAYG",
                 "Income",
+                "Complex income",
                 "ABN",
                 "BAS",
                 "Deductions",
@@ -399,7 +401,20 @@ class IndividualIntakeTests(unittest.TestCase):
                 "Assets",
             }.issubset(sections)
         )
-        self.assertTrue({"resident", "state", "spouse_had", "gst_registered", "asset_items"}.issubset(keys))
+        self.assertTrue(
+            {
+                "resident",
+                "state",
+                "spouse_had",
+                "gst_registered",
+                "asset_items",
+                "etp_statement",
+                "lump_sum_arrears_statement",
+                "lump_sum_arrears_amount",
+                "super_income_statement",
+                "super_income_stream_taxable_amount",
+            }.issubset(keys)
+        )
 
     def test_missing_required_answers_block_without_allow_missing(self) -> None:
         answers = taxmate_intake.sample_answers()
@@ -478,6 +493,200 @@ class IndividualIntakeTests(unittest.TestCase):
                 rendered_numbers = {row["number"] for row in rows}
 
                 self.assertNotIn("ess_statement", rendered_numbers)
+
+    def test_complex_payment_workflows_render_statement_backed_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        for number in ["ETP", "LUMP-ARREARS", "SUPER-INCOME"]:
+            with self.subTest(number=number):
+                self.assertEqual("Accountant review", by_number[number]["status"])
+
+        self.assertIn("taxable component 12000.00", by_number["ETP"]["answer"])
+        self.assertIn("tax-free component 3000.00", by_number["ETP"]["answer"])
+        self.assertIn("amount 2400.00", by_number["LUMP-ARREARS"]["answer"])
+        self.assertIn("tax withheld 500.00", by_number["LUMP-ARREARS"]["answer"])
+        self.assertIn("income-stream taxable amount 18000.00", by_number["SUPER-INCOME"]["answer"])
+        self.assertIn("tax-free component 0.00", by_number["SUPER-INCOME"]["answer"])
+        self.assertIn(taxmate_intake.ATO_ETP_SOURCE, by_number["ETP"]["source_urls"])
+        self.assertIn(taxmate_intake.ATO_LUMP_SUM_ARREARS_SOURCE, by_number["LUMP-ARREARS"]["source_urls"])
+        self.assertIn(taxmate_intake.ATO_SUPER_STREAM_SOURCE, by_number["SUPER-INCOME"]["source_urls"])
+
+    def test_no_complex_payment_answers_do_not_render_workflow_rows(self) -> None:
+        cases = [
+            {"etp_statement": "no etp"},
+            {"lump_sum_arrears_statement": "no lump sum in arrears"},
+            {"super_income_statement": "no super income stream"},
+            {"etp": {"statement": "no employment termination payments"}},
+            {"lump_sum_arrears": {"statement": "not applicable"}},
+            {"super_income": {"statement": "no super lump sums"}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                rendered_numbers = {row["number"] for row in payload["items"]}
+
+                self.assertFalse({"ETP", "LUMP-ARREARS", "SUPER-INCOME"} & rendered_numbers)
+
+    def test_complex_payment_declines_are_group_specific(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"etp": {"statement": "no super income stream", "taxable_component": 100}}
+        )
+        etp = next(row for row in payload["items"] if row["number"] == "ETP")
+
+        self.assertEqual("Accountant review", etp["status"])
+        self.assertIn("taxable component 100.00", etp["answer"])
+
+    def test_complex_payment_no_answer_with_amount_stays_evidence(self) -> None:
+        cases = [
+            ("ETP", "ETP needs statement evidence before accountant review.", {"etp_statement": "no etp", "etp_taxable_component": 100}),
+            (
+                "LUMP-ARREARS",
+                "Lump sum in arrears needs statement evidence before accountant review.",
+                {"lump_sum_arrears_statement": "no lump sum in arrears", "lump_sum_arrears_amount": 100, "lump_sum_arrears_years": "2024-25"},
+            ),
+            (
+                "SUPER-INCOME",
+                "Super income needs statement evidence before accountant review.",
+                {"super_income_statement": "no super income stream", "super_income_stream_taxable_amount": 100},
+            ),
+        ]
+        for number, tab_text, answers in cases:
+            with self.subTest(number=number):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == number)
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertEqual(tab_text, row["tab_text"])
+                self.assertIn("100.00", row["answer"])
+
+    def test_complex_payment_missing_statement_phrases_stay_evidence(self) -> None:
+        cases = [
+            ("ETP", {"etp": {"statement": "statement not provided", "taxable_component": 100}}),
+            (
+                "LUMP-ARREARS",
+                {"lump_sum_arrears": {"statement": "do not have statement", "amount": 100, "payment_years": "2024-25"}},
+            ),
+            ("SUPER-INCOME", {"super_income": {"statement": "fund statement not received", "taxable_amount": 100}}),
+            ("ETP", {"etp_statement": "payment summary not held", "etp_taxable_component": 100}),
+        ]
+        for number, answers in cases:
+            with self.subTest(number=number, answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == number)
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("statement evidence", row["tab_text"])
+                self.assertIn("100.00", row["answer"])
+
+    def test_missing_complex_payment_statement_base_rows_stay_evidence(self) -> None:
+        for key, value in [
+            ("etp_statement", "statement not received"),
+            ("lump_sum_arrears_statement", "income statement not provided"),
+            ("super_income_statement", "fund statement not available"),
+        ]:
+            with self.subTest(key=key):
+                answers = taxmate_intake.sample_answers()
+                answers[key] = value
+
+                rows = taxmate_intake.base_items(answers)
+                statement_row = next(row for row in rows if row["number"] == key)
+
+                self.assertEqual("Evidence", statement_row["status"])
+
+    def test_lump_sum_arrears_missing_prior_years_names_evidence_gap(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"lump_sum_arrears": {"statement": "income statement held", "amount": 100, "tax_withheld": 10}}
+        )
+        row = next(item for item in payload["items"] if item["number"] == "LUMP-ARREARS")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertEqual(
+            "Lump sum in arrears needs prior-year allocation evidence before accountant review.",
+            row["tab_text"],
+        )
+
+    def test_unknown_complex_payment_amounts_stay_evidence(self) -> None:
+        cases = [
+            ("ETP", {"etp": {"statement": "ETP payment summary held", "taxable_component": "unknown"}}),
+            (
+                "LUMP-ARREARS",
+                {"lump_sum_arrears": {"statement": "income statement held", "amount": "unknown", "payment_years": "2024-25"}},
+            ),
+            ("SUPER-INCOME", {"super_income": {"statement": "fund statement held", "taxable_amount": "unknown"}}),
+        ]
+        for number, answers in cases:
+            with self.subTest(number=number):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == number)
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("numeric amount evidence", row["tab_text"])
+                self.assertIn("unknown", row["answer"])
+
+    def test_malformed_complex_payment_amounts_stay_evidence(self) -> None:
+        cases = [
+            ("ETP", {"etp": {"statement": "ETP payment summary held", "taxable_component": "about $100"}}),
+            (
+                "LUMP-ARREARS",
+                {"lump_sum_arrears": {"statement": "income statement held", "amount": "100 AUD", "payment_years": "2024-25"}},
+            ),
+            ("SUPER-INCOME", {"super_income": {"statement": "fund statement held", "taxable_amount": "about $100"}}),
+        ]
+        for number, answers in cases:
+            with self.subTest(number=number):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == number)
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("numeric amount evidence", row["tab_text"])
+
+    def test_zero_complex_payment_amounts_are_meaningful(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "etp": {"statement": "ETP payment summary held", "taxable_component": 0, "tax_free_component": 0, "tax_withheld": 0},
+                "lump_sum_arrears": {"statement": "income statement held", "amount": 0, "payment_years": "2024-25", "tax_withheld": 0},
+                "super_income": {"statement": "fund statement held", "payment_kind": "income stream", "taxable_amount": 0, "tax_withheld": 0},
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Accountant review", by_number["ETP"]["status"])
+        self.assertEqual("Accountant review", by_number["LUMP-ARREARS"]["status"])
+        self.assertEqual("Accountant review", by_number["SUPER-INCOME"]["status"])
+        self.assertIn("taxable component 0.00", by_number["ETP"]["answer"])
+        self.assertIn("amount 0.00", by_number["LUMP-ARREARS"]["answer"])
+        self.assertIn("income-stream taxable amount 0.00", by_number["SUPER-INCOME"]["answer"])
+
+    def test_complex_payment_review_rows_appear_in_html_pack(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("Employment termination payments", body)
+        self.assertIn("Lump sum payment in arrears", body)
+        self.assertIn("Superannuation lump sum or income stream", body)
+        self.assertIn("ETP needs source-backed accountant review.", body)
+        self.assertNotIn("lodgment-ready", body)
+
+    def test_complex_payment_sources_are_registered_and_covered(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        registry = json.loads((root / "data" / "ato_knowledge_base" / "source_registry.json").read_text())
+        coverage = json.loads((root / "data" / "ato_knowledge_base" / "source_coverage.json").read_text())
+        registry_urls = {item["url"] for item in registry["records"]}
+        covered = {item["canonical_url"]: item for item in coverage["sources"]}
+
+        expected_skills = {
+            taxmate_intake.ATO_ETP_SOURCE: "payg-employer",
+            taxmate_intake.ATO_LUMP_SUM_ARREARS_SOURCE: "employment-deductions",
+            taxmate_intake.ATO_SUPER_PENSIONS_SOURCE: "employment-deductions",
+            taxmate_intake.ATO_SUPER_LUMP_SUM_SOURCE: "payg-employer",
+            taxmate_intake.ATO_SUPER_STREAM_SOURCE: "payg-employer",
+        }
+        for url, skill in expected_skills.items():
+            with self.subTest(url=url):
+                self.assertIn(url, registry_urls)
+                self.assertEqual("verified", covered[url]["status"])
+                self.assertIn(skill, covered[url]["skills"])
 
     def test_asset_items_alias_gets_typed_asset_review(self) -> None:
         answers = taxmate_intake.sample_answers()
@@ -994,7 +1203,7 @@ class IndividualIntakeTests(unittest.TestCase):
         rules = (root / "skills" / "individual-return" / "references" / "rules.md").read_text()
         out_of_scope = skill.split("## Out Of Scope", 1)[1].split("## Method", 1)[0]
 
-        self.assertIn("including PAYG, ESS, sole-trader ABN", skill)
+        self.assertIn("including PAYG, ESS, ETP", skill)
         self.assertIn("employee share scheme", skill)
         self.assertIn("ESS statement", skill)
         self.assertIn("taxed-upfront discount", skill)
@@ -1002,6 +1211,26 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn(taxmate_intake.ATO_ESS_SOURCE, rules)
         self.assertIn(taxmate_intake.ATO_ESS_STATEMENT_SOURCE, rules)
         self.assertNotIn("ESS", out_of_scope)
+
+    def test_individual_return_portable_skill_covers_complex_payment_scope(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        skill = (root / "skills" / "individual-return" / "SKILL.md").read_text()
+        rules = (root / "skills" / "individual-return" / "references" / "rules.md").read_text()
+        out_of_scope = skill.split("## Out Of Scope", 1)[1].split("## Method", 1)[0]
+
+        self.assertIn("including PAYG, ESS, ETP", skill)
+        self.assertIn("employment termination payment", skill)
+        self.assertIn("ETP payment summary", skill)
+        self.assertIn("lump sum in arrears", skill)
+        self.assertIn("super income stream", skill)
+        self.assertIn("contradictory no-payment plus amount facts", skill)
+        self.assertIn(taxmate_intake.ATO_ETP_SOURCE, rules)
+        self.assertIn(taxmate_intake.ATO_LUMP_SUM_ARREARS_SOURCE, rules)
+        self.assertIn(taxmate_intake.ATO_SUPER_PENSIONS_SOURCE, rules)
+        self.assertIn(taxmate_intake.ATO_SUPER_LUMP_SUM_SOURCE, rules)
+        self.assertIn(taxmate_intake.ATO_SUPER_STREAM_SOURCE, rules)
+        self.assertNotIn("ETP", out_of_scope)
+        self.assertNotIn("lump sum", out_of_scope.lower())
 
     def test_wfh_work_pattern_alias_gets_typed_wfh_review(self) -> None:
         answers = taxmate_intake.sample_answers()
