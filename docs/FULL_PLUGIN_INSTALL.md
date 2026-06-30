@@ -37,9 +37,9 @@ Run runtime commands through the bash launcher (python runtime under the hood):
 Render the self-prepared guide HTML users can save as PDF:
 
 ```bash
-./scripts/taxmate taxpack sample-json --output /tmp/taxmate-guide-input.json
-./scripts/taxmate taxpack guide-html \
-  --input /tmp/taxmate-guide-input.json \
+./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json
+./scripts/taxmate intake individual \
+  --answers /tmp/taxmate-answers.json \
   --output /tmp/taxmate-guide.html
 ```
 

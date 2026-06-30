@@ -302,6 +302,7 @@ def add_skill_and_documentation_checks(
     add("wrapper_invocations_use_australia_prefix", wrapper_invocations_use_australia_prefix(root), "")
     add("plugin_lock_skill_paths_exist", plugin_lock_skill_paths_exist(root), "")
     add("wrapper_fallback_skill_paths_exist", wrapper_fallback_skill_paths_exist(root), "")
+    add("individual_return_prep_docs_ready", individual_return_prep_docs_ready(root, readme_text), "")
     add("discovery_metadata_documented", discovery_metadata_ready(root, readme_text), "")
     review_guardrail_gaps = review_feedback_guardrail_gaps(root)
     add("review_feedback_guardrails_documented", len(review_guardrail_gaps) == 0, "; ".join(review_guardrail_gaps))
@@ -566,6 +567,38 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
         and ("ATO-" + "backed") not in agent
         and '"assistant"' not in plugin
         and '"super"' not in plugin
+    )
+
+
+def individual_return_prep_docs_ready(root: str, readme_text: str) -> bool:
+    doc = read_text(os.path.join(root, "docs", "INDIVIDUAL_RETURN_PREP.md"))
+    full_install = read_text(os.path.join(root, "docs", "FULL_PLUGIN_INSTALL.md"))
+    required_readme_terms = [
+        "Individual Return Prep",
+        "docs/INDIVIDUAL_RETURN_PREP.md",
+        "prep-only boundaries",
+        "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json",
+        "--answers /tmp/taxmate-answers.json",
+    ]
+    required_doc_terms = [
+        "TaxMate is prep-only",
+        "individual-return",
+        "./scripts/taxmate intake individual --help",
+        "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json",
+        "./scripts/taxmate intake individual",
+        "--answers /tmp/taxmate-answers.json",
+        "No-answer plus facts stays Evidence",
+        "`Accountant review`",
+        "myTax, paper ATO form, or accountant handoff",
+    ]
+    stale_prep_commands = [
+        "./scripts/taxmate taxpack sample-json --output /tmp/taxmate-guide-input.json",
+        "--input /tmp/taxmate-guide-input.json",
+    ]
+    return (
+        all(term in readme_text for term in required_readme_terms)
+        and all(term in doc for term in required_doc_terms)
+        and not any(term in readme_text or term in doc or term in full_install for term in stale_prep_commands)
     )
 
 

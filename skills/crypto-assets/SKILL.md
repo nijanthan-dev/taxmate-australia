@@ -1,6 +1,6 @@
 ---
 name: crypto-assets
-description: Crypto disposals, swaps, rewards, transfers, records, and CGT review boundaries. Use for crypto asset events and records.
+description: Crypto disposals, swaps, exchanges, conversions, staking/rewards, transfers, wallet/exchange records, ownership, cost-base, proceeds, and CGT review boundaries. Use for crypto asset events, records, and conservative CGT prep workflow.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
@@ -8,7 +8,7 @@ compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 
-Use for crypto asset events and records. Do not use for shares, ETFs, or non-crypto CGT.
+Use for crypto asset events, records, and conservative CGT prep workflow. Do not use for shares, ETFs, or non-crypto CGT.
 
 ## Source workflow
 
@@ -45,3 +45,8 @@ Use for crypto asset events and records. Do not use for shares, ETFs, or non-cry
 - dates acquired, used, paid, received, and disposed
 - records held and missing evidence
 - prior claims, reimbursements, and duplicate-risk factors
+- crypto event type such as sale, swap, exchange, conversion, staking, reward, transfer, spend, or gift
+- asset name or ticker, quantity, exchange/wallet, and wallet or exchange records
+- acquisition date, disposal date, cost base, capital proceeds, and rewards income where relevant
+- owner/entity plus both business and private use context flags
+- own-wallet transfer support and records preserving source provenance

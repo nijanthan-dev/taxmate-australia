@@ -39,10 +39,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
 
 ## Accountant-review boundaries
 - swaps
+- exchanges
+- conversions
 - rewards
 - lost records
 - private wallet transfers
 - trader versus investor
+- missing either business or private use context
 - mixed business/private use
 - missing ownership or entity details
 - missing evidence

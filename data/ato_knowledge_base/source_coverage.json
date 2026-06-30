@@ -1463,6 +1463,9 @@
       ],
       "covered_concepts": [
         "bitcoin",
+        "convert",
+        "cost base",
+        "cost-base",
         "crypto",
         "crypto-asset",
         "exchange",
@@ -3697,6 +3700,9 @@
       ],
       "covered_concepts": [
         "bitcoin",
+        "convert",
+        "cost base",
+        "cost-base",
         "crypto",
         "crypto-asset",
         "exchange",
@@ -6425,6 +6431,9 @@
       ],
       "covered_concepts": [
         "bitcoin",
+        "convert",
+        "cost base",
+        "cost-base",
         "crypto",
         "crypto-asset",
         "exchange",

@@ -584,12 +584,12 @@ def Topics() -> List[Topic]:
         topic(
             "crypto-assets",
             "Crypto Assets",
-            "Crypto disposals, swaps, rewards, transfers, records, and CGT review boundaries.",
-            ["crypto", "bitcoin", "wallet", "exchange", "staking", "swap"],
-            "crypto asset events and records",
+            "Crypto disposals, swaps, exchanges, conversions, staking/rewards, transfers, wallet/exchange records, ownership, cost-base, proceeds, and CGT review boundaries.",
+            ["crypto", "bitcoin", "wallet", "exchange", "convert", "staking", "swap", "cost base"],
+            "crypto asset events, records, and conservative CGT prep workflow",
             "shares, ETFs, or non-crypto CGT",
-            ["crypto-asset", "keeping-crypto-records", "crypto", "wallet", "staking"],
-            ["swaps", "rewards", "lost records", "private wallet transfers", "trader versus investor"],
+            ["crypto-asset", "keeping-crypto-records", "crypto", "wallet", "staking", "cost-base"],
+            ["swaps", "exchanges", "conversions", "rewards", "lost records", "private wallet transfers", "trader versus investor", "missing either business or private use context"],
         ),
         topic(
             "property-rental-cgt",
@@ -951,6 +951,16 @@ def skillMarkdown(topic_obj: Topic) -> str:
                 "PSI contract or invoice evidence",
                 "results test, 80% client concentration, unrelated clients test, employment test, and business premises test",
                 "personal services business determination, attribution, deductions, and business structure facts",
+            ]
+        )
+    if topic_obj.slug == "crypto-assets":
+        facts.extend(
+            [
+                "crypto event type such as sale, swap, exchange, conversion, staking, reward, transfer, spend, or gift",
+                "asset name or ticker, quantity, exchange/wallet, and wallet or exchange records",
+                "acquisition date, disposal date, cost base, capital proceeds, and rewards income where relevant",
+                "owner/entity plus both business and private use context flags",
+                "own-wallet transfer support and records preserving source provenance",
             ]
         )
     for fact in facts:

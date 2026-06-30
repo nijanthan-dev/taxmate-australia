@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sys
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -69,6 +70,22 @@ REVIEWABLE_PSI_FIELDS = (
     "psi_deductions",
     "psi_business_structure",
 )
+REVIEWABLE_CRYPTO_FIELDS = (
+    "crypto_event_type",
+    "crypto_exchange_or_wallet",
+    "crypto_asset",
+    "crypto_quantity",
+    "crypto_acquired_date",
+    "crypto_disposed_date",
+    "crypto_cost_base",
+    "crypto_capital_proceeds",
+    "crypto_rewards_income",
+    "crypto_transfer_between_wallets",
+    "crypto_wallet_records",
+    "crypto_ownership_entity",
+    "crypto_business_use",
+    "crypto_private_use",
+)
 COMPLEX_PAYMENT_STATEMENT_FLAT_FIELDS = (
     "etp_statement",
     "lump_sum_arrears_statement",
@@ -90,11 +107,42 @@ COMPLEX_PAYMENT_FLAT_FIELD_GROUPS = {
     "super_income_stream_taxable_amount": "super_income",
     "super_income_tax_withheld": "super_income",
 }
+COMPLEX_PAYMENT_FLAT_FIELD_KEYS = {
+    "etp_statement": "statement",
+    "etp_taxable_component": "taxable_component",
+    "etp_tax_free_component": "tax_free_component",
+    "etp_tax_withheld": "tax_withheld",
+    "lump_sum_arrears_statement": "statement",
+    "lump_sum_arrears_amount": "amount",
+    "lump_sum_arrears_years": "payment_years",
+    "lump_sum_arrears_tax_withheld": "tax_withheld",
+    "super_income_statement": "statement",
+    "super_income_payment_kind": "payment_kind",
+    "super_lump_sum_taxable_component": "taxable_component",
+    "super_lump_sum_tax_free_component": "tax_free_component",
+    "super_income_stream_taxable_amount": "taxable_amount",
+    "super_income_tax_withheld": "tax_withheld",
+}
 COMPLEX_PAYMENT_AMOUNT_FIELDS = (
     "taxable_component",
     "tax_free_component",
     "tax_withheld",
     "amount",
+    "taxable_amount",
+)
+COMPLEX_PAYMENT_SOURCE_KEY_FACTS = (
+    "statement",
+    "payer",
+    "payment_type",
+    "payment_date",
+    "taxable_component",
+    "tax_free_component",
+    "tax_withheld",
+    "code",
+    "amount",
+    "payment_years",
+    "fund",
+    "payment_kind",
     "taxable_amount",
 )
 COMPLEX_PAYMENT_FLAT_AMOUNT_FIELDS = (
@@ -111,6 +159,7 @@ COMPLEX_PAYMENT_FLAT_AMOUNT_FIELDS = (
 COMPLEX_PAYMENT_STATEMENT_MISSING_PHRASES = (
     "do not have",
     "don't have",
+    "dont have",
     "no statement",
     "no payment summary",
     "statement not held",
@@ -143,9 +192,11 @@ ESS_AMOUNT_FIELDS = (
 )
 ESS_FLAT_AMOUNT_FIELDS = tuple(f"ess_{field}" for field in ESS_AMOUNT_FIELDS)
 ESS_ITEM_SIGNAL_FIELDS = ("employer", "scheme", "provider", *ESS_AMOUNT_FIELDS)
+ESS_SOURCE_KEY_FACTS = ("statement", *ESS_ITEM_SIGNAL_FIELDS)
 ESS_STATEMENT_MISSING_PHRASES = (
     "do not have",
     "don't have",
+    "dont have",
     "no ess statement",
     "no employee share scheme statement",
     "statement not held",
@@ -175,6 +226,12 @@ COMPLEX_PAYMENT_DECLINE_PHRASES = (
     "n/a",
     "na",
 )
+GENERIC_FIELD_ABSENCE_PHRASES = (
+    "not applicable",
+    "not applicable to me",
+    "n/a",
+    "na",
+)
 COMPLEX_PAYMENT_DECLINE_PHRASES_BY_GROUP = {
     "etp": (
         "no etp",
@@ -198,6 +255,8 @@ COMPLEX_PAYMENT_DECLINE_PHRASES_BY_GROUP = {
         "no super annuities",
     ),
 }
+PAYMENT_DECLINE_SIGNAL_KEY = "_decline_signals"
+ESS_DECLINE_SIGNAL_KEY = "_decline_signals"
 FOREIGN_INCOME_AMOUNT_FIELDS = ("amount", "foreign_tax_paid", "tax_paid", "exchange_rate")
 FOREIGN_INCOME_FLAT_AMOUNT_FIELDS = (
     "foreign_income_amount",
@@ -217,11 +276,24 @@ FOREIGN_INCOME_SIGNAL_FIELDS = (
     "foreign_tax_offset_claim",
     "foreign_employment_exempt_claim",
 )
+FOREIGN_INCOME_SOURCE_KEY_FACTS = FOREIGN_INCOME_SIGNAL_FIELDS
 FOREIGN_INCOME_BOOLEAN_SIGNAL_FIELDS = ("foreign_tax_offset_claim", "foreign_employment_exempt_claim")
 FOREIGN_INCOME_FLAT_BOOLEAN_FIELDS = ("foreign_income_tax_offset_claim", "foreign_employment_exempt_claim")
+FOREIGN_INCOME_FLAT_FIELD_KEYS = {
+    "foreign_income_statement": "statement",
+    "foreign_income_country": "country",
+    "foreign_income_type": "income_type",
+    "foreign_income_amount": "amount",
+    "foreign_tax_paid": "foreign_tax_paid",
+    "foreign_income_exchange_rate": "exchange_rate",
+    "foreign_income_residency_status": "residency_status",
+    "foreign_income_tax_offset_claim": "foreign_tax_offset_claim",
+    "foreign_employment_exempt_claim": "foreign_employment_exempt_claim",
+}
 FOREIGN_INCOME_STATEMENT_MISSING_PHRASES = (
     "do not have",
     "don't have",
+    "dont have",
     "no statement",
     "no foreign income statement",
     "no foreign pension statement",
@@ -254,6 +326,7 @@ FOREIGN_INCOME_DECLINE_PHRASES = (
     "n/a",
     "na",
 )
+FOREIGN_INCOME_DECLINE_SIGNAL_KEY = "_decline_signals"
 PSI_AMOUNT_FIELDS = ("income",)
 PSI_FLAT_AMOUNT_FIELDS = ("psi_income",)
 PSI_BOOLEAN_FIELDS = (
@@ -296,9 +369,12 @@ PSI_DECLINE_PHRASES = (
     "n/a",
     "na",
 )
+PSI_DECLINE_SIGNAL_KEY = "_decline_signals"
 PSI_SOURCE_KEY_FACTS = (
     "income",
     "income_type",
+    "occupation",
+    "client",
     "contract_evidence",
     "results_test",
     "eighty_percent_test",
@@ -310,6 +386,85 @@ PSI_SOURCE_KEY_FACTS = (
     "deductions",
     "business_structure",
 )
+CRYPTO_AMOUNT_FIELDS = ("quantity", "cost_base", "capital_proceeds", "rewards_income")
+CRYPTO_FLAT_AMOUNT_FIELDS = (
+    "crypto_quantity",
+    "crypto_cost_base",
+    "crypto_capital_proceeds",
+    "crypto_rewards_income",
+)
+CRYPTO_DATE_FIELDS = ("acquired_date", "disposed_date")
+CRYPTO_FLAT_DATE_FIELDS = ("crypto_acquired_date", "crypto_disposed_date")
+CRYPTO_USE_CONTEXT_FIELDS = ("business_use", "private_use")
+CRYPTO_BOOLEAN_FIELDS = ("transfer_between_wallets", *CRYPTO_USE_CONTEXT_FIELDS)
+CRYPTO_FLAT_BOOLEAN_FIELDS = tuple(f"crypto_{field}" for field in CRYPTO_BOOLEAN_FIELDS)
+CRYPTO_IDENTITY_FIELDS = ("exchange_or_wallet", "asset", "ownership_entity")
+CRYPTO_IDENTITY_ABSENCE_CONTEXTS = {
+    "exchange_or_wallet": ("exchange", "exchanges", "wallet", "wallets", "platform", "platforms"),
+    "asset": ("asset", "assets"),
+    "ownership_entity": ("owner", "owners", "ownership", "entity", "entities"),
+}
+CRYPTO_IDENTITY_ABSENCE_EXACT_PHRASES = {
+    "exchange_or_wallet": ("no exchange", "no wallet"),
+    "asset": ("no asset", "no assets"),
+    "ownership_entity": ("no ownership entity", "no owner", "no entity"),
+}
+CRYPTO_SIGNAL_FIELDS = (
+    "event_type",
+    "exchange_or_wallet",
+    "asset",
+    "quantity",
+    "acquired_date",
+    "disposed_date",
+    "cost_base",
+    "capital_proceeds",
+    "rewards_income",
+    "transfer_between_wallets",
+    "wallet_records",
+    "ownership_entity",
+    "business_use",
+    "private_use",
+)
+CRYPTO_SOURCE_KEY_FACTS = (
+    "event_type",
+    "exchange_or_wallet",
+    "asset",
+    "quantity",
+    "acquired_date",
+    "disposed_date",
+    "cost_base",
+    "capital_proceeds",
+    "rewards_income",
+    "transfer_between_wallets",
+    "wallet_records",
+    "ownership_entity",
+    "business_use",
+    "private_use",
+)
+CRYPTO_ITEM_PARENT_CONTEXT_FIELDS = ("event_type", "asset", "exchange_or_wallet", "ownership_entity")
+CRYPTO_DECLINE_PHRASES = (
+    "no crypto",
+    "no crypto asset",
+    "no crypto assets",
+    "no cryptocurrency",
+    "no cryptocurrencies",
+    "no digital currency",
+    "no digital currencies",
+    "not applicable",
+    "not applicable to me",
+    "n/a",
+    "na",
+)
+CRYPTO_FIELD_ABSENCE_PHRASES = (
+    "not applicable",
+    "not applicable to me",
+    "n/a",
+    "na",
+    "no staking rewards",
+    "no crypto rewards",
+)
+BOOLEAN_UNCERTAIN_PHRASES = frozenset({"maybe", "possibly", "unclear", "not clear"})
+CRYPTO_DECLINE_SIGNAL_KEY = "_decline_signals"
 REVIEWABLE_COMPLEX_FIELDS = (
     "employee_deductions",
     "wfh_work_pattern",
@@ -317,6 +472,7 @@ REVIEWABLE_COMPLEX_FIELDS = (
     "asset_items",
     "ess_items",
     "foreign_income_items",
+    "crypto_items",
 )
 EXACT_UNKNOWN_PHRASES = frozenset({"unknown", "missing", "not sure", "unsure", "uncertain"})
 EMBEDDED_UNKNOWN_PHRASES = (
@@ -412,6 +568,14 @@ ATO_PSI_SOURCES = [
     ATO_PSI_SOURCE,
     ATO_BUSINESS_INCOME_SOURCE,
 ]
+ATO_CRYPTO_ASSETS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/crypto-asset-investments"
+ATO_CRYPTO_RECORDS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/crypto-asset-investments/keeping-crypto-records"
+ATO_CRYPTO_BUSINESS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/crypto-assets-and-business"
+ATO_CRYPTO_SOURCES = [
+    ATO_CRYPTO_ASSETS_SOURCE,
+    ATO_CRYPTO_RECORDS_SOURCE,
+    ATO_CRYPTO_BUSINESS_SOURCE,
+]
 OMITTED_SCOPE_ITEMS = [
     ("feat: add company return intake", "Company/entity return prep, company tax labels, directors, dividends, franking, retained earnings."),
     ("feat: add trust return intake", "Trust return prep, beneficiary distributions, trustee-assessed income, family trust items."),
@@ -419,7 +583,6 @@ OMITTED_SCOPE_ITEMS = [
     ("feat: add full supplementary return coverage", "Full supplementary labels beyond common V1 gates."),
     ("feat: add rental property worksheet", "Rental income, interest, repairs versus capital, private use, depreciation, net rental loss."),
     ("feat: add full CGT schedule workflow", "CGT events, cost base, discounts, carried losses, main residence, small business concessions."),
-    ("feat: add crypto CGT workflow", "Buys, sells, swaps, staking, rewards, transfers, wallet records, and cost-base tracking."),
     ("feat: add advanced document extraction", "Robust OCR and templates for arbitrary PDFs/images beyond AI-assisted candidate extraction."),
 ]
 
@@ -499,6 +662,20 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("psi_attribution_entity", "PSI", "PSI attribution entity or individual", "Personal services income", False),
         QuestionSpec("psi_deductions", "PSI", "PSI deductions needing review", "Personal services income", False),
         QuestionSpec("psi_business_structure", "PSI", "PSI business structure", "Personal services income", False),
+        QuestionSpec("crypto_event_type", "Crypto", "Crypto event type", "Crypto asset investments", False),
+        QuestionSpec("crypto_exchange_or_wallet", "Crypto", "Crypto exchange or wallet", "Keeping crypto records", False),
+        QuestionSpec("crypto_asset", "Crypto", "Crypto asset name or ticker", "Crypto asset investments", False),
+        QuestionSpec("crypto_quantity", "Crypto", "Crypto quantity", "Keeping crypto records", False),
+        QuestionSpec("crypto_acquired_date", "Crypto", "Crypto acquired date", "Crypto asset investments", False),
+        QuestionSpec("crypto_disposed_date", "Crypto", "Crypto disposed date", "Crypto asset investments", False),
+        QuestionSpec("crypto_cost_base", "Crypto", "Crypto cost base", "Crypto asset investments", False),
+        QuestionSpec("crypto_capital_proceeds", "Crypto", "Crypto capital proceeds", "Crypto asset investments", False),
+        QuestionSpec("crypto_rewards_income", "Crypto", "Crypto staking/rewards income", "Crypto asset investments", False),
+        QuestionSpec("crypto_transfer_between_wallets", "Crypto", "Transfer between own wallets?", "Keeping crypto records", False),
+        QuestionSpec("crypto_wallet_records", "Crypto", "Wallet/exchange records held?", "Keeping crypto records", False),
+        QuestionSpec("crypto_ownership_entity", "Crypto", "Crypto owner or entity", "Crypto asset investments", False),
+        QuestionSpec("crypto_business_use", "Crypto", "Business/trading use?", "Crypto assets and business", False),
+        QuestionSpec("crypto_private_use", "Crypto", "Private/investment use?", "Crypto asset investments", False),
         QuestionSpec("ess_statement", "ESS", "ESS statement held?", "Employee share schemes", False),
         QuestionSpec("ess_taxed_upfront_discount", "ESS", "ESS taxed-upfront discount", "Employee share schemes", False),
         QuestionSpec("ess_deferred_discount", "ESS", "ESS deferred discount", "Employee share schemes", False),
@@ -587,6 +764,22 @@ def sample_answers() -> Dict[str, Any]:
             "attribution_entity": "sole trader",
             "deductions": "home office and software subscriptions",
             "business_structure": "sole trader ABN",
+        },
+        "crypto": {
+            "event_type": "sale",
+            "exchange_or_wallet": "Example Exchange CSV and wallet export held",
+            "asset": "ETH",
+            "quantity": 1.5,
+            "acquired_date": "2025-08-01",
+            "disposed_date": "2026-05-01",
+            "cost_base": 3000,
+            "capital_proceeds": 4200,
+            "rewards_income": 0,
+            "transfer_between_wallets": False,
+            "wallet_records": "exchange CSV and wallet transaction history held",
+            "ownership_entity": "individual",
+            "business_use": False,
+            "private_use": True,
         },
         "ess": {
             "employer": "Example Pty Ltd",
@@ -688,6 +881,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items.extend(complex_payment_rows(complex_payment_answers(answers)))
     items.extend(foreign_income_rows(foreign_income_answers(answers)))
     items.extend(psi_rows(psi_answers(answers)))
+    items.extend(crypto_rows(crypto_answers(answers)))
     items.extend(ess_rows(ess_answers(answers)))
     items.extend(uncommon_income_rows(answers.get("uncommon_income", [])))
     return {
@@ -726,18 +920,21 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
     if spec.key in ESS_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
         return False
-    if spec.key == "ess_statement" and ess_statement_declines_workflow(value):
+    if spec.key in REVIEWABLE_ESS_FIELDS and (
+        ess_source_declines_workflow(spec.key.removeprefix("ess_"), value)
+        or ess_field_absence_value(spec.key.removeprefix("ess_"), value)
+    ):
         return False
     if spec.key in COMPLEX_PAYMENT_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
         return False
-    if spec.key in COMPLEX_PAYMENT_STATEMENT_FLAT_FIELDS and complex_payment_declines_workflow(
+    if spec.key in REVIEWABLE_COMPLEX_PAYMENT_FIELDS and complex_payment_flat_value_is_absent(
+        spec.key,
         value,
-        COMPLEX_PAYMENT_FLAT_FIELD_GROUPS[spec.key],
     ):
         return False
     if spec.key in FOREIGN_INCOME_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
         return False
-    if spec.key == "foreign_income_statement" and foreign_income_declines_workflow(value):
+    if spec.key in REVIEWABLE_FOREIGN_INCOME_FIELDS and foreign_income_flat_value_is_absent(spec.key, value):
         return False
     if spec.key in FOREIGN_INCOME_FLAT_BOOLEAN_FIELDS and foreign_income_negative_claim_signal(
         foreign_income_nested_claim_key(spec.key),
@@ -746,9 +943,47 @@ def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
         return False
     if spec.key in PSI_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
         return False
-    if spec.key in REVIEWABLE_PSI_FIELDS and psi_declines_workflow(value):
+    if spec.key in REVIEWABLE_PSI_FIELDS and (
+        psi_source_declines_workflow(spec.key.removeprefix("psi_"), value)
+        or psi_field_absence_value(spec.key.removeprefix("psi_"), value)
+    ):
+        return False
+    if spec.key in CRYPTO_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if spec.key in CRYPTO_FLAT_BOOLEAN_FIELDS and crypto_boolean_false(value):
+        return False
+    if spec.key in REVIEWABLE_CRYPTO_FIELDS and (
+        crypto_source_declines_workflow(spec.key.removeprefix("crypto_"), value)
+        or crypto_field_absence_value(spec.key.removeprefix("crypto_"), value)
+    ):
         return False
     return spec.required or has_meaningful_value(value)
+
+
+def complex_payment_flat_value_is_absent(key: str, value: Any) -> bool:
+    group = COMPLEX_PAYMENT_FLAT_FIELD_GROUPS.get(key)
+    nested_key = complex_payment_flat_field_key(key)
+    return complex_payment_source_declines_workflow(nested_key, value, group) or complex_payment_field_absence_value(
+        nested_key,
+        value,
+        group,
+    )
+
+
+def complex_payment_flat_field_key(key: str) -> str:
+    return COMPLEX_PAYMENT_FLAT_FIELD_KEYS.get(key, key)
+
+
+def foreign_income_flat_value_is_absent(key: str, value: Any) -> bool:
+    nested_key = foreign_income_flat_field_key(key)
+    return foreign_income_source_declines_workflow(nested_key, value) or foreign_income_field_absence_value(
+        nested_key,
+        value,
+    )
+
+
+def foreign_income_flat_field_key(key: str) -> str:
+    return FOREIGN_INCOME_FLAT_FIELD_KEYS.get(key, key)
 
 
 def base_item_status(key: str, value: Any) -> str:
@@ -775,6 +1010,14 @@ def base_item_status(key: str, value: Any) -> str:
         if key == "psi_contract_evidence" and psi_contract_evidence_missing(value):
             return "Evidence"
         if key in PSI_FLAT_AMOUNT_FIELDS and psi_amount_malformed(value):
+            return "Evidence"
+        return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
+    if key in REVIEWABLE_CRYPTO_FIELDS:
+        if key == "crypto_wallet_records" and crypto_records_missing(value):
+            return "Evidence"
+        if key in CRYPTO_FLAT_AMOUNT_FIELDS and crypto_amount_malformed(value):
+            return "Evidence"
+        if key in CRYPTO_FLAT_DATE_FIELDS and crypto_date_needs_evidence(value):
             return "Evidence"
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == "gst_registered":
@@ -1264,15 +1507,17 @@ def complex_payment_answers(answers: Dict[str, Any]) -> Dict[str, Dict[str, Any]
 
 
 def merge_payment_answers(raw: Any, flat: Dict[str, Any], group: Optional[str] = None) -> Dict[str, Any]:
-    merged = {key: value for key, value in flat.items() if has_meaningful_value(value)}
+    merged = {key: value for key, value in flat.items() if has_meaningful_payment_signal(key, value, group)}
+    flat_declines = payment_decline_values(flat, group)
     if not isinstance(raw, dict) or not has_meaningful_value(raw):
-        return merged
+        return payment_values_with_declines(merged, flat_declines, group)
+    raw_declines = payment_decline_values(raw, group)
     for key, value in raw.items():
         if has_meaningful_payment_signal(key, value, group):
             merged[key] = value
-        elif key not in merged and has_explicit_payment_evidence_gap(key, value):
+        elif key not in merged and has_explicit_payment_evidence_gap(key, value, group):
             merged[key] = value
-    return merged
+    return payment_values_with_declines(merged, {**flat_declines, **raw_declines}, group)
 
 
 def complex_payment_rows(groups: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -1289,16 +1534,20 @@ def etp_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
         return []
     amount_evidence = payment_amounts_need_evidence(raw, ("taxable_component", "tax_free_component", "tax_withheld"))
     statement_evidence = complex_payment_statement_missing(raw.get("statement"), group)
-    status = "Evidence" if amount_evidence or statement_evidence else "Accountant review"
+    decline_evidence = payment_decline_contradiction(raw)
+    status = "Evidence" if amount_evidence or statement_evidence or decline_evidence else "Accountant review"
     answer = (
-        f"Payer {display_value(raw.get('payer'))}; "
-        f"type {display_value(raw.get('payment_type'))}; "
-        f"date {display_value(raw.get('payment_date'))}; "
-        f"code {display_value(raw.get('code'))}; "
+        f"Payer {complex_payment_display_text(raw, 'payer', group)}; "
+        f"type {complex_payment_display_text(raw, 'payment_type', group)}; "
+        f"date {complex_payment_display_text(raw, 'payment_date', group)}; "
+        f"code {complex_payment_display_text(raw, 'code', group)}; "
         f"taxable component {money_text(complex_payment_money_value(raw.get('taxable_component')))}; "
         f"tax-free component {money_text(complex_payment_money_value(raw.get('tax_free_component')))}; "
         f"tax withheld {money_text(complex_payment_money_value(raw.get('tax_withheld')))}"
     )
+    decline_text = payment_decline_signal_text(raw)
+    if decline_text:
+        answer = f"{answer}; decline signals {decline_text}"
     return [
         guide_row(
             "ETP",
@@ -1308,7 +1557,7 @@ def etp_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
             "ETP records need payment summary/income statement evidence, payment code, component split, cap context, and accountant review before manual copy.",
             status,
             ATO_ETP_SOURCE,
-            tab_text=complex_payment_tab_text("ETP", statement_evidence, amount_evidence),
+            tab_text=complex_payment_tab_text("ETP", statement_evidence, amount_evidence, decline_evidence),
         )
     ]
 
@@ -1319,14 +1568,18 @@ def lump_sum_arrears_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
         return []
     amount_evidence = payment_amounts_need_evidence(raw, ("amount", "tax_withheld"))
     statement_evidence = complex_payment_statement_missing(raw.get("statement"), group)
+    decline_evidence = payment_decline_contradiction(raw)
     prior_year_evidence = is_missing(raw.get("payment_years")) or contains_unknown(raw.get("payment_years"))
-    status = "Evidence" if amount_evidence or statement_evidence or prior_year_evidence else "Accountant review"
+    status = "Evidence" if amount_evidence or statement_evidence or decline_evidence or prior_year_evidence else "Accountant review"
     answer = (
-        f"Payer {display_value(raw.get('payer'))}; "
-        f"prior years {display_value(raw.get('payment_years'))}; "
+        f"Payer {complex_payment_display_text(raw, 'payer', group)}; "
+        f"prior years {complex_payment_display_text(raw, 'payment_years', group)}; "
         f"amount {money_text(complex_payment_money_value(raw.get('amount')))}; "
         f"tax withheld {money_text(complex_payment_money_value(raw.get('tax_withheld')))}"
     )
+    decline_text = payment_decline_signal_text(raw)
+    if decline_text:
+        answer = f"{answer}; decline signals {decline_text}"
     return [
         guide_row(
             "LUMP-ARREARS",
@@ -1336,7 +1589,7 @@ def lump_sum_arrears_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
             "Lump sum in arrears records need statement evidence, prior-year allocation, amount, withholding, and accountant review before manual copy.",
             status,
             ATO_LUMP_SUM_ARREARS_SOURCE,
-            tab_text=lump_sum_arrears_tab_text(statement_evidence, prior_year_evidence, amount_evidence),
+            tab_text=lump_sum_arrears_tab_text(statement_evidence, prior_year_evidence, amount_evidence, decline_evidence),
         )
     ]
 
@@ -1350,15 +1603,19 @@ def super_income_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
         ("taxable_component", "tax_free_component", "taxable_amount", "tax_withheld"),
     )
     statement_evidence = complex_payment_statement_missing(raw.get("statement"), group)
-    status = "Evidence" if amount_evidence or statement_evidence else "Accountant review"
+    decline_evidence = payment_decline_contradiction(raw)
+    status = "Evidence" if amount_evidence or statement_evidence or decline_evidence else "Accountant review"
     answer = (
-        f"Fund {display_value(raw.get('fund'))}; "
-        f"kind {display_value(raw.get('payment_kind'))}; "
+        f"Fund {complex_payment_display_text(raw, 'fund', group)}; "
+        f"kind {complex_payment_display_text(raw, 'payment_kind', group)}; "
         f"taxable component {money_text(complex_payment_money_value(raw.get('taxable_component')))}; "
         f"tax-free component {money_text(complex_payment_money_value(raw.get('tax_free_component')))}; "
         f"income-stream taxable amount {money_text(complex_payment_money_value(raw.get('taxable_amount')))}; "
         f"tax withheld {money_text(complex_payment_money_value(raw.get('tax_withheld')))}"
     )
+    decline_text = payment_decline_signal_text(raw)
+    if decline_text:
+        answer = f"{answer}; decline signals {decline_text}"
     return [
         guide_row(
             "SUPER-INCOME",
@@ -1368,7 +1625,7 @@ def super_income_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
             "Super lump sums and income streams need fund statement evidence, component split, withholding, age/condition context, and accountant review before manual copy.",
             status,
             [ATO_SUPER_PENSIONS_SOURCE, ATO_SUPER_LUMP_SUM_SOURCE, ATO_SUPER_STREAM_SOURCE],
-            tab_text=complex_payment_tab_text("Super income", statement_evidence, amount_evidence),
+            tab_text=complex_payment_tab_text("Super income", statement_evidence, amount_evidence, decline_evidence),
         )
     ]
 
@@ -1376,36 +1633,83 @@ def super_income_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
 def has_complex_payment_inputs(raw: Dict[str, Any], group: Optional[str] = None) -> bool:
     if not isinstance(raw, dict):
         return False
-    if payment_statement_declines_without_facts(raw, group):
+    if payment_declines_without_facts(raw, group):
         return False
-    if any(has_explicit_payment_evidence_gap(key, raw.get(key)) for key in ("statement", *COMPLEX_PAYMENT_AMOUNT_FIELDS)):
+    if any(has_explicit_payment_evidence_gap(key, raw.get(key), group) for key in ("statement", *COMPLEX_PAYMENT_AMOUNT_FIELDS)):
         return True
     return any(has_meaningful_payment_signal(key, value, group) for key, value in raw.items())
 
 
-def payment_statement_declines_without_facts(raw: Dict[str, Any], group: Optional[str] = None) -> bool:
-    if not complex_payment_declines_workflow(raw.get("statement"), group):
+def payment_declines_without_facts(raw: Dict[str, Any], group: Optional[str] = None) -> bool:
+    if not payment_decline_values(raw, group):
         return False
     return not any(
-        has_meaningful_payment_signal(key, value, group) or has_explicit_payment_evidence_gap(key, value)
+        has_meaningful_payment_signal(key, value, group) or has_explicit_payment_evidence_gap(key, value, group)
         for key, value in raw.items()
-        if key != "statement"
+        if key != PAYMENT_DECLINE_SIGNAL_KEY
+        and not complex_payment_source_declines_workflow(key, value, group)
+        and not complex_payment_field_absence_value(key, value, group)
     )
+
+
+def payment_decline_values(raw: Dict[str, Any], group: Optional[str] = None) -> Dict[str, Any]:
+    return {
+        key: value
+        for key, value in raw.items()
+        if key in COMPLEX_PAYMENT_SOURCE_KEY_FACTS and complex_payment_source_declines_workflow(key, value, group)
+    }
+
+
+def payment_values_with_declines(
+    merged: Dict[str, Any],
+    declines: Dict[str, Any],
+    group: Optional[str] = None,
+) -> Dict[str, Any]:
+    if not declines:
+        return merged
+    if not any(
+        has_meaningful_payment_signal(key, value, group) or has_explicit_payment_evidence_gap(key, value, group)
+        for key, value in merged.items()
+        if key != PAYMENT_DECLINE_SIGNAL_KEY
+        and not complex_payment_source_declines_workflow(key, value, group)
+        and not complex_payment_field_absence_value(key, value, group)
+    ):
+        return merged
+    out = dict(merged)
+    signals: List[str] = []
+    for key, value in declines.items():
+        signals.append(f"{key} {display_value(value)}")
+        if not has_meaningful_payment_signal(key, out.get(key), group):
+            out[key] = value
+    out[PAYMENT_DECLINE_SIGNAL_KEY] = signals
+    return out
+
+
+def payment_decline_contradiction(raw: Dict[str, Any]) -> bool:
+    return bool(raw.get(PAYMENT_DECLINE_SIGNAL_KEY))
 
 
 def has_meaningful_payment_signal(key: str, value: Any, group: Optional[str] = None) -> bool:
     if key in COMPLEX_PAYMENT_AMOUNT_FIELDS and isinstance(value, bool):
         return False
-    if contains_unknown(value):
+    if key in COMPLEX_PAYMENT_SOURCE_KEY_FACTS and (
+        complex_payment_source_declines_workflow(key, value, group)
+        or complex_payment_field_absence_value(key, value, group)
+    ):
         return False
-    if key == "statement" and complex_payment_declines_workflow(value, group):
+    if contains_unknown(value):
         return False
     return has_meaningful_value(value)
 
 
-def has_explicit_payment_evidence_gap(key: str, value: Any) -> bool:
+def has_explicit_payment_evidence_gap(key: str, value: Any, group: Optional[str] = None) -> bool:
     if key in COMPLEX_PAYMENT_AMOUNT_FIELDS:
         return complex_payment_amount_needs_evidence(value)
+    if key in COMPLEX_PAYMENT_SOURCE_KEY_FACTS and (
+        complex_payment_source_declines_workflow(key, value, group)
+        or complex_payment_field_absence_value(key, value, group)
+    ):
+        return False
     if key == "statement":
         return has_meaningful_value(value) and contains_unknown(value)
     return False
@@ -1429,7 +1733,44 @@ def complex_payment_declines_workflow(statement: Any, group: Optional[str] = Non
         return False
     lowered = statement.strip().lower()
     group_phrases = COMPLEX_PAYMENT_DECLINE_PHRASES_BY_GROUP.get(group or "", ())
-    return lowered in COMPLEX_PAYMENT_DECLINE_PHRASES or lowered in group_phrases
+    return (
+        lowered in COMPLEX_PAYMENT_DECLINE_PHRASES
+        or lowered in group_phrases
+        or complex_payment_absence_decline_phrase(lowered, group)
+    )
+
+
+def complex_payment_absence_decline_phrase(lowered: str, group: Optional[str] = None) -> bool:
+    if complex_payment_document_context(lowered):
+        return False
+    if not any(phrase in lowered for phrase in ("do not have", "don't have", "dont have")):
+        return False
+    group_terms = {
+        "etp": ("etp", "employment termination payment"),
+        "lump_sum_arrears": ("lump sum", "lump sum in arrears", "lump sums in arrears"),
+        "super_income": ("super lump sum", "super income stream", "super pension", "super annuity"),
+    }.get(group or "", ())
+    return any(term in lowered for term in group_terms)
+
+
+def complex_payment_document_context(lowered: str) -> bool:
+    return any(term in lowered for term in ("statement", "payment summary", "income statement", "fund statement"))
+
+
+def complex_payment_source_declines_workflow(key: str, value: Any, group: Optional[str] = None) -> bool:
+    if complex_payment_field_absence_value(key, value, group):
+        return False
+    return complex_payment_declines_workflow(value, group)
+
+
+def complex_payment_field_absence_value(key: str, value: Any, group: Optional[str] = None) -> bool:
+    if key == "statement" or not isinstance(value, str) or contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    group_phrases = COMPLEX_PAYMENT_DECLINE_PHRASES_BY_GROUP.get(group or "", ())
+    if lowered in group_phrases:
+        return False
+    return lowered in GENERIC_FIELD_ABSENCE_PHRASES
 
 
 def payment_amounts_need_evidence(raw: Dict[str, Any], amount_fields: tuple[str, ...]) -> bool:
@@ -1459,7 +1800,15 @@ def complex_payment_money_value(value: Any) -> Optional[float]:
         return None
 
 
-def complex_payment_tab_text(label: str, statement_evidence: bool, amount_evidence: bool) -> str:
+def complex_payment_display_text(raw: Dict[str, Any], key: str, group: Optional[str] = None) -> str:
+    if complex_payment_field_absence_value(key, raw.get(key), group):
+        return "unknown"
+    return display_value(raw.get(key)) or "unknown"
+
+
+def complex_payment_tab_text(label: str, statement_evidence: bool, amount_evidence: bool, decline_evidence: bool = False) -> str:
+    if decline_evidence:
+        return f"{label} has a no-payment answer with payment facts; resolve before accountant review."
     if statement_evidence and amount_evidence:
         return f"{label} needs statement evidence and numeric amount evidence before accountant review."
     if amount_evidence:
@@ -1469,8 +1818,15 @@ def complex_payment_tab_text(label: str, statement_evidence: bool, amount_eviden
     return f"{label} needs source-backed accountant review."
 
 
-def lump_sum_arrears_tab_text(statement_evidence: bool, prior_year_evidence: bool, amount_evidence: bool) -> str:
+def lump_sum_arrears_tab_text(
+    statement_evidence: bool,
+    prior_year_evidence: bool,
+    amount_evidence: bool,
+    decline_evidence: bool = False,
+) -> str:
     evidence = []
+    if decline_evidence:
+        evidence.append("no-payment answer with payment facts")
     if statement_evidence:
         evidence.append("statement evidence")
     if prior_year_evidence:
@@ -1480,6 +1836,13 @@ def lump_sum_arrears_tab_text(statement_evidence: bool, prior_year_evidence: boo
     if evidence:
         return f"Lump sum in arrears needs {', '.join(evidence)} before accountant review."
     return "Lump sum in arrears needs source-backed accountant review."
+
+
+def payment_decline_signal_text(raw: Dict[str, Any]) -> str:
+    signals = raw.get(PAYMENT_DECLINE_SIGNAL_KEY)
+    if not isinstance(signals, list):
+        return ""
+    return ", ".join(display_value(signal) for signal in signals if display_value(signal))
 
 
 def foreign_income_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
@@ -1498,10 +1861,12 @@ def foreign_income_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
         "items": answers.get("foreign_income_items"),
     }
     flat_values = {key: value for key, value in fields.items() if has_meaningful_foreign_income_flat_value(key, value)}
+    flat_declines = foreign_income_decline_values(fields)
     if not isinstance(raw, dict):
-        return flat_values
+        return foreign_income_values_with_declines(flat_values, flat_declines)
     if not has_meaningful_value(raw):
-        return flat_values
+        return foreign_income_values_with_declines(flat_values, flat_declines)
+    raw_declines = foreign_income_decline_values(raw)
     merged = dict(flat_values)
     for key, value in raw.items():
         if foreign_income_should_ignore_boolean_signal(merged, key, value):
@@ -1512,7 +1877,7 @@ def foreign_income_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
             merged[key] = value
         elif key not in merged and has_explicit_foreign_income_evidence_gap(key, value):
             merged[key] = value
-    return merged
+    return foreign_income_values_with_declines(merged, {**flat_declines, **raw_declines})
 
 
 def foreign_income_should_merge_boolean_signal(merged: Dict[str, Any], key: str, value: Any) -> bool:
@@ -1526,9 +1891,17 @@ def foreign_income_should_merge_boolean_signal(merged: Dict[str, Any], key: str,
 def foreign_income_should_ignore_boolean_signal(merged: Dict[str, Any], key: str, value: Any) -> bool:
     return (
         key in FOREIGN_INCOME_BOOLEAN_SIGNAL_FIELDS
-        and merged.get(key) is True
+        and foreign_income_positive_claim_signal(key, merged.get(key))
         and foreign_income_negative_claim_signal(key, value)
     )
+
+
+def foreign_income_positive_claim_signal(key: str, value: Any) -> bool:
+    if key == "foreign_tax_offset_claim":
+        return foreign_income_offset_claimed(value)
+    if key == "foreign_employment_exempt_claim":
+        return foreign_income_exemption_claimed(value)
+    return value is True
 
 
 def foreign_income_negative_claim_signal(key: str, value: Any) -> bool:
@@ -1548,6 +1921,10 @@ def foreign_income_nested_claim_key(key: str) -> str:
 def has_meaningful_foreign_income_flat_value(key: str, value: Any) -> bool:
     if key in FOREIGN_INCOME_AMOUNT_FIELDS and isinstance(value, bool):
         return False
+    if key in FOREIGN_INCOME_SOURCE_KEY_FACTS and (
+        foreign_income_source_declines_workflow(key, value) or foreign_income_field_absence_value(key, value)
+    ):
+        return False
     return has_meaningful_value(value)
 
 
@@ -1564,11 +1941,12 @@ def foreign_income_rows(raw: Any) -> List[Dict[str, Any]]:
     amount_evidence = foreign_income_amounts_need_evidence(raw, items)
     residency_evidence = foreign_income_residency_needs_evidence(raw, items)
     tax_paid_evidence = foreign_income_tax_paid_needs_evidence(raw, items)
-    status = "Evidence" if statement_evidence or amount_evidence or residency_evidence or tax_paid_evidence else "Accountant review"
+    decline_evidence = foreign_income_decline_contradiction(raw, items)
+    status = "Evidence" if statement_evidence or amount_evidence or residency_evidence or tax_paid_evidence or decline_evidence else "Accountant review"
     answer = (
         f"Country {foreign_income_country_text(raw, items)}; "
-        f"type {display_value(raw.get('income_type')) or 'unknown'}; "
-        f"payer {display_value(raw.get('payer')) or 'unknown'}; "
+        f"type {foreign_income_field_text(raw, items, 'income_type')}; "
+        f"payer {foreign_income_field_text(raw, items, 'payer')}; "
         f"amount {money_text(amount)}; "
         f"foreign tax paid {money_text(foreign_tax_paid)}; "
         f"exchange rate {exchange_rate}; "
@@ -1579,6 +1957,9 @@ def foreign_income_rows(raw: Any) -> List[Dict[str, Any]]:
     item_text = foreign_income_items_text(items)
     if item_text:
         answer = f"{answer}; items {item_text}"
+    decline_text = foreign_income_decline_signal_text(raw, items)
+    if decline_text:
+        answer = f"{answer}; decline signals {decline_text}"
     return [
         guide_row(
             "FOREIGN-INCOME",
@@ -1593,6 +1974,7 @@ def foreign_income_rows(raw: Any) -> List[Dict[str, Any]]:
                 amount_evidence,
                 residency_evidence,
                 tax_paid_evidence,
+                decline_evidence,
             ),
         )
     ]
@@ -1625,7 +2007,9 @@ def has_meaningful_foreign_income_signal(key: str, value: Any) -> bool:
         return False
     if contains_unknown(value):
         return False
-    if key == "statement" and foreign_income_declines_workflow(value):
+    if key in FOREIGN_INCOME_SOURCE_KEY_FACTS and (
+        foreign_income_source_declines_workflow(key, value) or foreign_income_field_absence_value(key, value)
+    ):
         return False
     return has_meaningful_value(value)
 
@@ -1633,6 +2017,10 @@ def has_meaningful_foreign_income_signal(key: str, value: Any) -> bool:
 def has_explicit_foreign_income_evidence_gap(key: str, value: Any) -> bool:
     if key in FOREIGN_INCOME_AMOUNT_FIELDS:
         return foreign_income_amount_needs_evidence(value)
+    if key in FOREIGN_INCOME_SOURCE_KEY_FACTS and (
+        foreign_income_source_declines_workflow(key, value) or foreign_income_field_absence_value(key, value)
+    ):
+        return False
     if key in ("statement", "residency_status"):
         return has_meaningful_value(value) and contains_unknown(value)
     return False
@@ -1654,14 +2042,58 @@ def has_foreign_income_inputs(raw: Any) -> bool:
 
 
 def foreign_income_declines_without_facts(raw: Dict[str, Any]) -> bool:
-    if not foreign_income_declines_workflow(raw.get("statement")):
+    if not foreign_income_decline_values(raw):
         return False
     if foreign_income_item_values(raw.get("items")):
         return False
     return not any(
         has_meaningful_foreign_income_signal(key, value) or has_explicit_foreign_income_evidence_gap(key, value)
         for key, value in raw.items()
-        if key != "statement"
+        if key != FOREIGN_INCOME_DECLINE_SIGNAL_KEY
+        and not foreign_income_source_declines_workflow(key, value)
+        and not foreign_income_field_absence_value(key, value)
+    )
+
+
+def foreign_income_decline_values(record: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        key: value
+        for key, value in record.items()
+        if key in FOREIGN_INCOME_SOURCE_KEY_FACTS and foreign_income_source_declines_workflow(key, value)
+    }
+
+
+def foreign_income_values_with_declines(values: Dict[str, Any], declines: Dict[str, Any]) -> Dict[str, Any]:
+    if not declines:
+        return values
+    if not foreign_income_has_facts(values):
+        return values
+    merged = dict(values)
+    signals: List[str] = []
+    for key, value in declines.items():
+        signals.append(f"{key} {display_value(value)}")
+        if not has_meaningful_foreign_income_signal(key, merged.get(key)):
+            merged[key] = value
+    merged[FOREIGN_INCOME_DECLINE_SIGNAL_KEY] = signals
+    return merged
+
+
+def foreign_income_has_facts(record: Dict[str, Any]) -> bool:
+    if foreign_income_item_values(record.get("items")):
+        return True
+    return any(
+        has_meaningful_foreign_income_signal(key, value) or has_explicit_foreign_income_evidence_gap(key, value)
+        for key, value in record.items()
+        if key not in ("items", FOREIGN_INCOME_DECLINE_SIGNAL_KEY)
+        and not foreign_income_source_declines_workflow(key, value)
+        and not foreign_income_field_absence_value(key, value)
+    )
+
+
+def foreign_income_decline_contradiction(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return bool(raw.get(FOREIGN_INCOME_DECLINE_SIGNAL_KEY)) or any(
+        foreign_income_decline_values(item) and foreign_income_has_facts(item)
+        for item in items
     )
 
 
@@ -1676,6 +2108,28 @@ def foreign_income_statement_missing(statement: Any) -> bool:
     return lowered in {"no", "n", "false", "none", "not held", "not available"} or any(
         phrase in lowered for phrase in FOREIGN_INCOME_STATEMENT_MISSING_PHRASES
     ) or foreign_income_document_denial_phrase(lowered)
+
+
+def foreign_income_source_declines_workflow(key: str, value: Any) -> bool:
+    if foreign_income_field_absence_value(key, value):
+        return False
+    if key in FOREIGN_INCOME_BOOLEAN_SIGNAL_FIELDS and foreign_income_claim_negative(key, value):
+        return False
+    return foreign_income_declines_workflow(value)
+
+
+def foreign_income_field_absence_value(key: str, value: Any) -> bool:
+    if key == "statement" or not isinstance(value, str) or contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    if foreign_income_decline_phrase_is_tax_paid_context(lowered):
+        return False
+    if foreign_income_claim_negative(key, value):
+        return False
+    whole_workflow_phrases = {"no foreign income", "no foreign employment", "no foreign pension", "no foreign pensions"}
+    if lowered in whole_workflow_phrases:
+        return False
+    return lowered in GENERIC_FIELD_ABSENCE_PHRASES
 
 
 def foreign_income_declines_workflow(statement: Any) -> bool:
@@ -1703,6 +2157,8 @@ def foreign_income_absence_decline_phrase(lowered: str) -> bool:
             "do not have foreign income",
             "don't have any foreign income",
             "don't have foreign income",
+            "dont have any foreign income",
+            "dont have foreign income",
         )
     )
 
@@ -1721,6 +2177,7 @@ def foreign_income_document_denial_phrase(lowered: str) -> bool:
         for phrase in (
             "do not have",
             "don't have",
+            "dont have",
             "not held",
             "not available",
             "not provided",
@@ -1811,7 +2268,6 @@ def foreign_income_tax_paid_needs_evidence(raw: Dict[str, Any], items: List[Dict
         return True
     return any(
         foreign_income_offset_claim_needs_tax_paid(item.get("foreign_tax_offset_claim"))
-        and not raw_has_tax_paid
         and not foreign_income_has_tax_paid_value(item.get("foreign_tax_paid"))
         and not foreign_income_has_tax_paid_value(item.get("tax_paid"))
         for item in items
@@ -1857,6 +2313,28 @@ def foreign_income_offset_claimed(value: Any) -> bool:
                 "intend to claim",
                 "claim the offset",
                 "claim foreign income tax offset",
+            )
+        )
+    return False
+
+
+def foreign_income_exemption_claimed(value: Any) -> bool:
+    if value is True:
+        return True
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if foreign_income_exemption_claim_negative(value):
+            return False
+        return lowered in {"yes", "y", "true", "claimed", "claim", "exempt"} or any(
+            phrase in lowered
+            for phrase in (
+                "yes,",
+                "claiming",
+                "will claim",
+                "intend to claim",
+                "claim the exemption",
+                "claim foreign employment exemption",
+                "foreign employment exemption applies",
             )
         )
     return False
@@ -2044,42 +2522,66 @@ def foreign_income_summary_exchange_rate_text(raw: Dict[str, Any], items: List[D
 
 
 def foreign_income_country_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
-    direct = display_value(raw.get("country"))
+    direct = foreign_income_record_field_text(raw, "country")
     if direct:
         return direct
-    countries = [display_value(item.get("country")) for item in items if display_value(item.get("country"))]
+    countries = [value for item in items if (value := foreign_income_record_field_text(item, "country"))]
     return ", ".join(countries) if countries else "unknown"
 
 
 def foreign_income_field_text(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> str:
-    direct = display_value(raw.get(key))
+    direct = foreign_income_record_field_text(raw, key)
     if direct:
         return direct
-    values = [display_value(item.get(key)) for item in items if display_value(item.get(key))]
+    values = [value for item in items if (value := foreign_income_record_field_text(item, key))]
     return ", ".join(values) if values else "unknown"
 
 
 def foreign_income_claim_text(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> str:
     if key in raw:
+        if foreign_income_field_absence_value(key, raw.get(key)):
+            return "unknown"
         return display_value(raw.get(key)) or "unknown"
-    values = [display_value(item.get(key)) for item in items if key in item]
+    values = [
+        display_value(item.get(key))
+        for item in items
+        if key in item and not foreign_income_field_absence_value(key, item.get(key))
+    ]
     return ", ".join(values) if values else "unknown"
 
 
 def foreign_income_items_text(items: List[Dict[str, Any]]) -> str:
     details: List[str] = []
     for idx, item in enumerate(items, start=1):
-        label = display_value(item.get("country")) or display_value(item.get("payer")) or f"item {idx}"
+        label = foreign_income_record_field_text(item, "country") or foreign_income_record_field_text(item, "payer") or f"item {idx}"
         tax_paid = item.get("foreign_tax_paid")
         if is_missing(tax_paid):
             tax_paid = item.get("tax_paid")
         details.append(
-            f"{label}: type {display_value(item.get('income_type')) or 'unknown'}, "
+            f"{label}: type {foreign_income_record_field_text(item, 'income_type') or 'unknown'}, "
             f"amount {money_text(foreign_income_money_value(item.get('amount')))}, "
             f"foreign tax paid {money_text(foreign_income_money_value(tax_paid))}, "
             f"exchange rate {foreign_income_rate_text(foreign_income_money_value(item.get('exchange_rate')))}"
         )
     return " | ".join(details)
+
+
+def foreign_income_decline_signal_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
+    signals = raw.get(FOREIGN_INCOME_DECLINE_SIGNAL_KEY)
+    values = [display_value(signal) for signal in signals if display_value(signal)] if isinstance(signals, list) else []
+    for idx, item in enumerate(items, start=1):
+        values.extend(
+            f"item {idx} {key} {display_value(value)}"
+            for key, value in foreign_income_decline_values(item).items()
+            if display_value(value)
+        )
+    return ", ".join(values)
+
+
+def foreign_income_record_field_text(record: Dict[str, Any], key: str) -> str:
+    if foreign_income_field_absence_value(key, record.get(key)):
+        return ""
+    return display_value(record.get(key))
 
 
 def foreign_income_rate_text(value: Optional[float]) -> str:
@@ -2091,8 +2593,11 @@ def foreign_income_tab_text(
     amount_evidence: bool,
     residency_evidence: bool,
     tax_paid_evidence: bool,
+    decline_evidence: bool = False,
 ) -> str:
     evidence = []
+    if decline_evidence:
+        evidence.append("no-foreign-income answer with foreign income facts")
     if statement_evidence:
         evidence.append("statement evidence")
     if amount_evidence:
@@ -2125,17 +2630,19 @@ def psi_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
         "business_structure": answers.get("psi_business_structure"),
     }
     flat_values = {key: value for key, value in fields.items() if has_meaningful_psi_flat_value(key, value)}
+    flat_declines = psi_decline_values(fields)
     if not isinstance(raw, dict):
-        return flat_values
+        return psi_values_with_declines(flat_values, flat_declines)
     if not has_meaningful_value(raw):
-        return flat_values
+        return psi_values_with_declines(flat_values, flat_declines)
+    raw_declines = psi_decline_values(raw)
     merged = dict(flat_values)
     for key, value in raw.items():
         if has_meaningful_psi_override(key, value):
             merged[key] = value
         elif key not in merged and has_explicit_psi_evidence_gap(key, value):
             merged[key] = value
-    return merged
+    return psi_values_with_declines(merged, {**flat_declines, **raw_declines})
 
 
 def psi_rows(raw: Any) -> List[Dict[str, Any]]:
@@ -2148,20 +2655,23 @@ def psi_rows(raw: Any) -> List[Dict[str, Any]]:
     status = "Evidence" if evidence else "Accountant review"
     answer = (
         f"Income {money_text(income)}; "
-        f"type {display_value(raw.get('income_type')) or 'unknown'}; "
-        f"occupation {display_value(raw.get('occupation')) or 'unknown'}; "
-        f"client {display_value(raw.get('client')) or 'unknown'}; "
-        f"contract evidence {display_value(raw.get('contract_evidence')) or 'unknown'}; "
+        f"type {psi_display_text(raw, 'income_type')}; "
+        f"occupation {psi_display_text(raw, 'occupation')}; "
+        f"client {psi_display_text(raw, 'client')}; "
+        f"contract evidence {psi_display_text(raw, 'contract_evidence')}; "
         f"results test {psi_bool_text(raw.get('results_test'))}; "
         f"80% test {psi_bool_text(raw.get('eighty_percent_test'))}; "
         f"unrelated clients test {psi_bool_text(raw.get('unrelated_clients_test'))}; "
         f"employment test {psi_bool_text(raw.get('employment_test'))}; "
         f"business premises test {psi_bool_text(raw.get('business_premises_test'))}; "
         f"PSB determination {psi_bool_text(raw.get('psb_determination'))}; "
-        f"attribution {display_value(raw.get('attribution_entity')) or 'unknown'}; "
-        f"deductions {display_value(raw.get('deductions')) or 'unknown'}; "
-        f"structure {display_value(raw.get('business_structure')) or 'unknown'}"
+        f"attribution {psi_display_text(raw, 'attribution_entity')}; "
+        f"deductions {psi_display_text(raw, 'deductions')}; "
+        f"structure {psi_display_text(raw, 'business_structure')}"
     )
+    decline_text = psi_decline_signal_text(raw)
+    if decline_text:
+        answer = f"{answer}; decline signals {decline_text}"
     return [
         guide_row(
             "PSI",
@@ -2179,7 +2689,9 @@ def psi_rows(raw: Any) -> List[Dict[str, Any]]:
 def has_meaningful_psi_flat_value(key: str, value: Any) -> bool:
     if key in PSI_AMOUNT_FIELDS and isinstance(value, bool):
         return False
-    if key in PSI_SOURCE_KEY_FACTS and psi_declines_workflow(value):
+    if key in PSI_SOURCE_KEY_FACTS and (
+        psi_source_declines_workflow(key, value) or psi_field_absence_value(key, value)
+    ):
         return False
     return has_meaningful_value(value)
 
@@ -2187,7 +2699,9 @@ def has_meaningful_psi_flat_value(key: str, value: Any) -> bool:
 def has_meaningful_psi_override(key: str, value: Any) -> bool:
     if key in PSI_AMOUNT_FIELDS and isinstance(value, bool):
         return False
-    if key in PSI_SOURCE_KEY_FACTS and psi_declines_workflow(value):
+    if key in PSI_SOURCE_KEY_FACTS and (
+        psi_source_declines_workflow(key, value) or psi_field_absence_value(key, value)
+    ):
         return False
     if contains_unknown(value):
         return False
@@ -2195,7 +2709,9 @@ def has_meaningful_psi_override(key: str, value: Any) -> bool:
 
 
 def has_explicit_psi_evidence_gap(key: str, value: Any) -> bool:
-    if key in PSI_SOURCE_KEY_FACTS and psi_declines_workflow(value):
+    if key in PSI_SOURCE_KEY_FACTS and (
+        psi_source_declines_workflow(key, value) or psi_field_absence_value(key, value)
+    ):
         return False
     if key in PSI_AMOUNT_FIELDS:
         return psi_amount_needs_evidence(value)
@@ -2221,13 +2737,45 @@ def psi_declines_without_facts(raw: Dict[str, Any]) -> bool:
         has_meaningful_psi_signal(key, value) or has_explicit_psi_evidence_gap(key, value)
         for key, value in raw.items()
         if key != "contract_evidence"
+        and not psi_field_absence_value(key, value)
+    )
+
+
+def psi_values_with_declines(values: Dict[str, Any], declines: Dict[str, Any]) -> Dict[str, Any]:
+    if not declines or not psi_has_facts(values):
+        return values
+    merged = dict(values)
+    signals: List[str] = []
+    for key, value in declines.items():
+        signals.append(f"{key} {display_value(value)}")
+        if not has_meaningful_psi_signal(key, merged.get(key)):
+            merged[key] = value
+    merged[PSI_DECLINE_SIGNAL_KEY] = signals
+    return merged
+
+
+def psi_decline_values(record: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        key: value
+        for key, value in record.items()
+        if key in PSI_SOURCE_KEY_FACTS and psi_source_declines_workflow(key, value)
+    }
+
+
+def psi_has_facts(record: Dict[str, Any]) -> bool:
+    return any(
+        has_meaningful_psi_signal(key, value) or has_explicit_psi_evidence_gap(key, value)
+        for key, value in record.items()
+        if key != PSI_DECLINE_SIGNAL_KEY
+        and not psi_source_declines_workflow(key, value)
+        and not psi_field_absence_value(key, value)
     )
 
 
 def has_meaningful_psi_signal(key: str, value: Any) -> bool:
     if key in PSI_AMOUNT_FIELDS and isinstance(value, bool):
         return False
-    if key in PSI_SIGNAL_FIELDS and psi_declines_workflow(value):
+    if key in PSI_SIGNAL_FIELDS and (psi_source_declines_workflow(key, value) or psi_field_absence_value(key, value)):
         return False
     if contains_unknown(value):
         return False
@@ -2236,6 +2784,8 @@ def has_meaningful_psi_signal(key: str, value: Any) -> bool:
 
 def psi_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
     evidence: List[str] = []
+    if psi_decline_contradiction(raw):
+        evidence.append("no-PSI answer with PSI facts")
     if is_missing(raw.get("income")) or psi_amount_needs_evidence(raw.get("income")):
         evidence.append("numeric income evidence")
     if psi_contract_evidence_missing(raw.get("contract_evidence")):
@@ -2271,6 +2821,17 @@ def psi_tab_text(evidence: List[str]) -> str:
     return "PSI tests, attribution, deductions, and structure stay accountant review before manual copy."
 
 
+def psi_decline_contradiction(raw: Dict[str, Any]) -> bool:
+    return bool(raw.get(PSI_DECLINE_SIGNAL_KEY))
+
+
+def psi_decline_signal_text(raw: Dict[str, Any]) -> str:
+    signals = raw.get(PSI_DECLINE_SIGNAL_KEY)
+    if not isinstance(signals, list):
+        return ""
+    return ", ".join(display_value(signal) for signal in signals if display_value(signal))
+
+
 def psi_contract_evidence_missing(value: Any) -> bool:
     if isinstance(value, bool):
         return not value
@@ -2296,6 +2857,7 @@ def psi_contract_evidence_missing(value: Any) -> bool:
             "invoice not provided",
             "do not have",
             "don't have",
+            "dont have",
         )
     )
 
@@ -2317,12 +2879,30 @@ def psi_declines_workflow(value: Any) -> bool:
             "do not have any personal services income",
             "don't have personal services income",
             "don't have any personal services income",
+            "dont have personal services income",
+            "dont have any personal services income",
             "do not have psi",
             "don't have psi",
+            "dont have psi",
             "no psi income",
             "no personal services income this year",
         )
     )
+
+
+def psi_source_declines_workflow(key: str, value: Any) -> bool:
+    if psi_field_absence_value(key, value):
+        return False
+    return psi_declines_workflow(value)
+
+
+def psi_field_absence_value(key: str, value: Any) -> bool:
+    if not isinstance(value, str) or contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    if lowered in {"no psi", "no personal services income"}:
+        return False
+    return lowered in GENERIC_FIELD_ABSENCE_PHRASES
 
 
 def psi_document_context(lowered: str) -> bool:
@@ -2330,7 +2910,7 @@ def psi_document_context(lowered: str) -> bool:
 
 
 def psi_test_needs_evidence(value: Any) -> bool:
-    return is_missing(value) or contains_unknown(value)
+    return is_missing(value) or boolean_answer_needs_evidence(value)
 
 
 def psi_amount_needs_evidence(value: Any) -> bool:
@@ -2359,7 +2939,897 @@ def psi_money_value(value: Any) -> Optional[float]:
 
 
 def psi_bool_text(value: Any) -> str:
+    return display_value(value) if not is_missing(value) and not psi_field_absence_value("", value) else "unknown"
+
+
+def psi_display_text(raw: Dict[str, Any], key: str) -> str:
+    if psi_field_absence_value(key, raw.get(key)):
+        return "unknown"
+    return display_value(raw.get(key)) or "unknown"
+
+
+def crypto_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
+    raw = answers.get("crypto")
+    fields = {
+        "event_type": answers.get("crypto_event_type"),
+        "exchange_or_wallet": answers.get("crypto_exchange_or_wallet"),
+        "asset": answers.get("crypto_asset"),
+        "quantity": answers.get("crypto_quantity"),
+        "acquired_date": answers.get("crypto_acquired_date"),
+        "disposed_date": answers.get("crypto_disposed_date"),
+        "cost_base": answers.get("crypto_cost_base"),
+        "capital_proceeds": answers.get("crypto_capital_proceeds"),
+        "rewards_income": answers.get("crypto_rewards_income"),
+        "transfer_between_wallets": answers.get("crypto_transfer_between_wallets"),
+        "wallet_records": answers.get("crypto_wallet_records"),
+        "ownership_entity": answers.get("crypto_ownership_entity"),
+        "business_use": answers.get("crypto_business_use"),
+        "private_use": answers.get("crypto_private_use"),
+        "items": answers.get("crypto_items"),
+    }
+    flat_values = {key: value for key, value in fields.items() if has_meaningful_crypto_flat_value(key, value)}
+    flat_declines = {
+        key: value
+        for key, value in fields.items()
+        if key in CRYPTO_SOURCE_KEY_FACTS and crypto_source_declines_workflow(key, value)
+    }
+    if not isinstance(raw, dict):
+        return crypto_values_with_declines(flat_values, flat_declines)
+    if not has_meaningful_value(raw):
+        return crypto_values_with_declines(flat_values, flat_declines)
+    raw_declines = crypto_decline_values(raw)
+    merged = dict(flat_values)
+    for key, value in raw.items():
+        if has_meaningful_crypto_override(key, value):
+            merged[key] = value
+        elif key not in merged and has_explicit_crypto_evidence_gap(key, value):
+            merged[key] = value
+    return crypto_values_with_declines(merged, {**flat_declines, **raw_declines})
+
+
+def crypto_rows(raw: Any) -> List[Dict[str, Any]]:
+    if not has_crypto_inputs(raw):
+        return []
+    if not isinstance(raw, dict):
+        return []
+    items = crypto_item_values(raw.get("items"))
+    evidence = crypto_evidence_gaps(raw, items)
+    status = "Evidence" if evidence else "Accountant review"
+    answer = (
+        f"Event {crypto_field_text(raw, items, 'event_type')}; "
+        f"asset {crypto_field_text(raw, items, 'asset')}; "
+        f"exchange/wallet {crypto_field_text(raw, items, 'exchange_or_wallet')}; "
+        f"quantity {crypto_amount_field_text(raw, items, 'quantity')}; "
+        f"acquired {crypto_field_text(raw, items, 'acquired_date')}; "
+        f"disposed {crypto_field_text(raw, items, 'disposed_date')}; "
+        f"cost base {crypto_amount_field_text(raw, items, 'cost_base', money=True)}; "
+        f"capital proceeds {crypto_amount_field_text(raw, items, 'capital_proceeds', money=True)}; "
+        f"rewards income {crypto_amount_field_text(raw, items, 'rewards_income', money=True)}; "
+        f"own-wallet transfer {crypto_bool_field_text(raw, items, 'transfer_between_wallets')}; "
+        f"records {crypto_field_text(raw, items, 'wallet_records')}; "
+        f"owner/entity {crypto_field_text(raw, items, 'ownership_entity')}; "
+        f"business use {crypto_bool_field_text(raw, items, 'business_use')}; "
+        f"private use {crypto_bool_field_text(raw, items, 'private_use')}"
+    )
+    item_text = crypto_items_text(items)
+    if item_text:
+        answer = f"{answer}; items {item_text}"
+    decline_text = crypto_decline_signal_text(raw)
+    if decline_text:
+        answer = f"{answer}; decline signals {decline_text}"
+    return [
+        guide_row(
+            "CRYPTO-CGT",
+            "Crypto asset investments",
+            "Crypto disposals, swaps, exchanges, conversions, rewards, transfers, wallet records, and cost-base workflow",
+            answer,
+            "Crypto handling collects event type, asset, dates, proceeds, cost base, rewards, wallet records, ownership, and both business and private use context flags for accountant review before manual copy.",
+            status,
+            ATO_CRYPTO_SOURCES,
+            tab_text=crypto_tab_text(evidence),
+        )
+    ]
+
+
+def has_meaningful_crypto_flat_value(key: str, value: Any) -> bool:
+    if key in CRYPTO_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if key in CRYPTO_SOURCE_KEY_FACTS and (
+        crypto_source_declines_workflow(key, value) or crypto_field_absence_value(key, value)
+    ):
+        return False
+    return has_meaningful_value(value)
+
+
+def has_meaningful_crypto_override(key: str, value: Any) -> bool:
+    if key == "items":
+        return bool(crypto_item_values(value))
+    if key in CRYPTO_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if key in CRYPTO_SOURCE_KEY_FACTS and (
+        crypto_source_declines_workflow(key, value) or crypto_field_absence_value(key, value)
+    ):
+        return False
+    if contains_unknown(value):
+        return False
+    return has_meaningful_value(value)
+
+
+def has_explicit_crypto_evidence_gap(key: str, value: Any) -> bool:
+    if key in CRYPTO_SOURCE_KEY_FACTS and (
+        crypto_source_declines_workflow(key, value) or crypto_field_absence_value(key, value)
+    ):
+        return False
+    if key in CRYPTO_AMOUNT_FIELDS:
+        return crypto_amount_needs_evidence(value)
+    if key in CRYPTO_DATE_FIELDS:
+        return crypto_date_needs_evidence(value)
+    if key in ("event_type", "exchange_or_wallet", "asset", "wallet_records", "ownership_entity", *CRYPTO_BOOLEAN_FIELDS):
+        return has_meaningful_value(value) and contains_unknown(value)
+    return False
+
+
+def crypto_values_with_declines(values: Dict[str, Any], declines: Dict[str, Any]) -> Dict[str, Any]:
+    if not declines or not crypto_has_facts(values):
+        return values
+    merged = dict(values)
+    signals: List[str] = []
+    for key, value in declines.items():
+        signals.append(f"{key} {display_value(value)}")
+        if not crypto_has_field_value(merged, key):
+            merged[key] = value
+    merged[CRYPTO_DECLINE_SIGNAL_KEY] = signals
+    return merged
+
+
+def crypto_decline_values(record: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        key: value
+        for key, value in record.items()
+        if key in CRYPTO_SOURCE_KEY_FACTS and crypto_source_declines_workflow(key, value)
+    }
+
+
+def crypto_item_values(raw_items: Any) -> List[Dict[str, Any]]:
+    if not isinstance(raw_items, list):
+        return []
+    return [item for item in raw_items if isinstance(item, dict) and has_meaningful_crypto_item(item)]
+
+
+def has_meaningful_crypto_item(item: Dict[str, Any]) -> bool:
+    if any(has_meaningful_crypto_signal(key, item.get(key)) for key in CRYPTO_SIGNAL_FIELDS):
+        return True
+    if any(crypto_amount_field_needs_evidence(item, key) for key in CRYPTO_AMOUNT_FIELDS):
+        return True
+    return any(crypto_date_field_needs_evidence(item, key) for key in CRYPTO_DATE_FIELDS)
+
+
+def crypto_amount_field_needs_evidence(record: Dict[str, Any], key: str) -> bool:
+    value = record.get(key)
+    return not crypto_field_absence_value(key, value) and crypto_amount_needs_evidence(value)
+
+
+def crypto_date_field_needs_evidence(record: Dict[str, Any], key: str) -> bool:
+    value = record.get(key)
+    return not crypto_field_absence_value(key, value) and crypto_date_needs_evidence(value)
+
+
+def has_crypto_inputs(raw: Any) -> bool:
+    if not isinstance(raw, dict):
+        return False
+    if crypto_declines_without_facts(raw):
+        return False
+    return crypto_has_facts(raw)
+
+
+def crypto_has_facts(record: Dict[str, Any]) -> bool:
+    if crypto_item_values(record.get("items")):
+        return True
+    return any(
+        has_meaningful_crypto_signal(key, value) or has_explicit_crypto_evidence_gap(key, value)
+        for key, value in record.items()
+        if key != "items"
+        and key != CRYPTO_DECLINE_SIGNAL_KEY
+        and not crypto_source_declines_workflow(key, value)
+        and not crypto_field_absence_value(key, value)
+    )
+
+
+def crypto_declines_without_facts(raw: Dict[str, Any]) -> bool:
+    if not crypto_decline_values(raw):
+        return False
+    return not crypto_has_facts(raw)
+
+
+def has_meaningful_crypto_signal(key: str, value: Any) -> bool:
+    if key in CRYPTO_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if key in CRYPTO_BOOLEAN_FIELDS:
+        if crypto_boolean_true(value):
+            return True
+        if crypto_boolean_false(value):
+            return False
+    if key in CRYPTO_SOURCE_KEY_FACTS and (
+        crypto_source_declines_workflow(key, value) or crypto_field_absence_value(key, value)
+    ):
+        return False
+    if contains_unknown(value):
+        return False
+    return has_meaningful_value(value)
+
+
+def crypto_evidence_gaps(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> List[str]:
+    evidence: List[str] = []
+    if crypto_decline_contradiction(raw, items):
+        evidence.append("no-crypto answer with crypto facts")
+    if crypto_event_type_needs_evidence(raw, items):
+        evidence.append("event type evidence")
+    if crypto_identity_needs_evidence(raw, items):
+        evidence.append("asset and exchange/wallet identity evidence")
+    if crypto_items_need_evidence(raw, items):
+        evidence.append("per-item crypto evidence")
+    if crypto_amount_conflicts(raw, items):
+        evidence.append("top-level and item amount reconciliation")
+    if crypto_records_evidence(raw, items):
+        evidence.append("wallet or exchange records")
+    if crypto_amounts_need_evidence(raw, items):
+        evidence.append("numeric proceeds, cost-base, quantity, or rewards evidence")
+    if crypto_dates_need_evidence(raw, items):
+        evidence.append("acquisition or disposal date evidence")
+    if crypto_ownership_needs_evidence(raw, items):
+        evidence.append("ownership or entity evidence")
+    if crypto_use_context_needs_evidence(raw, items):
+        evidence.append("business/private use context")
+    if crypto_transfer_needs_evidence(raw, items):
+        evidence.append("own-wallet transfer support")
+    return evidence
+
+
+def crypto_event_type_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    event = raw.get("event_type")
+    if not crypto_has_field_value(raw, "event_type"):
+        return not any(crypto_has_field_value(item, "event_type") for item in items)
+    return contains_unknown(event) or any(contains_unknown(item.get("event_type")) for item in items)
+
+
+def crypto_identity_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    for key in ("asset", "exchange_or_wallet"):
+        value = raw.get(key)
+        if not crypto_has_field_value(raw, key):
+            if not any(crypto_has_field_value(item, key) for item in items):
+                return True
+        elif contains_unknown(value):
+            return True
+    return any(
+        contains_unknown(item.get(key))
+        for item in items
+        for key in ("asset", "exchange_or_wallet")
+    )
+
+
+def crypto_items_need_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return any(crypto_item_needs_evidence(raw, item) for item in items)
+
+
+def crypto_item_needs_evidence(raw: Dict[str, Any], item: Dict[str, Any]) -> bool:
+    return (
+        crypto_declines_with_facts(item)
+        or any(crypto_item_context_field_needs_evidence(raw, item, key) for key in CRYPTO_ITEM_PARENT_CONTEXT_FIELDS)
+        or crypto_item_records_need_evidence(raw, item)
+        or crypto_item_amounts_need_evidence(raw, item)
+        or crypto_item_dates_need_evidence(raw, item)
+        or crypto_item_use_context_needs_evidence(raw, item)
+        or crypto_item_transfer_needs_evidence(raw, item)
+    )
+
+
+def crypto_item_context_field_needs_evidence(raw: Dict[str, Any], item: Dict[str, Any], key: str) -> bool:
+    value = item.get(key)
+    if not is_missing(value):
+        return contains_unknown(value) or crypto_field_absence_value(key, value)
+    return not crypto_has_field_value(raw, key)
+
+
+def crypto_item_records_need_evidence(raw: Dict[str, Any], item: Dict[str, Any]) -> bool:
+    value = item.get("wallet_records")
+    if not is_missing(value):
+        return crypto_records_missing(value) or crypto_field_absence_value("wallet_records", value)
+    return not crypto_has_field_value(raw, "wallet_records")
+
+
+def crypto_item_amounts_need_evidence(raw: Dict[str, Any], item: Dict[str, Any]) -> bool:
+    if any(crypto_amount_field_needs_evidence(item, key) for key in CRYPTO_AMOUNT_FIELDS):
+        return True
+    if crypto_item_disposal_like(raw, item):
+        return any(crypto_money_value(item.get(key)) is None for key in ("cost_base", "capital_proceeds", "quantity"))
+    if crypto_item_reward_like(raw, item):
+        return crypto_money_value(item.get("rewards_income")) is None
+    return False
+
+
+def crypto_item_dates_need_evidence(raw: Dict[str, Any], item: Dict[str, Any]) -> bool:
+    if any(crypto_date_field_needs_evidence(item, key) for key in CRYPTO_DATE_FIELDS):
+        return True
+    if crypto_item_disposal_like(raw, item):
+        return any(not crypto_has_field_value(item, key) for key in CRYPTO_DATE_FIELDS)
+    return False
+
+
+def crypto_item_disposal_like(raw: Dict[str, Any], item: Dict[str, Any]) -> bool:
+    event = crypto_item_effective_value(raw, item, "event_type")
+    transfer_between_wallets = crypto_item_effective_value(raw, item, "transfer_between_wallets")
+    if crypto_event_is_transfer(event) and crypto_boolean_true(transfer_between_wallets):
+        return False
+    return crypto_event_is_disposal(event) or (
+        crypto_event_is_transfer(event) and crypto_boolean_false(transfer_between_wallets)
+    )
+
+
+def crypto_item_reward_like(raw: Dict[str, Any], item: Dict[str, Any]) -> bool:
+    return crypto_event_is_reward(crypto_item_effective_value(raw, item, "event_type"))
+
+
+def crypto_item_effective_value(raw: Dict[str, Any], item: Dict[str, Any], key: str) -> Any:
+    if crypto_has_field_value(item, key):
+        return item.get(key)
+    if crypto_has_field_value(raw, key):
+        return raw.get(key)
+    return None
+
+
+def crypto_item_use_context_needs_evidence(raw: Dict[str, Any], item: Dict[str, Any]) -> bool:
+    if any(crypto_boolean_needs_evidence(item.get(key)) for key in CRYPTO_USE_CONTEXT_FIELDS):
+        return True
+    if crypto_use_context_complete(raw):
+        return False
+    return crypto_use_context_needs_evidence(item, [])
+
+
+def crypto_item_transfer_needs_evidence(raw: Dict[str, Any], item: Dict[str, Any]) -> bool:
+    value = item.get("transfer_between_wallets")
+    if crypto_boolean_needs_evidence(value):
+        return True
+    if crypto_event_is_transfer(crypto_item_effective_value(raw, item, "event_type")):
+        if crypto_field_absence_value("transfer_between_wallets", value):
+            return True
+        if crypto_boolean_complete(value):
+            return False
+        return not crypto_has_field_value(raw, "transfer_between_wallets")
+    return False
+
+
+def crypto_records_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    records = raw.get("wallet_records")
+    if has_meaningful_value(records):
+        if crypto_records_missing(records):
+            return True
+    if items:
+        return any(crypto_item_records_need_evidence(raw, item) for item in items)
+    return not crypto_has_field_value(raw, "wallet_records")
+
+
+def crypto_amounts_need_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    if any(crypto_amount_field_needs_evidence(raw, key) for key in CRYPTO_AMOUNT_FIELDS):
+        return True
+    if any(crypto_amount_field_needs_evidence(item, key) for item in items for key in CRYPTO_AMOUNT_FIELDS):
+        return True
+    if crypto_disposal_like(raw, items) and (
+        crypto_amount_value(raw, items, "cost_base") is None
+        or crypto_amount_value(raw, items, "capital_proceeds") is None
+        or crypto_disposal_quantity_missing(raw, items)
+    ):
+        return True
+    if crypto_reward_like(raw, items) and crypto_amount_value(raw, items, "rewards_income") is None:
+        return True
+    return False
+
+
+def crypto_amount_conflicts(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    for key in CRYPTO_AMOUNT_FIELDS:
+        if key == "quantity" and crypto_quantities_are_item_specific(raw, items):
+            continue
+        direct = crypto_money_value(raw.get(key))
+        item_total = crypto_item_amount_total(raw, items, key)
+        if direct is None or item_total is None:
+            continue
+        tolerance = 0.00000001 if key == "quantity" else 0.005
+        if abs(direct - item_total) > tolerance:
+            return True
+    return False
+
+
+def crypto_decline_contradiction(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return crypto_declines_with_facts(raw) or any(crypto_declines_with_facts(item) for item in items)
+
+
+def crypto_declines_with_facts(record: Dict[str, Any]) -> bool:
+    if record.get(CRYPTO_DECLINE_SIGNAL_KEY):
+        return True
+    if not crypto_decline_values(record):
+        return False
+    return crypto_has_facts(record)
+
+
+def crypto_dates_need_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    if any(crypto_date_field_needs_evidence(raw, key) for key in CRYPTO_DATE_FIELDS):
+        return True
+    if any(crypto_date_field_needs_evidence(item, key) for item in items for key in CRYPTO_DATE_FIELDS):
+        return True
+    if crypto_disposal_like(raw, items):
+        return crypto_missing_date(raw, items, "acquired_date") or crypto_missing_date(raw, items, "disposed_date")
+    return False
+
+
+def crypto_ownership_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    owner = raw.get("ownership_entity")
+    if not crypto_has_field_value(raw, "ownership_entity"):
+        return not any(crypto_has_field_value(item, "ownership_entity") for item in items)
+    return contains_unknown(owner) or any(contains_unknown(item.get("ownership_entity")) for item in items)
+
+
+def crypto_use_context_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    if any(crypto_boolean_needs_evidence(raw.get(key)) for key in CRYPTO_USE_CONTEXT_FIELDS):
+        return True
+    if any(
+        crypto_boolean_needs_evidence(item.get(key))
+        for item in items
+        for key in CRYPTO_USE_CONTEXT_FIELDS
+    ):
+        return True
+    if crypto_use_context_conflicts(raw, items):
+        return True
+    if crypto_use_context_complete(raw):
+        return False
+    return not items or not all(crypto_use_context_complete(item) for item in items)
+
+
+def crypto_use_context_conflicts(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    if not crypto_use_context_complete(raw):
+        return False
+    return any(crypto_item_use_context_conflicts(raw, item) for item in items)
+
+
+def crypto_item_use_context_conflicts(raw: Dict[str, Any], item: Dict[str, Any]) -> bool:
+    for key in CRYPTO_USE_CONTEXT_FIELDS:
+        raw_value = crypto_boolean_value(raw.get(key))
+        item_value = crypto_boolean_value(item.get(key))
+        if raw_value is not None and item_value is not None and raw_value != item_value:
+            return True
+    return False
+
+
+def crypto_use_context_complete(record: Dict[str, Any]) -> bool:
+    return all(crypto_boolean_complete(record.get(key)) for key in CRYPTO_USE_CONTEXT_FIELDS)
+
+
+def crypto_boolean_complete(value: Any) -> bool:
+    return crypto_boolean_true(value) or crypto_boolean_false(value)
+
+
+def crypto_boolean_value(value: Any) -> Optional[bool]:
+    if crypto_boolean_true(value):
+        return True
+    if crypto_boolean_false(value):
+        return False
+    return None
+
+
+def crypto_transfer_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    if crypto_boolean_needs_evidence(raw.get("transfer_between_wallets")):
+        return True
+    if any(crypto_boolean_needs_evidence(item.get("transfer_between_wallets")) for item in items):
+        return True
+    if crypto_event_is_transfer(raw.get("event_type")) and is_missing(raw.get("transfer_between_wallets")) and not items:
+        return True
+    return any(crypto_item_transfer_needs_evidence(raw, item) for item in items)
+
+
+def crypto_disposal_like(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return crypto_record_disposal_like(raw) or any(crypto_record_disposal_like(item) for item in items)
+
+
+def crypto_reward_like(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return any(crypto_event_is_reward(value) for value in crypto_event_values(raw, items))
+
+
+def crypto_event_values(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> List[Any]:
+    values = [raw.get("event_type") if crypto_has_field_value(raw, "event_type") else None]
+    values.extend(item.get("event_type") for item in items)
+    return [
+        value
+        for value in values
+        if has_meaningful_value(value) and not crypto_field_absence_value("event_type", value)
+    ]
+
+
+def crypto_record_disposal_like(record: Dict[str, Any]) -> bool:
+    event = record.get("event_type")
+    if crypto_event_is_transfer(event) and crypto_boolean_true(record.get("transfer_between_wallets")):
+        return False
+    return crypto_event_is_disposal(event) or (
+        crypto_event_is_transfer(event) and crypto_boolean_false(record.get("transfer_between_wallets"))
+    )
+
+
+def crypto_event_is_disposal(value: Any) -> bool:
+    lowered = text(value).strip().lower()
+    return any(
+        term in lowered
+        for term in (
+            "sell",
+            "sold",
+            "sale",
+            "disposal",
+            "dispose",
+            "swap",
+            "trade",
+            "exchange",
+            "convert",
+            "conversion",
+            "spend",
+            "gift",
+        )
+    )
+
+
+def crypto_event_is_reward(value: Any) -> bool:
+    lowered = text(value).strip().lower()
+    return any(term in lowered for term in ("staking", "reward", "airdrop", "mining"))
+
+
+def crypto_event_is_transfer(value: Any) -> bool:
+    lowered = text(value).strip().lower()
+    return "transfer" in lowered
+
+
+def crypto_boolean_true(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value == 1
+    lowered = text(value).strip().lower()
+    return lowered in {"true", "yes", "y", "1", "on", "checked"}
+
+
+def crypto_boolean_false(value: Any) -> bool:
+    if isinstance(value, bool):
+        return not value
+    if isinstance(value, (int, float)):
+        return value == 0
+    if contains_unknown(value):
+        return False
+    lowered = text(value).strip().lower()
+    if lowered in {"false", "no", "n", "0", "off", "unchecked"}:
+        return True
+    return any(
+        phrase in lowered
+        for phrase in (
+            "not own wallet",
+            "not own-wallet",
+            "not my wallet",
+            "not my own wallet",
+            "not between own wallets",
+            "not an own-wallet transfer",
+            "not own-wallet transfer",
+            "non-own wallet",
+            "non own wallet",
+        )
+    )
+
+
+def crypto_missing_date(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> bool:
+    if crypto_has_field_value(raw, key):
+        return False
+    return not any(crypto_has_field_value(item, key) for item in items)
+
+
+def crypto_records_missing(value: Any) -> bool:
+    if isinstance(value, bool):
+        return not value
+    if is_missing(value) or contains_unknown(value):
+        return True
+    if crypto_declines_workflow(value):
+        return True
+    lowered = text(value).strip().lower()
+    if crypto_record_context(lowered) and lowered.startswith(("no ", "without ", "missing ")):
+        return True
+    if crypto_record_absence_phrase(lowered):
+        return True
+    if crypto_record_context(lowered) and any(
+        phrase in lowered
+        for phrase in ("do not have", "don't have", "dont have", "not held", "not available", "not provided")
+    ):
+        return True
+    return lowered in {"no", "n", "false", "none", "not held", "not available"} or any(
+        phrase in lowered
+        for phrase in (
+            "no wallet records",
+            "no exchange records",
+            "no transaction history",
+            "records not held",
+            "records not available",
+            "records not provided",
+            "csv not held",
+            "csv not available",
+            "csv not provided",
+            "do not have records",
+            "don't have records",
+        )
+    )
+
+
+def crypto_declines_workflow(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    if contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    if crypto_record_context(lowered):
+        return False
+    if lowered in CRYPTO_DECLINE_PHRASES:
+        return True
+    return any(
+        phrase in lowered
+        for phrase in (
+            "do not have crypto",
+            "do not have any crypto",
+            "don't have crypto",
+            "don't have any crypto",
+            "dont have crypto",
+            "dont have any crypto",
+            "do not have crypto assets",
+            "don't have crypto assets",
+            "dont have crypto assets",
+            "no crypto this year",
+            "no cryptocurrency this year",
+        )
+    )
+
+
+def crypto_source_declines_workflow(key: str, value: Any) -> bool:
+    if crypto_field_absence_value(key, value):
+        return False
+    return crypto_declines_workflow(value)
+
+
+def crypto_field_absence_value(key: str, value: Any) -> bool:
+    if not isinstance(value, str) or contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    if crypto_identity_absence_value(key, lowered):
+        return True
+    if lowered in {"no crypto", "no crypto asset", "no crypto assets", "no cryptocurrency", "no cryptocurrencies", "no digital currency", "no digital currencies"}:
+        return False
+    if lowered in {"no staking rewards", "no crypto rewards"}:
+        return key == "rewards_income"
+    return key != "event_type" and lowered in CRYPTO_FIELD_ABSENCE_PHRASES
+
+
+def crypto_identity_absence_value(key: str, lowered: str) -> bool:
+    if key not in CRYPTO_IDENTITY_FIELDS:
+        return False
+    if lowered in CRYPTO_IDENTITY_ABSENCE_EXACT_PHRASES[key]:
+        return True
+    context_pattern = "|".join(re.escape(term) for term in CRYPTO_IDENTITY_ABSENCE_CONTEXTS[key])
+    return bool(
+        re.search(rf"\b(?:no|without|missing)\b(?:\s+\w+){{0,3}}\s+\b(?:{context_pattern})\b", lowered)
+        or re.search(
+            rf"\b(?:do not have|don't have|dont have)\b(?:\s+\w+){{0,3}}\s+\b(?:{context_pattern})\b",
+            lowered,
+        )
+    )
+
+
+def crypto_has_field_value(record: Dict[str, Any], key: str) -> bool:
+    value = record.get(key)
+    return (
+        has_meaningful_value(value)
+        and not crypto_source_declines_workflow(key, value)
+        and not crypto_field_absence_value(key, value)
+    )
+
+
+def crypto_record_context(lowered: str) -> bool:
+    return any(term in lowered for term in ("record", "records", "wallet", "exchange", "csv", "transaction history"))
+
+
+def crypto_record_absence_phrase(lowered: str) -> bool:
+    if not crypto_record_context(lowered):
+        return False
+    return re.search(
+        r"\b(?:no|without|missing)\b(?:\s+\w+){0,3}\s+\b(?:record|records|wallet|exchange|csv|transaction\s+history)\b",
+        lowered,
+    ) is not None
+
+
+def crypto_amount_needs_evidence(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    if crypto_declines_workflow(value):
+        return False
+    return contains_unknown(value) or crypto_amount_malformed(value)
+
+
+def crypto_amount_malformed(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    try:
+        amount = money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return True
+    return amount is not None and amount < 0
+
+
+def crypto_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> Optional[float]:
+    if key == "quantity" and crypto_quantities_are_item_specific(raw, items):
+        return None
+    item_total = crypto_item_amount_total(raw, items, key)
+    if item_total is not None:
+        return item_total
+    return crypto_money_value(raw.get(key))
+
+
+def crypto_disposal_quantity_missing(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    if crypto_quantities_are_item_specific(raw, items):
+        return False
+    return crypto_amount_value(raw, items, "quantity") is None
+
+
+def crypto_item_amount_total(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> Optional[float]:
+    if key == "quantity" and crypto_quantities_are_item_specific(raw, items):
+        return None
+    amounts = [crypto_money_value(item.get(key)) for item in items]
+    real_amounts = [amount for amount in amounts if amount is not None]
+    if not real_amounts:
+        return None
+    return round(sum(real_amounts), 8 if key == "quantity" else 2)
+
+
+def crypto_quantities_are_item_specific(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    assets: Set[str] = set()
+    for item in items:
+        if crypto_money_value(item.get("quantity")) is None:
+            continue
+        asset = crypto_quantity_asset_label(raw, item)
+        if asset:
+            assets.add(asset)
+    return len(assets) > 1
+
+
+def crypto_quantity_asset_label(raw: Dict[str, Any], item: Dict[str, Any]) -> str:
+    if crypto_has_field_value(item, "asset"):
+        return text(item.get("asset")).strip().lower()
+    if crypto_has_field_value(raw, "asset"):
+        return text(raw.get("asset")).strip().lower()
+    return ""
+
+
+def crypto_money_value(value: Any) -> Optional[float]:
+    try:
+        return money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return None
+
+
+def crypto_date_needs_evidence(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    if crypto_declines_workflow(value):
+        return False
+    return contains_unknown(value) or parse_iso_date(value) is None
+
+
+def crypto_boolean_needs_evidence(value: Any) -> bool:
+    return boolean_answer_needs_evidence(value)
+
+
+def boolean_answer_needs_evidence(value: Any) -> bool:
+    if not has_meaningful_value(value) or isinstance(value, bool):
+        return False
+    lowered = text(value).strip().lower()
+    return contains_unknown(value) or any(phrase in lowered for phrase in BOOLEAN_UNCERTAIN_PHRASES)
+
+
+def crypto_field_text(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> str:
+    direct = crypto_record_field_text(raw, key)
+    if direct:
+        return direct
+    values = [value for item in items if (value := crypto_record_field_text(item, key))]
+    return ", ".join(values) if values else "unknown"
+
+
+def crypto_items_text(items: List[Dict[str, Any]]) -> str:
+    details: List[str] = []
+    for idx, item in enumerate(items, start=1):
+        label = crypto_record_field_text(item, "asset") or crypto_record_field_text(item, "exchange_or_wallet") or f"item {idx}"
+        context = crypto_item_context_text(item)
+        suffix = f", {context}" if context else ""
+        details.append(
+            f"{label}: event {crypto_record_field_text(item, 'event_type') or 'unknown'}, "
+            f"acquired {crypto_record_field_text(item, 'acquired_date') or 'unknown'}, "
+            f"disposed {crypto_record_field_text(item, 'disposed_date') or 'unknown'}, "
+            f"quantity {crypto_item_amount_text(item, 'quantity')}, "
+            f"cost base {crypto_item_amount_text(item, 'cost_base', money=True)}, "
+            f"proceeds {crypto_item_amount_text(item, 'capital_proceeds', money=True)}, "
+            f"rewards {crypto_item_amount_text(item, 'rewards_income', money=True)}"
+            f"{suffix}"
+        )
+    return " | ".join(details)
+
+
+def crypto_item_context_text(item: Dict[str, Any]) -> str:
+    parts: List[str] = []
+    for key, label in (
+        ("exchange_or_wallet", "exchange/wallet"),
+        ("transfer_between_wallets", "own-wallet transfer"),
+        ("wallet_records", "records"),
+        ("ownership_entity", "owner/entity"),
+        ("business_use", "business use"),
+        ("private_use", "private use"),
+    ):
+        value = crypto_record_field_text(item, key)
+        if value:
+            parts.append(f"{label} {value}")
+    return ", ".join(parts)
+
+
+def crypto_amount_field_text(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str, money: bool = False) -> str:
+    if crypto_declines_workflow(raw.get(key)):
+        return display_value(raw.get(key))
+    if key == "quantity" and crypto_quantities_are_item_specific(raw, items):
+        return "item-specific"
+    amount = crypto_amount_value(raw, items, key)
+    return money_text(amount) if money else crypto_amount_text(amount)
+
+
+def crypto_item_amount_text(item: Dict[str, Any], key: str, money: bool = False) -> str:
+    if crypto_declines_workflow(item.get(key)):
+        return display_value(item.get(key))
+    amount = crypto_money_value(item.get(key))
+    return money_text(amount) if money else crypto_amount_text(amount)
+
+
+def crypto_record_field_text(record: Dict[str, Any], key: str) -> str:
+    if crypto_field_absence_value(key, record.get(key)):
+        return ""
+    return display_value(record.get(key))
+
+
+def crypto_decline_signal_text(raw: Dict[str, Any]) -> str:
+    signals = raw.get(CRYPTO_DECLINE_SIGNAL_KEY)
+    if not isinstance(signals, list):
+        return ""
+    return ", ".join(display_value(signal) for signal in signals if display_value(signal))
+
+
+def crypto_amount_text(value: Optional[float]) -> str:
+    return "unknown" if value is None else f"{value:.8g}"
+
+
+def crypto_bool_text(value: Any) -> str:
     return display_value(value) if not is_missing(value) else "unknown"
+
+
+def crypto_bool_field_text(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> str:
+    if not is_missing(raw.get(key)) and not crypto_field_absence_value(key, raw.get(key)):
+        return crypto_bool_text(raw.get(key))
+    values: List[str] = []
+    seen: Set[str] = set()
+    for item in items:
+        if is_missing(item.get(key)) or crypto_field_absence_value(key, item.get(key)):
+            continue
+        value = crypto_bool_text(item.get(key))
+        if value in seen:
+            continue
+        seen.add(value)
+        values.append(value)
+    return ", ".join(values) if values else "unknown"
+
+
+def crypto_tab_text(evidence: List[str]) -> str:
+    if evidence:
+        return f"Crypto workflow needs {', '.join(evidence)} before accountant review."
+    return "Crypto disposals, swaps, exchanges, conversions, rewards, transfers, wallet records, and cost base stay accountant review before manual copy."
 
 
 def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
@@ -2375,18 +3845,20 @@ def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
         "tfn_amount_withheld": answers.get("ess_tfn_amount_withheld"),
         "items": answers.get("ess_items"),
     }
-    flat_values = {key: value for key, value in fields.items() if has_meaningful_value(value)}
+    flat_values = {key: value for key, value in fields.items() if has_meaningful_ess_flat_value(key, value)}
+    flat_declines = ess_decline_values(fields)
     if not isinstance(raw, dict):
-        return flat_values
+        return ess_values_with_declines(flat_values, flat_declines)
     if not has_meaningful_value(raw):
-        return flat_values
+        return ess_values_with_declines(flat_values, flat_declines)
+    raw_declines = ess_decline_values(raw)
     merged = dict(flat_values)
     for key, value in raw.items():
         if has_meaningful_ess_override(key, value):
             merged[key] = value
         elif key not in merged and has_explicit_ess_evidence_gap(key, value):
             merged[key] = value
-    return merged
+    return ess_values_with_declines(merged, {**flat_declines, **raw_declines})
 
 
 def ess_rows(raw: Any) -> List[Dict[str, Any]]:
@@ -2405,7 +3877,8 @@ def ess_rows(raw: Any) -> List[Dict[str, Any]]:
     statement_evidence = ess_statement_missing(statement) or ess_items_need_statement_evidence(items)
     amount_conflict = ess_amount_conflict(raw, items)
     amount_evidence = ess_amounts_need_evidence(raw, items)
-    status = "Evidence" if statement_evidence or amount_conflict or amount_evidence else "Accountant review"
+    decline_evidence = ess_decline_contradiction(raw, items)
+    status = "Evidence" if statement_evidence or amount_conflict or amount_evidence or decline_evidence else "Accountant review"
     item_text = ess_items_text(items)
     employer = ess_employer_text(raw, items)
     answer = (
@@ -2417,7 +3890,10 @@ def ess_rows(raw: Any) -> List[Dict[str, Any]]:
     )
     if item_text:
         answer = f"{answer}; items {item_text}"
-    tab_text = ess_tab_text(statement_evidence, amount_conflict, amount_evidence)
+    decline_text = ess_decline_signal_text(raw, items)
+    if decline_text:
+        answer = f"{answer}; decline signals {decline_text}"
+    tab_text = ess_tab_text(statement_evidence, amount_conflict, amount_evidence, decline_evidence)
     return [
         guide_row(
             "ESS",
@@ -2447,9 +3923,24 @@ def has_meaningful_ess_item(item: Dict[str, Any]) -> bool:
 def has_meaningful_ess_signal(key: str, value: Any) -> bool:
     if key in ESS_AMOUNT_FIELDS and isinstance(value, bool):
         return False
+    if key in ESS_SOURCE_KEY_FACTS and (
+        ess_source_declines_workflow(key, value) or ess_field_absence_value(key, value)
+    ):
+        return False
     if contains_unknown(value):
         return False
     return has_meaningful_ess_value(value)
+
+
+def has_meaningful_ess_flat_value(key: str, value: Any) -> bool:
+    if key in ESS_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    source_key = key.removeprefix("ess_")
+    if source_key in ESS_SOURCE_KEY_FACTS and (
+        ess_source_declines_workflow(source_key, value) or ess_field_absence_value(source_key, value)
+    ):
+        return False
+    return has_meaningful_value(value)
 
 
 def has_meaningful_ess_override(key: str, value: Any) -> bool:
@@ -2457,17 +3948,59 @@ def has_meaningful_ess_override(key: str, value: Any) -> bool:
         return bool(ess_item_values(value))
     if not has_meaningful_value(value) or contains_unknown(value):
         return False
+    if key in ESS_SOURCE_KEY_FACTS and (
+        ess_source_declines_workflow(key, value) or ess_field_absence_value(key, value)
+    ):
+        return False
     if key in ESS_AMOUNT_FIELDS and isinstance(value, bool):
         return False
     return True
 
 
 def has_explicit_ess_evidence_gap(key: str, value: Any) -> bool:
+    if key in ESS_SOURCE_KEY_FACTS and (
+        ess_source_declines_workflow(key, value) or ess_field_absence_value(key, value)
+    ):
+        return False
     if key not in ("statement", *ESS_AMOUNT_FIELDS):
         return False
     if key in ESS_AMOUNT_FIELDS and isinstance(value, bool):
         return False
     return has_meaningful_value(value) and contains_unknown(value)
+
+
+def ess_values_with_declines(values: Dict[str, Any], declines: Dict[str, Any]) -> Dict[str, Any]:
+    if not declines or not ess_has_facts(values):
+        return values
+    merged = dict(values)
+    signals: List[str] = []
+    for key, value in declines.items():
+        signals.append(f"{key} {display_value(value)}")
+        if not has_meaningful_ess_signal(key, merged.get(key)):
+            merged[key] = value
+    merged[ESS_DECLINE_SIGNAL_KEY] = signals
+    return merged
+
+
+def ess_decline_values(record: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        key.removeprefix("ess_"): value
+        for key, value in record.items()
+        if key.removeprefix("ess_") in ESS_SOURCE_KEY_FACTS
+        and ess_source_declines_workflow(key.removeprefix("ess_"), value)
+    }
+
+
+def ess_has_facts(record: Dict[str, Any]) -> bool:
+    if ess_item_values(record.get("items")):
+        return True
+    return any(
+        has_meaningful_ess_signal(key, value) or has_explicit_ess_evidence_gap(key, value)
+        for key, value in record.items()
+        if key not in ("items", ESS_DECLINE_SIGNAL_KEY)
+        and not ess_source_declines_workflow(key, value)
+        and not ess_field_absence_value(key, value)
+    )
 
 
 def ess_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> Optional[float]:
@@ -2523,7 +4056,21 @@ def ess_money_value(value: Any) -> Optional[float]:
         return None
 
 
-def ess_tab_text(statement_evidence: bool, amount_conflict: bool, amount_evidence: bool) -> str:
+def ess_tab_text(
+    statement_evidence: bool,
+    amount_conflict: bool,
+    amount_evidence: bool,
+    decline_evidence: bool = False,
+) -> str:
+    if decline_evidence:
+        evidence = ["no-ESS answer with ESS facts"]
+        if amount_conflict:
+            evidence.append("corrected amount totals")
+        if statement_evidence:
+            evidence.append("ESS statement evidence")
+        if amount_evidence:
+            evidence.append("numeric amount evidence")
+        return f"ESS discounts need {', '.join(evidence)} before accountant review."
     if amount_conflict and statement_evidence:
         return "ESS discounts need ESS statement evidence and corrected amount totals before accountant review."
     if amount_conflict:
@@ -2554,6 +4101,30 @@ def ess_items_need_statement_evidence(items: List[Dict[str, Any]]) -> bool:
     return any(ess_statement_missing(item.get("statement")) for item in items)
 
 
+def ess_decline_contradiction(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return ess_declines_with_facts(raw) or any(ess_declines_with_facts(item) for item in items)
+
+
+def ess_declines_with_facts(record: Dict[str, Any]) -> bool:
+    if record.get(ESS_DECLINE_SIGNAL_KEY):
+        return True
+    if not ess_decline_values(record):
+        return False
+    return ess_has_facts(record)
+
+
+def ess_decline_signal_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
+    signals = raw.get(ESS_DECLINE_SIGNAL_KEY)
+    values = [display_value(signal) for signal in signals if display_value(signal)] if isinstance(signals, list) else []
+    for idx, item in enumerate(items, start=1):
+        values.extend(
+            f"item {idx} {key} {display_value(value)}"
+            for key, value in ess_decline_values(item).items()
+            if display_value(value)
+        )
+    return ", ".join(values)
+
+
 def ess_items_text(items: List[Dict[str, Any]]) -> str:
     details: List[str] = []
     for idx, item in enumerate(items, start=1):
@@ -2579,11 +4150,19 @@ def ess_employer_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
 
 
 def ess_label_text(raw: Dict[str, Any]) -> str:
-    return display_value(raw.get("employer")) or display_value(raw.get("scheme")) or display_value(raw.get("provider"))
+    return ess_display_text(raw, "employer") or ess_display_text(raw, "scheme") or ess_display_text(raw, "provider")
+
+
+def ess_display_text(raw: Dict[str, Any], key: str) -> str:
+    if ess_field_absence_value(key, raw.get(key)):
+        return ""
+    return display_value(raw.get(key))
 
 
 def has_ess_inputs(raw: Any) -> bool:
     if not isinstance(raw, dict):
+        return False
+    if ess_declines_without_facts(raw):
         return False
     if ess_item_values(raw.get("items")):
         return True
@@ -2603,11 +4182,32 @@ def has_meaningful_ess_statement(value: Any) -> bool:
     return not ess_statement_declines_workflow(value)
 
 
+def ess_declines_without_facts(raw: Dict[str, Any]) -> bool:
+    if not ess_decline_values(raw):
+        return False
+    return not ess_has_facts(raw)
+
+
 def ess_statement_declines_workflow(statement: Any) -> bool:
     if not isinstance(statement, str):
         return False
     lowered = statement.strip().lower()
     return lowered in ESS_DECLINE_PHRASES
+
+
+def ess_source_declines_workflow(key: str, value: Any) -> bool:
+    if ess_field_absence_value(key, value):
+        return False
+    return ess_statement_declines_workflow(value)
+
+
+def ess_field_absence_value(key: str, value: Any) -> bool:
+    if key == "statement" or not isinstance(value, str) or contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    if lowered in {"no ess", "no employee share scheme", "no employee share schemes"}:
+        return False
+    return lowered in GENERIC_FIELD_ABSENCE_PHRASES
 
 
 def has_meaningful_ess_value(value: Any) -> bool:

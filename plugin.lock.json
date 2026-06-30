@@ -57,7 +57,7 @@
         "type": "local",
         "path": "skills/crypto-assets"
       },
-      "integrity": "sha256:72c0ff412a1e6dbd0790bd12408d9a8afc7fdf1e3767da4344cfcb00eefde9ce"
+      "integrity": "sha256:f9c9bb1dae3c6ed7e5f26f7ffe0e21a3b1a511e2cfaae0acf7522dcfbcfbb647"
     },
     {
       "id": "employment-deductions",
@@ -84,7 +84,7 @@
         "type": "local",
         "path": "skills/individual-return"
       },
-      "integrity": "sha256:766bc846ce83871a16d8e43e50add2a4a9eab4c2b57375a5d16c778052673fd6"
+      "integrity": "sha256:22258f8072c38fdc345b60e92ab9909aba8bbe56126150e86eaa285e3580c04d"
     },
     {
       "id": "payg-employer",
@@ -147,7 +147,7 @@
         "type": "local",
         "path": "skills/taxmate-australia"
       },
-      "integrity": "sha256:fda363b12588ead34069562c0e8a2ef43399e22477a48900bbcfd895ac2500b7"
+      "integrity": "sha256:0f3a2387fc39f89a8f7c0b12c13307f24fb2ee942171f0d955f922135cccfcc1"
     },
     {
       "id": "taxpack",

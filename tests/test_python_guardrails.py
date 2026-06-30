@@ -379,7 +379,8 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("feat: add ETP and lump sum workflow", titles)
         self.assertNotIn("feat: add foreign income workflow", titles)
         self.assertNotIn("feat: add PSI deep workflow", titles)
-        self.assertEqual(8, len(issues))
+        self.assertNotIn("feat: add crypto CGT workflow", titles)
+        self.assertEqual(7, len(issues))
         for item in issues:
             self.assertIn("Omitted from V1", item["body"])
             self.assertIn("prep-only", item["body"])
@@ -398,6 +399,7 @@ class IndividualIntakeTests(unittest.TestCase):
                 "Complex income",
                 "Foreign income",
                 "PSI",
+                "Crypto",
                 "ABN",
                 "BAS",
                 "Deductions",
@@ -429,6 +431,19 @@ class IndividualIntakeTests(unittest.TestCase):
                 "psi_80_percent_test",
                 "psi_unrelated_clients_test",
                 "psi_business_structure",
+                "crypto_event_type",
+                "crypto_exchange_or_wallet",
+                "crypto_asset",
+                "crypto_quantity",
+                "crypto_acquired_date",
+                "crypto_disposed_date",
+                "crypto_cost_base",
+                "crypto_capital_proceeds",
+                "crypto_rewards_income",
+                "crypto_wallet_records",
+                "crypto_ownership_entity",
+                "crypto_business_use",
+                "crypto_private_use",
             }.issubset(keys)
         )
 
@@ -531,11 +546,21 @@ class IndividualIntakeTests(unittest.TestCase):
     def test_no_complex_payment_answers_do_not_render_workflow_rows(self) -> None:
         cases = [
             {"etp_statement": "no etp"},
+            {"etp_payment_type": "no etp"},
+            {"etp_taxable_component": "no etp"},
             {"lump_sum_arrears_statement": "no lump sum in arrears"},
+            {"lump_sum_arrears_amount": "no lump sum in arrears"},
             {"super_income_statement": "no super income stream"},
+            {"super_income_payment_kind": "no super income stream"},
             {"etp": {"statement": "no employment termination payments"}},
+            {"etp": {"statement": "I dont have an ETP"}},
+            {"etp": {"payment_type": "no employment termination payments"}},
             {"lump_sum_arrears": {"statement": "not applicable"}},
+            {"lump_sum_arrears": {"statement": "I dont have a lump sum in arrears"}},
+            {"lump_sum_arrears": {"amount": "no lump sum in arrears"}},
             {"super_income": {"statement": "no super lump sums"}},
+            {"super_income": {"statement": "I dont have a super income stream"}},
+            {"super_income": {"payment_kind": "no super lump sums"}},
         ]
         for answers in cases:
             with self.subTest(answers=answers):
@@ -543,6 +568,8 @@ class IndividualIntakeTests(unittest.TestCase):
                 rendered_numbers = {row["number"] for row in payload["items"]}
 
                 self.assertFalse({"ETP", "LUMP-ARREARS", "SUPER-INCOME"} & rendered_numbers)
+                for key in set(answers) & set(taxmate_intake.REVIEWABLE_COMPLEX_PAYMENT_FIELDS):
+                    self.assertNotIn(key, rendered_numbers)
 
     def test_complex_payment_declines_are_group_specific(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
@@ -555,15 +582,15 @@ class IndividualIntakeTests(unittest.TestCase):
 
     def test_complex_payment_no_answer_with_amount_stays_evidence(self) -> None:
         cases = [
-            ("ETP", "ETP needs statement evidence before accountant review.", {"etp_statement": "no etp", "etp_taxable_component": 100}),
+            ("ETP", "no-payment answer with payment facts", {"etp_statement": "no etp", "etp_taxable_component": 100}),
             (
                 "LUMP-ARREARS",
-                "Lump sum in arrears needs statement evidence before accountant review.",
+                "no-payment answer with payment facts",
                 {"lump_sum_arrears_statement": "no lump sum in arrears", "lump_sum_arrears_amount": 100, "lump_sum_arrears_years": "2024-25"},
             ),
             (
                 "SUPER-INCOME",
-                "Super income needs statement evidence before accountant review.",
+                "no-payment answer with payment facts",
                 {"super_income_statement": "no super income stream", "super_income_stream_taxable_amount": 100},
             ),
         ]
@@ -573,12 +600,13 @@ class IndividualIntakeTests(unittest.TestCase):
                 row = next(item for item in payload["items"] if item["number"] == number)
 
                 self.assertEqual("Evidence", row["status"])
-                self.assertEqual(tab_text, row["tab_text"])
+                self.assertIn(tab_text, row["tab_text"])
                 self.assertIn("100.00", row["answer"])
 
     def test_complex_payment_missing_statement_phrases_stay_evidence(self) -> None:
         cases = [
             ("ETP", {"etp": {"statement": "statement not provided", "taxable_component": 100}}),
+            ("ETP", {"etp": {"statement": "I dont have the ETP payment summary", "taxable_component": 100}}),
             (
                 "LUMP-ARREARS",
                 {"lump_sum_arrears": {"statement": "do not have statement", "amount": 100, "payment_years": "2024-25"}},
@@ -721,9 +749,12 @@ class IndividualIntakeTests(unittest.TestCase):
     def test_no_foreign_income_answers_do_not_render_workflow_row(self) -> None:
         cases = [
             {"foreign_income_statement": "no foreign income"},
+            {"foreign_income_country": "no foreign income"},
+            {"foreign_income_amount": "no foreign income"},
             {"foreign_income_statement": "I had no foreign income this year"},
             {"foreign_income_statement": "I do not have any foreign income"},
             {"foreign_income_statement": "I don't have foreign income"},
+            {"foreign_income_statement": "I dont have foreign income"},
             {"foreign_income_statement": "no foreign employment"},
             {"foreign_income_statement": "not applicable"},
             {"foreign_income": {"statement": "no foreign pensions"}},
@@ -732,13 +763,18 @@ class IndividualIntakeTests(unittest.TestCase):
             {"foreign_income_statement": "no foreign income", "foreign_income_tax_offset_claim": "no offset"},
             {"foreign_income_statement": "no foreign income", "foreign_employment_exempt_claim": "no exemption"},
             {"foreign_income": {"statement": "no foreign income", "foreign_tax_offset_claim": "not claiming"}},
+            {"foreign_income": {"country": "no foreign income"}},
+            {"foreign_income": {"amount": "no foreign income"}},
             {"foreign_income": {"statement": "no foreign income", "foreign_employment_exempt_claim": "no foreign employment exemption"}},
         ]
         for answers in cases:
             with self.subTest(answers=answers):
                 payload = taxmate_intake.answers_to_pack_payload(answers)
+                rendered_numbers = {row["number"] for row in payload["items"]}
 
-                self.assertFalse(any(row["number"] == "FOREIGN-INCOME" for row in payload["items"]))
+                self.assertNotIn("FOREIGN-INCOME", rendered_numbers)
+                for key in set(answers) & set(taxmate_intake.REVIEWABLE_FOREIGN_INCOME_FIELDS):
+                    self.assertNotIn(key, rendered_numbers)
 
     def test_foreign_income_decline_tokens_are_exact(self) -> None:
         cases = [
@@ -876,6 +912,7 @@ class IndividualIntakeTests(unittest.TestCase):
         cases = [
             {"foreign_income_statement": "statement not provided", "foreign_income_amount": 100, "foreign_income_residency_status": "resident"},
             {"foreign_income": {"statement": "I do not have the foreign income statement", "amount": 100, "residency_status": "resident"}},
+            {"foreign_income": {"statement": "I dont have the foreign income statement", "amount": 100, "residency_status": "resident"}},
             {"foreign_income_items": [{"statement": "payment summary not held", "country": "US", "amount": 100, "residency_status": "resident"}]},
             {"foreign_income_statement": "no foreign income statement"},
             {"foreign_income_statement": "no foreign pension statement"},
@@ -1045,33 +1082,82 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("foreign tax paid evidence", row["tab_text"])
 
     def test_foreign_income_nested_negative_does_not_clear_flat_offset_claim(self) -> None:
-        for nested_claim in [False, "no", "not claiming", "will not claim", "no offset", "no foreign income tax offset"]:
-            with self.subTest(nested_claim=nested_claim):
+        flat_claims = [(True, "true"), ("yes", "yes"), ("claim", "claim")]
+        nested_claims = [False, "no", "not claiming", "will not claim", "no offset", "no foreign income tax offset"]
+        for flat_claim, expected_claim in flat_claims:
+            for nested_claim in nested_claims:
+                with self.subTest(flat_claim=flat_claim, nested_claim=nested_claim):
+                    payload = taxmate_intake.answers_to_pack_payload(
+                        {
+                            "foreign_income_tax_offset_claim": flat_claim,
+                            "foreign_income": {
+                                "statement": "statement held",
+                                "country": "US",
+                                "amount": 100,
+                                "exchange_rate": 0.66,
+                                "residency_status": "Australian resident",
+                                "foreign_tax_offset_claim": nested_claim,
+                            },
+                        }
+                    )
+                    row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+                    self.assertEqual("Evidence", row["status"])
+                    self.assertIn(f"foreign tax offset claim {expected_claim}", row["answer"])
+                    self.assertIn("foreign tax paid evidence", row["tab_text"])
+
+    def test_foreign_income_positive_offset_strings_need_tax_paid(self) -> None:
+        for claim in ["yes", "claim", "will claim"]:
+            with self.subTest(claim=claim):
                 payload = taxmate_intake.answers_to_pack_payload(
                     {
-                        "foreign_income_tax_offset_claim": True,
+                        "foreign_income_tax_offset_claim": claim,
                         "foreign_income": {
                             "statement": "statement held",
                             "country": "US",
                             "amount": 100,
                             "exchange_rate": 0.66,
                             "residency_status": "Australian resident",
-                            "foreign_tax_offset_claim": nested_claim,
                         },
                     }
                 )
                 row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
 
                 self.assertEqual("Evidence", row["status"])
-                self.assertIn("foreign tax offset claim true", row["answer"])
+                self.assertIn(f"foreign tax offset claim {claim}", row["answer"])
                 self.assertIn("foreign tax paid evidence", row["tab_text"])
 
     def test_foreign_income_nested_negative_does_not_clear_flat_exemption_claim(self) -> None:
-        for nested_claim in [False, "no", "not claiming", "no exemption", "no foreign employment exemption"]:
-            with self.subTest(nested_claim=nested_claim):
+        flat_claims = [(True, "true"), ("yes", "yes"), ("exempt", "exempt")]
+        nested_claims = [False, "no", "not claiming", "no exemption", "no foreign employment exemption"]
+        for flat_claim, expected_claim in flat_claims:
+            for nested_claim in nested_claims:
+                with self.subTest(flat_claim=flat_claim, nested_claim=nested_claim):
+                    payload = taxmate_intake.answers_to_pack_payload(
+                        {
+                            "foreign_employment_exempt_claim": flat_claim,
+                            "foreign_income": {
+                                "statement": "statement held",
+                                "country": "US",
+                                "amount": 100,
+                                "foreign_tax_paid": 5,
+                                "exchange_rate": 0.66,
+                                "residency_status": "Australian resident",
+                                "foreign_employment_exempt_claim": nested_claim,
+                            },
+                        }
+                    )
+                    row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+                    self.assertEqual("Accountant review", row["status"])
+                    self.assertIn(f"foreign employment exemption claim {expected_claim}", row["answer"])
+
+    def test_foreign_income_positive_exemption_strings_are_preserved(self) -> None:
+        for claim in ["yes", "exempt", "will claim"]:
+            with self.subTest(claim=claim):
                 payload = taxmate_intake.answers_to_pack_payload(
                     {
-                        "foreign_employment_exempt_claim": True,
+                        "foreign_employment_exempt_claim": claim,
                         "foreign_income": {
                             "statement": "statement held",
                             "country": "US",
@@ -1079,14 +1165,13 @@ class IndividualIntakeTests(unittest.TestCase):
                             "foreign_tax_paid": 5,
                             "exchange_rate": 0.66,
                             "residency_status": "Australian resident",
-                            "foreign_employment_exempt_claim": nested_claim,
                         },
                     }
                 )
                 row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
 
                 self.assertEqual("Accountant review", row["status"])
-                self.assertIn("foreign employment exemption claim true", row["answer"])
+                self.assertIn(f"foreign employment exemption claim {claim}", row["answer"])
 
     def test_foreign_income_negative_offset_phrases_do_not_need_tax_paid(self) -> None:
         cases = [
@@ -1275,7 +1360,7 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("foreign tax paid 10.00", row["answer"])
         self.assertNotIn("foreign tax paid evidence", row["tab_text"])
 
-    def test_foreign_income_item_offset_claim_accepts_top_level_tax_paid_evidence(self) -> None:
+    def test_foreign_income_item_offset_claim_needs_item_tax_paid_evidence(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
                 "foreign_income": {
@@ -1295,10 +1380,41 @@ class IndividualIntakeTests(unittest.TestCase):
         )
         row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
 
-        self.assertEqual("Accountant review", row["status"])
-        self.assertEqual("Foreign income needs source-backed accountant review.", row["tab_text"])
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("foreign tax paid evidence", row["tab_text"])
         self.assertIn("foreign tax paid 10.00", row["answer"])
-        self.assertNotIn("foreign tax paid evidence", row["tab_text"])
+
+    def test_foreign_income_item_offset_claims_do_not_share_top_level_tax_paid(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "foreign income statement held",
+                    "residency_status": "Australian resident",
+                    "foreign_tax_paid": 100,
+                    "items": [
+                        {
+                            "country": "NZ",
+                            "income_type": "employment",
+                            "amount": 1000,
+                            "exchange_rate": 0.92,
+                            "foreign_tax_offset_claim": True,
+                        },
+                        {
+                            "country": "US",
+                            "income_type": "dividend",
+                            "amount": 500,
+                            "exchange_rate": 0.66,
+                            "foreign_tax_offset_claim": True,
+                        },
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("foreign tax paid evidence", row["tab_text"])
+        self.assertIn("foreign tax paid 100.00", row["answer"])
 
     def test_foreign_income_top_level_item_total_conflicts_stay_evidence(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
@@ -1569,6 +1685,7 @@ class IndividualIntakeTests(unittest.TestCase):
             {"psi_results_test": "no personal services income"},
             {"psi_contract_evidence": "I do not have personal services income"},
             {"psi": {"contract_evidence": "I don't have PSI"}},
+            {"psi": {"contract_evidence": "I dont have PSI"}},
             {"psi": {"income": "no PSI"}},
             {"psi": {"business_structure": "no personal services income"}},
             {"psi": {"contract_evidence": "not applicable"}},
@@ -1584,7 +1701,7 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertNotIn("psi_results_test", rendered_numbers)
 
     def test_psi_document_denial_stays_evidence(self) -> None:
-        for statement in ["no PSI contract", "no personal services income invoice"]:
+        for statement in ["no PSI contract", "no personal services income invoice", "I dont have the PSI contract"]:
             with self.subTest(statement=statement):
                 payload = taxmate_intake.answers_to_pack_payload({"psi_contract_evidence": statement})
                 row = next(item for item in payload["items"] if item["number"] == "PSI")
@@ -1642,6 +1759,7 @@ class IndividualIntakeTests(unittest.TestCase):
         cases = [
             {"psi": {"income": "about $100", "contract_evidence": "contracts held"}},
             {"psi": {"income": 100, "contract_evidence": "contracts held", "results_test": "unknown"}},
+            {"psi": {"income": 100, "contract_evidence": "contracts held", "results_test": "maybe yes"}},
             {"psi": {"income": 100, "contract_evidence": "contracts held", "results_test": True}},
             {"psi": {"income": 100, "contract_evidence": "contract not provided", "results_test": True}},
         ]
@@ -1716,6 +1834,1644 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn(taxmate_intake.ATO_PSI_SOURCE, rules)
         self.assertNotIn("PSI deep", out_of_scope)
 
+    def test_crypto_workflow_renders_source_backed_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("Event sale", row["answer"])
+        self.assertIn("asset ETH", row["answer"])
+        self.assertIn("cost base 3000.00", row["answer"])
+        self.assertIn("capital proceeds 4200.00", row["answer"])
+        self.assertIn("rewards income 0.00", row["answer"])
+        self.assertIn("own-wallet transfer false", row["answer"])
+        self.assertIn("business use false", row["answer"])
+        self.assertIn("private use true", row["answer"])
+        for url in taxmate_intake.ATO_CRYPTO_SOURCES:
+            self.assertIn(url, row["source_urls"])
+
+    def test_no_crypto_answers_do_not_render_workflow_or_base_rows(self) -> None:
+        cases = [
+            {"crypto_event_type": "no crypto"},
+            {"crypto_event_type": "no crypto assets"},
+            {"crypto_asset": "no cryptocurrency"},
+            {"crypto_quantity": "no crypto"},
+            {"crypto_acquired_date": "not applicable"},
+            {"crypto_disposed_date": "n/a"},
+            {"crypto_cost_base": "no crypto"},
+            {"crypto_capital_proceeds": "no crypto"},
+            {"crypto_rewards_income": "no staking rewards"},
+            {"crypto_transfer_between_wallets": "no crypto"},
+            {"crypto_wallet_records": "no crypto"},
+            {"crypto_ownership_entity": "not applicable"},
+            {"crypto_business_use": "no crypto assets"},
+            {"crypto_private_use": "no crypto assets"},
+            {"crypto": {"event_type": "I don't have crypto"}},
+            {"crypto": {"event_type": "I dont have crypto"}},
+            {"crypto": {"asset": "no digital currency"}},
+            {"crypto": {"wallet_records": "not applicable"}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                rendered_numbers = {row["number"] for row in payload["items"]}
+
+                self.assertNotIn("CRYPTO-CGT", rendered_numbers)
+                self.assertFalse(any(str(number).startswith("crypto_") for number in rendered_numbers))
+
+    def test_false_crypto_defaults_do_not_render_base_rows(self) -> None:
+        cases = [
+            {
+                "crypto_transfer_between_wallets": False,
+                "crypto_business_use": False,
+                "crypto_private_use": False,
+            },
+            {
+                "crypto_transfer_between_wallets": "false",
+                "crypto_business_use": "false",
+                "crypto_private_use": "no",
+            },
+            {
+                "crypto_transfer_between_wallets": "0",
+                "crypto_business_use": 0,
+                "crypto_private_use": "off",
+            },
+            {
+                "crypto_transfer_between_wallets": "unchecked",
+                "crypto_business_use": "unchecked",
+                "crypto_private_use": "unchecked",
+            },
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                rendered_numbers = {row["number"] for row in payload["items"]}
+
+                self.assertNotIn("CRYPTO-CGT", rendered_numbers)
+                self.assertNotIn("crypto_transfer_between_wallets", rendered_numbers)
+                self.assertNotIn("crypto_business_use", rendered_numbers)
+                self.assertNotIn("crypto_private_use", rendered_numbers)
+
+    def test_crypto_record_denials_stay_evidence(self) -> None:
+        for records in [
+            "no wallet records",
+            "no exchange records",
+            "I have no records",
+            "we have no exchange records",
+            "without any wallet records",
+            "missing transaction history",
+            "records not provided",
+            "do not have wallet records",
+            "don't have exchange records",
+            "dont have exchange records",
+            "I do not have wallet transaction history",
+        ]:
+            with self.subTest(records=records):
+                payload = taxmate_intake.answers_to_pack_payload({"crypto_wallet_records": records})
+                rows = {item["number"]: item for item in payload["items"]}
+
+                self.assertEqual("Evidence", rows["crypto_wallet_records"]["status"])
+                self.assertEqual("Evidence", rows["CRYPTO-CGT"]["status"])
+                self.assertIn("wallet or exchange records", rows["CRYPTO-CGT"]["tab_text"])
+
+    def test_crypto_record_no_disposal_note_is_not_missing_records(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto": {
+                    "event_type": "sale",
+                    "asset": "BTC",
+                    "exchange_or_wallet": "Exchange CSV",
+                    "quantity": 1,
+                    "acquired_date": "2025-07-01",
+                    "disposed_date": "2026-01-01",
+                    "cost_base": 100,
+                    "capital_proceeds": 300,
+                    "wallet_records": "records show no disposal outside the listed sale",
+                    "ownership_entity": "individual",
+                    "business_use": False,
+                    "private_use": True,
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertNotIn("wallet or exchange records", row["tab_text"])
+
+    def test_crypto_identity_denials_stay_evidence(self) -> None:
+        complete_sale = {
+            "event_type": "sale",
+            "asset": "BTC",
+            "exchange_or_wallet": "Exchange CSV",
+            "quantity": 1,
+            "acquired_date": "2025-07-01",
+            "disposed_date": "2026-01-01",
+            "cost_base": 100,
+            "capital_proceeds": 300,
+            "wallet_records": "records held",
+            "ownership_entity": "individual",
+            "business_use": False,
+            "private_use": True,
+        }
+        cases = [
+            ("asset and exchange/wallet identity evidence", {"exchange_or_wallet": "no exchange"}),
+            ("asset and exchange/wallet identity evidence", {"exchange_or_wallet": "no wallet"}),
+            ("asset and exchange/wallet identity evidence", {"exchange_or_wallet": "I do not have a wallet"}),
+            ("asset and exchange/wallet identity evidence", {"asset": "no asset"}),
+            ("ownership or entity evidence", {"ownership_entity": "no ownership entity"}),
+            ("ownership or entity evidence", {"ownership_entity": "missing owner"}),
+        ]
+        for expected_gap, override in cases:
+            with self.subTest(override=override):
+                payload = taxmate_intake.answers_to_pack_payload({"crypto": {**complete_sale, **override}})
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn(expected_gap, row["tab_text"])
+                self.assertNotIn("no-crypto answer with crypto facts", row["tab_text"])
+
+    def test_crypto_item_identity_denials_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto_items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "ETH",
+                        "exchange_or_wallet": "no wallet",
+                        "quantity": 1,
+                        "acquired_date": "2025-07-01",
+                        "disposed_date": "2026-01-01",
+                        "cost_base": 100,
+                        "capital_proceeds": 300,
+                        "wallet_records": "records held",
+                        "ownership_entity": "individual",
+                        "business_use": False,
+                        "private_use": True,
+                    }
+                ]
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("per-item crypto evidence", row["tab_text"])
+
+    def test_crypto_item_record_denials_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto_items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "BTC",
+                        "exchange_or_wallet": "Exchange CSV",
+                        "quantity": 1,
+                        "acquired_date": "2025-07-01",
+                        "disposed_date": "2026-01-01",
+                        "cost_base": 100,
+                        "capital_proceeds": 300,
+                        "wallet_records": "do not have wallet records",
+                        "ownership_entity": "individual",
+                        "business_use": False,
+                        "private_use": True,
+                    }
+                ]
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("per-item crypto evidence", row["tab_text"])
+
+    def test_no_crypto_plus_facts_stays_evidence(self) -> None:
+        cases = [
+            {"crypto_event_type": "no crypto", "crypto_asset": "BTC"},
+            {"crypto_asset": "no cryptocurrency", "crypto_cost_base": 100},
+            {"crypto_event_type": "no crypto", "crypto_asset": "unknown"},
+            {"crypto": {"event_type": "no crypto assets", "asset": "ETH"}},
+            {"crypto": {"event_type": "no crypto assets", "exchange_or_wallet": "unknown"}},
+            {"crypto": {"wallet_records": "not applicable", "capital_proceeds": 200}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("before accountant review", row["tab_text"])
+
+    def test_crypto_field_absence_is_not_no_crypto_contradiction(self) -> None:
+        complete_sale = {
+            "event_type": "sale",
+            "asset": "BTC",
+            "exchange_or_wallet": "Coinbase",
+            "quantity": 1,
+            "acquired_date": "2025-07-01",
+            "disposed_date": "2026-01-01",
+            "cost_base": 100,
+            "capital_proceeds": 200,
+            "wallet_records": "records held",
+            "ownership_entity": "self",
+            "business_use": False,
+            "private_use": True,
+        }
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"crypto": {**complete_sale, "rewards_income": "no staking rewards"}}
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertNotIn("no-crypto answer with crypto facts", row["tab_text"])
+        self.assertNotIn("decline signals", row["answer"])
+
+        evidence_cases = [
+            ("acquisition or disposal date evidence", {"acquired_date": "n/a"}),
+            ("wallet or exchange records", {"wallet_records": "not applicable"}),
+        ]
+        for expected_gap, override in evidence_cases:
+            with self.subTest(override=override):
+                payload = taxmate_intake.answers_to_pack_payload({"crypto": {**complete_sale, **override}})
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn(expected_gap, row["tab_text"])
+                self.assertNotIn("no-crypto answer with crypto facts", row["tab_text"])
+                self.assertNotIn("decline signals", row["answer"])
+
+    def test_crypto_item_no_crypto_plus_facts_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto_items": [
+                    {
+                        "event_type": "no crypto",
+                        "asset": "BTC",
+                        "exchange_or_wallet": "Exchange CSV",
+                        "quantity": 1,
+                        "acquired_date": "2025-07-01",
+                        "disposed_date": "2026-01-01",
+                        "cost_base": 100,
+                        "capital_proceeds": 300,
+                        "wallet_records": "records held",
+                        "ownership_entity": "individual",
+                        "business_use": False,
+                        "private_use": True,
+                    }
+                ]
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("no-crypto answer with crypto facts", row["tab_text"])
+
+    def test_nested_crypto_no_crypto_plus_item_facts_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto": {
+                    "event_type": "no crypto",
+                    "items": [
+                        {
+                            "event_type": "sale",
+                            "asset": "BTC",
+                            "exchange_or_wallet": "Exchange CSV",
+                            "quantity": 1,
+                            "acquired_date": "2025-07-01",
+                            "disposed_date": "2026-01-01",
+                            "cost_base": 100,
+                            "capital_proceeds": 300,
+                            "wallet_records": "records held",
+                            "ownership_entity": "individual",
+                            "transfer_between_wallets": False,
+                            "business_use": False,
+                            "private_use": True,
+                        }
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("no-crypto answer with crypto facts", row["tab_text"])
+        self.assertIn("items BTC", row["answer"])
+
+    def test_flat_no_crypto_plus_nested_facts_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto_event_type": "no crypto",
+                "crypto": {
+                    "event_type": "sale",
+                    "asset": "BTC",
+                    "exchange_or_wallet": "Exchange CSV",
+                    "quantity": 1,
+                    "acquired_date": "2025-07-01",
+                    "disposed_date": "2026-01-01",
+                    "cost_base": 100,
+                    "capital_proceeds": 300,
+                    "wallet_records": "records held",
+                    "ownership_entity": "individual",
+                    "transfer_between_wallets": False,
+                    "business_use": False,
+                    "private_use": True,
+                },
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("no-crypto answer with crypto facts", row["tab_text"])
+        self.assertIn("Event sale", row["answer"])
+        self.assertIn("decline signals event_type no crypto", row["answer"])
+        self.assertIn("asset BTC", row["answer"])
+
+    def test_flat_no_crypto_plus_flat_facts_keeps_contradiction_signal(self) -> None:
+        for field in taxmate_intake.CRYPTO_SOURCE_KEY_FACTS:
+            answers = {f"crypto_{field}": "no crypto"}
+            if field == "asset":
+                answers["crypto_event_type"] = "sale"
+            else:
+                answers["crypto_asset"] = "BTC"
+            with self.subTest(field=field):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("no-crypto answer with crypto facts", row["tab_text"])
+                self.assertIn("no crypto", row["answer"])
+
+    def test_nested_no_crypto_plus_nested_facts_keeps_contradiction_signal(self) -> None:
+        for field in taxmate_intake.CRYPTO_SOURCE_KEY_FACTS:
+            crypto = {field: "no crypto"}
+            if field == "asset":
+                crypto["event_type"] = "sale"
+            else:
+                crypto["asset"] = "BTC"
+            with self.subTest(field=field):
+                payload = taxmate_intake.answers_to_pack_payload({"crypto": crypto})
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("no-crypto answer with crypto facts", row["tab_text"])
+                self.assertIn("no crypto", row["answer"])
+
+    def test_crypto_same_field_flat_nested_conflicts_keep_decline_signal(self) -> None:
+        fact_values = {
+            "event_type": "sale",
+            "exchange_or_wallet": "Exchange CSV",
+            "asset": "BTC",
+            "quantity": 1,
+            "acquired_date": "2025-07-01",
+            "disposed_date": "2026-01-01",
+            "cost_base": 100,
+            "capital_proceeds": 300,
+            "rewards_income": 0,
+            "transfer_between_wallets": False,
+            "wallet_records": "records held",
+            "ownership_entity": "individual",
+            "business_use": False,
+            "private_use": True,
+        }
+        rendered_fact_text = {
+            "event_type": "Event sale",
+            "exchange_or_wallet": "exchange/wallet Exchange CSV",
+            "asset": "asset BTC",
+            "quantity": "quantity 1",
+            "acquired_date": "acquired 2025-07-01",
+            "disposed_date": "disposed 2026-01-01",
+            "cost_base": "cost base 100.00",
+            "capital_proceeds": "capital proceeds 300.00",
+            "rewards_income": "rewards income 0.00",
+            "transfer_between_wallets": "own-wallet transfer false",
+            "wallet_records": "records records held",
+            "ownership_entity": "owner/entity individual",
+            "business_use": "business use false",
+            "private_use": "private use true",
+        }
+        for field, fact in fact_values.items():
+            with self.subTest(flat_decline_field=field):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        f"crypto_{field}": "no crypto",
+                        "crypto": {**fact_values, field: fact},
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("no-crypto answer with crypto facts", row["tab_text"])
+                self.assertIn(rendered_fact_text[field], row["answer"])
+                self.assertIn(f"{field} no crypto", row["answer"])
+
+    def test_crypto_missing_or_ambiguous_facts_stay_evidence(self) -> None:
+        cases = [
+            {"crypto": {"event_type": "sale", "asset": "BTC", "wallet_records": "records held"}},
+            {
+                "crypto": {
+                    "event_type": "sale",
+                    "asset": "BTC",
+                    "exchange_or_wallet": "Exchange CSV",
+                    "quantity": "unknown",
+                    "acquired_date": "2025-07-01",
+                    "disposed_date": "2026-01-01",
+                    "cost_base": "about $100",
+                    "capital_proceeds": 300,
+                    "wallet_records": "records held",
+                    "ownership_entity": "individual",
+                    "business_use": False,
+                    "private_use": True,
+                }
+            },
+            {
+                "crypto": {
+                    "event_type": "swap",
+                    "asset": "ETH",
+                    "exchange_or_wallet": "wallet export",
+                    "quantity": 1,
+                    "acquired_date": "2025/07/01",
+                    "disposed_date": "2026-01-01",
+                    "cost_base": 100,
+                    "capital_proceeds": 300,
+                    "wallet_records": "records held",
+                    "ownership_entity": "individual",
+                    "business_use": False,
+                    "private_use": True,
+                }
+            },
+            {
+                "crypto": {
+                    "event_type": "sale",
+                    "asset": "ETH",
+                    "exchange_or_wallet": "wallet export",
+                    "quantity": 1,
+                    "acquired_date": "2025-07-01",
+                    "disposed_date": "2026-01-01",
+                    "cost_base": -100,
+                    "capital_proceeds": 300,
+                    "wallet_records": "records held",
+                    "ownership_entity": "individual",
+                    "business_use": False,
+                    "private_use": True,
+                }
+            },
+            {
+                "crypto": {
+                    "event_type": "staking rewards",
+                    "asset": "SOL",
+                    "exchange_or_wallet": "wallet export",
+                    "wallet_records": "records held",
+                    "ownership_entity": "individual",
+                    "business_use": False,
+                    "private_use": True,
+                }
+            },
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("before accountant review", row["tab_text"])
+
+    def test_crypto_exchange_and_conversion_events_require_disposal_facts(self) -> None:
+        for event_type in ["exchange", "exchanged BTC for ETH", "convert", "converted to SOL", "conversion"]:
+            with self.subTest(event_type=event_type):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "crypto": {
+                            "event_type": event_type,
+                            "asset": "BTC",
+                            "exchange_or_wallet": "Exchange CSV",
+                            "wallet_records": "records held",
+                            "ownership_entity": "individual",
+                            "business_use": False,
+                            "private_use": True,
+                        }
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("numeric proceeds, cost-base, quantity, or rewards evidence", row["tab_text"])
+                self.assertIn("acquisition or disposal date evidence", row["tab_text"])
+
+    def test_complete_crypto_exchange_stays_accountant_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto": {
+                    "event_type": "exchange BTC for ETH",
+                    "asset": "BTC",
+                    "exchange_or_wallet": "Exchange CSV",
+                    "quantity": 1,
+                    "acquired_date": "2025-07-01",
+                    "disposed_date": "2026-01-01",
+                    "cost_base": 100,
+                    "capital_proceeds": 300,
+                    "wallet_records": "records held",
+                    "ownership_entity": "individual",
+                    "business_use": False,
+                    "private_use": True,
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertNotIn("numeric proceeds, cost-base, quantity, or rewards evidence", row["tab_text"])
+        self.assertNotIn("acquisition or disposal date evidence", row["tab_text"])
+
+    def test_crypto_zero_amounts_and_false_booleans_are_preserved(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto": {
+                    "event_type": "sale",
+                    "asset": "BTC",
+                    "exchange_or_wallet": "Exchange CSV",
+                    "quantity": 0,
+                    "acquired_date": "2025-07-01",
+                    "disposed_date": "2026-01-01",
+                    "cost_base": 0,
+                    "capital_proceeds": 0,
+                    "rewards_income": 0,
+                    "transfer_between_wallets": False,
+                    "wallet_records": "records held",
+                    "ownership_entity": "individual",
+                    "business_use": False,
+                    "private_use": False,
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("quantity 0", row["answer"])
+        self.assertIn("cost base 0.00", row["answer"])
+        self.assertIn("capital proceeds 0.00", row["answer"])
+        self.assertIn("own-wallet transfer false", row["answer"])
+        self.assertIn("business use false", row["answer"])
+        self.assertIn("private use false", row["answer"])
+
+    def test_crypto_textual_use_flags_complete_context(self) -> None:
+        base = {
+            "event_type": "sale",
+            "asset": "BTC",
+            "exchange_or_wallet": "Exchange CSV",
+            "quantity": 1,
+            "acquired_date": "2025-07-01",
+            "disposed_date": "2026-01-01",
+            "cost_base": 100,
+            "capital_proceeds": 300,
+            "wallet_records": "records held",
+            "ownership_entity": "individual",
+            "business_use": "no",
+            "private_use": "yes",
+        }
+        cases = [
+            {"crypto": base},
+            {"crypto_items": [base]},
+            {"crypto": {**base, "transfer_between_wallets": "on"}},
+            {"crypto_items": [{**base, "transfer_between_wallets": "1"}]},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Accountant review", row["status"])
+                self.assertNotIn("business/private use context", row["tab_text"])
+                self.assertIn("business use no", row["answer"])
+                self.assertIn("private use yes", row["answer"])
+
+    def test_crypto_item_absence_values_do_not_create_amount_or_date_evidence(self) -> None:
+        base = {
+            "event_type": "sale",
+            "asset": "BTC",
+            "exchange_or_wallet": "Exchange CSV",
+            "quantity": 1,
+            "acquired_date": "2025-07-01",
+            "disposed_date": "2026-01-01",
+            "cost_base": 100,
+            "capital_proceeds": 300,
+            "wallet_records": "records held",
+            "ownership_entity": "individual",
+            "business_use": False,
+            "private_use": True,
+        }
+        cases = [
+            {"rewards_income": "no staking rewards"},
+            {"rewards_income": "n/a"},
+        ]
+        for extra in cases:
+            with self.subTest(extra=extra):
+                payload = taxmate_intake.answers_to_pack_payload({"crypto_items": [{**base, **extra}]})
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Accountant review", row["status"])
+                self.assertNotIn("per-item crypto evidence", row["tab_text"])
+                self.assertNotIn("numeric proceeds, cost-base, quantity, or rewards evidence", row["tab_text"])
+
+    def test_crypto_factless_item_absence_values_do_not_render_workflow(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto_items": [
+                    {
+                        "rewards_income": "no staking rewards",
+                        "disposed_date": "n/a",
+                    }
+                ]
+            }
+        )
+        rendered_numbers = {item["number"] for item in payload["items"]}
+
+        self.assertNotIn("CRYPTO-CGT", rendered_numbers)
+
+    def test_crypto_items_are_validated_individually(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto_items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "BTC",
+                        "exchange_or_wallet": "Exchange CSV",
+                        "quantity": 1,
+                        "acquired_date": "2025-07-01",
+                        "disposed_date": "2026-01-01",
+                        "cost_base": 100,
+                        "capital_proceeds": 300,
+                        "wallet_records": "records held",
+                        "ownership_entity": "individual",
+                        "business_use": False,
+                        "private_use": True,
+                    },
+                    {
+                        "quantity": 2,
+                        "cost_base": 200,
+                        "capital_proceeds": 400,
+                        "wallet_records": "records held",
+                    },
+                ]
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("per-item crypto evidence", row["tab_text"])
+        self.assertIn("item 2", row["answer"])
+
+    def test_crypto_top_level_and_item_amount_conflicts_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto": {
+                    "event_type": "sale",
+                    "asset": "BTC",
+                    "exchange_or_wallet": "Exchange CSV",
+                    "quantity": 10,
+                    "acquired_date": "2025-07-01",
+                    "disposed_date": "2026-01-01",
+                    "cost_base": 1000,
+                    "capital_proceeds": 3000,
+                    "wallet_records": "records held",
+                    "ownership_entity": "individual",
+                    "business_use": False,
+                    "private_use": True,
+                    "items": [
+                        {
+                            "event_type": "sale",
+                            "asset": "BTC",
+                            "exchange_or_wallet": "Exchange CSV",
+                            "quantity": 1,
+                            "acquired_date": "2025-07-01",
+                            "disposed_date": "2026-01-01",
+                            "cost_base": 100,
+                            "capital_proceeds": 300,
+                            "wallet_records": "records held",
+                            "ownership_entity": "individual",
+                            "business_use": False,
+                            "private_use": True,
+                        }
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("top-level and item amount reconciliation", row["tab_text"])
+
+    def test_crypto_multi_asset_quantities_stay_item_specific(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto": {
+                    "event_type": "sale",
+                    "exchange_or_wallet": "Exchange CSV",
+                    "quantity": 99,
+                    "cost_base": 400,
+                    "capital_proceeds": 700,
+                    "wallet_records": "exchange CSV covers all transactions",
+                    "ownership_entity": "individual",
+                    "transfer_between_wallets": False,
+                    "business_use": False,
+                    "private_use": True,
+                    "items": [
+                        {
+                            "asset": "BTC",
+                            "quantity": 1,
+                            "acquired_date": "2025-07-01",
+                            "disposed_date": "2026-01-01",
+                            "cost_base": 100,
+                            "capital_proceeds": 300,
+                        },
+                        {
+                            "asset": "ETH",
+                            "quantity": 2,
+                            "acquired_date": "2025-08-01",
+                            "disposed_date": "2026-02-01",
+                            "cost_base": 300,
+                            "capital_proceeds": 400,
+                        },
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("quantity item-specific", row["answer"])
+        self.assertNotIn("quantity 3", row["answer"])
+        self.assertNotIn("top-level and item amount reconciliation", row["tab_text"])
+
+    def test_crypto_same_asset_quantity_conflicts_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto": {
+                    "event_type": "sale",
+                    "asset": "BTC",
+                    "exchange_or_wallet": "Exchange CSV",
+                    "quantity": 99,
+                    "cost_base": 400,
+                    "capital_proceeds": 700,
+                    "wallet_records": "exchange CSV covers all transactions",
+                    "ownership_entity": "individual",
+                    "transfer_between_wallets": False,
+                    "business_use": False,
+                    "private_use": True,
+                    "items": [
+                        {
+                            "quantity": 1,
+                            "acquired_date": "2025-07-01",
+                            "disposed_date": "2026-01-01",
+                            "cost_base": 100,
+                            "capital_proceeds": 300,
+                        },
+                        {
+                            "quantity": 2,
+                            "acquired_date": "2025-08-01",
+                            "disposed_date": "2026-02-01",
+                            "cost_base": 300,
+                            "capital_proceeds": 400,
+                        },
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("quantity 3", row["answer"])
+        self.assertIn("top-level and item amount reconciliation", row["tab_text"])
+
+    def test_crypto_item_context_renders_when_top_level_missing(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto_items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "BTC",
+                        "exchange_or_wallet": "Exchange CSV",
+                        "quantity": 1,
+                        "acquired_date": "2025-07-01",
+                        "disposed_date": "2026-01-01",
+                        "cost_base": 100,
+                        "capital_proceeds": 300,
+                        "wallet_records": "records held",
+                        "ownership_entity": "individual",
+                        "transfer_between_wallets": False,
+                        "business_use": False,
+                        "private_use": True,
+                    }
+                ]
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("own-wallet transfer false", row["answer"])
+        self.assertIn("records records held", row["answer"])
+        self.assertIn("business use false", row["answer"])
+        self.assertIn("private use true", row["answer"])
+
+    def test_crypto_items_reuse_complete_top_level_use_context(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto": {
+                    "business_use": False,
+                    "private_use": True,
+                    "items": [
+                        {
+                            "event_type": "sale",
+                            "asset": "BTC",
+                            "exchange_or_wallet": "Exchange CSV",
+                            "quantity": 1,
+                            "acquired_date": "2025-07-01",
+                            "disposed_date": "2026-01-01",
+                            "cost_base": 100,
+                            "capital_proceeds": 300,
+                            "wallet_records": "records held",
+                            "ownership_entity": "individual",
+                            "transfer_between_wallets": False,
+                        }
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertNotIn("per-item crypto evidence", row["tab_text"])
+        self.assertIn("business use false", row["answer"])
+        self.assertIn("private use true", row["answer"])
+
+    def test_crypto_item_use_context_conflict_stays_visible(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto": {
+                    "business_use": False,
+                    "private_use": True,
+                    "items": [
+                        {
+                            "event_type": "sale",
+                            "asset": "BTC",
+                            "exchange_or_wallet": "Exchange CSV",
+                            "quantity": 1,
+                            "acquired_date": "2025-07-01",
+                            "disposed_date": "2026-01-01",
+                            "cost_base": 100,
+                            "capital_proceeds": 300,
+                            "wallet_records": "records held",
+                            "ownership_entity": "individual",
+                            "transfer_between_wallets": False,
+                            "business_use": True,
+                            "private_use": False,
+                        }
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("business/private use context", row["tab_text"])
+        self.assertIn("business use false", row["answer"])
+        self.assertIn("private use true", row["answer"])
+        self.assertIn("acquired 2025-07-01", row["answer"])
+        self.assertIn("disposed 2026-01-01", row["answer"])
+        self.assertIn("exchange/wallet Exchange CSV", row["answer"])
+        self.assertIn("business use true", row["answer"])
+        self.assertIn("private use false", row["answer"])
+
+    def test_crypto_items_reuse_top_level_records_and_context(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto": {
+                    "event_type": "sale",
+                    "asset": "BTC",
+                    "exchange_or_wallet": "Exchange CSV",
+                    "wallet_records": "exchange CSV covers all transactions",
+                    "ownership_entity": "individual",
+                    "transfer_between_wallets": False,
+                    "business_use": False,
+                    "private_use": True,
+                    "items": [
+                        {
+                            "quantity": 1,
+                            "acquired_date": "2025-07-01",
+                            "disposed_date": "2026-01-01",
+                            "cost_base": 100,
+                            "capital_proceeds": 300,
+                        }
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertNotIn("per-item crypto evidence", row["tab_text"])
+        self.assertNotIn("wallet or exchange records", row["tab_text"])
+        self.assertIn("records exchange CSV covers all transactions", row["answer"])
+
+    def test_crypto_item_explicit_context_gaps_override_top_level_context(self) -> None:
+        base = {
+            "event_type": "sale",
+            "asset": "BTC",
+            "exchange_or_wallet": "Exchange CSV",
+            "wallet_records": "exchange CSV covers all transactions",
+            "ownership_entity": "individual",
+            "transfer_between_wallets": False,
+            "business_use": False,
+            "private_use": True,
+        }
+        item = {
+            "quantity": 1,
+            "acquired_date": "2025-07-01",
+            "disposed_date": "2026-01-01",
+            "cost_base": 100,
+            "capital_proceeds": 300,
+        }
+        cases = [
+            {"wallet_records": "not applicable"},
+            {"ownership_entity": "unknown"},
+            {"asset": "n/a"},
+        ]
+        for explicit_gap in cases:
+            with self.subTest(explicit_gap=explicit_gap):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {"crypto": {**base, "items": [{**item, **explicit_gap}]}}
+                )
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("per-item crypto evidence", row["tab_text"])
+
+    def test_crypto_items_require_amounts_and_dates_under_top_level_events(self) -> None:
+        base = {
+            "asset": "BTC",
+            "exchange_or_wallet": "Exchange CSV",
+            "wallet_records": "exchange CSV covers all transactions",
+            "ownership_entity": "individual",
+            "business_use": False,
+            "private_use": True,
+        }
+        complete_sale_item = {
+            "asset": "BTC",
+            "quantity": 1,
+            "acquired_date": "2025-07-01",
+            "disposed_date": "2026-01-01",
+            "cost_base": 100,
+            "capital_proceeds": 300,
+        }
+        complete_reward_item = {"asset": "SOL", "rewards_income": 25}
+        cases = [
+            ("sale", complete_sale_item, {"asset": "ETH"}),
+            ("exchange BTC for ETH", complete_sale_item, {"asset": "ETH", "quantity": 2}),
+            ("staking rewards", complete_reward_item, {"asset": "SOL"}),
+        ]
+        for event_type, complete_item, incomplete_item in cases:
+            with self.subTest(event_type=event_type):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "crypto": {
+                            **base,
+                            "event_type": event_type,
+                            "items": [complete_item, incomplete_item],
+                        }
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("per-item crypto evidence", row["tab_text"])
+
+    def test_crypto_item_ambiguous_use_context_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto": {
+                    "business_use": False,
+                    "private_use": True,
+                    "items": [
+                        {
+                            "event_type": "sale",
+                            "asset": "BTC",
+                            "exchange_or_wallet": "Exchange CSV",
+                            "quantity": 1,
+                            "acquired_date": "2025-07-01",
+                            "disposed_date": "2026-01-01",
+                            "cost_base": 100,
+                            "capital_proceeds": 300,
+                            "wallet_records": "records held",
+                            "ownership_entity": "individual",
+                            "transfer_between_wallets": False,
+                            "business_use": "unknown",
+                        }
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("per-item crypto evidence", row["tab_text"])
+
+    def test_crypto_requires_both_top_level_use_context_flags(self) -> None:
+        for context in [{"business_use": False}, {"business_use": False, "private_use": None}]:
+            with self.subTest(context=context):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "crypto": {
+                            "event_type": "sale",
+                            "asset": "BTC",
+                            "exchange_or_wallet": "Exchange CSV",
+                            "quantity": 1,
+                            "acquired_date": "2025-07-01",
+                            "disposed_date": "2026-01-01",
+                            "cost_base": 100,
+                            "capital_proceeds": 300,
+                            "wallet_records": "records held",
+                            "ownership_entity": "individual",
+                            **context,
+                        }
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("business/private use context", row["tab_text"])
+                self.assertIn("business use false", row["answer"])
+                self.assertIn("private use unknown", row["answer"])
+
+    def test_crypto_requires_both_item_use_context_flags(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto_items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "BTC",
+                        "exchange_or_wallet": "Exchange CSV",
+                        "quantity": 1,
+                        "acquired_date": "2025-07-01",
+                        "disposed_date": "2026-01-01",
+                        "cost_base": 100,
+                        "capital_proceeds": 300,
+                        "wallet_records": "records held",
+                        "ownership_entity": "individual",
+                        "business_use": False,
+                    }
+                ]
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("business/private use context", row["tab_text"])
+        self.assertIn("business use false", row["answer"])
+        self.assertIn("private use unknown", row["answer"])
+
+    def test_crypto_transfer_event_requires_own_wallet_support(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto": {
+                    "event_type": "transfer",
+                    "asset": "BTC",
+                    "exchange_or_wallet": "Exchange CSV",
+                    "quantity": 1,
+                    "acquired_date": "2025-07-01",
+                    "disposed_date": "2026-01-01",
+                    "cost_base": 100,
+                    "capital_proceeds": 100,
+                    "wallet_records": "records held",
+                    "ownership_entity": "individual",
+                    "business_use": False,
+                    "private_use": True,
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("own-wallet transfer support", row["tab_text"])
+        self.assertIn("own-wallet transfer unknown", row["answer"])
+
+    def test_crypto_ambiguous_boolean_context_stays_evidence(self) -> None:
+        cases = [
+            (
+                {"transfer_between_wallets": "maybe yes", "business_use": False, "private_use": True},
+                "own-wallet transfer support",
+                "own-wallet transfer maybe yes",
+            ),
+            (
+                {"transfer_between_wallets": "maybe not own wallet", "business_use": False, "private_use": True},
+                "own-wallet transfer support",
+                "own-wallet transfer maybe not own wallet",
+            ),
+            (
+                {"transfer_between_wallets": True, "business_use": "possibly business use", "private_use": True},
+                "business/private use context",
+                "business use possibly business use",
+            ),
+            (
+                {"transfer_between_wallets": True, "business_use": False, "private_use": "unclear"},
+                "business/private use context",
+                "private use unclear",
+            ),
+        ]
+        base = {
+            "event_type": "transfer",
+            "asset": "BTC",
+            "exchange_or_wallet": "Exchange CSV",
+            "quantity": 1,
+            "acquired_date": "2025-07-01",
+            "disposed_date": "2026-01-01",
+            "cost_base": 100,
+            "capital_proceeds": 100,
+            "wallet_records": "records held",
+            "ownership_entity": "individual",
+        }
+        for context, expected_gap, expected_answer in cases:
+            with self.subTest(context=context):
+                payload = taxmate_intake.answers_to_pack_payload({"crypto": {**base, **context}})
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn(expected_gap, row["tab_text"])
+                self.assertIn(expected_answer, row["answer"])
+
+    def test_crypto_item_ambiguous_transfer_flag_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto_items": [
+                    {
+                        "event_type": "transfer",
+                        "asset": "BTC",
+                        "exchange_or_wallet": "Exchange CSV",
+                        "quantity": 1,
+                        "acquired_date": "2025-07-01",
+                        "disposed_date": "2026-01-01",
+                        "cost_base": 100,
+                        "capital_proceeds": 100,
+                        "transfer_between_wallets": "maybe",
+                        "wallet_records": "records held",
+                        "ownership_entity": "individual",
+                        "business_use": False,
+                        "private_use": True,
+                    }
+                ]
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("per-item crypto evidence", row["tab_text"])
+
+    def test_crypto_items_inherit_transfer_support_requirement(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto": {
+                    "event_type": "transfer",
+                    "wallet_records": "records held",
+                    "ownership_entity": "individual",
+                    "business_use": False,
+                    "private_use": True,
+                    "items": [
+                        {
+                            "asset": "BTC",
+                            "exchange_or_wallet": "Exchange CSV",
+                            "quantity": 1,
+                            "acquired_date": "2025-07-01",
+                            "disposed_date": "2026-01-01",
+                            "cost_base": 100,
+                            "capital_proceeds": 100,
+                            "transfer_between_wallets": True,
+                        },
+                        {
+                            "asset": "ETH",
+                            "exchange_or_wallet": "Exchange CSV",
+                            "quantity": 2,
+                            "acquired_date": "2025-07-01",
+                            "disposed_date": "2026-01-01",
+                            "cost_base": 200,
+                            "capital_proceeds": 200,
+                        },
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("per-item crypto evidence", row["tab_text"])
+
+    def test_crypto_own_wallet_exchange_transfer_does_not_require_disposal_facts(self) -> None:
+        base = {
+            "event_type": "transfer from exchange to own wallet",
+            "asset": "BTC",
+            "exchange_or_wallet": "Exchange CSV",
+            "transfer_between_wallets": True,
+            "wallet_records": "records held",
+            "ownership_entity": "individual",
+            "business_use": False,
+            "private_use": True,
+        }
+        cases = [
+            {"crypto": base},
+            {"crypto_items": [base]},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Accountant review", row["status"])
+                self.assertNotIn("numeric proceeds, cost-base, quantity, or rewards evidence", row["tab_text"])
+                self.assertNotIn("acquisition or disposal date evidence", row["tab_text"])
+
+    def test_crypto_non_own_wallet_transfer_needs_disposal_facts(self) -> None:
+        base = {
+            "event_type": "transfer from exchange to another wallet",
+            "asset": "BTC",
+            "exchange_or_wallet": "Exchange CSV",
+            "wallet_records": "records held",
+            "ownership_entity": "individual",
+            "business_use": False,
+            "private_use": True,
+        }
+        cases = [
+            {"crypto": {**base, "transfer_between_wallets": False}},
+            {"crypto": {**base, "transfer_between_wallets": "0"}},
+            {"crypto": {**base, "transfer_between_wallets": "off"}},
+            {"crypto_items": [{**base, "transfer_between_wallets": "unchecked"}]},
+            {"crypto": {**base, "transfer_between_wallets": "not own wallet"}},
+            {"crypto_items": [{**base, "transfer_between_wallets": "not between own wallets"}]},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("numeric proceeds, cost-base, quantity, or rewards evidence", row["tab_text"])
+                self.assertIn("acquisition or disposal date evidence", row["tab_text"])
+
+    def test_crypto_review_row_appears_in_html_pack(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("Crypto asset investments", body)
+        self.assertIn(
+            "Crypto disposals, swaps, exchanges, conversions, rewards, transfers, wallet records, and cost base stay accountant review before manual copy.",
+            body,
+        )
+        self.assertIn("business use false", body)
+        self.assertNotIn("lodgment-ready", body)
+
+    def test_crypto_sources_are_registered_and_covered(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        registry = json.loads((root / "data" / "ato_knowledge_base" / "source_registry.json").read_text())
+        coverage = json.loads((root / "data" / "ato_knowledge_base" / "source_coverage.json").read_text())
+        registry_urls = {item["url"] for item in registry["records"]}
+        covered = {item["canonical_url"]: item for item in coverage["sources"]}
+
+        for url in taxmate_intake.ATO_CRYPTO_SOURCES:
+            with self.subTest(url=url):
+                self.assertIn(url, registry_urls)
+                self.assertEqual("verified", covered[url]["status"])
+                self.assertIn("crypto-assets", covered[url]["skills"])
+
+    def test_individual_return_portable_skill_covers_crypto_scope(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        skill = (root / "skills" / "individual-return" / "SKILL.md").read_text()
+        root_skill = (root / "skills" / "taxmate-australia" / "SKILL.md").read_text()
+        prep_doc = (root / "docs" / "INDIVIDUAL_RETURN_PREP.md").read_text()
+        rules = (root / "skills" / "individual-return" / "references" / "rules.md").read_text()
+        out_of_scope = skill.split("## Out Of Scope", 1)[1].split("## Method", 1)[0]
+
+        self.assertIn("crypto CGT", skill)
+        self.assertIn("staking/rewards", skill)
+        self.assertIn("exchange, conversion", skill)
+        self.assertIn("wallet or exchange records", skill)
+        self.assertIn("cost base", skill)
+        self.assertIn("capital proceeds", skill)
+        self.assertIn("`crypto-assets`", skill)
+        route_line = next(line for line in skill.splitlines() if "Route tax-treatment decisions" in line)
+        for routed_skill in [
+            "`shares-etfs-managed-funds`",
+            "`capital-gains-tax`",
+            "`crypto-assets`",
+            "`property-rental-cgt`",
+        ]:
+            with self.subTest(routed_skill=routed_skill):
+                self.assertIn(routed_skill, route_line)
+                self.assertIn(routed_skill, prep_doc)
+        self.assertIn("PSI, crypto CGT", root_skill)
+        self.assertIn(taxmate_intake.ATO_CRYPTO_ASSETS_SOURCE, rules)
+        self.assertIn(taxmate_intake.ATO_CRYPTO_RECORDS_SOURCE, rules)
+        self.assertIn(taxmate_intake.ATO_CRYPTO_BUSINESS_SOURCE, rules)
+        self.assertNotIn("crypto CGT", out_of_scope)
+
+    def test_no_answer_signals_survive_flat_nested_merges(self) -> None:
+        cases = [
+            (
+                "ESS",
+                "no-ESS answer with ESS facts",
+                "statement no employee share scheme",
+                {
+                    "ess_statement": "no employee share scheme",
+                    "ess": {
+                        "statement": "ESS statement held",
+                        "employer": "Employer",
+                        "taxed_upfront_discount": 100,
+                    },
+                },
+            ),
+            (
+                "ESS",
+                "no-ESS answer with ESS facts",
+                "taxed_upfront_discount no ess",
+                {
+                    "ess_taxed_upfront_discount": "no ess",
+                    "ess": {
+                        "statement": "ESS statement held",
+                        "employer": "Employer",
+                        "taxed_upfront_discount": 100,
+                    },
+                },
+            ),
+            (
+                "PSI",
+                "no-PSI answer with PSI facts",
+                "income no psi",
+                {
+                    "psi_income": "no psi",
+                    "psi": {
+                        "income": 1000,
+                        "income_type": "consulting",
+                        "contract_evidence": "contract held",
+                        "results_test": True,
+                        "eighty_percent_test": False,
+                        "unrelated_clients_test": True,
+                        "employment_test": False,
+                        "business_premises_test": False,
+                        "psb_determination": False,
+                        "attribution_entity": "self",
+                        "deductions": "none",
+                        "business_structure": "sole trader",
+                    },
+                },
+            ),
+            (
+                "PSI",
+                "no-PSI answer with PSI facts",
+                "client no psi",
+                {
+                    "psi_client": "no psi",
+                    "psi": {
+                        "income": 1000,
+                        "income_type": "consulting",
+                        "contract_evidence": "contract held",
+                        "results_test": True,
+                        "eighty_percent_test": False,
+                        "unrelated_clients_test": True,
+                        "employment_test": False,
+                        "business_premises_test": False,
+                        "psb_determination": False,
+                        "attribution_entity": "self",
+                        "deductions": "none",
+                        "business_structure": "sole trader",
+                    },
+                },
+            ),
+            (
+                "FOREIGN-INCOME",
+                "no-foreign-income answer with foreign income facts",
+                "statement no foreign income",
+                {
+                    "foreign_income_statement": "no foreign income",
+                    "foreign_income": {
+                        "statement": "statement held",
+                        "country": "NZ",
+                        "income_type": "employment",
+                        "amount": 100,
+                        "foreign_tax_paid": 10,
+                        "exchange_rate": 1.1,
+                        "residency_status": "resident",
+                    },
+                },
+            ),
+            (
+                "FOREIGN-INCOME",
+                "no-foreign-income answer with foreign income facts",
+                "statement no foreign income",
+                {
+                    "foreign_income_statement": "no foreign income",
+                    "foreign_income": {"statement": "statement held"},
+                },
+            ),
+            (
+                "FOREIGN-INCOME",
+                "no-foreign-income answer with foreign income facts",
+                "country no foreign income",
+                {
+                    "foreign_income_country": "no foreign income",
+                    "foreign_income": {
+                        "statement": "statement held",
+                        "country": "NZ",
+                        "amount": 100,
+                        "exchange_rate": 1.1,
+                        "residency_status": "resident",
+                    },
+                },
+            ),
+            (
+                "ETP",
+                "no-payment answer with payment facts",
+                "statement no ETP",
+                {
+                    "etp_statement": "no ETP",
+                    "etp": {
+                        "statement": "statement held",
+                        "payer": "Employer",
+                        "payment_type": "ETP",
+                        "taxable_component": 100,
+                        "tax_withheld": 20,
+                    },
+                },
+            ),
+            (
+                "ETP",
+                "no-payment answer with payment facts",
+                "taxable_component no ETP",
+                {
+                    "etp_taxable_component": "no ETP",
+                    "etp": {
+                        "statement": "statement held",
+                        "payer": "Employer",
+                        "payment_type": "ETP",
+                        "taxable_component": 100,
+                        "tax_withheld": 20,
+                    },
+                },
+            ),
+            (
+                "ETP",
+                "no-payment answer with payment facts",
+                "statement no ETP",
+                {
+                    "etp_statement": "no ETP",
+                    "etp": {"statement": "statement held"},
+                },
+            ),
+            (
+                "LUMP-ARREARS",
+                "no-payment answer with payment facts",
+                "statement no lump sum in arrears",
+                {
+                    "lump_sum_arrears_statement": "no lump sum in arrears",
+                    "lump_sum_arrears": {
+                        "statement": "statement held",
+                        "payer": "Employer",
+                        "amount": 100,
+                        "payment_years": "2024-25",
+                        "tax_withheld": 20,
+                    },
+                },
+            ),
+            (
+                "SUPER-INCOME",
+                "no-payment answer with payment facts",
+                "statement no super income stream",
+                {
+                    "super_income_statement": "no super income stream",
+                    "super_income": {
+                        "statement": "statement held",
+                        "fund": "Fund",
+                        "payment_kind": "income stream",
+                        "taxable_amount": 100,
+                        "tax_withheld": 20,
+                    },
+                },
+            ),
+        ]
+        for number, tab_text, signal, answers in cases:
+            with self.subTest(number=number):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == number)
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn(tab_text, row["tab_text"])
+                self.assertIn(signal, row["answer"])
+
+    def test_field_absence_values_do_not_become_workflow_declines(self) -> None:
+        complete_psi = {
+            "income": 100,
+            "income_type": "consulting",
+            "contract_evidence": "contract held",
+            "results_test": True,
+            "eighty_percent_test": False,
+            "unrelated_clients_test": True,
+            "employment_test": False,
+            "business_premises_test": False,
+            "psb_determination": False,
+            "attribution_entity": "self",
+            "deductions": "none",
+            "business_structure": "sole trader",
+        }
+        complete_crypto = {
+            "event_type": "sale",
+            "asset": "BTC",
+            "exchange_or_wallet": "Coinbase",
+            "quantity": 1,
+            "acquired_date": "2025-07-01",
+            "disposed_date": "2026-01-01",
+            "cost_base": 100,
+            "capital_proceeds": 200,
+            "wallet_records": "records held",
+            "ownership_entity": "self",
+            "business_use": False,
+            "private_use": True,
+        }
+        cases = [
+            (
+                "PSI",
+                {"psi": {**complete_psi, "deductions": "not applicable"}},
+                "deduction evidence",
+                "not applicable",
+            ),
+            (
+                "ETP",
+                {
+                    "etp": {
+                        "statement": "statement held",
+                        "payer": "n/a",
+                        "payment_type": "ETP",
+                        "taxable_component": 100,
+                        "tax_free_component": 0,
+                        "tax_withheld": "n/a",
+                    }
+                },
+                "numeric amount evidence",
+                "Payer n/a",
+            ),
+            (
+                "FOREIGN-INCOME",
+                {
+                    "foreign_income": {
+                        "statement": "statement held",
+                        "country": "n/a",
+                        "income_type": "employment",
+                        "payer": "not applicable",
+                        "amount": 100,
+                        "foreign_tax_paid": 10,
+                        "exchange_rate": 1.1,
+                        "residency_status": "resident",
+                    }
+                },
+                "source-backed accountant review",
+                "not applicable",
+            ),
+            (
+                "ESS",
+                {
+                    "ess": {
+                        "statement": "ESS statement held",
+                        "employer": "n/a",
+                        "scheme": "not applicable",
+                        "provider": "ESS provider",
+                        "taxed_upfront_discount": "n/a",
+                        "deferred_discount": 0,
+                        "foreign_source_discount": 0,
+                        "tfn_amount_withheld": 0,
+                    }
+                },
+                "statement-backed accountant review",
+                "Employer n/a",
+            ),
+            (
+                "CRYPTO-CGT",
+                {"crypto": {**complete_crypto, "rewards_income": "no staking rewards"}},
+                "accountant review before manual copy",
+                "no staking rewards",
+            ),
+            (
+                "CRYPTO-CGT",
+                {"crypto": {**complete_crypto, "wallet_records": "not applicable"}},
+                "wallet or exchange records",
+                "records not applicable",
+            ),
+            (
+                "CRYPTO-CGT",
+                {"crypto": {**complete_crypto, "exchange_or_wallet": "no exchange"}},
+                "asset and exchange/wallet identity evidence",
+                "exchange/wallet no exchange",
+            ),
+        ]
+        for number, answers, expected_tab, absent_answer in cases:
+            with self.subTest(number=number):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == number)
+
+                self.assertIn(expected_tab, row["tab_text"])
+                self.assertNotIn("decline signals", row["answer"])
+                self.assertNotIn("no-", row["tab_text"].lower())
+                self.assertNotIn(absent_answer, row["answer"])
+
     def test_asset_items_alias_gets_typed_asset_review(self) -> None:
         answers = taxmate_intake.sample_answers()
         answers.pop("assets")
@@ -1784,6 +3540,7 @@ class IndividualIntakeTests(unittest.TestCase):
             {"ess_items": [{"statement": "not supplied", "taxed_upfront_discount": 100}]},
             {"ess_statement": "I do not have the ESS statement", "ess_taxed_upfront_discount": 100},
             {"ess": {"statement": "I don't have the ESS statement", "taxed_upfront_discount": 100}},
+            {"ess": {"statement": "I dont have the ESS statement", "taxed_upfront_discount": 100}},
         ]
         for answers in cases:
             with self.subTest(answers=answers):
@@ -1844,8 +3601,55 @@ class IndividualIntakeTests(unittest.TestCase):
         ess = next(row for row in payload["items"] if row["number"] == "ESS")
 
         self.assertEqual("Evidence", ess["status"])
-        self.assertEqual("ESS discounts need ESS statement evidence before accountant review.", ess["tab_text"])
+        self.assertIn("no-ESS answer with ESS facts", ess["tab_text"])
         self.assertIn("taxed-upfront discount 100.00", ess["answer"])
+        self.assertIn("decline signals statement no employee share scheme", ess["answer"])
+
+    def test_no_ess_declines_survive_flat_nested_and_item_paths(self) -> None:
+        cases = [
+            (
+                {"ess_statement": "no employee share scheme", "ess_taxed_upfront_discount": 100},
+                "statement no employee share scheme",
+            ),
+            (
+                {"ess_statement": "no employee share scheme", "ess": {"taxed_upfront_discount": 100}},
+                "statement no employee share scheme",
+            ),
+            (
+                {"ess": {"statement": "no employee share scheme", "taxed_upfront_discount": 100}},
+                "statement no employee share scheme",
+            ),
+            (
+                {"ess_items": [{"statement": "no employee share scheme", "taxed_upfront_discount": 100}]},
+                "item 1 statement no employee share scheme",
+            ),
+            (
+                {"ess_taxed_upfront_discount": "no ess", "ess": {"statement": "ESS statement held", "taxed_upfront_discount": 100}},
+                "taxed_upfront_discount no ess",
+            ),
+        ]
+        for answers, signal in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                ess = next(row for row in payload["items"] if row["number"] == "ESS")
+
+                self.assertEqual("Evidence", ess["status"])
+                self.assertIn("no-ESS answer with ESS facts", ess["tab_text"])
+                self.assertIn(signal, ess["answer"])
+
+    def test_no_ess_declines_in_any_prompt_skip_when_factless(self) -> None:
+        cases = [
+            {"ess_statement": "no ess"},
+            {"ess_taxed_upfront_discount": "no ess"},
+            {"ess": {"statement": "no ess"}},
+            {"ess": {"taxed_upfront_discount": "no ess"}},
+            {"ess_items": [{"statement": "no ess"}]},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(any(row["number"] == "ESS" for row in payload["items"]))
 
     def test_zero_ess_amount_is_meaningful_input(self) -> None:
         rows = taxmate_intake.ess_rows({"statement": "ESS statement held", "taxed_upfront_discount": 0})
@@ -3690,6 +5494,49 @@ class ValidatorAndCliTests(unittest.TestCase):
             hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
 
         self.assertEqual(hits, ["README.md:ATO-approved"])
+
+    def test_individual_return_prep_docs_are_validated(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+        self.assertTrue(taxmate_validate.individual_return_prep_docs_ready(str(ROOT), readme))
+
+    def test_individual_return_prep_docs_require_no_answer_boundary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            docs = root / "docs"
+            docs.mkdir()
+            readme = "Individual Return Prep docs/INDIVIDUAL_RETURN_PREP.md prep-only boundaries"
+            (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(
+                "TaxMate is prep-only\nindividual-return\n./scripts/taxmate intake individual --help\n"
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json\n"
+                "./scripts/taxmate intake individual --answers /tmp/taxmate-answers.json\n"
+                "`Accountant review`\n"
+                "myTax, paper ATO form, or accountant handoff\n",
+                encoding="utf-8",
+            )
+
+            self.assertFalse(taxmate_validate.individual_return_prep_docs_ready(tmp, readme))
+
+    def test_individual_return_prep_docs_reject_renderer_only_sample_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            docs = root / "docs"
+            docs.mkdir()
+            readme = (
+                "Individual Return Prep docs/INDIVIDUAL_RETURN_PREP.md prep-only boundaries "
+                "./scripts/taxmate taxpack sample-json --output /tmp/taxmate-guide-input.json"
+            )
+            (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(
+                "TaxMate is prep-only\nindividual-return\n./scripts/taxmate intake individual --help\n"
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json\n"
+                "./scripts/taxmate intake individual --answers /tmp/taxmate-answers.json\n"
+                "--input /tmp/taxmate-guide-input.json\n"
+                "No-answer plus facts stays Evidence\n`Accountant review`\n"
+                "myTax, paper ATO form, or accountant handoff\n",
+                encoding="utf-8",
+            )
+
+            self.assertFalse(taxmate_validate.individual_return_prep_docs_ready(tmp, readme))
 
 
 class TaxpackGuideTests(unittest.TestCase):

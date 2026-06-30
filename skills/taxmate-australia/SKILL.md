@@ -21,7 +21,7 @@ Use this entry skill when the user asks generally for TaxMate Australia or when 
 
 Prefer the most specific installed skill:
 
-- `individual-return`: V1 individual return intake, PAYG, ESS, ETP, lump sum in arrears, super income, foreign income, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and HTML handoff.
+- `individual-return`: V1 individual return intake, PAYG, ESS, ETP, lump sum in arrears, super income, foreign income, PSI, crypto CGT, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and HTML handoff.
 - `employment-deductions`: employee work expenses other than dedicated WFH questions.
 - `work-from-home`: employee WFH fixed-rate, actual-cost, equipment, and records.
 - `abn-business`: ABN, sole trader, business income/expenses, pre-revenue, hobby, PSI, and non-commercial losses.
@@ -29,7 +29,7 @@ Prefer the most specific installed skill:
 - `payg-employer`: PAYG withholding, STP, employer super, and employee payment records.
 - `capital-gains-tax`: CGT events, cost base, proceeds, discounts, losses, rollovers, and exemptions.
 - `shares-etfs-managed-funds`: dividends, ETFs, AMIT, managed funds, DRP, annual tax statements, and share records.
-- `crypto-assets`: crypto disposals, swaps, staking/rewards, wallet/exchange records, and cost base.
+- `crypto-assets`: crypto disposals, swaps, exchanges, conversions, staking/rewards, wallet/exchange records, and cost base.
 - `property-rental-cgt`: rental records, private use, repairs versus capital works, main residence, and property CGT.
 - `superannuation`: contributions, SG, caps, Division 293, release, SMSF-adjacent questions.
 - `private-health-medicare`: private health statements, rebate, Medicare levy, and Medicare levy surcharge.

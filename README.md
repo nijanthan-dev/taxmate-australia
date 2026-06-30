@@ -73,6 +73,8 @@ Full setup details: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md).
 
 ## Use It
 
+For a broad individual return, start with [Individual Return Prep](docs/INDIVIDUAL_RETURN_PREP.md). It shows the portable skill path, the full-runtime HTML guide path, and the prep-only boundaries for myTax, paper ATO form, or accountant handoff.
+
 Ask for a specific portable skill when the topic is clear:
 
 ```text
@@ -103,9 +105,9 @@ Run full-runtime commands from a checkout:
 Create a self-prepared HTML guide users can save as PDF from their browser:
 
 ```bash
-./scripts/taxmate taxpack sample-json --output /tmp/taxmate-guide-input.json
-./scripts/taxmate taxpack guide-html \
-  --input /tmp/taxmate-guide-input.json \
+./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json
+./scripts/taxmate intake individual \
+  --answers /tmp/taxmate-answers.json \
   --output /tmp/taxmate-guide.html
 ```
 
