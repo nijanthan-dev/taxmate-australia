@@ -506,6 +506,7 @@ RENTAL_PROPERTY_AMOUNT_FIELDS = (
     "available_days",
     "net_loss",
 )
+RENTAL_PROPERTY_EXPENSE_FIELDS = ("interest", "repairs", "capital_works", "depreciation", "other_expenses")
 RENTAL_PROPERTY_FLAT_AMOUNT_FIELDS = tuple(
     key for key, nested in RENTAL_PROPERTY_FLAT_FIELD_KEYS.items() if nested in RENTAL_PROPERTY_AMOUNT_FIELDS
 )
@@ -4397,6 +4398,8 @@ def rental_property_field_absence_value(key: str, value: Any) -> bool:
     if not isinstance(value, str) or contains_unknown(value):
         return False
     lowered = value.strip().lower()
+    if key == "records" and rental_property_records_missing(value):
+        return False
     if lowered in {"no rental", "no rental property", "no rental properties", "no investment property", "no investment properties"}:
         return False
     if key in {"interest", "repairs", "capital_works", "depreciation", "other_expenses", "private_use_days", "net_loss"} and lowered.startswith("no "):
@@ -4418,6 +4421,8 @@ def rental_property_amount_missing_document_text(lowered: str) -> bool:
             "receipts",
             "record",
             "records",
+            "schedule",
+            "schedules",
             "statement",
             "statements",
             "substantiation",
@@ -4590,10 +4595,9 @@ def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str
     income = rental_property_display_amount_value(raw, items, "income")
     if income is None:
         return None
-    expenses = [
-        rental_property_display_amount_value(raw, items, key)
-        for key in ("interest", "repairs", "capital_works", "depreciation", "other_expenses")
-    ]
+    if any(rental_property_supplied_amount_needs_evidence(raw, items, key) for key in RENTAL_PROPERTY_EXPENSE_FIELDS):
+        return None
+    expenses = [rental_property_display_amount_value(raw, items, key) for key in RENTAL_PROPERTY_EXPENSE_FIELDS]
     known_expenses = [amount for amount in expenses if amount is not None]
     if not known_expenses:
         return income
@@ -4607,6 +4611,21 @@ def rental_property_display_amount_value(raw: Dict[str, Any], items: List[Dict[s
     values = [rental_property_amount_value(item.get(key)) for item in items]
     real_values = [value for value in values if value is not None]
     return round(sum(real_values), 2) if real_values else None
+
+
+def rental_property_supplied_amount_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> bool:
+    return rental_property_supplied_field_needs_evidence(raw, key) or any(
+        rental_property_supplied_field_needs_evidence(item, key) for item in items
+    )
+
+
+def rental_property_supplied_field_needs_evidence(record: Dict[str, Any], key: str) -> bool:
+    if key not in record:
+        return False
+    value = record.get(key)
+    if rental_property_field_absence_value(key, value):
+        return False
+    return rental_property_amount_value(value) is None and rental_property_amount_needs_evidence(value, key)
 
 
 def rental_property_net_loss_amount_value(value: Any) -> Optional[float]:

@@ -3224,7 +3224,13 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("decline signals address no rental property", row["answer"])
 
     def test_rental_property_missing_records_stay_evidence(self) -> None:
-        for records in ["no rental records", "without agent statements", "records not provided", "I do not have loan interest statements"]:
+        for records in [
+            "no rental records",
+            "without agent statements",
+            "records not provided",
+            "I do not have loan interest statements",
+            "none",
+        ]:
             with self.subTest(records=records):
                 payload = taxmate_intake.answers_to_pack_payload(
                     {
@@ -3240,6 +3246,22 @@ class IndividualIntakeTests(unittest.TestCase):
 
                 self.assertEqual("Evidence", row["status"])
                 self.assertIn("rental records", row["tab_text"])
+                self.assertIn(f"records {records}", row["answer"])
+
+    def test_rental_property_flat_records_none_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_address": "Example rental",
+                "rental_property_ownership": "individual",
+                "rental_property_income": 12000,
+                "rental_property_records": "none",
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("rental records", row["tab_text"])
+        self.assertIn("records none", row["answer"])
 
     def test_rental_property_ambiguous_facts_stay_evidence(self) -> None:
         cases = [
@@ -3306,6 +3328,31 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertEqual("Evidence", row["status"])
                 self.assertIn("numeric rental amount evidence", row["tab_text"])
                 self.assertIn(expected_answer, row["answer"])
+                self.assertIn("worksheet net unknown", row["answer"])
+
+    def test_rental_property_unusable_expense_keeps_net_unknown(self) -> None:
+        cases = [
+            {"interest": "unknown"},
+            {"repairs": "not sure"},
+            {"capital_works": True},
+            {"depreciation": "no depreciation schedule"},
+            {"other_expenses": "invalid amount"},
+        ]
+        base = {
+            "address": "Example rental",
+            "ownership": "individual",
+            "income": 12000,
+            "records": "agent statement held",
+            "private_use": False,
+        }
+        for override in cases:
+            with self.subTest(override=override):
+                payload = taxmate_intake.answers_to_pack_payload({"rental_property": {**base, **override}})
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("numeric rental amount evidence", row["tab_text"])
+                self.assertIn("worksheet net unknown", row["answer"])
 
     def test_rental_property_flat_unknown_answers_render_workflow(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload({"rental_property_income": "unknown"})
