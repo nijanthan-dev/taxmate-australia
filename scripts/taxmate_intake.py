@@ -271,6 +271,12 @@ INVESTMENT_ZERO_COMPONENT_AMOUNT_FIELDS = (
     "foreign_tax_offset",
     "non_assessable_payment",
 )
+INVESTMENT_ITEM_ALIASES = {
+    "interest_items": ("interest_items", "investment_interest_items", "bank_interest_items"),
+    "dividend_items": ("dividend_items", "investment_dividend_items"),
+    "distribution_items": ("distribution_items", "investment_distribution_items", "managed_fund_distribution_items"),
+    "trust_distribution_items": ("trust_distribution_items",),
+}
 INVESTMENT_STATEMENT_MISSING_PHRASES = (
     "do not have",
     "don't have",
@@ -1789,14 +1795,8 @@ def investment_flat_field_key(key: str) -> str:
 def investment_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     raw = answers.get("investment_income")
     merged: Dict[str, Any] = dict(raw) if isinstance(raw, dict) else {}
-    flat_sources = {
-        "interest_items": ("investment_interest_items", "bank_interest_items"),
-        "dividend_items": ("investment_dividend_items", "dividend_items"),
-        "distribution_items": ("investment_distribution_items", "managed_fund_distribution_items", "distribution_items"),
-        "trust_distribution_items": ("trust_distribution_items",),
-    }
-    for key, source_keys in flat_sources.items():
-        value = first_investment_items(answers, source_keys)
+    for key, source_keys in INVESTMENT_ITEM_ALIASES.items():
+        value = first_investment_items(merged, source_keys) or first_investment_items(answers, source_keys)
         if not investment_item_values(merged.get(key)) and investment_item_values(value):
             merged[key] = value
     return merged

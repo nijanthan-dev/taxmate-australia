@@ -1546,6 +1546,36 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("INVEST-RECON", by_number)
         self.assertNotIn("investment_interest_items", by_number)
 
+    def test_investment_income_nested_item_aliases_are_normalized(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "interest_income": 100,
+                "dividend_income": 300,
+                "investment_income": {
+                    "bank_interest_items": [{"payer": "Bank", "amount": 100, "statement": "statement held"}],
+                    "investment_dividend_items": [
+                        {
+                            "company": "Example Ltd",
+                            "amount": 200,
+                            "statement": "statement held",
+                            "franking_confirmed": True,
+                        }
+                    ],
+                    "managed_fund_distribution_items": [
+                        {"fund": "Example ETF", "distribution_amount": 100, "statement": "statement held"}
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        self.assertIn("INT-1", by_number)
+        self.assertIn("DIV-1", by_number)
+        self.assertIn("DIST-1", by_number)
+        self.assertIn("INVEST-RECON", by_number)
+        self.assertNotIn("interest_income", by_number)
+        self.assertNotIn("dividend_income", by_number)
+
     def test_investment_income_rows_render_in_html_with_provenance(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
         data = taxmate_taxpack.load_guide_payload(payload)
