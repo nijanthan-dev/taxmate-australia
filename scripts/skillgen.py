@@ -594,12 +594,12 @@ def Topics() -> List[Topic]:
         topic(
             "property-rental-cgt",
             "Property Rental CGT",
-            "Rental property records, repairs versus capital works, private use, disposal, and property CGT review.",
-            ["rental", "property", "holiday home", "main residence", "capital works"],
-            "rental property records and property-related CGT",
+            "Rental income, loan interest, repairs versus capital works, private use, depreciation, net rental loss, disposal, and property CGT review.",
+            ["rental", "property", "holiday home", "main residence", "capital works", "rental income", "loan interest", "net rental loss"],
+            "rental property worksheet records and property-related CGT",
             "non-property investments or routine employment expenses",
             ["property-and-capital-gains-tax", "residential-rental-properties", "rental-properties", "holiday-homes", "main-residence", "capital-works"],
-            ["main residence", "private use", "repairs versus improvements", "inherited property", "related-party transfer"],
+            ["rental income", "loan interest", "private use", "repairs versus improvements", "depreciation", "net rental loss", "main residence", "inherited property", "related-party transfer"],
         ),
         topic(
             "superannuation",

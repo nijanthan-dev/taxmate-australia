@@ -86,6 +86,10 @@ Use the capital-gains-tax skill to review this disposal conservatively.
 ```
 
 ```text
+Use the individual-return skill to prepare a rental property worksheet with income, interest, repairs, private use, depreciation, and net rental loss review.
+```
+
+```text
 Use the gst-bas skill to identify missing evidence and accountant-review items.
 ```
 

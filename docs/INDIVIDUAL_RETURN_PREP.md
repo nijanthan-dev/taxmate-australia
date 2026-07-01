@@ -15,11 +15,13 @@ Use `individual-return` first for a broad checklist. Route specialist sections t
 - `private-health-medicare` for private health, Medicare levy, and surcharge facts.
 - `abn-business` for sole-trader, PSI, business-versus-hobby, and losses.
 - `gst-bas` for BAS worksheets only.
-- `shares-etfs-managed-funds`, `capital-gains-tax`, `crypto-assets`, and `property-rental-cgt` for investment, crypto, rental, and CGT review.
+- `shares-etfs-managed-funds`, `capital-gains-tax`, `crypto-assets`, and `property-rental-cgt` for investment, crypto, rental property worksheet, and CGT review.
 - `records-evidence` for missing records and substantiation gaps.
 - `workbook` or `taxpack` only for output rendering, not tax logic.
 
 Ask a full intake, not a short interview. Keep unknown, ambiguous, mixed-use, GST/BAS, CGT, PSI, foreign, ESS, ETP/lump sum, rental, company, trust, partnership, and entity-return items in Evidence or `Accountant review` unless official sources clearly resolve the prep step.
+
+For rental property prep, collect property identity, ownership, income, loan interest, repairs, capital works, depreciation, other expenses, private-use or holiday-home days, available-for-rent days, records, and net rental loss facts. Treat repairs-versus-capital ambiguity, private use, depreciation, capital works, and net rental loss as review-first; TaxMate prepares a worksheet only.
 
 ## Runtime Path
 

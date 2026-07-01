@@ -59,9 +59,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
 - Do not claim source-backed treatment from metadata-only sources without explicit validation.
 
 ## Accountant-review boundaries
-- main residence
+- rental income
+- loan interest
 - private use
 - repairs versus improvements
+- depreciation
+- net rental loss
+- main residence
 - inherited property
 - related-party transfer
 - mixed business/private use

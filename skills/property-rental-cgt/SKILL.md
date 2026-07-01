@@ -1,6 +1,6 @@
 ---
 name: property-rental-cgt
-description: Rental property records, repairs versus capital works, private use, disposal, and property CGT review. Use for rental property records and property-related CGT.
+description: Rental income, loan interest, repairs versus capital works, private use, depreciation, net rental loss, disposal, and property CGT review. Use for rental property worksheet records and property-related CGT.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
@@ -8,7 +8,7 @@ compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 
-Use for rental property records and property-related CGT. Do not use for non-property investments or routine employment expenses.
+Use for rental property worksheet records and property-related CGT. Do not use for non-property investments or routine employment expenses.
 
 ## Source workflow
 

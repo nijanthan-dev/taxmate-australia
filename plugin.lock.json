@@ -84,7 +84,7 @@
         "type": "local",
         "path": "skills/individual-return"
       },
-      "integrity": "sha256:22258f8072c38fdc345b60e92ab9909aba8bbe56126150e86eaa285e3580c04d"
+      "integrity": "sha256:afb80bc2ff757ff82f40848db68d1c7fade55a4d9e95941cc1f4c82e6b5cfa2c"
     },
     {
       "id": "payg-employer",
@@ -111,7 +111,7 @@
         "type": "local",
         "path": "skills/property-rental-cgt"
       },
-      "integrity": "sha256:2b20109ec24ef113aeca05155592a8e2ac824733f9c8c08bfc0629cc1eb66125"
+      "integrity": "sha256:5889f7f88f4ea8a982f9ee9e45c17b5e57d5a2ece9548dba6783d5e6adde16b7"
     },
     {
       "id": "records-evidence",
@@ -147,7 +147,7 @@
         "type": "local",
         "path": "skills/taxmate-australia"
       },
-      "integrity": "sha256:0f3a2387fc39f89a8f7c0b12c13307f24fb2ee942171f0d955f922135cccfcc1"
+      "integrity": "sha256:93a1cafb4d2aef5baf03189a97871304c3f5b1b9559e4e1ce5d0508b1a3da964"
     },
     {
       "id": "taxpack",
