@@ -888,6 +888,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def rental_property_declines_workflow(",
                 "def rental_property_source_declines_workflow(",
                 "def rental_property_field_absence_value(",
+                "def rental_property_flat_value_is_absent(",
+                "if nested_key == \"net_loss\" and rental_property_net_loss_false(value):\n        return True",
                 "def rental_property_amount_missing_document_text(",
                 "\"schedule\"",
                 "def rental_property_amount_missing_document_value(",

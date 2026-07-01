@@ -4122,9 +4122,12 @@ class IndividualIntakeTests(unittest.TestCase):
             with self.subTest(net_loss=net_loss):
                 nested = taxmate_intake.answers_to_pack_payload({"rental_property": {"net_loss": net_loss}})
                 flat = taxmate_intake.answers_to_pack_payload({"rental_property_net_loss": net_loss})
+                flat_base_rows = taxmate_intake.base_items({"rental_property_net_loss": net_loss})
 
                 self.assertFalse(any(item["number"] == "RENTAL-PROPERTY" for item in nested["items"]))
                 self.assertFalse(any(item["number"] == "RENTAL-PROPERTY" for item in flat["items"]))
+                self.assertFalse(any(str(item["number"]).startswith("rental_property_") for item in flat["items"]))
+                self.assertFalse(any(str(item["number"]).startswith("rental_property_") for item in flat_base_rows))
 
     def test_rental_property_sentence_no_loss_keeps_real_facts(self) -> None:
         for net_loss in ["there is no net loss", "profit, no loss", "profitable rental this year"]:

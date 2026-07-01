@@ -1124,6 +1124,8 @@ def foreign_income_flat_field_key(key: str) -> str:
 
 def rental_property_flat_value_is_absent(key: str, value: Any) -> bool:
     nested_key = rental_property_flat_field_key(key)
+    if nested_key == "net_loss" and rental_property_net_loss_false(value):
+        return True
     return rental_property_source_declines_workflow(nested_key, value) or rental_property_field_absence_value(
         nested_key,
         value,
