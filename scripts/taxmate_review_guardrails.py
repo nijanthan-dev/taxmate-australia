@@ -100,7 +100,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #69 investment income",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Investment income intake must keep missing statements, common not-provided statement wording, absent core amount/component values, unknown or malformed amounts, uncertain franking, AMIT/cost-base adjustments, foreign components, trust distributions, scalar flat investment fields, aggregate-vs-item total conflicts, and supplied aggregates with unknown item totals in Evidence or Accountant review while preserving zero withholding, zero franking credits, false foreign components, source provenance, flat/nested item aliases, and direct dividend/distribution amount aliases.",
+        "Investment income intake must keep missing statements, common not-provided statement wording, absent core amount/component values, unknown or malformed amounts, uncertain franking, AMIT/cost-base adjustments, foreign components, trust distributions, scalar flat investment fields, aggregate-vs-item total conflicts, and supplied aggregates with unknown item totals in Evidence or Accountant review while preserving zero withholding, zero franking credits, false foreign components, zero aggregate reconciliation for empty investment categories, source provenance, flat/nested item aliases, and direct dividend/distribution amount aliases.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -515,6 +515,9 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def investment_amount_is_supplied(",
                 "def investment_franking_uncertain(",
                 "def investment_total_conflict(",
+                "def investment_category_total(",
+                "def interest_category_total(",
+                "def dividend_distribution_category_total(",
                 "def dividend_distribution_total(",
                 "def first_present(",
                 "cash dividend {money_text(dividend_item_total(item))}",

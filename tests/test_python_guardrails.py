@@ -1148,6 +1148,36 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("Investment totals need corrected reconciliation", by_number["INVEST-RECON"]["tab_text"])
         self.assertIn("corrected reconciliation", evidence_text)
 
+    def test_investment_income_empty_category_reconciles_zero_aggregate(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "interest_income": 0,
+                "dividend_income": 430,
+                "investment_income": {
+                    "dividend_items": [{"company": "Example Ltd", "amount": 430, "statement": "statement held"}],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Accountant review", by_number["INVEST-RECON"]["status"])
+        self.assertIn("Interest items 0.00 vs aggregate 0.00", by_number["INVEST-RECON"]["answer"])
+
+    def test_investment_income_empty_category_conflicts_nonzero_aggregate(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "interest_income": 100,
+                "dividend_income": 430,
+                "investment_income": {
+                    "dividend_items": [{"company": "Example Ltd", "amount": 430, "statement": "statement held"}],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
+        self.assertIn("Investment totals need corrected reconciliation", by_number["INVEST-RECON"]["tab_text"])
+
     def test_investment_income_scalar_flat_fields_are_review_first(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {

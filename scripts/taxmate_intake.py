@@ -1792,10 +1792,12 @@ def investment_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[s
     dividend_items = investment_item_values(raw.get("dividend_items"))
     distribution_items = investment_item_values(raw.get("distribution_items"))
     trust_items = investment_item_values(raw.get("trust_distribution_items"))
-    interest_conflict = investment_reconciliation_needs_evidence(answers.get("interest_income"), interest_item_total(interest_items))
+    interest_total = interest_category_total(interest_items)
+    dividend_total = dividend_distribution_category_total(dividend_items, distribution_items)
+    interest_conflict = investment_reconciliation_needs_evidence(answers.get("interest_income"), interest_total)
     dividend_conflict = investment_reconciliation_needs_evidence(
         answers.get("dividend_income"),
-        dividend_distribution_total(dividend_items, distribution_items),
+        dividend_total,
     )
     for idx, item in enumerate(interest_items, start=1):
         rows.append(investment_interest_row(idx, item, interest_conflict))
@@ -1937,8 +1939,8 @@ def investment_reconciliation_row(
     interest_conflict: bool,
     dividend_conflict: bool,
 ) -> Dict[str, Any]:
-    interest_total = interest_item_total(interest_items)
-    dividend_total = investment_total([dividend_item_total(item) for item in dividend_items] + [distribution_item_total(item) for item in distribution_items])
+    interest_total = interest_category_total(interest_items)
+    dividend_total = dividend_distribution_category_total(dividend_items, distribution_items)
     status = "Evidence" if interest_conflict or dividend_conflict else "Accountant review"
     return guide_row(
         "INVEST-RECON",
@@ -1984,16 +1986,16 @@ def investment_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> Li
                         INVESTMENT_SOURCES,
                     )
                 )
+    interest_items = investment_item_values(raw.get("interest_items"))
+    dividend_items = investment_item_values(raw.get("dividend_items"))
+    distribution_items = investment_item_values(raw.get("distribution_items"))
     interest_conflict = investment_reconciliation_needs_evidence(
         answers.get("interest_income"),
-        interest_item_total(investment_item_values(raw.get("interest_items"))),
+        interest_category_total(interest_items),
     )
     dividend_conflict = investment_reconciliation_needs_evidence(
         answers.get("dividend_income"),
-        dividend_distribution_total(
-            investment_item_values(raw.get("dividend_items")),
-            investment_item_values(raw.get("distribution_items")),
-        ),
+        dividend_distribution_category_total(dividend_items, distribution_items),
     )
     if interest_conflict or dividend_conflict:
         rows.append(
@@ -2140,6 +2142,20 @@ def dividend_distribution_total(dividend_items: List[Dict[str, Any]], distributi
     )
 
 
+def interest_category_total(items: List[Dict[str, Any]]) -> Optional[float]:
+    return investment_category_total(interest_item_total(items), bool(items))
+
+
+def dividend_distribution_category_total(
+    dividend_items: List[Dict[str, Any]],
+    distribution_items: List[Dict[str, Any]],
+) -> Optional[float]:
+    return investment_category_total(
+        dividend_distribution_total(dividend_items, distribution_items),
+        bool(dividend_items or distribution_items),
+    )
+
+
 def first_present(item: Dict[str, Any], keys: tuple[str, ...]) -> Any:
     for key in keys:
         if key in item and not is_missing(item.get(key)):
@@ -2152,6 +2168,10 @@ def investment_total(values: Any) -> Optional[float]:
     if not amounts:
         return None
     return round(sum(amounts), 2)
+
+
+def investment_category_total(item_total: Optional[float], has_items: bool) -> Optional[float]:
+    return item_total if has_items else 0
 
 
 def investment_total_conflict(aggregate_value: Any, item_total: Optional[float]) -> bool:
