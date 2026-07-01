@@ -837,6 +837,7 @@ class IndividualIntakeTests(unittest.TestCase):
                 "Private health",
                 "PAYG",
                 "Income",
+                "Investment income",
                 "Complex income",
                 "Foreign income",
                 "PSI",
@@ -885,6 +886,10 @@ class IndividualIntakeTests(unittest.TestCase):
                 "crypto_ownership_entity",
                 "crypto_business_use",
                 "crypto_private_use",
+                "investment_interest_items",
+                "investment_dividend_items",
+                "investment_distribution_items",
+                "trust_distribution_items",
             }.issubset(keys)
         )
 
@@ -965,6 +970,77 @@ class IndividualIntakeTests(unittest.TestCase):
                 rendered_numbers = {row["number"] for row in rows}
 
                 self.assertNotIn("ess_statement", rendered_numbers)
+
+    def test_investment_income_workflow_renders_itemized_rows_and_falsey_values(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Accountant review", by_number["INT-1"]["status"])
+        self.assertIn("TFN withholding 0.00", by_number["INT-1"]["answer"])
+        self.assertEqual("Accountant review", by_number["DIV-1"]["status"])
+        self.assertIn("unfranked 0.00", by_number["DIV-1"]["answer"])
+        self.assertIn("franking credit 128.57", by_number["DIV-1"]["answer"])
+        self.assertEqual("Accountant review", by_number["DIST-1"]["status"])
+        self.assertIn("foreign components false", by_number["DIST-1"]["answer"])
+        self.assertIn("cost-base adjustment", by_number["DIST-1"]["tab_text"])
+        self.assertEqual("Evidence", by_number["TRUST-DIST-1"]["status"])
+        self.assertIn("TaxMate does not prepare a trust return", by_number["TRUST-DIST-1"]["why_included"])
+        self.assertEqual("Accountant review", by_number["INVEST-RECON"]["status"])
+        self.assertIn("Investment item totals reconcile", by_number["INVEST-RECON"]["tab_text"])
+        self.assertIn(taxmate_intake.INVESTMENT_SOURCES[0], by_number["DIV-1"]["source_urls"])
+
+    def test_investment_income_mismatched_totals_and_missing_statements_feed_evidence_queue(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "interest_income": 99,
+                "dividend_income": 300,
+                "investment_income": {
+                    "interest_items": [{"payer": "Bank", "amount": 100, "tfn_withheld": 0, "statement": "statement held"}],
+                    "dividend_items": [
+                        {
+                            "company": "Example Ltd",
+                            "franked_amount": 100,
+                            "unfranked_amount": 0,
+                            "franking_credit": 0,
+                            "tfn_withheld": 0,
+                            "statement": "statement held",
+                            "franking_confirmed": False,
+                        }
+                    ],
+                    "distribution_items": [
+                        {
+                            "fund": "Example ETF",
+                            "taxable_amount": 100,
+                            "foreign_income": 0,
+                            "foreign_tax_offset": 0,
+                            "statement": "statement not confirmed",
+                            "foreign_components": False,
+                        }
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["INT-1"]["status"])
+        self.assertEqual("Evidence", by_number["DIV-1"]["status"])
+        self.assertEqual("Evidence", by_number["DIST-1"]["status"])
+        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
+        self.assertIn("Investment totals need corrected reconciliation", by_number["INVEST-RECON"]["tab_text"])
+        self.assertIn("Dividend statement item 1: confirm franking confirmation", evidence_text)
+        self.assertIn("Managed fund/ETF annual tax statement item 1: confirm statement", evidence_text)
+        self.assertIn("corrected reconciliation", evidence_text)
+
+    def test_investment_income_rows_render_in_html_with_provenance(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        data = taxmate_taxpack.load_guide_payload(payload)
+        html = taxmate_taxpack.render_html(data)
+
+        self.assertIn("Managed fund/ETF/AMIT distribution statement item", html)
+        self.assertIn("foreign components false", html)
+        self.assertIn("Trust distribution routing for individual beneficiary", html)
+        self.assertIn(taxmate_intake.INVESTMENT_SOURCES[0], html)
 
     def test_complex_payment_workflows_render_statement_backed_review(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
@@ -6466,6 +6542,35 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn(taxmate_intake.ATO_ESS_SOURCE, rules)
         self.assertIn(taxmate_intake.ATO_ESS_STATEMENT_SOURCE, rules)
         self.assertNotIn("ESS", out_of_scope)
+
+    def test_individual_return_portable_skill_covers_investment_income_scope(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        skill = (root / "skills" / "individual-return" / "SKILL.md").read_text()
+        rules = (root / "skills" / "individual-return" / "references" / "rules.md").read_text()
+        out_of_scope = skill.split("## Out Of Scope", 1)[1].split("## Method", 1)[0]
+
+        self.assertIn("investment income distributions", skill)
+        self.assertIn("bank interest", skill)
+        self.assertIn("franking credit", skill)
+        self.assertIn("managed fund/ETF/AMIT", skill)
+        self.assertIn("trust distribution", skill)
+        self.assertIn("`0` franking credits", rules)
+        for source in taxmate_intake.INVESTMENT_SOURCES:
+            self.assertIn(source, rules)
+        self.assertNotIn("investment income", out_of_scope.lower())
+
+    def test_investment_sources_are_registered_and_covered(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        registry = json.loads((root / "data" / "ato_knowledge_base" / "source_registry.json").read_text())
+        coverage = json.loads((root / "data" / "ato_knowledge_base" / "source_coverage.json").read_text())
+        registry_urls = {item["url"] for item in registry["records"]}
+        covered = {item["canonical_url"]: item for item in coverage["sources"]}
+
+        for url in taxmate_intake.INVESTMENT_SOURCES:
+            with self.subTest(url=url):
+                self.assertIn(url, registry_urls)
+                self.assertEqual("verified", covered[url]["status"])
+                self.assertIn("shares-etfs-managed-funds", covered[url]["skills"])
 
     def test_individual_return_portable_skill_covers_complex_payment_scope(self) -> None:
         root = Path(__file__).resolve().parents[1]

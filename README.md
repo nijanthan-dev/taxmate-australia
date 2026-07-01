@@ -37,6 +37,7 @@ The current individual-return handoff includes:
 - prep-only boundary and manual-copy warning;
 - intake summary and AI extraction confirmation table;
 - individual return field guide;
+- itemized investment income rows for bank interest, dividends/franking, managed fund/ETF/AMIT distributions, and trust distribution routing;
 - ABN prep section and BAS worksheet;
 - missing facts queue, evidence queue, and accountant-review queue;
 - source/provenance appendix with source URLs and checked-at dates.
@@ -45,7 +46,7 @@ The current individual-return handoff includes:
 
 ![Example TaxMate Australia self-prepared guide output for synthetic John Doe data](assets/readme/taxmate-guide-john-doe.png)
 
-Example guide from synthetic sample data. Shows the overview, prep boundary, manual-copy warning, AI extraction confirmation table, field guide rows, evidence prompts, and `Accountant review` flags. Not an ATO form. Not fileable.
+Example guide from synthetic sample data. Shows the overview, prep boundary, manual-copy warning, AI extraction confirmation table, field guide rows, investment income prep rows, evidence prompts, and `Accountant review` flags. Not an ATO form. Not fileable.
 
 ![Example TaxMate Australia manual-copy worksheet for synthetic John Doe data](assets/readme/taxmate-guide-john-doe-worksheet.png)
 
@@ -78,7 +79,7 @@ The sample data is synthetic. Any PR that changes user-facing output, output sec
 
 ## What It Does
 
-- Reviews Australian tax prep records for employees, ESS, ETP/lump sum, foreign income, ABN/sole-trader work, investments, rental property, crypto, superannuation, and private health.
+- Reviews Australian tax prep records for employees, ESS, ETP/lump sum, foreign income, ABN/sole-trader work, itemized investment income and distributions, rental property, crypto, superannuation, and private health.
 - Keeps ATO source URLs, checked-at dates, source coverage checks, and generated topic skills visible.
 - Flags GST/BAS, PAYG, FBT, CGT, super guarantee, and stamp-duty source-routing items for conservative review.
 - Builds accountant-facing workbook and taxpack outputs from reviewed data.
@@ -123,6 +124,10 @@ Use the individual-return skill to build a V1 individual return checklist with A
 
 ```text
 Use the capital-gains-tax skill to review this disposal conservatively.
+```
+
+```text
+Use the individual-return skill to prepare bank interest, dividend/franking, managed fund/ETF/AMIT, and trust distribution statement rows for review.
 ```
 
 ```text
