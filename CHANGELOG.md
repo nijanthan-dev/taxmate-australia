@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.10.0...v0.11.0) (2026-07-01)
+
+
+### Features
+
+* add PAYG statements ([8ba0ced](https://github.com/nijanthan-dev/taxmate-australia/commit/8ba0ced5b9316d1397a97209a01d4c82c3c61693))
+
 ## [0.10.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.9.1...v0.10.0) (2026-07-01)
 
 
