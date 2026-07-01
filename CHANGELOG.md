@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.8.0...v0.9.0) (2026-07-01)
+
+
+### Features
+
+* add rental property worksheet ([c55732b](https://github.com/nijanthan-dev/taxmate-australia/commit/c55732bcb35f1a5bc4398bda9c12f8378787bb68))
+
 ## [0.8.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.7.0...v0.8.0) (2026-06-30)
 
 
