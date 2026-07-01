@@ -4308,6 +4308,7 @@ def rental_property_amounts_need_evidence(raw: Dict[str, Any], items: List[Dict[
         or rental_property_amount_conflicts(raw, items)
         or rental_property_net_loss_component_conflicts(raw, items)
         or rental_property_expense_amounts_incomplete(raw, items)
+        or rental_property_any_explicit_net_component_amounts_need_evidence(raw, items)
     )
 
 
@@ -4396,6 +4397,9 @@ def rental_property_has_net_loss(raw: Dict[str, Any], items: List[Dict[str, Any]
 
 
 def rental_property_record_has_net_loss(record: Dict[str, Any]) -> bool:
+    explicit = rental_property_net_loss_amount_value(record.get("net_loss"))
+    if explicit is not None and explicit < 0:
+        return True
     net_amount = rental_property_net_amount(record)
     if net_amount is not None and net_amount < 0:
         return True
@@ -4405,6 +4409,8 @@ def rental_property_record_has_net_loss(record: Dict[str, Any]) -> bool:
 def rental_property_net_amount(record: Dict[str, Any]) -> Optional[float]:
     explicit = rental_property_net_loss_amount_value(record.get("net_loss"))
     if explicit is not None:
+        if rental_property_component_amounts_need_evidence(record):
+            return None
         return explicit
     income = rental_property_usable_amount_value(record.get("income"), "income")
     if income is None:
@@ -4768,6 +4774,8 @@ def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str
         return None
     explicit = rental_property_net_loss_amount_value(raw.get("net_loss"))
     if explicit is not None:
+        if rental_property_component_amounts_need_evidence(raw):
+            return None
         return explicit
     if rental_property_supplied_amount_needs_evidence(raw, items, "net_loss"):
         return None
@@ -4858,6 +4866,9 @@ def rental_property_item_amounts_need_evidence(items: List[Dict[str, Any]]) -> b
         rental_property_record_requires_expense_resolution(item)
         and rental_property_record_expense_amounts_incomplete(item)
         for item in items
+    ) or any(
+        rental_property_explicit_net_component_amounts_need_evidence(item)
+        for item in items
     )
 
 
@@ -4875,6 +4886,34 @@ def rental_property_record_requires_expense_resolution(record: Dict[str, Any]) -
         rental_property_usable_amount_value(record.get("income"), "income") is not None
         and rental_property_net_loss_amount_value(record.get("net_loss")) is None
     )
+
+
+def rental_property_any_explicit_net_component_amounts_need_evidence(
+    raw: Dict[str, Any],
+    items: List[Dict[str, Any]],
+) -> bool:
+    return any(rental_property_explicit_net_component_amounts_need_evidence(record) for record in [raw, *items])
+
+
+def rental_property_explicit_net_component_amounts_need_evidence(record: Dict[str, Any]) -> bool:
+    return (
+        rental_property_net_loss_amount_value(record.get("net_loss")) is not None
+        and rental_property_component_amounts_need_evidence(record)
+    )
+
+
+def rental_property_component_amounts_need_evidence(record: Dict[str, Any]) -> bool:
+    if not rental_property_has_component_amounts(record):
+        return False
+    if rental_property_supplied_field_needs_evidence(record, "income"):
+        return True
+    if rental_property_usable_amount_value(record.get("income"), "income") is None:
+        return True
+    return rental_property_record_expense_amounts_incomplete(record)
+
+
+def rental_property_has_component_amounts(record: Dict[str, Any]) -> bool:
+    return any(key in record for key in ("income", *RENTAL_PROPERTY_EXPENSE_FIELDS))
 
 
 def rental_property_record_expense_amounts_incomplete(record: Dict[str, Any]) -> bool:

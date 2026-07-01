@@ -3934,6 +3934,58 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("worksheet net unknown", row["answer"])
         self.assertNotIn("worksheet net -1000.00", row["answer"])
 
+    def test_rental_property_explicit_net_loss_does_not_mask_component_evidence(self) -> None:
+        cases = [
+            {
+                "rental_property": {
+                    "address": "Example rental",
+                    "ownership": "individual",
+                    "income": "unknown",
+                    "interest": "no interest",
+                    "repairs": "no repairs",
+                    "capital_works": "no capital works",
+                    "depreciation": "no depreciation",
+                    "other_expenses": "no other expenses",
+                    "net_loss": 1000,
+                    "records": "agent statement held",
+                    "private_use": False,
+                }
+            },
+            {
+                "rental_property": {
+                    "address": "Example rental",
+                    "ownership": "individual",
+                    "income": 10000,
+                    "net_loss": 1000,
+                    "records": "agent statement held",
+                    "private_use": False,
+                }
+            },
+            {
+                "rental_property": {
+                    "records": "agent statement held",
+                    "private_use": False,
+                    "items": [
+                        {
+                            "address": "Unit 1",
+                            "ownership": "individual",
+                            "income": 10000,
+                            "net_loss": 1000,
+                        }
+                    ],
+                }
+            },
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+                self.assertIn("numeric rental amount evidence", row["tab_text"])
+                self.assertIn("net rental loss review", row["tab_text"])
+                self.assertIn("worksheet net unknown", row["answer"])
+                self.assertNotIn("worksheet net -1000.00", row["answer"])
+
     def test_rental_property_item_net_loss_reconciles_with_item_amounts(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
@@ -4364,6 +4416,10 @@ class IndividualIntakeTests(unittest.TestCase):
                 "rental_property_ownership": "individual",
                 "rental_property_income": 10000,
                 "rental_property_interest": 12000,
+                "rental_property_repairs": "no repairs",
+                "rental_property_capital_works": "no capital works",
+                "rental_property_depreciation": "no depreciation",
+                "rental_property_other_expenses": "no other expenses",
                 "rental_property_records": "agent statement and loan statement held",
                 "rental_property_private_use": False,
                 "rental_property_net_loss": -2000,
@@ -4385,6 +4441,10 @@ class IndividualIntakeTests(unittest.TestCase):
                     "ownership": "individual",
                     "income": 10000,
                     "interest": 12000,
+                    "repairs": "no repairs",
+                    "capital_works": "no capital works",
+                    "depreciation": "no depreciation",
+                    "other_expenses": "no other expenses",
                     "records": "agent statement and loan statement held",
                     "private_use": False,
                     "net_loss": 2000,
@@ -4736,8 +4796,28 @@ class IndividualIntakeTests(unittest.TestCase):
                 "rental_property_records": "agent statement held",
                 "rental_property_private_use": False,
                 "rental_property_items": [
-                    {"address": "Unit 1", "ownership": "individual", "income": 10000, "net_loss": 1500},
-                    {"address": "Unit 2", "ownership": "individual", "income": 8000, "net_loss": 500},
+                    {
+                        "address": "Unit 1",
+                        "ownership": "individual",
+                        "income": 10000,
+                        "interest": 11500,
+                        "repairs": "no repairs",
+                        "capital_works": "no capital works",
+                        "depreciation": "no depreciation",
+                        "other_expenses": "no other expenses",
+                        "net_loss": 1500,
+                    },
+                    {
+                        "address": "Unit 2",
+                        "ownership": "individual",
+                        "income": 8000,
+                        "interest": 8500,
+                        "repairs": "no repairs",
+                        "capital_works": "no capital works",
+                        "depreciation": "no depreciation",
+                        "other_expenses": "no other expenses",
+                        "net_loss": 500,
+                    },
                 ],
             }
         )
@@ -4756,7 +4836,17 @@ class IndividualIntakeTests(unittest.TestCase):
                 "rental_property_records": "agent statement held",
                 "rental_property_private_use": False,
                 "rental_property_items": [
-                    {"address": "Unit 1", "ownership": "individual", "income": 10000, "net_loss": 1500},
+                    {
+                        "address": "Unit 1",
+                        "ownership": "individual",
+                        "income": 10000,
+                        "interest": 11500,
+                        "repairs": "no repairs",
+                        "capital_works": "no capital works",
+                        "depreciation": "no depreciation",
+                        "other_expenses": "no other expenses",
+                        "net_loss": 1500,
+                    },
                     {
                         "address": "Unit 2",
                         "ownership": "individual",
@@ -4851,12 +4941,26 @@ class IndividualIntakeTests(unittest.TestCase):
             {
                 "rental_property_records": "agent statement held",
                 "rental_property_items": [
-                    {"address": "Unit 1", "ownership": "individual", "income": 10000, "net_loss": 1500},
+                    {
+                        "address": "Unit 1",
+                        "ownership": "individual",
+                        "income": 10000,
+                        "interest": 11500,
+                        "repairs": "no repairs",
+                        "capital_works": "no capital works",
+                        "depreciation": "no depreciation",
+                        "other_expenses": "no other expenses",
+                        "net_loss": 1500,
+                    },
                     {
                         "address": "Holiday unit",
                         "ownership": "individual",
                         "income": 12000,
                         "interest": 12500,
+                        "repairs": "no repairs",
+                        "capital_works": "no capital works",
+                        "depreciation": "no depreciation",
+                        "other_expenses": "no other expenses",
                         "net_loss": 500,
                         "private_use": True,
                         "private_use_days": 0,
