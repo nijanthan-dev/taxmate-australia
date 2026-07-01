@@ -2192,7 +2192,7 @@ def investment_franking_uncertain(item: Dict[str, Any]) -> bool:
 
 
 def dividend_amounts_need_evidence(item: Dict[str, Any]) -> bool:
-    return dividend_direct_component_conflict(item)
+    return investment_direct_amount_unresolved(item, INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS) or dividend_direct_component_conflict(item)
 
 
 def interest_item_total(items: List[Dict[str, Any]]) -> Optional[float]:
@@ -2229,7 +2229,7 @@ def dividend_direct_component_conflict(item: Dict[str, Any]) -> bool:
 
 
 def distribution_amounts_need_evidence(item: Dict[str, Any]) -> bool:
-    return distribution_direct_taxable_conflict(item)
+    return investment_direct_amount_unresolved(item, INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS) or distribution_direct_taxable_conflict(item)
 
 
 def distribution_item_total(item: Dict[str, Any]) -> Optional[float]:
@@ -2284,11 +2284,31 @@ def investment_has_direct_amount(item: Dict[str, Any], keys: tuple[str, ...]) ->
 
 
 def investment_direct_amount_value(item: Dict[str, Any], keys: tuple[str, ...]) -> Optional[float]:
+    if investment_direct_amount_unresolved(item, keys):
+        return None
     return investment_money_value(first_present(item, keys))
 
 
 def investment_amount_present(value: Any) -> bool:
     return not isinstance(value, bool) and not is_missing(value)
+
+
+def investment_direct_amount_unresolved(item: Dict[str, Any], keys: tuple[str, ...]) -> bool:
+    values = [
+        investment_money_value(item.get(key))
+        for key in keys
+        if investment_amount_present(item.get(key))
+    ]
+    if any(value is None for value in values):
+        return True
+    return investment_direct_amount_conflict(values)
+
+
+def investment_direct_amount_conflict(values: List[float]) -> bool:
+    if len(values) < 2:
+        return False
+    first = values[0]
+    return any(round(abs(first - value), 2) >= 0.01 for value in values[1:])
 
 
 def investment_total(values: Any) -> Optional[float]:
@@ -3390,6 +3410,8 @@ def foreign_income_amounts_need_evidence(raw: Dict[str, Any], items: List[Dict[s
         return True
     if foreign_income_exchange_rate_missing(raw, items):
         return True
+    if foreign_income_items_need_amount_evidence(items):
+        return True
     if any(foreign_income_amount_needs_evidence(raw.get(key)) for key in FOREIGN_INCOME_AMOUNT_FIELDS):
         return True
     return any(foreign_income_amount_needs_evidence(item.get(key)) for item in items for key in FOREIGN_INCOME_AMOUNT_FIELDS)
@@ -3455,6 +3477,16 @@ def foreign_income_amount_needs_evidence(value: Any) -> bool:
     if isinstance(value, bool) or is_missing(value):
         return False
     return contains_unknown(value) or foreign_income_amount_malformed(value)
+
+
+def foreign_income_items_need_amount_evidence(items: List[Dict[str, Any]]) -> bool:
+    return any(not foreign_income_amount_is_supplied(item.get("amount")) for item in items)
+
+
+def foreign_income_amount_is_supplied(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    return foreign_income_money_value(value) is not None
 
 
 def foreign_income_amount_malformed(value: Any) -> bool:

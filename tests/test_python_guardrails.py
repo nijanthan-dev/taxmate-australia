@@ -1515,6 +1515,57 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("Managed fund/ETF annual tax statement item 1: confirm amount/component values", evidence_text)
         self.assertIn("corrected reconciliation", evidence_text)
 
+    def test_investment_income_conflicting_dividend_direct_aliases_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "dividend_income": 430,
+                "investment_income": {
+                    "dividend_items": [
+                        {
+                            "company": "Example Ltd",
+                            "amount": 430,
+                            "dividend_amount": 500,
+                            "statement": "statement held",
+                            "franking_confirmed": True,
+                        }
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["DIV-1"]["status"])
+        self.assertIn("cash dividend unknown", by_number["DIV-1"]["answer"])
+        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
+        self.assertIn("Dividend statement item 1: confirm amount/component values", evidence_text)
+        self.assertIn("corrected reconciliation", evidence_text)
+
+    def test_investment_income_conflicting_distribution_direct_aliases_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "dividend_income": 535,
+                "investment_income": {
+                    "distribution_items": [
+                        {
+                            "fund": "Example ETF",
+                            "amount": 535,
+                            "distribution_amount": 500,
+                            "statement": "statement held",
+                        }
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["DIST-1"]["status"])
+        self.assertIn("distribution unknown", by_number["DIST-1"]["answer"])
+        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
+        self.assertIn("Managed fund/ETF annual tax statement item 1: confirm amount/component values", evidence_text)
+        self.assertIn("corrected reconciliation", evidence_text)
+
     def test_investment_income_unknown_distribution_taxable_amount_keeps_total_unknown(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
@@ -2223,6 +2274,36 @@ class IndividualIntakeTests(unittest.TestCase):
                             "statement": "statement held",
                             "country": "NZ",
                             "amount": "unknown",
+                            "exchange_rate": 0.50,
+                            "residency_status": "Australian resident",
+                        },
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("amount unknown", row["answer"])
+        self.assertIn("numeric amount or exchange-rate evidence", row["tab_text"])
+
+    def test_foreign_income_missing_item_amounts_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "statement held",
+                    "residency_status": "Australian resident",
+                    "items": [
+                        {
+                            "statement": "statement held",
+                            "country": "US",
+                            "amount": 100,
+                            "exchange_rate": 0.66,
+                            "residency_status": "Australian resident",
+                        },
+                        {
+                            "statement": "statement held",
+                            "country": "NZ",
                             "exchange_rate": 0.50,
                             "residency_status": "Australian resident",
                         },
