@@ -3190,8 +3190,14 @@ class IndividualIntakeTests(unittest.TestCase):
     def test_no_rental_property_answers_do_not_render_workflow_or_base_rows(self) -> None:
         cases = [
             {"rental_property_address": "no rental property"},
+            {"rental_property_address": "I have no rental property"},
+            {"rental_property_address": "we have no investment property"},
+            {"rental_property_address": "no rental property this year"},
+            {"rental_property_ownership": "not a landlord"},
             {"rental_property_income": "no rental income this year"},
             {"rental_property": {"address": "I do not have a rental property"}},
+            {"rental_property": {"address": "we do not have any rental properties"}},
+            {"rental_property": {"ownership": "has no investment property"}},
             {"rental_property": {"records": "not applicable"}},
             {"rental_property_repairs": "no repairs"},
             {"rental_property_private_use": False},
@@ -3205,23 +3211,44 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertFalse(any(str(number).startswith("rental_property_") for number in rendered_numbers))
 
     def test_no_rental_property_plus_facts_stays_evidence(self) -> None:
+        cases = ["no rental property", "I have no rental property", "we have no investment property"]
+        for decline in cases:
+            with self.subTest(decline=decline):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "rental_property_address": decline,
+                        "rental_property": {
+                            "address": "Example rental",
+                            "ownership": "individual",
+                            "income": 12000,
+                            "records": "agent statement held",
+                        },
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("no-rental answer with rental facts", row["tab_text"])
+                self.assertIn("Property Example rental", row["answer"])
+                self.assertIn(f"decline signals address {decline}", row["answer"])
+
+    def test_no_rental_records_is_not_workflow_decline(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
-                "rental_property_address": "no rental property",
                 "rental_property": {
                     "address": "Example rental",
                     "ownership": "individual",
                     "income": 12000,
-                    "records": "agent statement held",
-                },
+                    "records": "no rental property records",
+                }
             }
         )
         row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
 
         self.assertEqual("Evidence", row["status"])
-        self.assertIn("no-rental answer with rental facts", row["tab_text"])
-        self.assertIn("Property Example rental", row["answer"])
-        self.assertIn("decline signals address no rental property", row["answer"])
+        self.assertIn("rental records", row["tab_text"])
+        self.assertIn("records no rental property records", row["answer"])
+        self.assertNotIn("decline signals", row["answer"])
 
     def test_rental_property_missing_records_stay_evidence(self) -> None:
         for records in [

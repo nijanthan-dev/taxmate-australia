@@ -4440,6 +4440,8 @@ def rental_property_declines_workflow(value: Any) -> bool:
         return False
     if lowered in RENTAL_PROPERTY_DECLINE_PHRASES:
         return True
+    if rental_property_decline_text_matches(lowered):
+        return True
     return any(
         phrase in lowered
         for phrase in (
@@ -4449,6 +4451,20 @@ def rental_property_declines_workflow(value: Any) -> bool:
             "don't have a rental property",
             "dont have rental property",
             "no rental income this year",
+        )
+    )
+
+
+def rental_property_decline_text_matches(lowered: str) -> bool:
+    return any(
+        re.search(pattern, lowered)
+        for pattern in (
+            r"\b(?:do\W+not|don't|dont)\W+have\W+(?:a\W+|any\W+)?(?:rental|investment)\W+propert(?:y|ies)\b",
+            r"\bhave\W+no\W+(?:a\W+|any\W+)?(?:rental|investment)\W+propert(?:y|ies)\b",
+            r"\bhas\W+no\W+(?:a\W+|any\W+)?(?:rental|investment)\W+propert(?:y|ies)\b",
+            r"\bno\W+(?:rental|investment)\W+propert(?:y|ies)(?:\W+this\W+year)?\b",
+            r"\bnot\W+(?:a\W+)?landlord\b",
+            r"\bno\W+rental\W+income(?:\W+this\W+year)?\b",
         )
     )
 
