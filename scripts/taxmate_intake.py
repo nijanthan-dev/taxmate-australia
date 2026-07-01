@@ -4435,6 +4435,8 @@ def rental_property_records_missing(value: Any) -> bool:
     if rental_property_declines_workflow(value):
         return True
     lowered = text(value).strip().lower()
+    if rental_property_no_loan_missing_record_answer(lowered):
+        return True
     if rental_property_no_loan_records_answer(lowered):
         return False
     if rental_property_record_context(lowered) and lowered.startswith(("no ", "without ", "missing ")):
@@ -4452,8 +4454,18 @@ def rental_property_record_context(lowered: str) -> bool:
 
 def rental_property_no_loan_records_answer(lowered: str) -> bool:
     no_loan = bool(re.search(r"\bno\W+(?:loan|mortgage|borrowing|borrowings)\b", lowered))
-    records_held = any(term in lowered for term in ("agent statement", "records held", "statement held", "invoice held"))
+    records_held = any(term in lowered for term in ("agent statement", "records held", "invoice held"))
     return no_loan and records_held
+
+
+def rental_property_no_loan_missing_record_answer(lowered: str) -> bool:
+    return bool(
+        re.search(
+            r"\bno[\s-]+(?:loan|mortgage|borrowing|borrowings)[\s-]+"
+            r"(?:statement|statements|record|records|invoice|invoices)\b",
+            lowered,
+        )
+    )
 
 
 def rental_property_declines_workflow(value: Any) -> bool:

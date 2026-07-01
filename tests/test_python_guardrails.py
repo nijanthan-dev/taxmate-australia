@@ -3291,43 +3291,59 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("records none", row["answer"])
 
     def test_rental_property_no_loan_records_with_agent_statement_are_not_missing(self) -> None:
-        payload = taxmate_intake.answers_to_pack_payload(
-            {
-                "rental_property": {
-                    "address": "Example rental",
-                    "ownership": "individual",
-                    "income": 12000,
-                    "interest": "no interest",
-                    "records": "no loan; agent statement held",
-                    "private_use": False,
-                }
-            }
-        )
-        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+        cases = [
+            "no loan; agent statement held",
+            "no mortgage; records held",
+            "no borrowing; invoice held",
+        ]
+        for records in cases:
+            with self.subTest(records=records):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "rental_property": {
+                            "address": "Example rental",
+                            "ownership": "individual",
+                            "income": 12000,
+                            "interest": "no interest",
+                            "records": records,
+                            "private_use": False,
+                        }
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
 
-        self.assertEqual("Accountant review", row["status"])
-        self.assertNotIn("rental records", row["tab_text"])
-        self.assertIn("records no loan; agent statement held", row["answer"])
-        self.assertIn("interest no interest", row["answer"])
-        self.assertIn("worksheet net 12000.00", row["answer"])
+                self.assertEqual("Accountant review", row["status"])
+                self.assertNotIn("rental records", row["tab_text"])
+                self.assertIn(f"records {records}", row["answer"])
+                self.assertIn("interest no interest", row["answer"])
+                self.assertIn("worksheet net 12000.00", row["answer"])
 
     def test_rental_property_no_loan_statement_stays_records_evidence(self) -> None:
-        payload = taxmate_intake.answers_to_pack_payload(
-            {
-                "rental_property": {
-                    "address": "Example rental",
-                    "ownership": "individual",
-                    "income": 12000,
-                    "records": "no loan statement",
-                    "private_use": False,
-                }
-            }
-        )
-        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+        cases = [
+            "no loan statement",
+            "no loan statement held",
+            "no mortgage statement held",
+            "no borrowing records held",
+            "no loan; statement held",
+        ]
+        for records in cases:
+            with self.subTest(records=records):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "rental_property": {
+                            "address": "Example rental",
+                            "ownership": "individual",
+                            "income": 12000,
+                            "records": records,
+                            "private_use": False,
+                        }
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
 
-        self.assertEqual("Evidence", row["status"])
-        self.assertIn("rental records", row["tab_text"])
-        self.assertIn("records no loan statement", row["answer"])
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("rental records", row["tab_text"])
+                self.assertIn(f"records {records}", row["answer"])
 
     def test_rental_property_ambiguous_facts_stay_evidence(self) -> None:
         cases = [
