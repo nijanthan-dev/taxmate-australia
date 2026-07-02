@@ -63,7 +63,8 @@ When source content is unavailable, keep the official URL, state that the rule w
 
 Generated topic skill frontmatter must stay portable for Claude Code, Cowork, Codex, and OpenAgentSkill CLI:
 
-- folder name and `name` stay kebab-case and identical.
+- source folder names stay stable for source coverage and generation.
+- public `name` values stay kebab-case and use the `taxmate-australia-` prefix.
 - `description` includes what the skill does and when to use it.
 - `compatibility` states portable use and checkout-free requirements.
 - frontmatter never contains XML angle brackets.

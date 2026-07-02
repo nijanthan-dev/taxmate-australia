@@ -1,10 +1,10 @@
 ---
-name: crypto-assets
+name: taxmate-australia-crypto-assets
 description: Crypto disposals, swaps, exchanges, conversions, staking/rewards, transfers, wallet/exchange records, ownership, cost-base, proceeds, and CGT review boundaries. Use for crypto asset events, records, and conservative CGT prep workflow.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# Crypto Assets
+# TaxMate Australia Crypto Assets
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 

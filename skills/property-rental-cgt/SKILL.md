@@ -1,10 +1,10 @@
 ---
-name: property-rental-cgt
+name: taxmate-australia-property-rental-cgt
 description: Rental income, loan interest, repairs versus capital works, private use, depreciation, net rental loss, disposal, and property CGT review. Use for rental property worksheet records and property-related CGT.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# Property Rental CGT
+# TaxMate Australia Property Rental CGT
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 

@@ -1,10 +1,10 @@
 ---
-name: employment-deductions
+name: taxmate-australia-employment-deductions
 description: Employee income, work-related expenses, records, exclusions, and conservative claim review. Use for employee income and work-related deductions.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# Employment Deductions
+# TaxMate Australia Employment Deductions
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 

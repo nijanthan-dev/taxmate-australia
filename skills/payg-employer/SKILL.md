@@ -1,10 +1,10 @@
 ---
-name: payg-employer
+name: taxmate-australia-payg-employer
 description: PAYG withholding, STP, TPAR, and employer reporting obligations. Use for employer withholding and reporting obligations.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# PAYG Employer
+# TaxMate Australia PAYG Employer
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 

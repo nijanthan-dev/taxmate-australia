@@ -67,6 +67,14 @@ if git grep -nE 'taxmate-au($|[^s])|TaxMate AU($|[^s])|TAXMATE_AU_ROOT' -- READM
   fail "legacy public identity leaked"
 fi
 
+if git grep -nE 'taxmate-australiastralia|TaxMate Australiastralia|TAXMATE_AUSTRALIASTRALIA' -- README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md skill.json .gitleaks.toml docs .github .codex-plugin .agents agents skills wrappers plugin.lock.json config; then
+  fail "malformed TaxMate Australia rename artifact leaked"
+fi
+
+if git grep -nE '^name: (individual-return|employment-deductions|work-from-home|abn-business|gst-bas|payg-employer|capital-gains-tax|shares-etfs-managed-funds|crypto-assets|property-rental-cgt|superannuation|private-health-medicare|records-evidence|workbook|taxpack)$' -- skills wrappers; then
+  fail "generic public skill frontmatter leaked"
+fi
+
 git grep -Eq 'not (professional )?tax, legal, accounting, financial' -- README.md DISCLAIMER.md .codex-plugin skills || fail "missing professional-advice disclaimer"
 git grep -q 'not affiliated with' -- README.md DISCLAIMER.md .codex-plugin skills || fail "missing affiliation disclaimer"
 git grep -q 'does not lodge' -- DISCLAIMER.md || fail "missing lodgment disclaimer"
@@ -84,7 +92,9 @@ const openAgentSkill = JSON.parse(fs.readFileSync("skill.json", "utf8"));
 const publicManifest = JSON.parse(fs.readFileSync("config/public-skills.json", "utf8"));
 const packaging = JSON.parse(fs.readFileSync("config/skill-packaging.json", "utf8"));
 const publicSkills = publicManifest.portableSkills;
-const publicSet = new Set(publicSkills);
+const publicSkillPaths = publicManifest.portableSkillPaths || {};
+const publicNameByPath = new Map(Object.entries(publicSkillPaths).map(([name, rel]) => [rel, name]));
+const publicSourceDirs = new Set(Object.values(publicSkillPaths).map((rel) => path.basename(rel)));
 const emptyHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 const repoOnly = /(TAXMATE_AUSTRALIA_ROOT|cmd\/|internal\/|data\/ato_knowledge_base|\.codex-plugin|\$taxmate-australia:|taxmate-australia-(skills|refresh|finance|calc|validate))/;
 const skillNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -138,24 +148,31 @@ function hasReadme(dir) {
 
 function assertClaudeSkillFrontmatter(skillPath) {
   const body = fs.readFileSync(skillPath, "utf8");
-  const name = path.basename(path.dirname(skillPath));
-  const parsed = frontmatter(body, name);
+  const folderName = path.basename(path.dirname(skillPath));
+  const relDir = path.relative(root, path.dirname(skillPath));
+  const expectedName = publicNameByPath.get(relDir) || folderName;
+  const parsed = frontmatter(body, expectedName);
   const data = parsed.data;
   const description = data.description || "";
   const compatibility = data.compatibility || "";
-  if (data.name !== name) fail(`frontmatter name mismatch ${name}`);
-  if (!skillNamePattern.test(data.name || "")) fail(`skill name must be kebab-case ${name}`);
-  if (/^(claude|anthropic)/.test(data.name || "")) fail(`reserved skill name prefix ${name}`);
-  if (!description || description.length > 1024) fail(`invalid description ${name}`);
-  if (!/use (when|for|this)/i.test(description)) fail(`description missing trigger ${name}`);
-  if (!compatibility || compatibility.length > 500) fail(`missing compatibility ${name}`);
-  if (/[<>]/.test(parsed.text)) fail(`frontmatter XML angle bracket ${name}`);
-  if (hasReadme(path.dirname(skillPath))) fail(`README.md inside skill folder ${name}`);
+  if (data.name !== expectedName) fail(`frontmatter name mismatch ${expectedName}`);
+  if (!skillNamePattern.test(data.name || "")) fail(`skill name must be kebab-case ${expectedName}`);
+  if (/^(claude|anthropic)/.test(data.name || "")) fail(`reserved skill name prefix ${expectedName}`);
+  if (!description || description.length > 1024) fail(`invalid description ${expectedName}`);
+  if (!/use (when|for|this)/i.test(description)) fail(`description missing trigger ${expectedName}`);
+  if (!compatibility || compatibility.length > 500) fail(`missing compatibility ${expectedName}`);
+  if (/[<>]/.test(parsed.text)) fail(`frontmatter XML angle bracket ${expectedName}`);
+  if (hasReadme(path.dirname(skillPath))) fail(`README.md inside skill folder ${expectedName}`);
   return body;
 }
 
 if (publicManifest.skillsCliVersion !== "1.5.13") fail("skills CLI version must be pinned to 1.5.13");
 if (JSON.stringify(publicSkills) !== JSON.stringify(packaging.publicPortable)) fail("public skill manifests differ");
+if (JSON.stringify(publicSkillPaths) !== JSON.stringify(packaging.publicPortablePaths || {})) fail("public skill path manifests differ");
+for (const name of publicSkills) {
+  if (!name.startsWith("taxmate-australia")) fail(`public skill name missing TaxMate Australia prefix: ${name}`);
+  if (!publicSkillPaths[name]) fail(`public skill missing source path: ${name}`);
+}
 if (plugin.interface.websiteURL !== plugin.repository) fail("plugin website must point to repository");
 if (!plugin.safety || plugin.safety.humanReviewRequired !== true || plugin.safety.noLodgment !== true || plugin.safety.preserveReviewFlags !== true || !/Never lodge.*ATO/.test(plugin.safety.noLodgmentBoundary || "")) fail("plugin safety boundary metadata missing");
 const expectedInstall = "npx skills@1.5.13 add nijanthan-dev/taxmate-australia --agent codex --global --skill '*' --yes";
@@ -177,10 +194,14 @@ if (!Array.isArray(openAgentSkill.do_not_use_for) || !openAgentSkill.do_not_use_
 if (!openAgentSkill.safety || openAgentSkill.safety.human_review_required !== true) fail("OpenAgentSkill human-review safety missing");
 
 for (const name of publicSkills) {
-  const dir = path.join(root, "skills", name);
+  const sourcePath = publicSkillPaths[name];
+  if (typeof sourcePath !== "string" || !sourcePath.startsWith("skills/")) fail(`invalid public skill path ${name}`);
+  const dir = path.join(root, sourcePath);
   const skillPath = path.join(dir, "SKILL.md");
   if (!fs.existsSync(skillPath)) fail(`missing public skill ${name}`);
   const body = fs.readFileSync(skillPath, "utf8");
+  const parsed = frontmatter(body, name).data;
+  if (parsed.name !== name) fail(`public skill frontmatter mismatch ${name}`);
   if (repoOnly.test(body)) fail(`repository-only reference in ${name}`);
   const refs = [...body.matchAll(/`([^`\n]+)`/g)].map((m) => m[1]).filter((p) => p.startsWith("references/"));
   for (const ref of refs) if (!fs.existsSync(path.join(dir, ref))) fail(`missing reference ${name}/${ref}`);
@@ -208,7 +229,7 @@ for (const base of ["skills", "runtime/skills", "wrappers"]) {
 }
 
 const skillDirs = fs.readdirSync("skills").filter((entry) => fs.existsSync(path.join("skills", entry, "SKILL.md")));
-const unexpectedPublic = skillDirs.filter((entry) => !publicSet.has(entry) && !packaging.runtimeOnly.includes(entry));
+const unexpectedPublic = skillDirs.filter((entry) => !publicSourceDirs.has(entry) && !packaging.runtimeOnly.includes(entry));
 if (unexpectedPublic.length) fail(`unexpected skill classification: ${unexpectedPublic.join(", ")}`);
 
 for (const runtimePath of packaging.runtimeOnlyPaths) {
@@ -220,13 +241,14 @@ for (const runtimePath of packaging.runtimeOnlyPaths) {
 
 const lock = JSON.parse(fs.readFileSync("plugin.lock.json", "utf8"));
 const expectedLockPaths = [
-  ...publicSkills.map((name) => `skills/${name}`),
+  ...Object.values(publicSkillPaths),
   ...packaging.runtimeOnlyPaths.filter((name) => name.startsWith("runtime/skills/")),
 ].sort();
 const lockedPaths = lock.skills.map((entry) => entry.vendoredPath).sort();
 if (JSON.stringify(lockedPaths) !== JSON.stringify(expectedLockPaths)) fail("plugin.lock skill paths do not match packaged skills");
 for (const entry of lock.skills) {
   if (!entry.source || entry.source.path !== entry.vendoredPath) fail(`plugin.lock source path mismatch ${entry.id}`);
+  if (publicNameByPath.has(entry.vendoredPath) && entry.id !== publicNameByPath.get(entry.vendoredPath)) fail(`plugin.lock stale public skill id ${entry.id}`);
   if (!fs.existsSync(path.join(entry.vendoredPath, "SKILL.md"))) fail(`plugin.lock missing skill path ${entry.vendoredPath}`);
   if (!/^sha256:[a-f0-9]{64}$/.test(entry.integrity || "")) fail(`plugin.lock invalid integrity ${entry.id}`);
   const skillHash = crypto.createHash("sha256").update(fs.readFileSync(path.join(entry.vendoredPath, "SKILL.md"))).digest("hex");
@@ -261,7 +283,7 @@ for (const file of ["README.md", "docs/DISCOVERY.md", ".codex-plugin/plugin.json
 if (plugin.keywords.includes("assistant") || plugin.keywords.includes("super")) fail("plugin keywords contain stale generic terms");
 if (!readme.includes("npx skills@1.5.13 add nijanthan-dev/taxmate-australia --list")) fail("README missing primary npx skills list command");
 if (!readme.includes("npx skills@1.5.13 add nijanthan-dev/taxmate-australia \\")) fail("README missing primary npx skills install command");
-if (!readme.includes("Use the capital-gains-tax skill") || !readme.includes("Use the gst-bas skill")) fail("README missing usage examples");
+if (!readme.includes("Use the taxmate-australia-capital-gains-tax skill") || !readme.includes("Use the taxmate-australia-gst-bas skill")) fail("README missing usage examples");
 if (readme.includes("official plugin discovery") || readme.includes("marketplace entry")) fail("README contains unverified marketplace claim");
 if (/openagentskill\.com\/badge|OpenAgentSkill badge/i.test(readme)) fail("README should not claim OpenAgentSkill approval before listing");
 for (const name of publicSkills) if (!readme.includes(`\`${name}\``)) fail(`README missing public skill ${name}`);

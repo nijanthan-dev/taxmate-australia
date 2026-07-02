@@ -1,10 +1,10 @@
 ---
-name: capital-gains-tax
+name: taxmate-australia-capital-gains-tax
 description: General CGT events, dates, ownership, proceeds, cost base, losses, discounts, and complex review flags. Use for general CGT concepts and records.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# Capital Gains Tax
+# TaxMate Australia Capital Gains Tax
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 

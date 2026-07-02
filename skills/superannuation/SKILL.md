@@ -1,10 +1,10 @@
 ---
-name: superannuation
+name: taxmate-australia-superannuation
 description: Personal super contributions, caps, SG touchpoints, deductions, and contribution records. Use for super contribution and record questions.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# Superannuation
+# TaxMate Australia Superannuation
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 

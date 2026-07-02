@@ -79,33 +79,33 @@ I have PAYG income statements, some bank interest and dividends, and a small ABN
 ```
 
 ```text
-I am GST registered and have ABN income and expenses. Use the individual-return, abn-business, and gst-bas skills to prepare the income-tax and BAS review items without treating anything as lodged or final.
+I am GST registered and have ABN income and expenses. Use the taxmate-australia-individual-return, taxmate-australia-abn-business, and taxmate-australia-gst-bas skills to prepare the income-tax and BAS review items without treating anything as lodged or final.
 ```
 
 Topic examples:
 
 ```text
-Use the individual-return skill to prepare PAYG income statement rows from these employer statements, keep payer ABNs, gross, withholding, allowances, RFBA, RESC, lump sum labels, statement evidence, and reconciliation gaps visible.
+Use the taxmate-australia-individual-return skill to prepare PAYG income statement rows from these employer statements, keep payer ABNs, gross, withholding, allowances, RFBA, RESC, lump sum labels, statement evidence, and reconciliation gaps visible.
 ```
 
 ```text
-Use the individual-return skill to prepare investment income rows from my bank interest, dividend/franking, managed fund/ETF/AMIT, and trust distribution statements.
+Use the taxmate-australia-individual-return skill to prepare investment income rows from my bank interest, dividend/franking, managed fund/ETF/AMIT, and trust distribution statements.
 ```
 
 ```text
-Use the capital-gains-tax skill to review this asset disposal conservatively. Show the facts still needed before anyone relies on the CGT treatment.
+Use the taxmate-australia-capital-gains-tax skill to review this asset disposal conservatively. Show the facts still needed before anyone relies on the CGT treatment.
 ```
 
 ```text
-Use the individual-return skill to prepare a rental property worksheet from my rent, loan interest, repairs, private use, depreciation, records, and net rental loss facts.
+Use the taxmate-australia-individual-return skill to prepare a rental property worksheet from my rent, loan interest, repairs, private use, depreciation, records, and net rental loss facts.
 ```
 
 ```text
-Use the gst-bas skill to review my GST collected, GST credits, tax invoices, adjustments, and BAS period. Identify missing evidence and accountant-review items only; do not lodge anything.
+Use the taxmate-australia-gst-bas skill to review my GST collected, GST credits, tax invoices, adjustments, and BAS period. Identify missing evidence and accountant-review items only; do not lodge anything.
 ```
 
 ```text
-Use the work-from-home skill for the 2025-26 income year and verify current rates before calculating anything.
+Use the taxmate-australia-work-from-home skill for the 2025-26 income year and verify current rates before calculating anything.
 ```
 
 HTML handoff examples:
@@ -164,21 +164,21 @@ Open the HTML in a browser and use print/save as PDF. The printed PDF keeps the 
 Public portable entry points:
 
 - `taxmate-australia`
-- `individual-return`
-- `employment-deductions`
-- `work-from-home`
-- `abn-business`
-- `gst-bas`
-- `payg-employer`
-- `capital-gains-tax`
-- `shares-etfs-managed-funds`
-- `crypto-assets`
-- `property-rental-cgt`
-- `superannuation`
-- `private-health-medicare`
-- `records-evidence`
-- `workbook`
-- `taxpack`
+- `taxmate-australia-individual-return`
+- `taxmate-australia-employment-deductions`
+- `taxmate-australia-work-from-home`
+- `taxmate-australia-abn-business`
+- `taxmate-australia-gst-bas`
+- `taxmate-australia-payg-employer`
+- `taxmate-australia-capital-gains-tax`
+- `taxmate-australia-shares-etfs-managed-funds`
+- `taxmate-australia-crypto-assets`
+- `taxmate-australia-property-rental-cgt`
+- `taxmate-australia-superannuation`
+- `taxmate-australia-private-health-medicare`
+- `taxmate-australia-records-evidence`
+- `taxmate-australia-workbook`
+- `taxmate-australia-taxpack`
 
 Source artifacts are tracked in `data/ato_knowledge_base/source_coverage.json`, derived from `data/ato_knowledge_base/source_registry.json`.
 

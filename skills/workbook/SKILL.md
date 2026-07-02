@@ -1,5 +1,5 @@
 ---
-name: workbook
+name: taxmate-australia-workbook
 description: Create accountant-facing Excel workbook outputs from reviewed TaxMate Australia data. Use for taxpayer/spouse-separated and combined tax expense workbooks, BAS/GST summaries, ETF/super/private-health tabs, evidence checklists, and accountant-review queues.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 metadata:

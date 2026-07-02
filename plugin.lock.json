@@ -33,112 +33,112 @@
       "integrity": "sha256:58c91815e45f4f4c3420a50b21b48fc8f8c38a58ae4c246b4bd6eb06ea8bd6a7"
     },
     {
-      "id": "abn-business",
+      "id": "taxmate-australia-abn-business",
       "vendoredPath": "skills/abn-business",
       "source": {
         "type": "local",
         "path": "skills/abn-business"
       },
-      "integrity": "sha256:9b3ae24076fa5342d752898b3f3b7e92cbdd29de82d5a096d9a56d9e27ac682b"
+      "integrity": "sha256:3f835d0871c00bbed266b32872f92f2be7724b7e407968db0bcdf1325aac0858"
     },
     {
-      "id": "capital-gains-tax",
+      "id": "taxmate-australia-capital-gains-tax",
       "vendoredPath": "skills/capital-gains-tax",
       "source": {
         "type": "local",
         "path": "skills/capital-gains-tax"
       },
-      "integrity": "sha256:5772ce53bc8402bf54a2f79787b538da422d918d20f72825ce550bcb62ea7188"
+      "integrity": "sha256:a1ddc35987800197ec4ebb6d806547d40a5d4733f6532eff8751cbd64d948b1f"
     },
     {
-      "id": "crypto-assets",
+      "id": "taxmate-australia-crypto-assets",
       "vendoredPath": "skills/crypto-assets",
       "source": {
         "type": "local",
         "path": "skills/crypto-assets"
       },
-      "integrity": "sha256:f9c9bb1dae3c6ed7e5f26f7ffe0e21a3b1a511e2cfaae0acf7522dcfbcfbb647"
+      "integrity": "sha256:fc2666ff220f1e2aadae45b99829bf6e727efeb465167a797f4b6b5f9e4cd0fb"
     },
     {
-      "id": "employment-deductions",
+      "id": "taxmate-australia-employment-deductions",
       "vendoredPath": "skills/employment-deductions",
       "source": {
         "type": "local",
         "path": "skills/employment-deductions"
       },
-      "integrity": "sha256:30019a99246bf8388dc90e41527607f32948adf28e64e7e5f86085933d3785e3"
+      "integrity": "sha256:d865cf91429aef65432b8ca7a21feb82f1e69932b0d8a72a232341cf656383b2"
     },
     {
-      "id": "gst-bas",
+      "id": "taxmate-australia-gst-bas",
       "vendoredPath": "skills/gst-bas",
       "source": {
         "type": "local",
         "path": "skills/gst-bas"
       },
-      "integrity": "sha256:026d796c5bcb352478d583505d843f36cee064d30dcc58732876efdc2972168c"
+      "integrity": "sha256:d293610dc7f1e3864f545ce14e5757968c29f5580533dee40e659d820f3530fd"
     },
     {
-      "id": "individual-return",
+      "id": "taxmate-australia-individual-return",
       "vendoredPath": "skills/individual-return",
       "source": {
         "type": "local",
         "path": "skills/individual-return"
       },
-      "integrity": "sha256:f06b85fd6a2973ddbbec90674f87b981494f9dec3b750054f36d1983104c9e64"
+      "integrity": "sha256:24ef8bccc59ca408a76369e15f59c45d81f3074ddad61fa1290133a3c28afc80"
     },
     {
-      "id": "payg-employer",
+      "id": "taxmate-australia-payg-employer",
       "vendoredPath": "skills/payg-employer",
       "source": {
         "type": "local",
         "path": "skills/payg-employer"
       },
-      "integrity": "sha256:c0d3b03901455ff4c99b6959664f2c892c73ac36a7d29c41d5fa6d21f5df8a5a"
+      "integrity": "sha256:b6dfe4f51f0d109cf320677215616f89dfe84e16cf953be9750864328964fc52"
     },
     {
-      "id": "private-health-medicare",
+      "id": "taxmate-australia-private-health-medicare",
       "vendoredPath": "skills/private-health-medicare",
       "source": {
         "type": "local",
         "path": "skills/private-health-medicare"
       },
-      "integrity": "sha256:039394ce082d689efe10c544e99b205dffcfaa356b4686f52993bbacda8419fa"
+      "integrity": "sha256:199011c4c6e5f92698eb56fdfdeeec5576c3ecec14c5c3ca8e7afcab76c23ebd"
     },
     {
-      "id": "property-rental-cgt",
+      "id": "taxmate-australia-property-rental-cgt",
       "vendoredPath": "skills/property-rental-cgt",
       "source": {
         "type": "local",
         "path": "skills/property-rental-cgt"
       },
-      "integrity": "sha256:5889f7f88f4ea8a982f9ee9e45c17b5e57d5a2ece9548dba6783d5e6adde16b7"
+      "integrity": "sha256:a408370feea4800820bce2bcacdc28c1fd056b1e663c0909795f48be16e48951"
     },
     {
-      "id": "records-evidence",
+      "id": "taxmate-australia-records-evidence",
       "vendoredPath": "skills/records-evidence",
       "source": {
         "type": "local",
         "path": "skills/records-evidence"
       },
-      "integrity": "sha256:a9a568f8d3fd90aed8a0170d5b6fec4872fccdbebdbc1b9dac080c29433d16c2"
+      "integrity": "sha256:30f335a59a02f66d52640a937ea645e0232083fb56723f0db2f3f81a35816093"
     },
     {
-      "id": "shares-etfs-managed-funds",
+      "id": "taxmate-australia-shares-etfs-managed-funds",
       "vendoredPath": "skills/shares-etfs-managed-funds",
       "source": {
         "type": "local",
         "path": "skills/shares-etfs-managed-funds"
       },
-      "integrity": "sha256:747531758cad2f025420701896fc0882316c968d7dd853a5beffc015303c5608"
+      "integrity": "sha256:62ecfc0e6911522d44dffe3a5a53b28ba59fc264a317028b9d55f4a218aa25d9"
     },
     {
-      "id": "superannuation",
+      "id": "taxmate-australia-superannuation",
       "vendoredPath": "skills/superannuation",
       "source": {
         "type": "local",
         "path": "skills/superannuation"
       },
-      "integrity": "sha256:d83b5e7d4b4fd1051563c180d9c98439797358be853982ff7a6bff06477852fd"
+      "integrity": "sha256:c8d9ce4d48bb4e654070de980fae0977395290bf37128a161ad6d6d29ce222fa"
     },
     {
       "id": "taxmate-australia",
@@ -147,34 +147,34 @@
         "type": "local",
         "path": "skills/taxmate-australia"
       },
-      "integrity": "sha256:9a1ed62c1911e3f0ea6b2c29b1cac07c90ca235346335de1e4c882d3e95b284b"
+      "integrity": "sha256:bf400eac87b14adefbeb016745339c68ac4488dc1e5657ee31b749722bf1879f"
     },
     {
-      "id": "taxpack",
+      "id": "taxmate-australia-taxpack",
       "vendoredPath": "skills/taxpack",
       "source": {
         "type": "local",
         "path": "skills/taxpack"
       },
-      "integrity": "sha256:bc86593d7a54d9f31b290c5fab79f8892ac849e44532bb44eeae3f08957ef31b"
+      "integrity": "sha256:115dbca6c7ee6fa0b5f967d798d18823242b379be10353e8e925cdf5d0ea7a00"
     },
     {
-      "id": "work-from-home",
+      "id": "taxmate-australia-work-from-home",
       "vendoredPath": "skills/work-from-home",
       "source": {
         "type": "local",
         "path": "skills/work-from-home"
       },
-      "integrity": "sha256:4b4ea8991e23be769e3b021196671e5710037e309dd976acfa1d0fa002530b71"
+      "integrity": "sha256:db6b8794888b8f0855c59d2fbbfba0163938eb1af15e48e625bd87f2a3d1888e"
     },
     {
-      "id": "workbook",
+      "id": "taxmate-australia-workbook",
       "vendoredPath": "skills/workbook",
       "source": {
         "type": "local",
         "path": "skills/workbook"
       },
-      "integrity": "sha256:8e7068a503e4babfe7ebcc87479a4292bfb2950cff0a1142c359965b21f8e420"
+      "integrity": "sha256:a5fac3bcf2dce743b4bd38bafdf1475cf499f0cf221c6ab0be01cd9e2e601309"
     }
   ]
 }

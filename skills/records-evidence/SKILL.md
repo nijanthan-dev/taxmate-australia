@@ -1,10 +1,10 @@
 ---
-name: records-evidence
+name: taxmate-australia-records-evidence
 description: Cross-topic records, receipts, substantiation, logbooks, and evidence gaps. Use for records and proof standards.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# Records Evidence
+# TaxMate Australia Records Evidence
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 

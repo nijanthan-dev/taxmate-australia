@@ -713,7 +713,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             (plugin / "plugin.json").write_text("{}", encoding="utf-8")
             (taxpack / "SKILL.md").write_text("manual-copy guidance\n", encoding="utf-8")
             (root_skill / "SKILL.md").write_text(
-                "- `individual-return`: V1 scope, spouse, dependants, and HTML handoff.\n",
+                "- `taxmate-australia-individual-return`: V1 scope, spouse, dependants, and HTML handoff.\n",
                 encoding="utf-8",
             )
             (individual / "SKILL.md").write_text(
@@ -4707,13 +4707,13 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("wallet or exchange records", skill)
         self.assertIn("cost base", skill)
         self.assertIn("capital proceeds", skill)
-        self.assertIn("`crypto-assets`", skill)
+        self.assertIn("`taxmate-australia-crypto-assets`", skill)
         route_line = next(line for line in skill.splitlines() if "Route tax-treatment decisions" in line)
         for routed_skill in [
-            "`shares-etfs-managed-funds`",
-            "`capital-gains-tax`",
-            "`crypto-assets`",
-            "`property-rental-cgt`",
+            "`taxmate-australia-shares-etfs-managed-funds`",
+            "`taxmate-australia-capital-gains-tax`",
+            "`taxmate-australia-crypto-assets`",
+            "`taxmate-australia-property-rental-cgt`",
         ]:
             with self.subTest(routed_skill=routed_skill):
                 self.assertIn(routed_skill, route_line)
@@ -6697,7 +6697,7 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("rental property worksheet", skill)
         self.assertIn("repairs versus capital", skill)
         self.assertIn("net rental loss", skill)
-        self.assertIn("`property-rental-cgt`", skill)
+        self.assertIn("`taxmate-australia-property-rental-cgt`", skill)
         self.assertIn("rental property worksheet", prep_doc)
         self.assertIn("rental property", root_skill)
         self.assertIn(taxmate_intake.ATO_RENTAL_RECORDS_SOURCE, rules)
@@ -9905,7 +9905,8 @@ class SkillGenerationTests(unittest.TestCase):
         frontmatter = taxmate_validate.parse_frontmatter(body)
 
         self.assertIsNotNone(frontmatter)
-        self.assertEqual(frontmatter["name"], skillgen.Topics()[0].slug)
+        self.assertEqual(frontmatter["name"], skillgen.publicSkillName(skillgen.Topics()[0].slug))
+        self.assertIn("# TaxMate Australia", body)
         self.assertIn("Use for", frontmatter["description"])
         self.assertIn("Claude Code", frontmatter["compatibility"])
         self.assertIn("Cowork", frontmatter["compatibility"])
@@ -9944,6 +9945,9 @@ class ValidatorAndCliTests(unittest.TestCase):
         self.assertTrue(any("name must match folder" in issue for issue in issues))
         self.assertTrue(any("name must be kebab-case" in issue for issue in issues))
         self.assertTrue(any("description missing use trigger" in issue for issue in issues))
+
+    def test_public_skill_names_use_taxmate_prefix(self) -> None:
+        self.assertTrue(taxmate_validate.public_skill_names_use_taxmate_prefix(str(ROOT)))
 
     def test_skill_dirs_without_skill_md_catches_orphan_skill_dir(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

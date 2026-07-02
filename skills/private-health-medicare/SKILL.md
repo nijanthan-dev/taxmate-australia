@@ -1,10 +1,10 @@
 ---
-name: private-health-medicare
+name: taxmate-australia-private-health-medicare
 description: Private health rebate, Medicare levy, Medicare levy surcharge, and insurer statement records. Use for private health and Medicare levy questions.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# Private Health Medicare
+# TaxMate Australia Private Health Medicare
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 

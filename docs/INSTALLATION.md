@@ -43,7 +43,7 @@ One-skill install:
 
 ```bash
 npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
-  --skill capital-gains-tax \
+  --skill taxmate-australia-capital-gains-tax \
   --agent codex \
   --global \
   --yes
@@ -59,7 +59,7 @@ Use without install:
 
 ```bash
 npx skills@1.5.13 use nijanthan-dev/taxmate-australia \
-  --skill capital-gains-tax \
+  --skill taxmate-australia-capital-gains-tax \
   --agent codex
 ```
 
@@ -70,17 +70,17 @@ npx skills@1.5.13 use nijanthan-dev/taxmate-australia \
 
 ## Claude Code and Cowork
 
-TaxMate portable skills use the standard skill folder shape from the Claude guide:
+TaxMate portable skills use TaxMate Australia public names and the standard skill folder shape from the Claude guide:
 
 ```text
-skill-name/
+taxmate-australia-skill-name/
   SKILL.md
   references/
 ```
 
 For Claude Code or Cowork, use the same public portable skill folders listed below. Each folder is self-contained, has `SKILL.md` with YAML frontmatter, and avoids checkout-only runtime commands.
 
-Install by downloading or copying the selected `skills/skill-name` folder into the skill location supported by your Claude Code or Cowork setup, or upload the zipped skill folder when the product UI asks for a skill package. Do not zip the whole repository when you only want portable skill access.
+Install through `skills@1.5.13` when possible so the installed folder matches the public `taxmate-australia-*` name. If you manually package a skill from this repository, use `config/public-skills.json` to map the public name to its source folder, and zip that folder with the public name. Do not zip the whole repository when you only want portable skill access.
 
 Use the full plugin runtime only when you need the print-first HTML handoff, workbook/taxpack output, ATO refresh, finance review scripts, calculators, or repository validation.
 
@@ -89,21 +89,21 @@ Use the full plugin runtime only when you need the print-first HTML handoff, wor
 The source of truth is `config/public-skills.json`.
 
 - `taxmate-australia`
-- `individual-return`
-- `employment-deductions`
-- `work-from-home`
-- `abn-business`
-- `gst-bas`
-- `payg-employer`
-- `capital-gains-tax`
-- `shares-etfs-managed-funds`
-- `crypto-assets`
-- `property-rental-cgt`
-- `superannuation`
-- `private-health-medicare`
-- `records-evidence`
-- `workbook`
-- `taxpack`
+- `taxmate-australia-individual-return`
+- `taxmate-australia-employment-deductions`
+- `taxmate-australia-work-from-home`
+- `taxmate-australia-abn-business`
+- `taxmate-australia-gst-bas`
+- `taxmate-australia-payg-employer`
+- `taxmate-australia-capital-gains-tax`
+- `taxmate-australia-shares-etfs-managed-funds`
+- `taxmate-australia-crypto-assets`
+- `taxmate-australia-property-rental-cgt`
+- `taxmate-australia-superannuation`
+- `taxmate-australia-private-health-medicare`
+- `taxmate-australia-records-evidence`
+- `taxmate-australia-workbook`
+- `taxmate-australia-taxpack`
 
 ## Update and removal
 
@@ -116,13 +116,13 @@ npx skills@1.5.13 update --global --yes
 Update one skill:
 
 ```bash
-npx skills@1.5.13 update capital-gains-tax --global --yes
+npx skills@1.5.13 update taxmate-australia-capital-gains-tax --global --yes
 ```
 
 Remove one skill:
 
 ```bash
-npx skills@1.5.13 remove --skill capital-gains-tax --agent codex --global --yes
+npx skills@1.5.13 remove --skill taxmate-australia-capital-gains-tax --agent codex --global --yes
 ```
 
 Remove all TaxMate skills:

@@ -299,18 +299,18 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
             INDIVIDUAL_INTAKE_CONTRACT,
             route_line,
             [
-                "`payg-employer`",
-                "`abn-business`",
-                "`gst-bas`",
-                "`employment-deductions`",
-                "`work-from-home`",
-                "`private-health-medicare`",
-                "`superannuation`",
-                "`shares-etfs-managed-funds`",
-                "`capital-gains-tax`",
-                "`crypto-assets`",
-                "`property-rental-cgt`",
-                "`records-evidence`",
+                "`taxmate-australia-payg-employer`",
+                "`taxmate-australia-abn-business`",
+                "`taxmate-australia-gst-bas`",
+                "`taxmate-australia-employment-deductions`",
+                "`taxmate-australia-work-from-home`",
+                "`taxmate-australia-private-health-medicare`",
+                "`taxmate-australia-superannuation`",
+                "`taxmate-australia-shares-etfs-managed-funds`",
+                "`taxmate-australia-capital-gains-tax`",
+                "`taxmate-australia-crypto-assets`",
+                "`taxmate-australia-property-rental-cgt`",
+                "`taxmate-australia-records-evidence`",
             ],
         )
     )
@@ -1431,7 +1431,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "ownership/entity",
                 "both business and private",
                 "no-crypto plus facts",
-                "`crypto-assets`",
+                "`taxmate-australia-crypto-assets`",
                 "https://www.ato.gov.au/individuals-and-families/investments-and-assets/crypto-asset-investments",
                 "https://www.ato.gov.au/individuals-and-families/investments-and-assets/crypto-asset-investments/keeping-crypto-records",
                 "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/crypto-assets-and-business",
@@ -1451,7 +1451,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     root_router = read_optional(root, "skills/taxmate-australia/SKILL.md")
     root_individual_route = ""
     for line in root_router.splitlines():
-        if "`individual-return`: V1 individual return intake" in line:
+        if "`taxmate-australia-individual-return`: V1 individual return intake" in line:
             root_individual_route = line
             break
     findings.extend(
@@ -1459,7 +1459,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
             INDIVIDUAL_INTAKE_CONTRACT,
             root_individual_route,
             [
-                "`individual-return`: V1 individual return intake",
+                "`taxmate-australia-individual-return`: V1 individual return intake",
                 "PSI",
                 "crypto CGT",
             ],
@@ -1467,7 +1467,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     )
     prep_cgt_route = ""
     for line in individual_prep_doc.splitlines():
-        if "`shares-etfs-managed-funds`" in line:
+        if "`taxmate-australia-shares-etfs-managed-funds`" in line:
             prep_cgt_route = line
             break
     findings.extend(
@@ -1475,10 +1475,10 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
             INDIVIDUAL_INTAKE_CONTRACT,
             prep_cgt_route,
             [
-                "`shares-etfs-managed-funds`",
-                "`capital-gains-tax`",
-                "`crypto-assets`",
-                "`property-rental-cgt`",
+                "`taxmate-australia-shares-etfs-managed-funds`",
+                "`taxmate-australia-capital-gains-tax`",
+                "`taxmate-australia-crypto-assets`",
+                "`taxmate-australia-property-rental-cgt`",
             ],
         )
     )

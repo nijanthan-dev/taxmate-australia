@@ -18,7 +18,7 @@ Use this before publishing TaxMate Australia outside a local install.
 - Confirm plugin docs include installation notes and plugin structure for onboarding.
 - Confirm README has install commands and usage examples suitable for OpenAgentSkill review.
 - Confirm README first paragraph includes Australian tax prep, linked official ATO source wording, GST/BAS, CGT, accountant handoff, and supported agent surfaces.
-- Confirm every packaged skill has exact `SKILL.md`, kebab-case folder/name, trigger-ready description, compatibility frontmatter, no XML angle brackets in frontmatter, and no skill-folder `README.md`.
+- Confirm every packaged public skill has exact `SKILL.md`, kebab-case `taxmate-australia-*` public name, source-folder mapping in `config/public-skills.json`, trigger-ready description, compatibility frontmatter, no XML angle brackets in frontmatter, and no skill-folder `README.md`.
 - Do not add an OpenAgentSkill badge until the listing is approved.
 - Run `./scripts/taxmate validate` and require every check to pass (`score: 100.0`).
 - Refresh or recrawl ATO sources near release date.

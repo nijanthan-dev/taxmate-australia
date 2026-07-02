@@ -66,7 +66,7 @@ for (const name of expected) {
   if (!body.startsWith("---\n")) throw new Error(`missing frontmatter: ${name}`);
   const end = body.indexOf("\n---", 4);
   if (end < 0) throw new Error(`invalid frontmatter: ${name}`);
-  if (!/^name:\s*[a-z0-9-]+$/m.test(body.slice(0, end))) throw new Error(`frontmatter name missing: ${name}`);
+  if (!new RegExp(`^name:\\s*${name}$`, "m").test(body.slice(0, end))) throw new Error(`frontmatter name mismatch: ${name}`);
   if (/(TAXMATE_AUSTRALIA_ROOT|bin\/taxmate-australia-|cmd\/|internal\/|data\/ato_knowledge_base|\.codex-plugin|\$taxmate-australia:|taxmate-australia-(skills|refresh|finance|calc|validate))/.test(body)) {
     throw new Error(`repository dependency in ${name}`);
   }
@@ -88,7 +88,7 @@ for dir in "$TMP_HOME/.agents/skills"/*; do
 done
 
 test -f "$TMP_HOME/.agents/skills/taxmate-australia/SKILL.md"
-HOME="$TMP_HOME" "${SKILLS[@]}" use "$ROOT" --skill capital-gains-tax >"$USE_OUT"
-grep -q "Capital Gains Tax" "$USE_OUT" || fail "skills use did not render capital-gains-tax"
+HOME="$TMP_HOME" "${SKILLS[@]}" use "$ROOT" --skill taxmate-australia-capital-gains-tax >"$USE_OUT"
+grep -q "TaxMate Australia Capital Gains Tax" "$USE_OUT" || fail "skills use did not render taxmate-australia-capital-gains-tax"
 
 echo "skills install smoke test passed"

@@ -21,21 +21,21 @@ Use this entry skill when the user asks generally for TaxMate Australia or when 
 
 Prefer the most specific installed skill:
 
-- `individual-return`: V1 individual return intake, PAYG, ESS, ETP, lump sum in arrears, super income, foreign income, PSI, crypto CGT, rental property worksheet, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and manual-copy handoff guidance; use the full runtime for HTML handoff generation.
-- `employment-deductions`: employee work expenses other than dedicated WFH questions.
-- `work-from-home`: employee WFH fixed-rate, actual-cost, equipment, and records.
-- `abn-business`: ABN, sole trader, business income/expenses, pre-revenue, hobby, PSI, and non-commercial losses.
-- `gst-bas`: GST registration, GST credits, tax invoices, BAS labels, and BAS evidence.
-- `payg-employer`: PAYG withholding, STP, employer super, and employee payment records.
-- `capital-gains-tax`: CGT events, cost base, proceeds, discounts, losses, rollovers, and exemptions.
-- `shares-etfs-managed-funds`: dividends, ETFs, AMIT, managed funds, DRP, annual tax statements, and share records.
-- `crypto-assets`: crypto disposals, swaps, exchanges, conversions, staking/rewards, wallet/exchange records, and cost base.
-- `property-rental-cgt`: rental income, loan interest, records, private use, repairs versus capital works, depreciation, net rental loss, main residence, and property CGT.
-- `superannuation`: contributions, SG, caps, Division 293, release, SMSF-adjacent questions.
-- `private-health-medicare`: private health statements, rebate, Medicare levy, and Medicare levy surcharge.
-- `records-evidence`: receipts, invoices, logbooks, bank records, source URLs, evidence gaps.
-- `workbook`: output-only accountant workbook creation from reviewed data.
-- `taxpack`: output-only accountant handoff pack creation from reviewed data.
+- `taxmate-australia-individual-return`: V1 individual return intake, PAYG, ESS, ETP, lump sum in arrears, super income, foreign income, PSI, crypto CGT, rental property worksheet, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and manual-copy handoff guidance; use the full runtime for HTML handoff generation.
+- `taxmate-australia-employment-deductions`: employee work expenses other than dedicated WFH questions.
+- `taxmate-australia-work-from-home`: employee WFH fixed-rate, actual-cost, equipment, and records.
+- `taxmate-australia-abn-business`: ABN, sole trader, business income/expenses, pre-revenue, hobby, PSI, and non-commercial losses.
+- `taxmate-australia-gst-bas`: GST registration, GST credits, tax invoices, BAS labels, and BAS evidence.
+- `taxmate-australia-payg-employer`: PAYG withholding, STP, employer super, and employee payment records.
+- `taxmate-australia-capital-gains-tax`: CGT events, cost base, proceeds, discounts, losses, rollovers, and exemptions.
+- `taxmate-australia-shares-etfs-managed-funds`: dividends, ETFs, AMIT, managed funds, DRP, annual tax statements, and share records.
+- `taxmate-australia-crypto-assets`: crypto disposals, swaps, exchanges, conversions, staking/rewards, wallet/exchange records, and cost base.
+- `taxmate-australia-property-rental-cgt`: rental income, loan interest, records, private use, repairs versus capital works, depreciation, net rental loss, main residence, and property CGT.
+- `taxmate-australia-superannuation`: contributions, SG, caps, Division 293, release, SMSF-adjacent questions.
+- `taxmate-australia-private-health-medicare`: private health statements, rebate, Medicare levy, and Medicare levy surcharge.
+- `taxmate-australia-records-evidence`: receipts, invoices, logbooks, bank records, source URLs, evidence gaps.
+- `taxmate-australia-workbook`: output-only accountant workbook creation from reviewed data.
+- `taxmate-australia-taxpack`: output-only accountant handoff pack creation from reviewed data.
 
 If the required topic skill is not installed, do not decide the tax treatment. State the missing skill and mark the item `Accountant review`.
 

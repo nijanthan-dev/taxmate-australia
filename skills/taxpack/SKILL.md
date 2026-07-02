@@ -1,5 +1,5 @@
 ---
-name: taxpack
+name: taxmate-australia-taxpack
 description: Prepare accountant handoff packs, checklists, source bundles, and manual-copy guidance from reviewed TaxMate Australia data. Use for portable taxpack guidance that helps users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff; use the full runtime for print-first HTML handoff generation.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 metadata:

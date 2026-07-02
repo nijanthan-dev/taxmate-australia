@@ -229,8 +229,8 @@ def add_openagentskill_checks(root: str, add, manifest: Dict[str, str], readme_t
     add(
         "openagentskill_readme_examples_ready",
         "npx skills@1.5.13 add nijanthan-dev/taxmate-australia" in readme_text
-        and "Use the capital-gains-tax skill" in readme_text
-        and "Use the gst-bas skill" in readme_text
+        and "Use the taxmate-australia-capital-gains-tax skill" in readme_text
+        and "Use the taxmate-australia-gst-bas skill" in readme_text
         and "OpenAgentSkill badge" not in readme_text
         and "openagentskill.com/badge" not in readme_text.lower(),
         "",
@@ -300,6 +300,7 @@ def add_skill_and_documentation_checks(
     add("wrappers_mark_local_fallback", wrappers_mark_local_fallback(root), "")
     add("wrapper_frontmatter_names", wrapper_frontmatter_names_match_path(root), "")
     add("wrapper_invocations_use_australia_prefix", wrapper_invocations_use_australia_prefix(root), "")
+    add("public_skill_names_use_taxmate_prefix", public_skill_names_use_taxmate_prefix(root), "")
     add("plugin_lock_skill_paths_exist", plugin_lock_skill_paths_exist(root), "")
     add("wrapper_fallback_skill_paths_exist", wrapper_fallback_skill_paths_exist(root), "")
     add("individual_return_prep_docs_ready", individual_return_prep_docs_ready(root, readme_text), "")
@@ -468,6 +469,17 @@ def public_portable_skills(root: str) -> Tuple[List[str], Optional[Exception]]:
     return skills, None
 
 
+def public_skill_paths_by_name(root: str) -> Dict[str, str]:
+    try:
+        payload = json.loads(Path(os.path.join(root, "config", "public-skills.json")).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    raw_paths = payload.get("portableSkillPaths")
+    if not isinstance(raw_paths, dict):
+        return {}
+    return {name: rel for name, rel in raw_paths.items() if isinstance(name, str) and isinstance(rel, str)}
+
+
 def read_plugin_manifest(root: str) -> Tuple[Dict[str, str], Optional[Exception]]:
     try:
         body = Path(os.path.join(root, ".codex-plugin", "plugin.json")).read_text(encoding="utf-8")
@@ -489,8 +501,10 @@ def load_skill_docs(root: str, skills: List[str]) -> Tuple[str, List[str], List[
     text_parts: List[str] = []
     missing: List[str] = []
     bad: List[str] = []
+    skill_paths = public_skill_paths_by_name(root)
     for skill in skills:
-        path = os.path.join(root, "skills", skill, "SKILL.md")
+        rel = skill_paths.get(skill, os.path.join("skills", skill))
+        path = os.path.join(root, rel, "SKILL.md")
         try:
             body = Path(path).read_text(encoding="utf-8")
         except OSError:
@@ -514,8 +528,10 @@ def read_json_file(path: str) -> Tuple[Dict[str, Any], Optional[Exception]]:
 
 
 def all_skill_descriptions_long(root: str, skills: List[str]) -> bool:
+    skill_paths = public_skill_paths_by_name(root)
     for skill in skills:
-        path = os.path.join(root, "skills", skill, "SKILL.md")
+        rel = skill_paths.get(skill, os.path.join("skills", skill))
+        path = os.path.join(root, rel, "SKILL.md")
         try:
             body = Path(path).read_text(encoding="utf-8")
         except OSError:
@@ -604,12 +620,14 @@ def individual_return_prep_docs_ready(root: str, readme_text: str) -> bool:
 
 def claude_skill_frontmatter_issues(root: str) -> List[str]:
     issues: List[str] = []
+    public_names_by_path = public_skill_names_by_source_path(root)
     for path in skill_doc_paths(root):
         rel = relative_path(root, path)
         text = read_text(path)
         fm = parse_frontmatter(text)
         fm_text = frontmatter_text(text)
         folder_name = Path(path).parent.name
+        expected_name = public_names_by_path.get(relative_path(root, str(Path(path).parent)), folder_name)
         name = (fm or {}).get("name", "")
         description = (fm or {}).get("description", "")
         compatibility = (fm or {}).get("compatibility", "")
@@ -617,8 +635,11 @@ def claude_skill_frontmatter_issues(root: str) -> List[str]:
         if fm is None:
             issues.append(f"{rel}: invalid frontmatter")
             continue
-        if name != folder_name:
-            issues.append(f"{rel}: name must match folder")
+        if name != expected_name:
+            if expected_name == folder_name:
+                issues.append(f"{rel}: name must match folder")
+            else:
+                issues.append(f"{rel}: name must match public skill name {expected_name}")
         if not SKILL_NAME_RE.fullmatch(name):
             issues.append(f"{rel}: name must be kebab-case")
         if name.startswith(RESERVED_SKILL_PREFIXES):
@@ -632,6 +653,38 @@ def claude_skill_frontmatter_issues(root: str) -> List[str]:
         if "<" in fm_text or ">" in fm_text:
             issues.append(f"{rel}: frontmatter contains XML angle bracket")
     return issues
+
+
+def public_skill_names_by_source_path(root: str) -> Dict[str, str]:
+    return {rel: name for name, rel in public_skill_paths_by_name(root).items()}
+
+
+def public_skill_names_use_taxmate_prefix(root: str) -> bool:
+    try:
+        public_manifest = json.loads(Path(os.path.join(root, "config", "public-skills.json")).read_text(encoding="utf-8"))
+        packaging = json.loads(Path(os.path.join(root, "config", "skill-packaging.json")).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    public_names = public_manifest.get("portableSkills")
+    package_names = packaging.get("publicPortable")
+    public_paths = public_manifest.get("portableSkillPaths")
+    package_paths = packaging.get("publicPortablePaths")
+    if not isinstance(public_names, list) or not isinstance(package_names, list):
+        return False
+    if public_names != package_names:
+        return False
+    if not isinstance(public_paths, dict) or public_paths != package_paths:
+        return False
+    for name in public_names:
+        if not isinstance(name, str) or not name.startswith("taxmate-australia"):
+            return False
+        rel = public_paths.get(name)
+        if not isinstance(rel, str):
+            return False
+        fm = parse_frontmatter(read_text(os.path.join(root, rel, "SKILL.md")))
+        if fm is None or fm.get("name") != name:
+            return False
+    return True
 
 
 def skill_doc_paths(root: str) -> List[str]:
@@ -794,6 +847,7 @@ def plugin_lock_skill_paths_exist(root: str) -> bool:
     skills = payload.get("skills")
     if not isinstance(skills, list) or not skills:
         return False
+    public_name_by_path = public_skill_names_by_source_path(root)
     for skill in skills:
         if not isinstance(skill, dict):
             return False
@@ -806,7 +860,11 @@ def plugin_lock_skill_paths_exist(root: str) -> bool:
                 return False
         vendored_path = skill.get("vendoredPath")
         integrity = skill.get("integrity")
-        if not isinstance(vendored_path, str) or not isinstance(integrity, str):
+        skill_id = skill.get("id")
+        if not isinstance(vendored_path, str) or not isinstance(integrity, str) or not isinstance(skill_id, str):
+            return False
+        expected_public_id = public_name_by_path.get(vendored_path)
+        if expected_public_id is not None and skill_id != expected_public_id:
             return False
         body = Path(os.path.join(root, vendored_path, "SKILL.md")).read_bytes()
         if integrity != "sha256:" + hashlib.sha256(body).hexdigest():
@@ -824,7 +882,12 @@ def expected_plugin_lock_paths(root: str) -> List[str]:
         packaging = json.loads(Path(os.path.join(root, "config", "skill-packaging.json")).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return []
-    public_paths = [os.path.join("skills", item) for item in public_manifest.get("portableSkills", []) if isinstance(item, str)]
+    public_path_map = public_manifest.get("portableSkillPaths", {})
+    public_paths = [
+        item
+        for item in public_path_map.values()
+        if isinstance(item, str) and item.startswith("skills/")
+    ]
     runtime_paths = [
         item
         for item in packaging.get("runtimeOnlyPaths", [])

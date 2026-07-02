@@ -1,10 +1,10 @@
 ---
-name: gst-bas
+name: taxmate-australia-gst-bas
 description: GST registration, credits, tax invoices, BAS reporting, PAYG instalment intersections, and guardrails. Use for GST registration, credits, tax invoices, and BAS preparation.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# GST BAS
+# TaxMate Australia GST BAS
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 

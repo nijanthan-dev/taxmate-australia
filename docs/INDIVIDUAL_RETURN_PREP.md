@@ -8,16 +8,16 @@ TaxMate is prep-only. It helps collect facts, preserve source links, show missin
 
 ## Portable Skill Path
 
-Use `individual-return` first for a broad checklist. Route specialist sections to installed topic skills when facts appear:
+Use `taxmate-australia-individual-return` first for a broad checklist. Route specialist sections to installed TaxMate Australia topic skills when facts appear:
 
-- `employment-deductions` for PAYG and work deductions.
-- `work-from-home` for WFH hours, records, holidays, and fixed-rate or actual-cost support.
-- `private-health-medicare` for private health, Medicare levy, and surcharge facts.
-- `abn-business` for sole-trader, PSI, business-versus-hobby, and losses.
-- `gst-bas` for BAS worksheets only.
-- `shares-etfs-managed-funds`, `capital-gains-tax`, `crypto-assets`, and `property-rental-cgt` for investment, crypto, rental property worksheet, and CGT review.
-- `records-evidence` for missing records and substantiation gaps.
-- `workbook` or `taxpack` only for output rendering, not tax logic.
+- `taxmate-australia-employment-deductions` for PAYG and work deductions.
+- `taxmate-australia-work-from-home` for WFH hours, records, holidays, and fixed-rate or actual-cost support.
+- `taxmate-australia-private-health-medicare` for private health, Medicare levy, and surcharge facts.
+- `taxmate-australia-abn-business` for sole-trader, PSI, business-versus-hobby, and losses.
+- `taxmate-australia-gst-bas` for BAS worksheets only.
+- `taxmate-australia-shares-etfs-managed-funds`, `taxmate-australia-capital-gains-tax`, `taxmate-australia-crypto-assets`, and `taxmate-australia-property-rental-cgt` for investment, crypto, rental property worksheet, and CGT review.
+- `taxmate-australia-records-evidence` for missing records and substantiation gaps.
+- `taxmate-australia-workbook` or `taxmate-australia-taxpack` only for output rendering, not tax logic.
 
 Ask a full intake, not a short interview. Keep unknown, ambiguous, mixed-use, GST/BAS, CGT, PSI, foreign, ESS, ETP/lump sum, rental, company, trust, partnership, and entity-return items in Evidence or `Accountant review` unless official sources clearly resolve the prep step.
 

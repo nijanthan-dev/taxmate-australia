@@ -31,6 +31,7 @@ SKILL_GUARDRAIL_NEEDLES = [
     "Not claimable",
     "Never lodge",
 ]
+PUBLIC_SKILL_PREFIX = "taxmate-australia"
 
 # Statuses
 StatusVerified = "verified"
@@ -639,6 +640,12 @@ def requiredSkillSlugs() -> List[str]:
     return sorted([t.slug for t in Topics()])
 
 
+def publicSkillName(slug: str) -> str:
+    if slug == PUBLIC_SKILL_PREFIX:
+        return slug
+    return f"{PUBLIC_SKILL_PREFIX}-{slug}"
+
+
 @dataclass
 class _GenerationRow:
     sources: List[Source] = field(default_factory=list)
@@ -895,12 +902,12 @@ def writeOutputLayers(root: str) -> None:
 def skillMarkdown(topic_obj: Topic) -> str:
     lines = [
         "---",
-        f"name: {topic_obj.slug}",
+        f"name: {publicSkillName(topic_obj.slug)}",
         f"description: {topic_obj.description} Use for {topic_obj.use}.",
         "compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.",
         "---",
         "",
-        f"# {topic_obj.title}",
+        f"# TaxMate Australia {topic_obj.title}",
         "",
         GENERATED_MARKER,
         "",

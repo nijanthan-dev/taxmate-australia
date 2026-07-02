@@ -1,10 +1,10 @@
 ---
-name: work-from-home
+name: taxmate-australia-work-from-home
 description: Employee and home-business WFH records, fixed/actual methods, covered costs, and conservative review flags. Use for work-from-home expenses and evidence.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# Work From Home
+# TaxMate Australia Work From Home
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 
