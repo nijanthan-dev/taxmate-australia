@@ -1,6 +1,6 @@
 # TaxMate Australia
 
-TaxMate Australia is an Australian tax prep skill pack and plugin linked to official ATO sources for conservative record review, GST/BAS and CGT triage, evidence gaps, accountant-ready workbook/taxpack handoff, print-first HTML guide handoffs, and treatment flags across Codex, Claude Code, Cowork, and OpenAgentSkill CLI.
+TaxMate Australia helps Codex, Claude Code, Cowork, and OpenAgentSkill CLI turn Australian tax records into conservative prep checklists, review flags, accountant-ready handoffs, and print-first HTML guides. It is linked to official ATO sources and keeps GST/BAS, CGT, missing evidence, and manual-copy boundaries visible.
 
 > [!WARNING]
 > **Not tax advice.** TaxMate Australia is a preparation aid, not professional advice or lodgment software. For complex situations, binding decisions, or lodgment, consult a registered tax agent or use the official ATO channel directly. See [DISCLAIMER.md](DISCLAIMER.md).
@@ -56,15 +56,73 @@ The sample data is synthetic. Screenshot maintenance is a contributor task docum
 
 ## What It Does
 
-- Reviews Australian tax prep records for employees, multi-employer PAYG income statements, ESS, ETP/lump sum, foreign income, ABN/sole-trader work, itemized investment income and distributions, rental property, crypto, superannuation, and private health.
-- Keeps ATO source URLs, checked-at dates, source coverage checks, and generated topic skills visible.
-- Flags GST/BAS, PAYG, FBT, CGT, super guarantee, and stamp-duty source-routing items for conservative review.
-- Builds accountant-facing workbook and taxpack outputs from reviewed data.
-- Creates print-first HTML guides that help users manually copy reviewed answers into myTax, paper ATO forms, or an accountant handoff. TaxMate does not fill official ATO PDFs or create returns users can submit directly to the ATO.
+- Helps users describe PAYG income statements, ABN/sole-trader records, GST/BAS facts, investment statements, rental property records, crypto events, superannuation, private health, and other individual-return material in plain language.
+- Turns those facts into missing-evidence prompts, review queues, source-backed notes, and conservative `Accountant review` flags.
+- Keeps source URLs, checked-at dates, source coverage checks, and generated topic skills visible.
+- Builds workbook, taxpack, and print-first HTML guide handoffs from reviewed data.
+- Helps users manually copy reviewed answers into myTax, paper ATO forms, or an accountant handoff. TaxMate does not fill official ATO PDFs or create returns users can submit directly to the ATO.
+
+## Use It
+
+Start with the outcome, not an internal command. For a broad individual return, [Individual Return Prep](docs/INDIVIDUAL_RETURN_PREP.md) shows the portable skill path, the full-runtime HTML guide path, and the prep-only boundaries for myTax, paper ATO form, or accountant handoff.
+
+Talk to the agent in natural language. TaxMate works best when the user describes the records they have, the income year, and what they want prepared. The agent can use a specific portable skill when the topic is clear, or use the full checkout when you want a rendered HTML handoff.
+
+Broad prep examples:
+
+```text
+Help me prepare my 2025-26 Australian individual tax return. Ask for the facts you need, keep missing evidence visible, and flag anything that needs accountant review.
+```
+
+```text
+I have PAYG income statements, some bank interest and dividends, and a small ABN side business. Help me turn those records into a prep-only review checklist for myTax or my accountant.
+```
+
+```text
+I am GST registered and have ABN income and expenses. Use the individual-return, abn-business, and gst-bas skills to prepare the income-tax and BAS review items without treating anything as lodged or final.
+```
+
+Topic examples:
+
+```text
+Use the individual-return skill to prepare PAYG income statement rows from these employer statements, keep payer ABNs, gross, withholding, allowances, RFBA, RESC, lump sum labels, statement evidence, and reconciliation gaps visible.
+```
+
+```text
+Use the individual-return skill to prepare investment income rows from my bank interest, dividend/franking, managed fund/ETF/AMIT, and trust distribution statements.
+```
+
+```text
+Use the capital-gains-tax skill to review this asset disposal conservatively. Show the facts still needed before anyone relies on the CGT treatment.
+```
+
+```text
+Use the individual-return skill to prepare a rental property worksheet from my rent, loan interest, repairs, private use, depreciation, records, and net rental loss facts.
+```
+
+```text
+Use the gst-bas skill to review my GST collected, GST credits, tax invoices, adjustments, and BAS period. Identify missing evidence and accountant-review items only; do not lodge anything.
+```
+
+```text
+Use the work-from-home skill for the 2025-26 income year and verify current rates before calculating anything.
+```
+
+HTML handoff examples:
+
+```text
+I have a TaxMate checkout available. Turn my reviewed answers into the print-first individual return HTML guide, then tell me where the file is so I can open it and save it as PDF from my browser.
+```
+
+```text
+I have a reviewed answers file. Use TaxMate to create the prep-only HTML handoff with the AI confirmation table, PAYG rows, investment rows, ABN prep, BAS worksheet, review queues, and source/provenance appendix.
+```
+
+If you are using portable skills only, the agent can build the checklist, review prompts, manual-copy guidance, and source-backed review flags in chat. Rendering the HTML file needs a full runtime checkout that Codex or another local agent can run.
 
 ## Full Runtime Quickstart
 
-Use this path when you need generated guides, workbook/taxpack outputs, source refresh, finance review, or calculators.
+Use this path only when you need generated guides, workbook/taxpack outputs, source refresh, finance review, or calculators.
 
 Prerequisites:
 
@@ -82,41 +140,7 @@ bash scripts/bootstrap-dev-env.sh
 
 Full setup details: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md).
 
-## Use It
-
-For a broad individual return, start with [Individual Return Prep](docs/INDIVIDUAL_RETURN_PREP.md). It shows the portable skill path, the full-runtime HTML guide path, and the prep-only boundaries for myTax, paper ATO form, or accountant handoff.
-
-Ask for a specific portable skill when the topic is clear:
-
-```text
-Use the individual-return skill to build a V1 individual return checklist with ABN and BAS review queues.
-```
-
-```text
-Use the individual-return skill to prepare primary and secondary PAYG income statement rows with payer ABN, gross, withholding, RFBA, RESC, allowances, lump sum labels, evidence, and reconciliation.
-```
-
-```text
-Use the capital-gains-tax skill to review this disposal conservatively.
-```
-
-```text
-Use the individual-return skill to prepare bank interest, dividend/franking, managed fund/ETF/AMIT, and trust distribution statement rows for review.
-```
-
-```text
-Use the individual-return skill to prepare a rental property worksheet with income, interest, repairs, private use, depreciation, and net rental loss review.
-```
-
-```text
-Use the gst-bas skill to identify missing evidence and accountant-review items.
-```
-
-```text
-Use the work-from-home skill for the 2025-26 income year and verify current rates before calculating anything.
-```
-
-Run full-runtime commands from a checkout:
+Optional full-runtime commands from a checkout:
 
 ```bash
 ./scripts/taxmate refresh --query "payg"
@@ -124,7 +148,7 @@ Run full-runtime commands from a checkout:
 ./scripts/taxmate finance --help
 ```
 
-Create a self-prepared HTML guide users can save as PDF from their browser:
+Create the same self-prepared HTML guide directly from the runtime:
 
 ```bash
 ./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json
