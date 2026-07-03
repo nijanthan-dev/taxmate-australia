@@ -4,12 +4,16 @@
 # Local runtime/cache output
 /.cache/
 /.tmp/
+/outputs/
+/artifacts/
 /dist/
 /coverage/
 /.playwright-mcp/
 __pycache__/
 *.py[cod]
 *.log
+*.jsonl
+*.ndjson
 
 # Refreshed official-source cache; generated references are committed instead.
 /data/ato_knowledge_base/raw/

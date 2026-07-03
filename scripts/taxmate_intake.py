@@ -118,6 +118,25 @@ REVIEWABLE_RENTAL_PROPERTY_FIELDS = (
     "rental_property_records",
     "rental_property_net_loss",
 )
+REVIEWABLE_CGT_FIELDS = (
+    "cgt_summary",
+    "cgt_event_type",
+    "cgt_asset",
+    "cgt_asset_description",
+    "cgt_owner",
+    "cgt_acquisition_date",
+    "cgt_disposal_date",
+    "cgt_proceeds",
+    "cgt_cost_base",
+    "cgt_records",
+    "cgt_no_cgt",
+    "cgt_exemption_flag",
+    "cgt_discount_flag",
+    "cgt_concession_flag",
+    "cgt_mixed_use",
+    "cgt_business_use",
+    "cgt_private_use",
+)
 REVIEWABLE_INVESTMENT_FIELDS = (
     "investment_interest_items",
     "investment_dividend_items",
@@ -864,6 +883,82 @@ RENTAL_PROPERTY_NET_LOSS_FALSE_PHRASES = frozenset(
     }
 )
 RENTAL_PROPERTY_DECLINE_SIGNAL_KEY = "_decline_signals"
+CGT_FLAT_FIELD_KEYS = {
+    "cgt_summary": "summary",
+    "cgt_event_type": "event_type",
+    "cgt_asset": "asset",
+    "cgt_asset_description": "asset",
+    "cgt_owner": "owner",
+    "cgt_acquisition_date": "acquisition_date",
+    "cgt_disposal_date": "disposal_date",
+    "cgt_proceeds": "proceeds",
+    "cgt_cost_base": "cost_base",
+    "cgt_records": "records",
+    "cgt_no_cgt": "no_cgt",
+    "cgt_exemption_flag": "exemption_flag",
+    "cgt_discount_flag": "discount_flag",
+    "cgt_concession_flag": "concession_flag",
+    "cgt_mixed_use": "mixed_use",
+    "cgt_business_use": "business_use",
+    "cgt_private_use": "private_use",
+}
+CGT_NESTED_FIELD_KEYS = {
+    "asset_description": "asset",
+    "cgt_asset_description": "asset",
+}
+CGT_SIGNAL_FIELDS = (
+    "summary",
+    "event_type",
+    "asset",
+    "owner",
+    "acquisition_date",
+    "disposal_date",
+    "proceeds",
+    "cost_base",
+    "records",
+    "exemption_flag",
+    "discount_flag",
+    "concession_flag",
+    "mixed_use",
+    "business_use",
+    "private_use",
+)
+CGT_AMOUNT_FIELDS = ("proceeds", "cost_base")
+CGT_FLAT_AMOUNT_FIELDS = tuple(
+    key for key, nested_key in CGT_FLAT_FIELD_KEYS.items() if nested_key in CGT_AMOUNT_FIELDS
+)
+CGT_DATE_FIELDS = ("acquisition_date", "disposal_date")
+CGT_BOOLEAN_REVIEW_FIELDS = (
+    "exemption_flag",
+    "discount_flag",
+    "concession_flag",
+    "mixed_use",
+    "business_use",
+    "private_use",
+)
+CGT_SOURCE_KEY_FACTS = ("no_cgt", *CGT_SIGNAL_FIELDS)
+CGT_DECLINE_SIGNAL_KEY = "_decline_signals"
+CGT_CONFLICT_SIGNAL_KEY = "_conflict_signals"
+CGT_DECLINE_PHRASES = (
+    "no cgt",
+    "no cgt event",
+    "no cgt events",
+    "no capital gain",
+    "no capital gains",
+    "no capital gains tax",
+    "no capital gains tax event",
+    "no capital gains tax events",
+    "not applicable",
+    "not applicable to me",
+    "n/a",
+    "na",
+)
+CGT_FIELD_ABSENCE_PHRASES = (
+    "not applicable",
+    "not applicable to me",
+    "n/a",
+    "na",
+)
 REVIEWABLE_COMPLEX_FIELDS = (
     "employee_deductions",
     "wfh_work_pattern",
@@ -989,6 +1084,18 @@ ATO_RENTAL_PROPERTY_SOURCES = [
     ATO_RENTAL_RECORDS_SOURCE,
     ATO_RENTAL_CGT_SOURCE,
     ATO_RENTAL_HOME_USE_SOURCE,
+]
+ATO_CGT_EVENTS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-events"
+ATO_CGT_CALCULATION_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/how-to-calculate-your-cgt"
+ATO_CGT_COST_BASE_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/cost-base-of-asset"
+ATO_CGT_PROCEEDS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/capital-proceeds-from-disposing-of-assets"
+ATO_CGT_ASSETS_EXEMPTIONS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/list-of-cgt-assets-and-exemptions"
+ATO_CGT_SOURCES = [
+    ATO_CGT_EVENTS_SOURCE,
+    ATO_CGT_CALCULATION_SOURCE,
+    ATO_CGT_COST_BASE_SOURCE,
+    ATO_CGT_PROCEEDS_SOURCE,
+    ATO_CGT_ASSETS_EXEMPTIONS_SOURCE,
 ]
 OMITTED_SCOPE_ITEMS = [
     ("feat: add company return intake", "Company/entity return prep, company tax labels, directors, dividends, franking, retained earnings."),
@@ -1117,6 +1224,23 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("rental_property_available_days", "Rental property", "Days available for rent", "Rental property records", False),
         QuestionSpec("rental_property_records", "Rental property", "Rental statements and records held?", "Rental property records", False),
         QuestionSpec("rental_property_net_loss", "Rental property", "Net rental loss or carried issue", "Rental property records", False),
+        QuestionSpec("cgt_summary", "CGT", "General CGT event summary", "CGT schedule", False),
+        QuestionSpec("cgt_event_type", "CGT", "General CGT event type", "CGT events", False),
+        QuestionSpec("cgt_asset", "CGT", "CGT asset description", "CGT events", False),
+        QuestionSpec("cgt_asset_description", "CGT", "CGT asset description", "CGT events", False),
+        QuestionSpec("cgt_owner", "CGT", "CGT owner or ownership share", "CGT records", False),
+        QuestionSpec("cgt_acquisition_date", "CGT", "CGT acquisition date", "CGT records", False),
+        QuestionSpec("cgt_disposal_date", "CGT", "CGT disposal date", "CGT records", False),
+        QuestionSpec("cgt_proceeds", "CGT", "CGT capital proceeds", "Capital proceeds", False),
+        QuestionSpec("cgt_cost_base", "CGT", "CGT cost base", "Cost base", False),
+        QuestionSpec("cgt_records", "CGT", "CGT acquisition, disposal, and cost-base records", "CGT records", False),
+        QuestionSpec("cgt_no_cgt", "CGT", "No general CGT event answer", "CGT events", False),
+        QuestionSpec("cgt_exemption_flag", "CGT", "CGT exemption flag", "CGT review", False),
+        QuestionSpec("cgt_discount_flag", "CGT", "CGT discount flag", "CGT review", False),
+        QuestionSpec("cgt_concession_flag", "CGT", "CGT concession flag", "CGT review", False),
+        QuestionSpec("cgt_mixed_use", "CGT", "CGT mixed-use flag", "CGT review", False),
+        QuestionSpec("cgt_business_use", "CGT", "CGT business-use flag", "CGT review", False),
+        QuestionSpec("cgt_private_use", "CGT", "CGT private-use flag", "CGT review", False),
         QuestionSpec("ess_statement", "ESS", "ESS statement held?", "Employee share schemes", False),
         QuestionSpec("ess_taxed_upfront_discount", "ESS", "ESS taxed-upfront discount", "Employee share schemes", False),
         QuestionSpec("ess_deferred_discount", "ESS", "ESS deferred discount", "Employee share schemes", False),
@@ -1311,6 +1435,22 @@ def sample_answers() -> Dict[str, Any]:
             "records": "agent statement, loan interest statement, invoices held",
             "net_loss": True,
         },
+        "cgt": {
+            "event_type": "sale",
+            "asset": "Example collectable",
+            "owner": "individual",
+            "acquisition_date": "2025-08-15",
+            "disposal_date": "2026-04-20",
+            "proceeds": 1500,
+            "cost_base": 900,
+            "records": "purchase receipt and sale record held",
+            "exemption_flag": False,
+            "discount_flag": False,
+            "concession_flag": False,
+            "mixed_use": False,
+            "business_use": False,
+            "private_use": True,
+        },
         "ess": {
             "employer": "Example Pty Ltd",
             "statement": "ESS statement held",
@@ -1402,6 +1542,7 @@ def has_meaningful_value(value: Any) -> bool:
 def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     investment = investment_answers(answers)
     payg = payg_answers(answers)
+    cgt = cgt_answers(answers)
     items = base_items(answers)
     extracted_values = extraction_rows(answers.get("extracted_values", []))
     abn_items = abn_rows(answers)
@@ -1415,6 +1556,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items.extend(psi_rows(psi_answers(answers)))
     items.extend(crypto_rows(crypto_answers(answers)))
     items.extend(rental_property_rows(rental_property_answers(answers)))
+    items.extend(cgt_rows(cgt))
     items.extend(payg_rows(payg, answers))
     items.extend(investment_rows(investment, answers))
     items.extend(ess_rows(ess_answers(answers)))
@@ -1435,7 +1577,9 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     investment = investment_answers(answers)
     payg = payg_answers(answers)
+    cgt = cgt_answers(answers)
     has_payg_items = bool(payg_item_values(payg.get("items")))
+    has_cgt = has_cgt_inputs(cgt)
     for spec in question_specs():
         value = investment_base_item_value(spec.key, answers, investment)
         if spec.key in ("payg_gross", "payg_withheld", "main_occupation") and has_payg_items:
@@ -1450,6 +1594,8 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
             investment,
             investment_flat_field_key(spec.key),
         ):
+            continue
+        if spec.key in REVIEWABLE_CGT_FIELDS and has_cgt:
             continue
         if should_render_base_item(spec, value):
             status = base_item_status(spec.key, value)
@@ -1487,6 +1633,8 @@ def base_item_sources(key: str) -> Any:
         return INVESTMENT_SOURCES
     if key in REVIEWABLE_PAYG_FIELDS:
         return PAYG_SOURCES
+    if key in REVIEWABLE_CGT_FIELDS:
+        return ATO_CGT_SOURCES
     return ATO_INDIVIDUAL_SOURCE
 
 
@@ -1539,6 +1687,10 @@ def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
     if spec.key == "rental_property_private_use" and rental_property_private_use_false(value):
         return False
     if spec.key in REVIEWABLE_RENTAL_PROPERTY_FIELDS and rental_property_flat_value_is_absent(spec.key, value):
+        return False
+    if spec.key in CGT_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if spec.key in REVIEWABLE_CGT_FIELDS and cgt_flat_value_is_absent(spec.key, value):
         return False
     return spec.required or has_meaningful_value(value)
 
@@ -1594,6 +1746,27 @@ def rental_property_flat_field_key(key: str) -> str:
     return RENTAL_PROPERTY_FLAT_FIELD_KEYS.get(key, key)
 
 
+def cgt_flat_value_is_absent(key: str, value: Any) -> bool:
+    nested_key = cgt_flat_field_key(key)
+    if nested_key in CGT_AMOUNT_FIELDS and isinstance(value, bool):
+        return True
+    if nested_key == "no_cgt" and cgt_boolean_false(value):
+        return True
+    if nested_key == "records" and cgt_records_missing(value):
+        return True
+    if nested_key in CGT_BOOLEAN_REVIEW_FIELDS and cgt_boolean_false(value):
+        return True
+    return cgt_source_declines_workflow(nested_key, value) or cgt_field_absence_value(nested_key, value)
+
+
+def cgt_flat_field_key(key: str) -> str:
+    return CGT_FLAT_FIELD_KEYS.get(key, key)
+
+
+def cgt_canonical_field_key(key: str) -> str:
+    return CGT_FLAT_FIELD_KEYS.get(key, CGT_NESTED_FIELD_KEYS.get(key, key))
+
+
 def base_item_status(key: str, value: Any) -> str:
     if key in REVIEWABLE_PAYG_FIELDS:
         nested_key = payg_flat_field_key(key)
@@ -1642,6 +1815,15 @@ def base_item_status(key: str, value: Any) -> str:
         if key == "rental_property_records" and rental_property_records_missing(value):
             return "Evidence"
         if nested_key in RENTAL_PROPERTY_AMOUNT_FIELDS and rental_property_amount_malformed(value, nested_key):
+            return "Evidence"
+        return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
+    if key in REVIEWABLE_CGT_FIELDS:
+        nested_key = cgt_flat_field_key(key)
+        if nested_key == "records" and cgt_records_missing(value):
+            return "Evidence"
+        if nested_key in CGT_AMOUNT_FIELDS and cgt_amount_malformed(value):
+            return "Evidence"
+        if nested_key in CGT_DATE_FIELDS and cgt_date_needs_evidence(value):
             return "Evidence"
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_INVESTMENT_FIELDS:
@@ -1820,6 +2002,7 @@ def evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
         rows.append(evidence_row("WFH records", "D5 WFH", "Diary, timesheet, roster, or similar records"))
     rows.extend(investment_evidence_rows(investment_answers(answers), answers))
     rows.extend(payg_evidence_rows(payg_answers(answers), answers))
+    rows.extend(cgt_evidence_rows(cgt_answers(answers)))
     return rows
 
 
@@ -5409,6 +5592,559 @@ def psi_display_text(raw: Dict[str, Any], key: str) -> str:
     if psi_field_absence_value(key, raw.get(key)):
         return "unknown"
     return display_value(raw.get(key)) or "unknown"
+
+
+def cgt_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
+    raw = answers.get("cgt")
+    fields: Dict[str, Any] = {}
+    field_conflicts: List[str] = []
+    for flat_key, nested_key in CGT_FLAT_FIELD_KEYS.items():
+        value = answers.get(flat_key)
+        existing = fields.get(nested_key)
+        if cgt_values_conflict(nested_key, existing, value):
+            field_conflicts.append(f"{nested_key} {display_value(existing)} vs {display_value(value)}")
+        elif nested_key not in fields or cgt_flat_alias_should_replace(nested_key, existing, value):
+            fields[nested_key] = value
+    if not isinstance(raw, dict) and has_meaningful_value(raw):
+        fields["summary"] = raw
+    flat_values = cgt_answer_values(fields)
+    if field_conflicts:
+        flat_values[CGT_CONFLICT_SIGNAL_KEY] = field_conflicts
+    flat_declines = cgt_decline_values(fields)
+    if not isinstance(raw, dict):
+        return cgt_values_with_declines(flat_values, flat_declines)
+    if not has_meaningful_value(raw):
+        return cgt_values_with_declines(flat_values, flat_declines)
+    raw_declines = cgt_decline_values(raw)
+    merged = dict(flat_values)
+    conflicts = list(flat_values.get(CGT_CONFLICT_SIGNAL_KEY, []))
+    existing_flat_context = cgt_has_facts(flat_values)
+    for key, value in cgt_answer_values(raw, existing_context=existing_flat_context).items():
+        if key == CGT_CONFLICT_SIGNAL_KEY:
+            conflicts.extend(value if isinstance(value, list) else [value])
+            continue
+        existing = merged.get(key)
+        if cgt_values_conflict(key, existing, value):
+            conflicts.append(f"{key} {display_value(existing)} vs {display_value(value)}")
+            continue
+        merged[key] = cgt_merge_value(key, existing, value)
+    if conflicts:
+        merged[CGT_CONFLICT_SIGNAL_KEY] = conflicts
+    return cgt_values_with_declines(merged, {**flat_declines, **raw_declines})
+
+
+def cgt_flat_alias_should_replace(key: str, existing: Any, value: Any) -> bool:
+    if is_missing(existing):
+        return True
+    if has_meaningful_cgt_signal(key, existing):
+        return False
+    if key in CGT_BOOLEAN_REVIEW_FIELDS and cgt_boolean_false(existing):
+        return False
+    return has_meaningful_cgt_signal(key, value) or has_explicit_cgt_evidence_gap(key, value)
+
+
+def cgt_answer_values(record: Dict[str, Any], existing_context: bool = False) -> Dict[str, Any]:
+    values: Dict[str, Any] = {}
+    has_context = existing_context or any(cgt_answer_context_value(key, value) for key, value in record.items())
+    for key, value in record.items():
+        canonical_key = cgt_canonical_field_key(key)
+        if canonical_key == "no_cgt" and cgt_summary_has_event_fact(value):
+            existing = values.get("summary")
+            if cgt_values_conflict("summary", existing, value):
+                values.setdefault(CGT_CONFLICT_SIGNAL_KEY, []).append(
+                    f"summary {display_value(existing)} vs {display_value(value)}"
+                )
+            else:
+                values["summary"] = cgt_merge_value("summary", existing, value)
+            continue
+        evidence_gap = has_explicit_cgt_evidence_gap(canonical_key, value)
+        if (
+            has_meaningful_cgt_signal(canonical_key, value)
+            or (evidence_gap and (canonical_key != "records" or has_context))
+            or cgt_preserved_false_review_flag(canonical_key, value, has_context)
+        ):
+            existing = values.get(canonical_key)
+            if cgt_values_conflict(canonical_key, existing, value):
+                values.setdefault(CGT_CONFLICT_SIGNAL_KEY, []).append(
+                    f"{canonical_key} {display_value(existing)} vs {display_value(value)}"
+                )
+                continue
+            values[canonical_key] = cgt_merge_value(canonical_key, values.get(canonical_key), value)
+    return values
+
+
+def cgt_merge_value(key: str, existing: Any, value: Any) -> Any:
+    if has_explicit_cgt_evidence_gap(key, value) and not has_meaningful_cgt_signal(key, value):
+        if has_meaningful_cgt_signal(key, existing):
+            return existing
+        if key in CGT_BOOLEAN_REVIEW_FIELDS and cgt_boolean_false(existing):
+            return existing
+    return value
+
+
+def cgt_values_conflict(key: str, existing: Any, value: Any) -> bool:
+    if not cgt_conflict_value(key, existing) or not cgt_conflict_value(key, value):
+        return False
+    if key in CGT_AMOUNT_FIELDS:
+        existing_money = cgt_money_value(existing)
+        value_money = cgt_money_value(value)
+        if existing_money is not None and value_money is not None:
+            return existing_money != value_money
+    if key in CGT_BOOLEAN_REVIEW_FIELDS:
+        if (cgt_boolean_true(existing) or cgt_boolean_false(existing)) and (
+            cgt_boolean_true(value) or cgt_boolean_false(value)
+        ):
+            return cgt_boolean_true(existing) != cgt_boolean_true(value)
+    return display_value(existing).strip().lower() != display_value(value).strip().lower()
+
+
+def cgt_conflict_value(key: str, value: Any) -> bool:
+    if key == "records" and has_explicit_cgt_evidence_gap(key, value):
+        return True
+    return (
+        has_meaningful_cgt_signal(key, value)
+        or (key in CGT_BOOLEAN_REVIEW_FIELDS and cgt_boolean_false(value))
+    )
+
+
+def cgt_answer_context_value(key: str, value: Any) -> bool:
+    if key in CGT_BOOLEAN_REVIEW_FIELDS and cgt_boolean_false(value):
+        return False
+    if key == "records" and has_explicit_cgt_evidence_gap(key, value):
+        return False
+    return has_meaningful_cgt_signal(key, value) or has_explicit_cgt_evidence_gap(key, value)
+
+
+def cgt_rows(raw: Any) -> List[Dict[str, Any]]:
+    if not has_cgt_inputs(raw):
+        return []
+    if not isinstance(raw, dict):
+        return []
+    evidence = cgt_evidence_gaps(raw)
+    review = cgt_review_terms(raw)
+    status = "Evidence" if evidence else "Accountant review"
+    answer = (
+        f"Event {cgt_field_text(raw, 'event_type')}; "
+        f"asset {cgt_field_text(raw, 'asset')}; "
+        f"owner {cgt_field_text(raw, 'owner')}; "
+        f"acquired {cgt_field_text(raw, 'acquisition_date')}; "
+        f"disposed {cgt_field_text(raw, 'disposal_date')}; "
+        f"proceeds {cgt_amount_text(raw.get('proceeds'))}; "
+        f"cost base {cgt_amount_text(raw.get('cost_base'))}; "
+        f"records {cgt_field_text(raw, 'records')}; "
+        f"exemption flag {cgt_boolean_flag_text(raw.get('exemption_flag'))}; "
+        f"discount flag {cgt_boolean_flag_text(raw.get('discount_flag'))}; "
+        f"concession flag {cgt_boolean_flag_text(raw.get('concession_flag'))}; "
+        f"mixed use {cgt_boolean_flag_text(raw.get('mixed_use'))}; "
+        f"business use {cgt_boolean_flag_text(raw.get('business_use'))}; "
+        f"private use {cgt_boolean_flag_text(raw.get('private_use'))}"
+    )
+    summary = cgt_field_text(raw, "summary")
+    if summary != "unknown":
+        answer = f"{answer}; summary {summary}"
+    decline_text = cgt_decline_signal_text(raw)
+    if decline_text:
+        answer = f"{answer}; decline signals {decline_text}"
+    conflict_text = cgt_conflict_signal_text(raw)
+    if conflict_text:
+        answer = f"{answer}; conflict signals {conflict_text}"
+    answer = f"{answer}; No final capital gain or loss has been calculated."
+    row = guide_row(
+        "CGT-SCHEDULE",
+        "CGT schedule",
+        "General CGT event intake and accountant-review schedule",
+        answer,
+        "General CGT event facts are collected for review only. No final capital gain or loss has been calculated.",
+        status,
+        ATO_CGT_SOURCES,
+        tab_text=cgt_tab_text(evidence, review),
+    )
+    if review:
+        row["tab_kind"] = "review"
+    return [row]
+
+
+def cgt_evidence_rows(raw: Any) -> List[Dict[str, Any]]:
+    if not has_cgt_inputs(raw) or not isinstance(raw, dict):
+        return []
+    evidence = cgt_evidence_gaps(raw)
+    if not evidence:
+        return []
+    return [
+        guide_row(
+            "CGT-EVID-1",
+            "CGT schedule",
+            "CGT evidence required",
+            f"CGT event needs {', '.join(evidence)}; no final capital gain or loss calculated.",
+            "CGT schedule row remains not copy-ready until evidence gaps are resolved.",
+            "Evidence",
+            ATO_CGT_SOURCES,
+        )
+    ]
+
+
+def cgt_values_with_declines(values: Dict[str, Any], declines: Dict[str, Any]) -> Dict[str, Any]:
+    if not declines or not cgt_has_facts(values):
+        return values
+    merged = dict(values)
+    signals: List[str] = []
+    for key, value in declines.items():
+        signals.append(f"{key} {display_value(value)}")
+        if not cgt_has_signal(key, merged.get(key)) and key not in merged:
+            merged[key] = value
+    merged[CGT_DECLINE_SIGNAL_KEY] = signals
+    return merged
+
+
+def cgt_decline_values(record: Dict[str, Any]) -> Dict[str, Any]:
+    declines: Dict[str, Any] = {}
+    for key, value in record.items():
+        canonical_key = cgt_canonical_field_key(key)
+        if canonical_key in CGT_SOURCE_KEY_FACTS and cgt_source_declines_workflow(canonical_key, value):
+            declines[canonical_key] = value
+    return declines
+
+
+def has_cgt_inputs(raw: Any) -> bool:
+    if not isinstance(raw, dict):
+        return False
+    if cgt_declines_without_facts(raw):
+        return False
+    return cgt_has_facts(raw)
+
+
+def cgt_declines_without_facts(raw: Dict[str, Any]) -> bool:
+    if not cgt_decline_values(raw):
+        return False
+    return not cgt_has_facts(raw)
+
+
+def cgt_has_facts(record: Dict[str, Any]) -> bool:
+    return any(
+        cgt_has_signal(key, value) or (has_explicit_cgt_evidence_gap(key, value) and key != "records")
+        for key, value in record.items()
+        if key != CGT_DECLINE_SIGNAL_KEY
+        and key != CGT_CONFLICT_SIGNAL_KEY
+        and not cgt_source_declines_workflow(key, value)
+        and not cgt_field_absence_value(key, value)
+    )
+
+
+def cgt_has_signal(key: str, value: Any) -> bool:
+    return has_meaningful_cgt_signal(key, value)
+
+
+def has_meaningful_cgt_signal(key: str, value: Any) -> bool:
+    if key == "no_cgt":
+        return False
+    if key in CGT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if key in CGT_BOOLEAN_REVIEW_FIELDS:
+        return cgt_review_flag_has_signal(value)
+    if key in CGT_SOURCE_KEY_FACTS and (
+        cgt_source_declines_workflow(key, value) or cgt_field_absence_value(key, value)
+    ):
+        return False
+    if key == "records" and cgt_records_missing(value):
+        return False
+    if contains_unknown(value):
+        return False
+    return has_meaningful_value(value)
+
+
+def cgt_preserved_false_review_flag(key: str, value: Any, has_context: bool) -> bool:
+    return has_context and key in CGT_BOOLEAN_REVIEW_FIELDS and cgt_boolean_false(value)
+
+
+def cgt_review_flag_has_signal(value: Any) -> bool:
+    if cgt_boolean_true(value):
+        return True
+    if cgt_boolean_false(value) or cgt_boolean_needs_evidence(value) or cgt_field_absence_value("", value):
+        return False
+    return has_meaningful_value(value)
+
+
+def has_explicit_cgt_evidence_gap(key: str, value: Any) -> bool:
+    if key in CGT_SOURCE_KEY_FACTS and (
+        cgt_source_declines_workflow(key, value) or cgt_field_absence_value(key, value)
+    ):
+        return False
+    if key == "records":
+        return not is_missing(value) and cgt_records_missing(value)
+    if key in CGT_AMOUNT_FIELDS:
+        return cgt_amount_needs_evidence(value)
+    if key in CGT_DATE_FIELDS:
+        return cgt_date_needs_evidence(value)
+    if key in CGT_BOOLEAN_REVIEW_FIELDS:
+        return cgt_boolean_needs_evidence(value)
+    if key in ("summary", "event_type", "asset", "owner", "records"):
+        return has_meaningful_value(value) and contains_unknown(value)
+    return False
+
+
+def cgt_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
+    evidence: List[str] = []
+    if cgt_decline_contradiction(raw):
+        evidence.append("no-CGT answer with CGT facts")
+    if raw.get(CGT_CONFLICT_SIGNAL_KEY):
+        evidence.append("CGT field conflicts")
+        if any(display_value(signal).startswith("records ") for signal in raw.get(CGT_CONFLICT_SIGNAL_KEY, [])):
+            evidence.append("CGT records")
+    for key, label in (
+        ("event_type", "event type evidence"),
+        ("asset", "asset evidence"),
+        ("owner", "ownership evidence"),
+    ):
+        if not cgt_has_signal(key, raw.get(key)) or contains_unknown(raw.get(key)):
+            evidence.append(label)
+    if cgt_records_missing(raw.get("records")):
+        evidence.append("CGT records")
+    if any(cgt_date_needs_evidence(raw.get(key)) or is_missing(raw.get(key)) for key in CGT_DATE_FIELDS):
+        evidence.append("acquisition or disposal date evidence")
+    if any(cgt_amount_needs_evidence(raw.get(key)) or is_missing(raw.get(key)) for key in CGT_AMOUNT_FIELDS):
+        evidence.append("numeric proceeds or cost-base evidence")
+    if any(cgt_boolean_needs_evidence(raw.get(key)) for key in CGT_BOOLEAN_REVIEW_FIELDS):
+        evidence.append("review signal evidence")
+    return evidence
+
+
+def cgt_review_terms(raw: Dict[str, Any]) -> List[str]:
+    terms: List[str] = []
+    if any(cgt_review_flag_has_signal(raw.get(key)) for key in ("mixed_use", "business_use", "private_use")):
+        terms.append("mixed, private, or business use")
+    if any(cgt_review_flag_has_signal(raw.get(key)) for key in ("exemption_flag", "discount_flag", "concession_flag")):
+        terms.append("exemption, discount, or concession flags")
+    return terms
+
+
+def cgt_decline_contradiction(raw: Dict[str, Any]) -> bool:
+    return bool(raw.get(CGT_DECLINE_SIGNAL_KEY)) or bool(cgt_decline_values(raw) and cgt_has_facts(raw))
+
+
+def cgt_declines_workflow(value: Any) -> bool:
+    if not isinstance(value, str) or contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    if cgt_record_context(lowered):
+        return False
+    if lowered in CGT_DECLINE_PHRASES:
+        return True
+    return any(
+        phrase in lowered
+        for phrase in (
+            "do not have cgt",
+            "don't have cgt",
+            "dont have cgt",
+            "do not have capital gains",
+            "don't have capital gains",
+            "dont have capital gains",
+            "no cgt this year",
+            "no cgt event",
+            "no cgt events",
+            "no capital gains this year",
+            "no capital gains tax event",
+            "no capital gains tax events",
+        )
+    )
+
+
+def cgt_source_declines_workflow(key: str, value: Any) -> bool:
+    if key == "no_cgt":
+        return cgt_boolean_true(value) or cgt_declines_workflow(value)
+    if key == "summary" and cgt_summary_has_event_fact(value):
+        return False
+    if cgt_field_absence_value(key, value):
+        return False
+    return cgt_declines_workflow(value)
+
+
+def cgt_summary_has_event_fact(value: Any) -> bool:
+    if not isinstance(value, str) or contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    if lowered in CGT_DECLINE_PHRASES:
+        return False
+    return any(
+        phrase in lowered
+        for phrase in (
+            "cgt event",
+            "capital gains tax event",
+            "selling",
+            "sold",
+            "sell",
+            "sale",
+            "disposed",
+            "disposal",
+            "gifted",
+            "gift",
+            "transferred",
+            "transfer",
+            "capital loss",
+            "at a loss",
+            "loss on",
+        )
+    )
+
+
+def cgt_field_absence_value(key: str, value: Any) -> bool:
+    if not isinstance(value, str) or contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    if key == "no_cgt":
+        return False
+    if lowered in {"no cgt", "no cgt event", "no cgt events", "no capital gain", "no capital gains", "no capital gains tax"}:
+        return False
+    return key != "event_type" and lowered in CGT_FIELD_ABSENCE_PHRASES
+
+
+def cgt_records_missing(value: Any) -> bool:
+    if isinstance(value, bool):
+        return not value
+    if is_missing(value) or contains_unknown(value):
+        return True
+    if cgt_declines_workflow(value):
+        return True
+    lowered = text(value).strip().lower()
+    has_record_context = cgt_record_context(lowered)
+    if has_record_context and lowered.startswith(("no ", "without ", "missing ")):
+        return True
+    if has_record_context and any(
+        phrase in lowered
+        for phrase in (
+            "record not held",
+            "receipt not held",
+            "not held",
+            "not available",
+            "not provided",
+            "do not have",
+            "don't have",
+            "dont have",
+        )
+    ):
+        return True
+    return lowered in {"no", "n", "false", "none", "not held", "not available"} or any(
+        phrase in lowered
+        for phrase in (
+            "no records",
+            "no receipt",
+            "no contract",
+            "records not held",
+            "records not available",
+            "records not provided",
+            "do not have records",
+            "don't have records",
+            "dont have records",
+        )
+    )
+
+
+def cgt_record_context(lowered: str) -> bool:
+    return any(term in lowered for term in ("record", "records", "receipt", "statement", "contract", "invoice"))
+
+
+def cgt_amount_needs_evidence(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    if cgt_declines_workflow(value):
+        return False
+    return contains_unknown(value) or cgt_amount_malformed(value)
+
+
+def cgt_amount_malformed(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    try:
+        amount = money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return True
+    return amount is not None and amount < 0
+
+
+def cgt_money_value(value: Any) -> Optional[float]:
+    try:
+        return money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return None
+
+
+def cgt_date_needs_evidence(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    if cgt_declines_workflow(value):
+        return False
+    return contains_unknown(value) or parse_iso_date(value) is None
+
+
+def cgt_boolean_needs_evidence(value: Any) -> bool:
+    return boolean_answer_needs_evidence(value)
+
+
+def cgt_boolean_true(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value == 1
+    if contains_unknown(value):
+        return False
+    return text(value).strip().lower() in {"true", "yes", "y", "1", "on", "checked"}
+
+
+def cgt_boolean_false(value: Any) -> bool:
+    if isinstance(value, bool):
+        return not value
+    if isinstance(value, (int, float)):
+        return value == 0
+    if contains_unknown(value):
+        return False
+    return text(value).strip().lower() in {"false", "no", "n", "0", "off", "unchecked", "none"}
+
+
+def cgt_field_text(raw: Dict[str, Any], key: str) -> str:
+    if cgt_field_absence_value(key, raw.get(key)):
+        return "unknown"
+    value = display_value(raw.get(key))
+    return value if value else "unknown"
+
+
+def cgt_amount_text(value: Any) -> str:
+    if cgt_amount_needs_evidence(value):
+        return display_value(value) or "unknown"
+    return money_text(cgt_money_value(value))
+
+
+def cgt_boolean_flag_text(value: Any) -> str:
+    return cgt_bool_text(value) if not is_missing(value) else "unknown"
+
+
+def cgt_bool_text(value: Any) -> str:
+    return display_value(value) if not cgt_field_absence_value("", value) else "unknown"
+
+
+def cgt_decline_signal_text(raw: Dict[str, Any]) -> str:
+    signals = raw.get(CGT_DECLINE_SIGNAL_KEY)
+    if not isinstance(signals, list):
+        return ""
+    return ", ".join(display_value(signal) for signal in signals if display_value(signal))
+
+
+def cgt_conflict_signal_text(raw: Dict[str, Any]) -> str:
+    signals = raw.get(CGT_CONFLICT_SIGNAL_KEY)
+    if not isinstance(signals, list):
+        return ""
+    return ", ".join(display_value(signal) for signal in signals if display_value(signal))
+
+
+def cgt_tab_text(evidence: List[str], review: List[str]) -> str:
+    if evidence and review:
+        return (
+            f"CGT event needs {', '.join(evidence)} and stays accountant review for "
+            f"{', '.join(review)}; no final capital gain or loss calculated."
+        )
+    if evidence:
+        return f"CGT event needs {', '.join(evidence)} before accountant review; no final capital gain or loss calculated."
+    if review:
+        return f"CGT event stays accountant review for {', '.join(review)}; no final capital gain or loss calculated."
+    return "CGT event stays accountant review; no final capital gain or loss calculated."
 
 
 def crypto_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
