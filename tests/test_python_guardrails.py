@@ -11015,5 +11015,474 @@ class TaxpackGuideTests(unittest.TestCase):
             taxmate_taxpack.assert_visible_boundaries(bad)
 
 
+class CgtIntakeTests(unittest.TestCase):
+    def base_answers(self, **extra: Any) -> dict[str, Any]:
+        answers: dict[str, Any] = {
+            "income_year": "2025-26",
+            "resident": True,
+            "state": "VIC",
+            "date_of_birth": "1990-01-01",
+            "under_18": False,
+            "final_return": False,
+            "tfn_present": True,
+            "spouse_had": False,
+            "dependant_children": 0,
+            "private_health_cover": False,
+        }
+        answers.update(extra)
+        return answers
+
+    def guide_payload(self, **extra: Any) -> dict[str, Any]:
+        return taxmate_intake.answers_to_pack_payload(self.base_answers(**extra))
+
+    def cgt_row(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return next(item for item in payload["items"] if item["number"] == "CGT-SCHEDULE")
+
+    def test_cgt_no_answer_only_skips(self) -> None:
+        payload = self.guide_payload(cgt_no_cgt=True)
+
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_no_answer_with_default_false_records_skips(self) -> None:
+        payload = self.guide_payload(
+            cgt_no_cgt=True,
+            cgt_records=False,
+            cgt_exemption_flag=False,
+            cgt_discount_flag=False,
+            cgt_business_use=False,
+        )
+
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        self.assertFalse(any(item["number"].startswith("cgt_") for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_unchecked_no_answer_false_skips(self) -> None:
+        payload = self.guide_payload(cgt_no_cgt=False)
+
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        self.assertFalse(any(item["number"].startswith("cgt_") for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_boolean_amount_defaults_skip_base_rows(self) -> None:
+        payload = self.guide_payload(cgt_proceeds=False, cgt_cost_base=False)
+
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        self.assertFalse(any(item["number"].startswith("cgt_") for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_flat_complete_preserves_zero_and_false_flags(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Example asset",
+            cgt_owner="individual",
+            cgt_acquisition_date="2025-07-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=0,
+            cgt_cost_base=0,
+            cgt_records="purchase and sale records held",
+            cgt_exemption_flag=False,
+            cgt_discount_flag=False,
+            cgt_concession_flag=False,
+            cgt_business_use=False,
+            cgt_private_use=False,
+        )
+
+        row = self.cgt_row(payload)
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("proceeds 0.00", row["answer"])
+        self.assertIn("cost base 0.00", row["answer"])
+        self.assertIn("exemption flag false", row["answer"])
+        self.assertIn("discount flag false", row["answer"])
+        self.assertIn("business use false", row["answer"])
+        self.assertIn("No final capital gain or loss has been calculated.", row["answer"])
+        self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-events", row["source_urls"])
+
+    def test_cgt_no_answer_plus_nested_facts_stays_evidence(self) -> None:
+        payload = self.guide_payload(
+            cgt={
+                "no_cgt": True,
+                "event_type": "sale",
+                "asset": "Example asset",
+                "owner": "unknown",
+                "acquisition_date": "bad-date",
+                "disposal_date": "2026-06-01",
+                "proceeds": "unknown",
+                "cost_base": "bad amount",
+                "records": "no records",
+                "mixed_use": True,
+                "business_use": True,
+                "private_use": False,
+            }
+        )
+
+        row = self.cgt_row(payload)
+        evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("decline signals no_cgt true", row["answer"])
+        self.assertIn("mixed use true", row["answer"])
+        self.assertIn("private use false", row["answer"])
+        self.assertIn("no-CGT answer with CGT facts", evidence["answer"])
+        self.assertIn("CGT records", evidence["answer"])
+        self.assertIn("acquisition or disposal date evidence", evidence["answer"])
+        self.assertIn("numeric proceeds or cost-base evidence", evidence["answer"])
+
+    def test_cgt_no_answer_na_plus_facts_stays_evidence(self) -> None:
+        payload = self.guide_payload(
+            cgt_no_cgt="n/a",
+            cgt_event_type="sale",
+            cgt_asset="Example asset",
+            cgt_owner="individual",
+            cgt_acquisition_date="2025-07-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_records="purchase and sale records held",
+        )
+
+        row = self.cgt_row(payload)
+        evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("decline signals no_cgt n/a", row["answer"])
+        self.assertIn("no-CGT answer with CGT facts", evidence["answer"])
+
+    def test_cgt_no_answer_text_with_event_fact_stays_evidence(self) -> None:
+        for no_cgt in (
+            "No capital gains this year; sold shares at a loss",
+            "No CGT event; transferred shares to my spouse",
+        ):
+            with self.subTest(no_cgt=no_cgt):
+                payload = self.guide_payload(cgt_no_cgt=no_cgt)
+
+                row = self.cgt_row(payload)
+                evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn(f"summary {no_cgt}", row["answer"])
+                self.assertIn(f"decline signals no_cgt {no_cgt}", row["answer"])
+                self.assertIn("no-CGT answer with CGT facts", evidence["answer"])
+
+    def test_cgt_exact_no_event_summary_still_skips(self) -> None:
+        for no_cgt in (
+            "no cgt event",
+            "no cgt events",
+            "no capital gains tax",
+            "no capital gains tax event",
+            "no capital gains tax events",
+        ):
+            with self.subTest(no_cgt=no_cgt):
+                payload = self.guide_payload(cgt_no_cgt=no_cgt)
+
+                self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+                self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_singular_missing_record_phrases_stay_evidence(self) -> None:
+        for records in ("record not held", "receipt not held", "I do not have the receipt"):
+            with self.subTest(records=records):
+                payload = self.guide_payload(
+                    cgt_event_type="sale",
+                    cgt_asset="Example asset",
+                    cgt_owner="individual",
+                    cgt_acquisition_date="2025-07-01",
+                    cgt_disposal_date="2026-06-01",
+                    cgt_proceeds=100,
+                    cgt_cost_base=50,
+                    cgt_records=records,
+                )
+
+                row = self.cgt_row(payload)
+                evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("CGT records", evidence["answer"])
+
+    def test_cgt_review_flags_keep_row_in_review_queue_with_evidence(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Example asset",
+            cgt_owner="individual",
+            cgt_acquisition_date="2025-07-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_records=False,
+            cgt_business_use=True,
+        )
+
+        row = self.cgt_row(payload)
+        self.assertEqual("Evidence", row["status"])
+        self.assertEqual("review", row["tab_kind"])
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+        self.assertIn("<b>Accountant review queue:</b>", body)
+        self.assertIn("CGT event needs CGT records and stays accountant review for mixed, private, or business use", body)
+        self.assertIn("CGT records", body)
+
+    def test_cgt_ambiguous_review_flag_stays_evidence(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Example asset",
+            cgt_owner="individual",
+            cgt_acquisition_date="2025-07-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_records="purchase and sale records held",
+            cgt_business_use="maybe",
+        )
+
+        row = self.cgt_row(payload)
+        evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("business use maybe", row["answer"])
+        self.assertIn("review signal evidence", evidence["answer"])
+
+    def test_cgt_natural_language_review_flag_stays_visible(self) -> None:
+        for business_use in ("partly", "business and private"):
+            with self.subTest(business_use=business_use):
+                payload = self.guide_payload(
+                    cgt_event_type="sale",
+                    cgt_asset="Example asset",
+                    cgt_owner="individual",
+                    cgt_acquisition_date="2025-07-01",
+                    cgt_disposal_date="2026-06-01",
+                    cgt_proceeds=100,
+                    cgt_cost_base=50,
+                    cgt_records="purchase and sale records held",
+                    cgt_business_use=business_use,
+                )
+
+                row = self.cgt_row(payload)
+                self.assertEqual("Accountant review", row["status"])
+                self.assertEqual("review", row["tab_kind"])
+                self.assertIn(f"business use {business_use}", row["answer"])
+                self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_flat_nested_conflicts_stay_evidence(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Flat asset",
+            cgt_owner="individual",
+            cgt_acquisition_date="2025-07-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_records="purchase and sale records held",
+            cgt={
+                "asset": "Nested asset",
+                "proceeds": 200,
+            },
+        )
+
+        row = self.cgt_row(payload)
+        evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("asset Flat asset", row["answer"])
+        self.assertIn("conflict signals asset Flat asset vs Nested asset", row["answer"])
+        self.assertIn("proceeds 100 vs 200", row["answer"])
+        self.assertIn("CGT field conflicts", evidence["answer"])
+
+    def test_cgt_conflicting_missing_records_stay_evidence(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Example asset",
+            cgt_owner="individual",
+            cgt_acquisition_date="2025-07-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_records="records held",
+            cgt={"records": "no records"},
+        )
+
+        row = self.cgt_row(payload)
+        evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("conflict signals records records held vs no records", row["answer"])
+        self.assertIn("CGT field conflicts", evidence["answer"])
+        self.assertIn("CGT records", evidence["answer"])
+
+    def test_cgt_nested_unknown_does_not_replace_concrete_flat_fact(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Example asset",
+            cgt_owner="individual",
+            cgt_acquisition_date="2025-07-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_records="records held",
+            cgt={"asset": "unknown"},
+        )
+
+        row = self.cgt_row(payload)
+        self.assertIn("asset Example asset", row["answer"])
+        self.assertNotIn("asset unknown", row["answer"])
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_flat_alias_prefers_concrete_over_unknown(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="unknown",
+            cgt_asset_description="Example asset",
+            cgt_owner="individual",
+            cgt_acquisition_date="2025-07-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_records="records held",
+        )
+
+        row = self.cgt_row(payload)
+        self.assertIn("asset Example asset", row["answer"])
+        self.assertNotIn("asset unknown", row["answer"])
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_conflicting_flat_asset_aliases_stay_evidence(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Flat asset",
+            cgt_asset_description="Alias asset",
+            cgt_owner="individual",
+            cgt_acquisition_date="2025-07-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_records="records held",
+        )
+
+        row = self.cgt_row(payload)
+        evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("conflict signals asset Flat asset vs Alias asset", row["answer"])
+        self.assertIn("CGT field conflicts", evidence["answer"])
+
+    def test_cgt_nested_asset_alias_is_canonicalized(self) -> None:
+        payload = self.guide_payload(
+            cgt={
+                "event_type": "sale",
+                "asset_description": "Nested asset",
+                "owner": "individual",
+                "acquisition_date": "2025-07-01",
+                "disposal_date": "2026-06-01",
+                "proceeds": 100,
+                "cost_base": 50,
+                "records": "purchase and sale records held",
+            }
+        )
+
+        row = self.cgt_row(payload)
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("asset Nested asset", row["answer"])
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_nested_asset_alias_conflict_stays_evidence(self) -> None:
+        payload = self.guide_payload(
+            cgt={
+                "event_type": "sale",
+                "asset": "Nested asset",
+                "asset_description": "Alias asset",
+                "owner": "individual",
+                "acquisition_date": "2025-07-01",
+                "disposal_date": "2026-06-01",
+                "proceeds": 100,
+                "cost_base": 50,
+                "records": "purchase and sale records held",
+            }
+        )
+
+        row = self.cgt_row(payload)
+        evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("asset Nested asset", row["answer"])
+        self.assertIn("conflict signals asset Nested asset vs Alias asset", row["answer"])
+        self.assertIn("CGT field conflicts", evidence["answer"])
+
+    def test_cgt_nested_false_flags_use_flat_context(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Example asset",
+            cgt_owner="individual",
+            cgt_acquisition_date="2025-07-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_records="records held",
+            cgt={"exemption_flag": False, "business_use": False},
+        )
+
+        row = self.cgt_row(payload)
+        self.assertIn("exemption flag false", row["answer"])
+        self.assertIn("business use false", row["answer"])
+
+    def test_cgt_scalar_summary_renders_review_row(self) -> None:
+        payload = self.guide_payload(cgt_summary="Disposed a non-crypto collectable asset")
+
+        row = self.cgt_row(payload)
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("summary Disposed a non-crypto collectable asset", row["answer"])
+
+    def test_cgt_loss_summary_is_not_dropped_as_decline(self) -> None:
+        payload = self.guide_payload(cgt_summary="Sold shares at a loss; no capital gains this year")
+
+        row = self.cgt_row(payload)
+        evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("summary Sold shares at a loss; no capital gains this year", row["answer"])
+        self.assertIn("event type evidence", evidence["answer"])
+
+    def test_cgt_gift_transfer_summary_is_not_dropped_as_decline(self) -> None:
+        for summary in (
+            "Gifted shares; no capital gains this year",
+            "Transferred shares; no capital gains this year",
+        ):
+            with self.subTest(summary=summary):
+                payload = self.guide_payload(cgt_summary=summary)
+
+                row = self.cgt_row(payload)
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn(f"summary {summary}", row["answer"])
+
+    def test_cgt_sell_summary_is_not_dropped_as_decline(self) -> None:
+        for summary in (
+            "Selling shares; no capital gains this year",
+            "Sell shares; no capital gains this year",
+        ):
+            with self.subTest(summary=summary):
+                payload = self.guide_payload(cgt_summary=summary)
+
+                row = self.cgt_row(payload)
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn(f"summary {summary}", row["answer"])
+
+    def test_cgt_event_summary_is_not_dropped_as_decline(self) -> None:
+        for summary in (
+            "There was a CGT event with no capital gains this year",
+            "There was a capital gains tax event with no capital gains this year",
+        ):
+            with self.subTest(summary=summary):
+                payload = self.guide_payload(cgt_summary=summary)
+
+                row = self.cgt_row(payload)
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn(f"summary {summary}", row["answer"])
+
+    def test_cgt_html_has_provenance_and_no_final_calculation_wording(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Example asset",
+            cgt_owner="individual",
+            cgt_acquisition_date="2025-07-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_records=False,
+        )
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("CGT-SCHEDULE", body)
+        self.assertIn("CGT records", body)
+        self.assertIn("No final capital gain or loss has been calculated.", body)
+        self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-events", body)
+        self.assertIn("Checked ", body)
+
+
 if __name__ == "__main__":
     unittest.main()
