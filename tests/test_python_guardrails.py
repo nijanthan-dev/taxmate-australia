@@ -11927,6 +11927,32 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertNotIn("asset evidence", evidence_text)
         self.assertNotIn("ownership evidence", evidence_text)
 
+    def test_cgt_item_alias_conflict_preserves_conflicting_values(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Flat shares",
+                    "asset_description": "Alias shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "capital_proceeds": 200,
+                    "cost_base": 50,
+                    "records": "records held",
+                }
+            ],
+        )
+
+        row = self.cgt_event_rows(payload)[0]
+        evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("alias conflicts", row["answer"])
+        self.assertIn("asset: asset Flat shares vs asset_description Alias shares", row["answer"])
+        self.assertIn("proceeds: proceeds 100 vs capital_proceeds 200", row["answer"])
+        self.assertIn("CGT item alias conflicts", evidence_text)
+
     def test_cgt_item_alias_equivalent_amounts_do_not_conflict(self) -> None:
         payload = self.guide_payload(
             cgt_items=[

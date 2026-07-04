@@ -5799,7 +5799,7 @@ def cgt_merge_item_values(left: Any, right: Any) -> List[Dict[str, Any]]:
 def cgt_merge_item_value(left: Dict[str, Any], right: Dict[str, Any]) -> Dict[str, Any]:
     merged_item = dict(left)
     for key, value in right.items():
-        if key in (CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY, "_alias_conflicts"):
+        if key in (CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY, "_alias_conflicts", "_alias_conflict_details"):
             merged_values = list(merged_item.get(key) or [])
             new_values = value if isinstance(value, list) else [value]
             merged_item[key] = sorted({str(item) for item in [*merged_values, *new_values] if has_meaningful_value(item)})
@@ -5814,6 +5814,7 @@ def cgt_merge_item_value(left: Dict[str, Any], right: Dict[str, Any]) -> Dict[st
 def normalize_cgt_item(raw: Dict[str, Any]) -> Dict[str, Any]:
     item: Dict[str, Any] = {}
     conflicts: List[str] = []
+    conflict_details: List[str] = []
     for canonical, aliases in CGT_ITEM_FIELD_ALIASES.items():
         values = cgt_item_alias_values(raw, aliases, canonical)
         if not values:
@@ -5821,6 +5822,7 @@ def normalize_cgt_item(raw: Dict[str, Any]) -> Dict[str, Any]:
         chosen = first_cgt_item_alias_value(values, canonical)
         if cgt_item_alias_values_conflict(canonical, [value for _, value in values]):
             conflicts.append(canonical)
+            conflict_details.append(cgt_item_alias_conflict_detail(canonical, values))
         item[canonical] = chosen
     for key, value in raw.items():
         canonical = cgt_canonical_field_key(key)
@@ -5833,7 +5835,22 @@ def normalize_cgt_item(raw: Dict[str, Any]) -> Dict[str, Any]:
         item = cgt_values_with_declines(item, declines)
     if conflicts:
         item["_alias_conflicts"] = sorted(set(conflicts))
+    if isinstance(raw.get("_alias_conflict_details"), list):
+        conflict_details.extend(raw.get("_alias_conflict_details") or [])
+    if conflict_details:
+        item["_alias_conflict_details"] = sorted({detail for detail in conflict_details if has_meaningful_value(detail)})
     return item
+
+
+def cgt_item_alias_conflict_detail(canonical: str, values: List[tuple[str, Any]]) -> str:
+    parts: List[str] = []
+    for alias, value in values:
+        text = display_value(value)
+        if not is_missing(value) and text:
+            parts.append(f"{alias} {text}")
+    if not parts:
+        return canonical
+    return f"{canonical}: {' vs '.join(parts)}"
 
 
 def cgt_item_alias_values(raw: Dict[str, Any], aliases: tuple[str, ...], canonical: str) -> List[tuple[str, Any]]:
@@ -5896,7 +5913,7 @@ def cgt_items_conflict(left: Any, right: Any) -> bool:
 
 def cgt_item_values_conflict(left: Dict[str, Any], right: Dict[str, Any]) -> bool:
     for key in sorted(set(left) | set(right)):
-        if key in (CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY, "_alias_conflicts"):
+        if key in (CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY, "_alias_conflicts", "_alias_conflict_details"):
             continue
         canonical = cgt_canonical_field_key(key)
         if cgt_values_conflict(canonical, left.get(key), right.get(key)):
@@ -5910,7 +5927,7 @@ def cgt_item_has_facts(item: Dict[str, Any]) -> bool:
     return any(
         has_meaningful_cgt_signal(key, value) or has_explicit_cgt_evidence_gap(key, value)
         for key, value in item.items()
-        if key not in (CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY)
+        if key not in (CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY, "_alias_conflict_details")
     )
 
 
@@ -6451,9 +6468,13 @@ def cgt_reconciliation_tab_text(conflicts: List[str]) -> str:
 
 def cgt_alias_conflict_text(raw: Dict[str, Any]) -> str:
     conflicts = raw.get("_alias_conflicts") or raw.get("_item_conflicts")
-    if not isinstance(conflicts, list):
-        return ""
-    return ", ".join(display_value(conflict) for conflict in conflicts if display_value(conflict))
+    details = raw.get("_alias_conflict_details")
+    parts: List[str] = []
+    if isinstance(conflicts, list):
+        parts.extend(display_value(conflict) for conflict in conflicts if display_value(conflict))
+    if isinstance(details, list):
+        parts.extend(display_value(detail) for detail in details if display_value(detail))
+    return ", ".join(dict.fromkeys(parts))
 
 
 def cgt_review_terms(raw: Dict[str, Any]) -> List[str]:
