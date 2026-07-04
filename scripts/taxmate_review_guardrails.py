@@ -791,7 +791,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "no-CGT answer with CGT facts",
                 "CGT field conflicts",
                 "CGT item alias conflicts",
-                "top-level and item amount reconciliation",
+                "CGT item totals need corrected reconciliation",
                 "key not in (\"items\", \"cgt_items\", \"_item_conflicts\", CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY)",
                 "CGT itemized facts need",
                 "for key in (\"proceeds\", \"cost_base\")",
