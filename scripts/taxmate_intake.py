@@ -6345,14 +6345,18 @@ def cgt_item_evidence_gaps(raw: Dict[str, Any], item: Dict[str, Any]) -> List[st
 def cgt_itemized_top_level_evidence(raw: Dict[str, Any]) -> List[str]:
     if cgt_decline_contradiction(raw):
         return ["no-CGT answer with CGT facts"]
-    if cgt_itemized_summary_only(raw):
-        return []
+    if cgt_itemized_summary_context(raw):
+        return cgt_itemized_summary_evidence(raw)
     if cgt_has_top_level_details(raw):
         return cgt_evidence_gaps(raw)
     return []
 
 
 def cgt_itemized_summary_only(raw: Dict[str, Any]) -> bool:
+    return cgt_itemized_summary_context(raw) and not cgt_itemized_summary_evidence(raw)
+
+
+def cgt_itemized_summary_context(raw: Dict[str, Any]) -> bool:
     if not cgt_has_signal("summary", raw.get("summary")):
         return False
 
@@ -6372,6 +6376,21 @@ def cgt_itemized_summary_only(raw: Dict[str, Any]) -> bool:
         if has_explicit_cgt_evidence_gap(key, value):
             return False
     return not raw.get(CGT_CONFLICT_SIGNAL_KEY)
+
+
+def cgt_itemized_summary_evidence(raw: Dict[str, Any]) -> List[str]:
+    evidence: List[str] = []
+    if any(
+        not is_missing(raw.get(key)) and cgt_amount_needs_evidence(raw.get(key))
+        for key in ("proceeds", "cost_base")
+    ):
+        evidence.append("numeric proceeds or cost-base evidence")
+    if any(
+        not is_missing(raw.get(key)) and cgt_amount_needs_evidence(raw.get(key))
+        for key in ("incidental_costs", "losses")
+    ):
+        evidence.append("numeric incidental-cost or loss evidence")
+    return evidence
 
 
 def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
