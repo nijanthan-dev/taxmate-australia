@@ -5778,14 +5778,21 @@ def cgt_merge_item_values(left: Any, right: Any) -> List[Dict[str, Any]]:
         return right_items
     if not right_items:
         return left_items
-    if len(left_items) != len(right_items):
-        return left_items
-    if any(cgt_item_values_conflict(left_item, right_item) for left_item, right_item in zip(left_items, right_items)):
-        return left_items
-    return [
-        cgt_merge_item_value(left_item, right_item)
-        for left_item, right_item in zip(left_items, right_items)
-    ]
+    merged_items: List[Dict[str, Any]] = []
+    for index in range(max(len(left_items), len(right_items))):
+        if index >= len(left_items):
+            merged_items.append(right_items[index])
+            continue
+        if index >= len(right_items):
+            merged_items.append(left_items[index])
+            continue
+        left_item = left_items[index]
+        right_item = right_items[index]
+        if cgt_item_values_conflict(left_item, right_item):
+            merged_items.append(left_item)
+        else:
+            merged_items.append(cgt_merge_item_value(left_item, right_item))
+    return merged_items
 
 
 def cgt_merge_item_value(left: Dict[str, Any], right: Dict[str, Any]) -> Dict[str, Any]:

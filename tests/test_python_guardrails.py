@@ -11936,6 +11936,53 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertFalse(any(item["number"] == "CGT-RECON" for item in payload["items"]))
         self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
 
+    def test_cgt_item_alias_length_conflict_preserves_extra_items(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Flat parcel",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 50,
+                    "records": "records held",
+                }
+            ],
+            cgt={
+                "items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "Flat parcel",
+                        "owner": "individual",
+                        "acquisition_date": "2025-07-01",
+                        "disposal_date": "2026-06-01",
+                        "proceeds": 100,
+                        "cost_base": 50,
+                        "records": "records held",
+                    },
+                    {
+                        "event_type": "sale",
+                        "asset": "Nested parcel",
+                        "owner": "individual",
+                        "acquisition_date": "2025-08-01",
+                        "disposal_date": "2026-06-02",
+                        "proceeds": 200,
+                        "cost_base": 120,
+                        "records": "records held",
+                    },
+                ]
+            },
+        )
+
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(["CGT-EVENT-1", "CGT-EVENT-2"], [row["number"] for row in rows])
+        self.assertIn("Asset Flat parcel", rows[0]["answer"])
+        self.assertIn("Asset Nested parcel", rows[1]["answer"])
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        self.assertEqual("Evidence", next(item for item in payload["items"] if item["number"] == "CGT-RECON")["status"])
+
     def test_cgt_flat_and_nested_items_merge_complementary_fields(self) -> None:
         payload = self.guide_payload(
             cgt_items=[
