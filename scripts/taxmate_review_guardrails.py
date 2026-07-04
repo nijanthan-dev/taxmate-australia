@@ -146,7 +146,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #74 main residence CGT",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Main residence CGT intake must preserve claim, ownership, occupancy, rental/business use, absence, spouse/partner conflict, and property-record facts across flat, nested, and itemized rows; keep missing or unknown periods, missing records, rental/business use, absence, and spouse conflicts as Evidence or Accountant review when another CGT/main-residence signal exists; preserve false claim/use/conflict values and 0-day text with context; never let a standalone missing main-residence property-record default create CGT facts or fallback base rows; keep flat-vs-nested property-record conflicts visible as Evidence; attach main-residence, rental/business-use, and property-record source URLs to rows and evidence queues; never calculate a final exemption; and never downgrade rental-property Accountant review.",
+        "Main residence CGT intake must preserve claim, ownership, occupancy, rental/business use, absence, spouse/partner conflict, and property-record facts across flat, nested, and itemized rows; keep missing or unknown periods, missing records, rental/business use, absence, and spouse conflicts as Evidence or Accountant review when another CGT/main-residence signal exists or itemized CGT rows provide context; preserve false claim/use/conflict values and 0-day text with context; never let a standalone missing main-residence property-record default create CGT facts or fallback base rows; keep flat-vs-nested property-record conflicts visible as Evidence; attach main-residence, rental/business-use, and property-record source URLs to rows and evidence queues; never calculate a final exemption; and never downgrade rental-property Accountant review.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -819,6 +819,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def cgt_item_amount_total(",
                 "def cgt_reconciliation_row(",
                 "def cgt_has_top_level_details(",
+                "has_context = bool(cgt_item_values(raw.get(\"items\")) or cgt_item_values(raw.get(\"cgt_items\")))",
+                "and (has_context or not cgt_evidence_gap_requires_context(key))",
                 "def cgt_itemized_top_level_evidence(",
                 "def cgt_itemized_top_level_evidence_gaps(",
                 "def cgt_itemized_summary_evidence(",

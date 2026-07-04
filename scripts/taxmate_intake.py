@@ -6603,12 +6603,15 @@ def cgt_discount_or_residency_has_review_signal(raw: Dict[str, Any]) -> bool:
 
 
 def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
+    has_context = bool(cgt_item_values(raw.get("items")) or cgt_item_values(raw.get("cgt_items"))) or any(
+        cgt_answer_context_value(key, value) for key, value in raw.items()
+    )
     return any(
         (
             (key not in CGT_BOOLEAN_REVIEW_FIELDS and has_meaningful_cgt_signal(key, value))
             or (
                 has_explicit_cgt_evidence_gap(key, value)
-                and not cgt_evidence_gap_requires_context(key)
+                and (has_context or not cgt_evidence_gap_requires_context(key))
             )
         )
         for key, value in raw.items()

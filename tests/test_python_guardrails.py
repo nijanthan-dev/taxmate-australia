@@ -225,6 +225,9 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("main_residence_property_records" in finding.detail for finding in findings))
         self.assertTrue(any("raw_context = isinstance(raw, dict)" in finding.detail for finding in findings))
         self.assertTrue(any("cgt_conflict_value" in finding.detail for finding in findings))
+        self.assertTrue(any('cgt_item_values(raw.get("items"))' in finding.detail for finding in findings))
+        self.assertTrue(any('cgt_item_values(raw.get("cgt_items"))' in finding.detail for finding in findings))
+        self.assertTrue(any("has_context or not cgt_evidence_gap_requires_context" in finding.detail for finding in findings))
 
     def test_review_guardrails_detect_wfh_parser_fallbacks(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -11704,6 +11707,64 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertNotIn("event type evidence", evidence_text)
         self.assertNotIn("asset evidence", evidence_text)
         self.assertNotIn("CGT records", evidence_text)
+
+    def test_cgt_itemized_top_level_records_gap_stays_evidence(self) -> None:
+        item = {
+            "event_type": "sale",
+            "asset": "Parcel A",
+            "owner": "individual",
+            "acquisition_date": "2025-07-01",
+            "disposal_date": "2026-06-01",
+            "proceeds": 100,
+            "cost_base": 60,
+            "records": "records held",
+        }
+
+        for answers in (
+            {"cgt_records": False, "cgt_items": [item]},
+            {"cgt": {"records": False, "items": [item]}},
+        ):
+            with self.subTest(answers=answers):
+                payload = self.guide_payload(**answers)
+                top_level = self.cgt_row(payload)
+                evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
+                self.assertEqual("Evidence", top_level["status"])
+                self.assertIn("records false", top_level["answer"])
+                self.assertIn("CGT top-level facts need CGT records", evidence_text)
+
+    def test_main_residence_itemized_top_level_property_records_gap_stays_evidence(self) -> None:
+        item = {
+            "event_type": "sale",
+            "asset": "Former home",
+            "owner": "individual",
+            "acquisition_date": "2018-07-01",
+            "disposal_date": "2026-02-01",
+            "proceeds": 900000,
+            "cost_base": 600000,
+            "records": "records held",
+        }
+
+        for answers in (
+            {
+                "cgt_main_residence_claim": True,
+                "cgt_main_residence_property_records": False,
+                "cgt_items": [item],
+            },
+            {
+                "cgt": {
+                    "main_residence_claim": True,
+                    "main_residence_property_records": False,
+                    "items": [item],
+                }
+            },
+        ):
+            with self.subTest(answers=answers):
+                payload = self.guide_payload(**answers)
+                top_level = self.cgt_row(payload)
+                evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
+                self.assertEqual("Evidence", top_level["status"])
+                self.assertIn("main residence property records false", top_level["answer"])
+                self.assertIn("main residence property records", evidence_text)
 
     def test_cgt_top_level_aggregate_only_keeps_schedule_baseline(self) -> None:
         payload = self.guide_payload(
