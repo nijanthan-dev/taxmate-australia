@@ -12513,6 +12513,9 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
     def test_main_residence_missing_records_without_cgt_context_is_not_cgt_fact(self) -> None:
         for answers in (
             {
+                "cgt_main_residence_property_records": False,
+            },
+            {
                 "cgt_no_cgt": True,
                 "cgt_main_residence_property_records": False,
             },
@@ -12521,6 +12524,18 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
                     "no_cgt": True,
                     "main_residence_property_records": False,
                 }
+            },
+            {
+                "cgt": {
+                    "main_residence_property_records": "none",
+                }
+            },
+            {
+                "cgt_items": [
+                    {
+                        "main_residence_property_records": False,
+                    }
+                ]
             },
             {
                 "cgt_items": [
@@ -12535,13 +12550,49 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
                 payload = taxmate_intake.answers_to_pack_payload(answers)
 
                 self.assertFalse(
-                    any(item["number"].startswith("CGT") for item in payload["items"]),
+                    any("cgt" in item["number"].lower() for item in payload["items"]),
                     payload["items"],
                 )
                 self.assertFalse(
-                    any(item["number"].startswith("CGT") for item in payload["evidence_items"]),
+                    any("cgt" in item["number"].lower() for item in payload["evidence_items"]),
                     payload["evidence_items"],
                 )
+
+    def test_main_residence_property_record_conflicts_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "cgt_event_type": "sale",
+                "cgt_asset": "Former home",
+                "cgt_owner": "individual",
+                "cgt_acquisition_date": "2018-07-01",
+                "cgt_disposal_date": "2026-02-01",
+                "cgt_proceeds": 900000,
+                "cgt_cost_base": 600000,
+                "cgt_records": "records held",
+                "cgt_main_residence_claim": True,
+                "cgt_main_residence_property_records": False,
+                "cgt": {
+                    "event_type": "sale",
+                    "asset": "Former home",
+                    "owner": "individual",
+                    "acquisition_date": "2018-07-01",
+                    "disposal_date": "2026-02-01",
+                    "proceeds": 900000,
+                    "cost_base": 600000,
+                    "records": "records held",
+                    "main_residence_claim": True,
+                    "main_residence_property_records": "rates records held",
+                },
+            }
+        )
+        cgt_row = next(item for item in payload["items"] if item["number"] == "CGT-SCHEDULE")
+        cgt_evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+
+        self.assertEqual("Evidence", cgt_row["status"])
+        self.assertIn("main residence property records false", cgt_row["answer"])
+        self.assertIn("conflict signals main_residence_property_records false vs rates records held", cgt_row["answer"])
+        self.assertIn("CGT field conflicts", cgt_evidence["answer"])
+        self.assertIn("main residence property records", cgt_evidence["answer"])
 
     def test_main_residence_falsey_values_and_missing_records_stay_visible(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(

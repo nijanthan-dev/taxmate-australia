@@ -1900,7 +1900,7 @@ def cgt_flat_value_is_absent(key: str, value: Any) -> bool:
         return True
     if nested_key == "no_cgt" and cgt_boolean_false(value):
         return True
-    if nested_key == "records" and cgt_records_missing(value):
+    if nested_key in ("records", "main_residence_property_records") and cgt_records_missing(value):
         return True
     if nested_key in CGT_BOOLEAN_REVIEW_FIELDS and cgt_boolean_false(value):
         return True
@@ -1969,7 +1969,7 @@ def base_item_status(key: str, value: Any) -> str:
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_CGT_FIELDS:
         nested_key = cgt_flat_field_key(key)
-        if nested_key == "records" and cgt_records_missing(value):
+        if nested_key in ("records", "main_residence_property_records") and cgt_records_missing(value):
             return "Evidence"
         if nested_key in CGT_AMOUNT_FIELDS and cgt_amount_malformed(value):
             return "Evidence"
@@ -5759,7 +5759,8 @@ def cgt_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(raw, dict) and has_meaningful_value(raw):
         fields["summary"] = raw
     flat_items = cgt_item_values(answers.get("cgt_items"))
-    flat_values = cgt_answer_values(fields, existing_context=bool(flat_items))
+    raw_context = isinstance(raw, dict) and any(cgt_answer_context_value(key, value) for key, value in raw.items())
+    flat_values = cgt_answer_values(fields, existing_context=bool(flat_items) or raw_context)
     if flat_items:
         flat_values["items"] = cgt_items_with_inherited_review_flags(flat_items, flat_values)
     if field_conflicts:
@@ -6075,7 +6076,7 @@ def cgt_values_conflict(key: str, existing: Any, value: Any) -> bool:
 
 
 def cgt_conflict_value(key: str, value: Any) -> bool:
-    if key == "records" and has_explicit_cgt_evidence_gap(key, value):
+    if cgt_evidence_gap_requires_context(key) and has_explicit_cgt_evidence_gap(key, value):
         return True
     return (
         has_meaningful_cgt_signal(key, value)
