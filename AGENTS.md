@@ -32,6 +32,7 @@
 - Falsey-value fixes must cover top-level guide metadata, parsed row fields, source URL lists, checked-at provenance, fallback tab text, anchors, and direct `GuideItem`/workbook row construction.
 - Taxpack guide changes must add local guardrails for the whole bug class before review: conflicting status fields, source provenance visibility, generated dates, duplicate/unsafe anchors, neutral mixed-area headings, prep-only wording, and tab target integrity.
 - After PR review feedback, spawn or reuse a focused explorer for same-class scan when the bug class may recur outside the commented line; close that agent after incorporating findings.
+- After PR review feedback exposes an invariant, encode the invariant broadly in guardrails and tests before fixing the narrow line. Do not re-request review with only a one-off patch when the same bug class can recur.
 - After PR review feedback, do not commit, push, or request another Codex review until same-class scan findings are integrated or explicitly ruled out, including parser paths, direct renderer/workbook-row construction paths, generated artifacts, plugin lock, tests, validator, publication checks, and docs/skills/AGENTS guardrails.
 - Preserved `current-values.json` entries must match an assigned verified source URL and content hash, and must be refreshed to the current source title, last-updated date, and checked-at date.
 - Do not preserve a current value from metadata-only sources or by accepting a valid value hash against a blank source hash.

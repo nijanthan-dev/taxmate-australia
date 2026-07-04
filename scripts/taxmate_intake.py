@@ -128,7 +128,10 @@ REVIEWABLE_CGT_FIELDS = (
     "cgt_disposal_date",
     "cgt_proceeds",
     "cgt_cost_base",
+    "cgt_incidental_costs",
+    "cgt_losses",
     "cgt_records",
+    "cgt_items",
     "cgt_no_cgt",
     "cgt_exemption_flag",
     "cgt_discount_flag",
@@ -893,6 +896,8 @@ CGT_FLAT_FIELD_KEYS = {
     "cgt_disposal_date": "disposal_date",
     "cgt_proceeds": "proceeds",
     "cgt_cost_base": "cost_base",
+    "cgt_incidental_costs": "incidental_costs",
+    "cgt_losses": "losses",
     "cgt_records": "records",
     "cgt_no_cgt": "no_cgt",
     "cgt_exemption_flag": "exemption_flag",
@@ -905,6 +910,34 @@ CGT_FLAT_FIELD_KEYS = {
 CGT_NESTED_FIELD_KEYS = {
     "asset_description": "asset",
     "cgt_asset_description": "asset",
+    "acquired_date": "acquisition_date",
+    "disposed_date": "disposal_date",
+    "capital_proceeds": "proceeds",
+    "incidental_cost": "incidental_costs",
+    "capital_losses": "losses",
+    "loss": "losses",
+    "ownership": "owner",
+    "ownership_share": "owner",
+}
+CGT_ITEM_ALIASES = ("items", "cgt_items")
+CGT_ITEM_FIELD_ALIASES = {
+    "event_type": ("event_type", "cgt_event_type", "event"),
+    "asset": ("asset", "asset_description", "cgt_asset", "cgt_asset_description"),
+    "owner": ("owner", "ownership", "ownership_share", "cgt_owner"),
+    "acquisition_date": ("acquisition_date", "acquired_date", "cgt_acquisition_date"),
+    "disposal_date": ("disposal_date", "disposed_date", "cgt_disposal_date"),
+    "proceeds": ("proceeds", "capital_proceeds", "cgt_proceeds"),
+    "cost_base": ("cost_base", "cgt_cost_base"),
+    "incidental_costs": ("incidental_costs", "incidental_cost", "cgt_incidental_costs"),
+    "losses": ("losses", "capital_losses", "loss", "cgt_losses"),
+    "records": ("records", "cgt_records"),
+    "no_cgt": ("no_cgt", "cgt_no_cgt"),
+    "exemption_flag": ("exemption_flag", "cgt_exemption_flag"),
+    "discount_flag": ("discount_flag", "cgt_discount_flag"),
+    "concession_flag": ("concession_flag", "cgt_concession_flag"),
+    "mixed_use": ("mixed_use", "cgt_mixed_use"),
+    "business_use": ("business_use", "cgt_business_use"),
+    "private_use": ("private_use", "cgt_private_use"),
 }
 CGT_SIGNAL_FIELDS = (
     "summary",
@@ -915,6 +948,8 @@ CGT_SIGNAL_FIELDS = (
     "disposal_date",
     "proceeds",
     "cost_base",
+    "incidental_costs",
+    "losses",
     "records",
     "exemption_flag",
     "discount_flag",
@@ -923,7 +958,7 @@ CGT_SIGNAL_FIELDS = (
     "business_use",
     "private_use",
 )
-CGT_AMOUNT_FIELDS = ("proceeds", "cost_base")
+CGT_AMOUNT_FIELDS = ("proceeds", "cost_base", "incidental_costs", "losses")
 CGT_FLAT_AMOUNT_FIELDS = tuple(
     key for key, nested_key in CGT_FLAT_FIELD_KEYS.items() if nested_key in CGT_AMOUNT_FIELDS
 )
@@ -1748,6 +1783,8 @@ def rental_property_flat_field_key(key: str) -> str:
 
 def cgt_flat_value_is_absent(key: str, value: Any) -> bool:
     nested_key = cgt_flat_field_key(key)
+    if nested_key in CGT_ITEM_ALIASES:
+        return not cgt_item_values(value)
     if nested_key in CGT_AMOUNT_FIELDS and isinstance(value, bool):
         return True
     if nested_key == "no_cgt" and cgt_boolean_false(value):
@@ -1760,6 +1797,8 @@ def cgt_flat_value_is_absent(key: str, value: Any) -> bool:
 
 
 def cgt_flat_field_key(key: str) -> str:
+    if key == "cgt_items":
+        return "cgt_items"
     return CGT_FLAT_FIELD_KEYS.get(key, key)
 
 
@@ -5598,6 +5637,7 @@ def cgt_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     raw = answers.get("cgt")
     fields: Dict[str, Any] = {}
     field_conflicts: List[str] = []
+    item_conflicts: List[str] = []
     for flat_key, nested_key in CGT_FLAT_FIELD_KEYS.items():
         value = answers.get(flat_key)
         existing = fields.get(nested_key)
@@ -5607,7 +5647,10 @@ def cgt_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
             fields[nested_key] = value
     if not isinstance(raw, dict) and has_meaningful_value(raw):
         fields["summary"] = raw
-    flat_values = cgt_answer_values(fields)
+    flat_items = cgt_item_values(answers.get("cgt_items"))
+    flat_values = cgt_answer_values(fields, existing_context=bool(flat_items))
+    if flat_items:
+        flat_values["items"] = cgt_items_with_inherited_review_flags(flat_items, flat_values)
     if field_conflicts:
         flat_values[CGT_CONFLICT_SIGNAL_KEY] = field_conflicts
     flat_declines = cgt_decline_values(fields)
@@ -5619,7 +5662,16 @@ def cgt_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     merged = dict(flat_values)
     conflicts = list(flat_values.get(CGT_CONFLICT_SIGNAL_KEY, []))
     existing_flat_context = cgt_has_facts(flat_values)
+    raw_item_values = cgt_merge_item_values(raw.get("items"), raw.get("cgt_items"))
+    if cgt_items_conflict(raw.get("items"), raw.get("cgt_items")):
+        item_conflicts.append("items")
+    if flat_items and raw_item_values and cgt_items_conflict(flat_items, raw_item_values):
+        item_conflicts.append("items")
+    if raw_item_values:
+        merged["items"] = cgt_merge_item_values(merged.get("items"), raw_item_values)
     for key, value in cgt_answer_values(raw, existing_context=existing_flat_context).items():
+        if key == "items":
+            continue
         if key == CGT_CONFLICT_SIGNAL_KEY:
             conflicts.extend(value if isinstance(value, list) else [value])
             continue
@@ -5630,6 +5682,10 @@ def cgt_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
         merged[key] = cgt_merge_value(key, existing, value)
     if conflicts:
         merged[CGT_CONFLICT_SIGNAL_KEY] = conflicts
+    if item_conflicts:
+        merged["_item_conflicts"] = sorted(set(item_conflicts))
+    if cgt_item_values(merged.get("items")):
+        merged["items"] = cgt_items_with_inherited_review_flags(cgt_item_values(merged.get("items")), merged)
     return cgt_values_with_declines(merged, {**flat_declines, **raw_declines})
 
 
@@ -5647,6 +5703,11 @@ def cgt_answer_values(record: Dict[str, Any], existing_context: bool = False) ->
     values: Dict[str, Any] = {}
     has_context = existing_context or any(cgt_answer_context_value(key, value) for key, value in record.items())
     for key, value in record.items():
+        if key in CGT_ITEM_ALIASES:
+            items = cgt_item_values(value)
+            if items:
+                values["items"] = items
+            continue
         canonical_key = cgt_canonical_field_key(key)
         if canonical_key == "no_cgt" and cgt_summary_has_event_fact(value):
             existing = values.get("summary")
@@ -5671,6 +5732,203 @@ def cgt_answer_values(record: Dict[str, Any], existing_context: bool = False) ->
                 continue
             values[canonical_key] = cgt_merge_value(canonical_key, values.get(canonical_key), value)
     return values
+
+
+def cgt_item_values(raw_items: Any) -> List[Dict[str, Any]]:
+    if isinstance(raw_items, dict):
+        raw_items = [raw_items]
+    if not isinstance(raw_items, list):
+        return []
+    items: List[Dict[str, Any]] = []
+    for raw_item in raw_items:
+        if not isinstance(raw_item, dict):
+            continue
+        item = normalize_cgt_item(raw_item)
+        if cgt_item_has_facts(item):
+            items.append(item)
+    return items
+
+
+def cgt_items_with_inherited_review_flags(items: List[Dict[str, Any]], context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    inherited = {
+        key: context.get(key)
+        for key in CGT_BOOLEAN_REVIEW_FIELDS
+        if cgt_inherited_review_flag(context.get(key))
+    }
+    if not inherited:
+        return items
+    merged_items = []
+    for item in items:
+        merged_item = dict(item)
+        for key, value in inherited.items():
+            if is_missing(merged_item.get(key)):
+                merged_item[key] = value
+        merged_items.append(merged_item)
+    return merged_items
+
+
+def cgt_inherited_review_flag(value: Any) -> bool:
+    return cgt_boolean_false(value) or cgt_review_flag_has_signal(value)
+
+
+def cgt_merge_item_values(left: Any, right: Any) -> List[Dict[str, Any]]:
+    left_items = cgt_item_values(left)
+    right_items = cgt_item_values(right)
+    if not left_items:
+        return right_items
+    if not right_items:
+        return left_items
+    merged_items: List[Dict[str, Any]] = []
+    for index in range(max(len(left_items), len(right_items))):
+        if index >= len(left_items):
+            merged_items.append(right_items[index])
+            continue
+        if index >= len(right_items):
+            merged_items.append(left_items[index])
+            continue
+        left_item = left_items[index]
+        right_item = right_items[index]
+        if cgt_item_values_conflict(left_item, right_item):
+            merged_items.append(left_item)
+            merged_items.append(right_item)
+        else:
+            merged_items.append(cgt_merge_item_value(left_item, right_item))
+    return merged_items
+
+
+def cgt_merge_item_value(left: Dict[str, Any], right: Dict[str, Any]) -> Dict[str, Any]:
+    merged_item = dict(left)
+    for key, value in right.items():
+        if key in (CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY, "_alias_conflicts", "_alias_conflict_details"):
+            merged_values = list(merged_item.get(key) or [])
+            new_values = value if isinstance(value, list) else [value]
+            merged_item[key] = sorted({str(item) for item in [*merged_values, *new_values] if has_meaningful_value(item)})
+            continue
+        canonical = cgt_canonical_field_key(key)
+        if cgt_values_conflict(canonical, merged_item.get(key), value):
+            continue
+        merged_item[key] = cgt_merge_value(canonical, merged_item.get(key), value)
+    return merged_item
+
+
+def normalize_cgt_item(raw: Dict[str, Any]) -> Dict[str, Any]:
+    item: Dict[str, Any] = {}
+    conflicts: List[str] = []
+    conflict_details: List[str] = []
+    for canonical, aliases in CGT_ITEM_FIELD_ALIASES.items():
+        values = cgt_item_alias_values(raw, aliases, canonical)
+        if not values:
+            continue
+        chosen = first_cgt_item_alias_value(values, canonical)
+        if cgt_item_alias_values_conflict(canonical, [value for _, value in values]):
+            conflicts.append(canonical)
+            conflict_details.append(cgt_item_alias_conflict_detail(canonical, values))
+        item[canonical] = chosen
+    for key, value in raw.items():
+        canonical = cgt_canonical_field_key(key)
+        if canonical in item or canonical in CGT_ITEM_ALIASES:
+            continue
+        if has_meaningful_cgt_signal(canonical, value) or has_explicit_cgt_evidence_gap(canonical, value):
+            item[canonical] = value
+    declines = cgt_decline_values(raw)
+    if declines:
+        item = cgt_values_with_declines(item, declines)
+    if conflicts:
+        item["_alias_conflicts"] = sorted(set(conflicts))
+    if isinstance(raw.get("_alias_conflict_details"), list):
+        conflict_details.extend(raw.get("_alias_conflict_details") or [])
+    if conflict_details:
+        item["_alias_conflict_details"] = sorted({detail for detail in conflict_details if has_meaningful_value(detail)})
+    return item
+
+
+def cgt_item_alias_conflict_detail(canonical: str, values: List[tuple[str, Any]]) -> str:
+    parts: List[str] = []
+    for alias, value in values:
+        text = display_value(value)
+        if not is_missing(value) and text:
+            parts.append(f"{alias} {text}")
+    if not parts:
+        return canonical
+    return f"{canonical}: {' vs '.join(parts)}"
+
+
+def cgt_item_alias_values(raw: Dict[str, Any], aliases: tuple[str, ...], canonical: str) -> List[tuple[str, Any]]:
+    return [
+        (alias, raw.get(alias))
+        for alias in aliases
+        if cgt_item_alias_value_usable(raw, alias, canonical)
+    ]
+
+
+def cgt_item_alias_value_usable(raw: Dict[str, Any], alias: str, canonical: str) -> bool:
+    if alias not in raw or is_missing(raw.get(alias)):
+        return False
+    value = raw.get(alias)
+    if canonical in CGT_AMOUNT_FIELDS and isinstance(value, (dict, list, bool)):
+        return False
+    return not cgt_field_absence_value(canonical, value)
+
+
+def first_cgt_item_alias_value(values: List[tuple[str, Any]], canonical: str) -> Any:
+    for _, value in values:
+        if cgt_concrete_alias_value(value, canonical):
+            return value
+    for _, value in values:
+        if contains_unknown(value):
+            return value
+    for _, value in values:
+        if has_meaningful_value(value) or value is False:
+            return value
+    return values[0][1] if values else None
+
+
+def cgt_concrete_alias_value(value: Any, canonical: str) -> bool:
+    if is_missing(value) or contains_unknown(value):
+        return False
+    if canonical in CGT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if canonical in CGT_BOOLEAN_REVIEW_FIELDS and cgt_boolean_false(value):
+        return True
+    return has_meaningful_value(value)
+
+
+def cgt_item_alias_values_conflict(canonical: str, values: List[Any]) -> bool:
+    concrete = [value for value in values if not is_missing(value)]
+    if len(concrete) < 2:
+        return False
+    first = concrete[0]
+    return any(cgt_values_conflict(canonical, first, value) for value in concrete[1:])
+
+
+def cgt_items_conflict(left: Any, right: Any) -> bool:
+    left_items = cgt_item_values(left)
+    right_items = cgt_item_values(right)
+    if not left_items or not right_items:
+        return False
+    if len(left_items) != len(right_items):
+        return True
+    return any(cgt_item_values_conflict(left_item, right_item) for left_item, right_item in zip(left_items, right_items))
+
+
+def cgt_item_values_conflict(left: Dict[str, Any], right: Dict[str, Any]) -> bool:
+    for key in sorted(set(left) | set(right)):
+        if key in (CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY, "_alias_conflicts", "_alias_conflict_details"):
+            continue
+        canonical = cgt_canonical_field_key(key)
+        if cgt_values_conflict(canonical, left.get(key), right.get(key)):
+            return True
+    return False
+
+
+def cgt_item_has_facts(item: Dict[str, Any]) -> bool:
+    if item.get("_alias_conflicts"):
+        return True
+    return any(
+        has_meaningful_cgt_signal(key, value) or has_explicit_cgt_evidence_gap(key, value)
+        for key, value in item.items()
+        if key not in (CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY, "_alias_conflict_details")
+    )
 
 
 def cgt_merge_value(key: str, existing: Any, value: Any) -> Any:
@@ -5720,8 +5978,33 @@ def cgt_rows(raw: Any) -> List[Dict[str, Any]]:
         return []
     if not isinstance(raw, dict):
         return []
-    evidence = cgt_evidence_gaps(raw)
-    review = cgt_review_terms(raw)
+    items = cgt_item_values(raw.get("items"))
+    if items:
+        rows = [
+            cgt_item_row(
+                idx,
+                item,
+                cgt_item_evidence_gaps(raw, item),
+                cgt_review_terms(item),
+            )
+            for idx, item in enumerate(items, start=1)
+        ]
+        if cgt_has_top_level_details(raw):
+            rows.append(
+                cgt_schedule_row(raw, cgt_itemized_top_level_evidence(raw), cgt_review_terms(raw), itemized=True)
+            )
+        if cgt_has_reconciliation_target(raw):
+            rows.append(cgt_reconciliation_row(raw, items))
+        return rows
+    return [cgt_schedule_row(raw, cgt_evidence_gaps(raw), cgt_review_terms(raw), itemized=False)]
+
+
+def cgt_schedule_row(
+    raw: Dict[str, Any],
+    evidence: List[str],
+    review: List[str],
+    itemized: bool,
+) -> Dict[str, Any]:
     status = "Evidence" if evidence else "Accountant review"
     answer = (
         f"Event {cgt_field_text(raw, 'event_type')}; "
@@ -5731,6 +6014,8 @@ def cgt_rows(raw: Any) -> List[Dict[str, Any]]:
         f"disposed {cgt_field_text(raw, 'disposal_date')}; "
         f"proceeds {cgt_amount_text(raw.get('proceeds'))}; "
         f"cost base {cgt_amount_text(raw.get('cost_base'))}; "
+        f"incidental costs {cgt_amount_text(raw.get('incidental_costs'))}; "
+        f"losses {cgt_amount_text(raw.get('losses'))}; "
         f"records {cgt_field_text(raw, 'records')}; "
         f"exemption flag {cgt_boolean_flag_text(raw.get('exemption_flag'))}; "
         f"discount flag {cgt_boolean_flag_text(raw.get('discount_flag'))}; "
@@ -5752,7 +6037,7 @@ def cgt_rows(raw: Any) -> List[Dict[str, Any]]:
     row = guide_row(
         "CGT-SCHEDULE",
         "CGT schedule",
-        "General CGT event intake and accountant-review schedule",
+        "General CGT event intake and accountant-review schedule" if not itemized else "CGT top-level supplied facts",
         answer,
         "General CGT event facts are collected for review only. No final capital gain or loss has been calculated.",
         status,
@@ -5761,26 +6046,152 @@ def cgt_rows(raw: Any) -> List[Dict[str, Any]]:
     )
     if review:
         row["tab_kind"] = "review"
-    return [row]
+    return row
+
+
+def cgt_item_row(
+    index: int,
+    item: Dict[str, Any],
+    evidence: List[str],
+    review: List[str],
+) -> Dict[str, Any]:
+    status = "Evidence" if evidence else "Accountant review"
+    answer = (
+        f"Asset {cgt_field_text(item, 'asset')}; "
+        f"event {cgt_field_text(item, 'event_type')}; "
+        f"owner {cgt_field_text(item, 'owner')}; "
+        f"acquired {cgt_field_text(item, 'acquisition_date')}; "
+        f"disposed {cgt_field_text(item, 'disposal_date')}; "
+        f"proceeds {cgt_amount_text(item.get('proceeds'))}; "
+        f"cost base {cgt_amount_text(item.get('cost_base'))}; "
+        f"incidental costs {cgt_amount_text(item.get('incidental_costs'))}; "
+        f"losses {cgt_amount_text(item.get('losses'))}; "
+        f"records {cgt_field_text(item, 'records')}; "
+        f"exemption flag {cgt_boolean_flag_text(item.get('exemption_flag'))}; "
+        f"discount flag {cgt_boolean_flag_text(item.get('discount_flag'))}; "
+        f"concession flag {cgt_boolean_flag_text(item.get('concession_flag'))}; "
+        f"mixed use {cgt_boolean_flag_text(item.get('mixed_use'))}; "
+        f"business use {cgt_boolean_flag_text(item.get('business_use'))}; "
+        f"private use {cgt_boolean_flag_text(item.get('private_use'))}"
+    )
+    decline_text = cgt_decline_signal_text(item)
+    if decline_text:
+        answer = f"{answer}; decline signals {decline_text}"
+    conflict_text = cgt_conflict_signal_text(item)
+    if conflict_text:
+        answer = f"{answer}; conflict signals {conflict_text}"
+    alias_text = cgt_alias_conflict_text(item)
+    if alias_text:
+        answer = f"{answer}; alias conflicts {alias_text}"
+    answer = f"{answer}; No final capital gain or loss has been calculated."
+    row = guide_row(
+        f"CGT-EVENT-{index}",
+        "CGT schedule",
+        "Itemized CGT event prep row",
+        answer,
+        "Itemized CGT event facts are collected for review only. No final capital gain or loss has been calculated.",
+        status,
+        ATO_CGT_SOURCES,
+        tab_text=cgt_tab_text(evidence, review),
+    )
+    if review:
+        row["tab_kind"] = "review"
+    return row
+
+
+def cgt_reconciliation_row(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> Dict[str, Any]:
+    conflicts = cgt_reconciliation_conflicts(raw, items)
+    parts = []
+    for key, label in (
+        ("proceeds", "proceeds"),
+        ("cost_base", "cost base"),
+        ("incidental_costs", "incidental costs"),
+        ("losses", "losses"),
+    ):
+        if is_missing(raw.get(key)):
+            continue
+        parts.append(
+            f"{label} items {cgt_amount_text(cgt_item_amount_total(items, key))} vs aggregate {cgt_amount_text(raw.get(key))}"
+        )
+    if raw.get("_item_conflicts"):
+        parts.append(f"CGT item alias conflicts {cgt_alias_conflict_text(raw)}")
+    return guide_row(
+        "CGT-RECON",
+        "CGT schedule",
+        "CGT item total reconciliation",
+        "; ".join(parts) + "; No final capital gain or loss has been calculated.",
+        "Itemized CGT totals are reconciled to supplied aggregate totals before accountant review.",
+        "Evidence" if conflicts else "Accountant review",
+        ATO_CGT_SOURCES,
+        tab_text=cgt_reconciliation_tab_text(conflicts),
+    )
 
 
 def cgt_evidence_rows(raw: Any) -> List[Dict[str, Any]]:
     if not has_cgt_inputs(raw) or not isinstance(raw, dict):
         return []
+    rows: List[Dict[str, Any]] = []
+    items = cgt_item_values(raw.get("items"))
+    if items:
+        for idx, item in enumerate(items, start=1):
+            evidence = cgt_item_evidence_gaps(raw, item)
+            if evidence:
+                rows.append(
+                    guide_row(
+                        f"CGT-EVID-{len(rows) + 1}",
+                        "CGT schedule",
+                        "CGT evidence required",
+                        f"CGT item {idx} needs {', '.join(evidence)}; no final capital gain or loss calculated.",
+                        "CGT item row remains not copy-ready until evidence gaps are resolved.",
+                        "Evidence",
+                        ATO_CGT_SOURCES,
+                    )
+                )
+        top_level_evidence = cgt_itemized_top_level_evidence(raw)
+        if top_level_evidence:
+            subject = "CGT top-level facts" if cgt_has_top_level_details(raw) else "CGT itemized facts"
+            evidence_prefix = (
+                "CGT top-level facts need" if cgt_has_top_level_details(raw) else "CGT itemized facts need"
+            )
+            rows.append(
+                guide_row(
+                    f"CGT-EVID-{len(rows) + 1}",
+                    "CGT schedule",
+                    "CGT evidence required",
+                    f"{evidence_prefix} {', '.join(top_level_evidence)}; no final capital gain or loss calculated.",
+                    f"{subject} remain not copy-ready until evidence gaps are resolved.",
+                    "Evidence",
+                    ATO_CGT_SOURCES,
+                )
+            )
+        reconciliation = cgt_reconciliation_conflicts(raw, items)
+        if reconciliation:
+            rows.append(
+                guide_row(
+                    f"CGT-EVID-{len(rows) + 1}",
+                    "CGT schedule",
+                    "CGT reconciliation evidence required",
+                    cgt_reconciliation_tab_text(reconciliation),
+                    "Supplied aggregate CGT totals and itemized CGT event rows conflict or include unresolved item amounts.",
+                    "Evidence",
+                    ATO_CGT_SOURCES,
+                )
+            )
+        return rows
     evidence = cgt_evidence_gaps(raw)
-    if not evidence:
-        return []
-    return [
-        guide_row(
-            "CGT-EVID-1",
-            "CGT schedule",
-            "CGT evidence required",
-            f"CGT event needs {', '.join(evidence)}; no final capital gain or loss calculated.",
-            "CGT schedule row remains not copy-ready until evidence gaps are resolved.",
-            "Evidence",
-            ATO_CGT_SOURCES,
+    if evidence:
+        rows.append(
+            guide_row(
+                "CGT-EVID-1",
+                "CGT schedule",
+                "CGT evidence required",
+                f"CGT event needs {', '.join(evidence)}; no final capital gain or loss calculated.",
+                "CGT schedule row remains not copy-ready until evidence gaps are resolved.",
+                "Evidence",
+                ATO_CGT_SOURCES,
+            )
         )
-    ]
+    return rows
 
 
 def cgt_values_with_declines(values: Dict[str, Any], declines: Dict[str, Any]) -> Dict[str, Any]:
@@ -5820,11 +6231,15 @@ def cgt_declines_without_facts(raw: Dict[str, Any]) -> bool:
 
 
 def cgt_has_facts(record: Dict[str, Any]) -> bool:
+    if cgt_item_values(record.get("items")) or cgt_item_values(record.get("cgt_items")):
+        return True
     return any(
         cgt_has_signal(key, value) or (has_explicit_cgt_evidence_gap(key, value) and key != "records")
         for key, value in record.items()
         if key != CGT_DECLINE_SIGNAL_KEY
         and key != CGT_CONFLICT_SIGNAL_KEY
+        and key != "_item_conflicts"
+        and key not in CGT_ITEM_ALIASES
         and not cgt_source_declines_workflow(key, value)
         and not cgt_field_absence_value(key, value)
     )
@@ -5890,6 +6305,8 @@ def cgt_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
         evidence.append("CGT field conflicts")
         if any(display_value(signal).startswith("records ") for signal in raw.get(CGT_CONFLICT_SIGNAL_KEY, [])):
             evidence.append("CGT records")
+    if raw.get("_item_conflicts"):
+        evidence.append("CGT item alias conflicts")
     for key, label in (
         ("event_type", "event type evidence"),
         ("asset", "asset evidence"),
@@ -5901,11 +6318,159 @@ def cgt_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
         evidence.append("CGT records")
     if any(cgt_date_needs_evidence(raw.get(key)) or is_missing(raw.get(key)) for key in CGT_DATE_FIELDS):
         evidence.append("acquisition or disposal date evidence")
-    if any(cgt_amount_needs_evidence(raw.get(key)) or is_missing(raw.get(key)) for key in CGT_AMOUNT_FIELDS):
+    if any(cgt_amount_needs_evidence(raw.get(key)) or is_missing(raw.get(key)) for key in ("proceeds", "cost_base")):
         evidence.append("numeric proceeds or cost-base evidence")
+    if any(
+        not is_missing(raw.get(key)) and cgt_amount_needs_evidence(raw.get(key))
+        for key in ("incidental_costs", "losses")
+    ):
+        evidence.append("numeric incidental-cost or loss evidence")
     if any(cgt_boolean_needs_evidence(raw.get(key)) for key in CGT_BOOLEAN_REVIEW_FIELDS):
         evidence.append("review signal evidence")
     return evidence
+
+
+def cgt_item_evidence_gaps(raw: Dict[str, Any], item: Dict[str, Any]) -> List[str]:
+    evidence: List[str] = []
+    if cgt_decline_contradiction(item):
+        evidence.append("no-CGT answer with CGT facts")
+    if item.get("_alias_conflicts"):
+        evidence.append("CGT item alias conflicts")
+    for key, label in (
+        ("event_type", "event type evidence"),
+        ("asset", "asset evidence"),
+        ("owner", "ownership evidence"),
+    ):
+        if not cgt_has_signal(key, item.get(key)) or contains_unknown(item.get(key)):
+            evidence.append(label)
+    if cgt_records_missing(item.get("records")):
+        evidence.append("CGT records")
+    if any(cgt_date_needs_evidence(item.get(key)) or is_missing(item.get(key)) for key in CGT_DATE_FIELDS):
+        evidence.append("acquisition or disposal date evidence")
+    if any(cgt_amount_needs_evidence(item.get(key)) or is_missing(item.get(key)) for key in ("proceeds", "cost_base")):
+        evidence.append("numeric proceeds or cost-base evidence")
+    if any(
+        not is_missing(item.get(key)) and cgt_amount_needs_evidence(item.get(key))
+        for key in ("incidental_costs", "losses")
+    ):
+        evidence.append("numeric proceeds, cost-base, incidental-cost, or loss evidence")
+    if any(cgt_boolean_needs_evidence(item.get(key)) for key in CGT_BOOLEAN_REVIEW_FIELDS):
+        evidence.append("review signal evidence")
+    return evidence
+
+
+def cgt_itemized_top_level_evidence(raw: Dict[str, Any]) -> List[str]:
+    if cgt_decline_contradiction(raw):
+        return ["no-CGT answer with CGT facts"]
+    if cgt_has_top_level_details(raw):
+        return cgt_itemized_top_level_evidence_gaps(raw)
+    return []
+
+
+def cgt_itemized_top_level_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
+    evidence: List[str] = []
+    if raw.get(CGT_CONFLICT_SIGNAL_KEY):
+        evidence.append("CGT field conflicts")
+        if any(display_value(signal).startswith("records ") for signal in raw.get(CGT_CONFLICT_SIGNAL_KEY, [])):
+            evidence.append("CGT records")
+    for key, label in (
+        ("summary", "summary evidence"),
+        ("event_type", "event type evidence"),
+        ("asset", "asset evidence"),
+        ("owner", "ownership evidence"),
+    ):
+        if key in raw and has_explicit_cgt_evidence_gap(key, raw.get(key)):
+            evidence.append(label)
+    if "records" in raw and cgt_records_missing(raw.get("records")):
+        evidence.append("CGT records")
+    if any(key in raw and cgt_date_needs_evidence(raw.get(key)) for key in CGT_DATE_FIELDS):
+        evidence.append("acquisition or disposal date evidence")
+    evidence.extend(cgt_itemized_summary_evidence(raw))
+    if any(key in raw and cgt_boolean_needs_evidence(raw.get(key)) for key in CGT_BOOLEAN_REVIEW_FIELDS):
+        evidence.append("review signal evidence")
+    return list(dict.fromkeys(evidence))
+
+
+def cgt_itemized_summary_evidence(raw: Dict[str, Any]) -> List[str]:
+    evidence: List[str] = []
+    if any(
+        not is_missing(raw.get(key)) and cgt_amount_needs_evidence(raw.get(key))
+        for key in ("proceeds", "cost_base")
+    ):
+        evidence.append("numeric proceeds or cost-base evidence")
+    if any(
+        not is_missing(raw.get(key)) and cgt_amount_needs_evidence(raw.get(key))
+        for key in ("incidental_costs", "losses")
+    ):
+        evidence.append("numeric incidental-cost or loss evidence")
+    return evidence
+
+
+def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
+    return any(
+        (
+            (key not in CGT_BOOLEAN_REVIEW_FIELDS and has_meaningful_cgt_signal(key, value))
+            or has_explicit_cgt_evidence_gap(key, value)
+        )
+        for key, value in raw.items()
+        if key not in ("items", "cgt_items", "_item_conflicts", CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY)
+        and key not in CGT_AMOUNT_FIELDS
+    ) or bool(raw.get(CGT_CONFLICT_SIGNAL_KEY))
+
+
+def cgt_has_reconciliation_target(raw: Dict[str, Any]) -> bool:
+    return any(not is_missing(raw.get(key)) for key in CGT_AMOUNT_FIELDS) or bool(raw.get("_item_conflicts"))
+
+
+def cgt_reconciliation_conflicts(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> List[str]:
+    conflicts: List[str] = []
+    if raw.get("_item_conflicts"):
+        conflicts.append("CGT item alias conflicts")
+    if not items:
+        return conflicts
+    for key, label in (
+        ("proceeds", "proceeds"),
+        ("cost_base", "cost base"),
+        ("incidental_costs", "incidental costs"),
+        ("losses", "losses"),
+    ):
+        aggregate_value = raw.get(key)
+        if is_missing(aggregate_value):
+            continue
+        if cgt_amount_needs_evidence(aggregate_value):
+            conflicts.append(label)
+            continue
+        aggregate = cgt_money_value(aggregate_value)
+        if aggregate is None:
+            continue
+        item_total = cgt_item_amount_total(items, key)
+        if item_total is None or round(abs(aggregate - item_total), 2) >= 0.01:
+            conflicts.append(label)
+    return conflicts
+
+
+def cgt_item_amount_total(items: List[Dict[str, Any]], key: str) -> Optional[float]:
+    amounts = [cgt_money_value(item.get(key)) for item in items]
+    if not amounts or any(amount is None for amount in amounts):
+        return None
+    return round(sum(amounts), 2)
+
+
+def cgt_reconciliation_tab_text(conflicts: List[str]) -> str:
+    if conflicts:
+        return f"CGT item totals need corrected reconciliation for {', '.join(conflicts)} before accountant review; no final capital gain or loss calculated."
+    return "CGT item totals reconcile to supplied aggregates; still prep-only and review-first; no final capital gain or loss calculated."
+
+
+def cgt_alias_conflict_text(raw: Dict[str, Any]) -> str:
+    conflicts = raw.get("_alias_conflicts") or raw.get("_item_conflicts")
+    details = raw.get("_alias_conflict_details")
+    parts: List[str] = []
+    if isinstance(conflicts, list):
+        parts.extend(display_value(conflict) for conflict in conflicts if display_value(conflict))
+    if isinstance(details, list):
+        parts.extend(display_value(detail) for detail in details if display_value(detail))
+    return ", ".join(dict.fromkeys(parts))
 
 
 def cgt_review_terms(raw: Dict[str, Any]) -> List[str]:

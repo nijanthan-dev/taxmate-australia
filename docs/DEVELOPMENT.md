@@ -28,6 +28,7 @@ gitleaks dir . --redact --no-banner
 Before requesting another Codex review after review feedback:
 
 - Scan the whole same bug class, not only the commented line.
+- When review exposes an invariant, encode that invariant broadly in guardrails and tests before fixing the narrow line.
 - Use a focused explorer/subagent when the bug class may recur outside the commented line, then close it after findings are integrated.
 - Cover parser, file-backed data, and direct renderer/workbook-row paths.
 - For falsey output bugs, cover top-level metadata, row fields, list fields, provenance, fallback labels, anchors, and direct constructors.

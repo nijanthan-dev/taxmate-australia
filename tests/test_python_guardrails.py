@@ -11038,6 +11038,9 @@ class CgtIntakeTests(unittest.TestCase):
     def cgt_row(self, payload: dict[str, Any]) -> dict[str, Any]:
         return next(item for item in payload["items"] if item["number"] == "CGT-SCHEDULE")
 
+    def cgt_event_rows(self, payload: dict[str, Any]) -> list[dict[str, Any]]:
+        return [item for item in payload["items"] if item["number"].startswith("CGT-EVENT-")]
+
     def test_cgt_no_answer_only_skips(self) -> None:
         payload = self.guide_payload(cgt_no_cgt=True)
 
@@ -11463,6 +11466,723 @@ class CgtIntakeTests(unittest.TestCase):
                 row = self.cgt_row(payload)
                 self.assertEqual("Evidence", row["status"])
                 self.assertIn(f"summary {summary}", row["answer"])
+
+    def test_cgt_flat_items_render_item_rows_with_falsey_values(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Example shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 0,
+                    "cost_base": 0,
+                    "incidental_costs": 0,
+                    "losses": 0,
+                    "records": "purchase and sale records held",
+                    "exemption_flag": False,
+                    "discount_flag": False,
+                    "concession_flag": False,
+                    "mixed_use": False,
+                    "business_use": False,
+                    "private_use": False,
+                }
+            ]
+        )
+
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(1, len(rows))
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("proceeds 0.00", rows[0]["answer"])
+        self.assertIn("incidental costs 0.00", rows[0]["answer"])
+        self.assertIn("losses 0.00", rows[0]["answer"])
+        self.assertIn("business use false", rows[0]["answer"])
+        self.assertIn("No final capital gain or loss has been calculated.", rows[0]["answer"])
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_item_optional_amounts_can_be_omitted(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Example shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 50,
+                    "records": "purchase and sale records held",
+                }
+            ]
+        )
+
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(1, len(rows))
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("incidental costs unknown", rows[0]["answer"])
+        self.assertIn("losses unknown", rows[0]["answer"])
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_flat_false_flags_with_itemized_rows_stay_visible(self) -> None:
+        payload = self.guide_payload(
+            cgt_business_use=False,
+            cgt_private_use=False,
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Example shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 50,
+                    "records": "purchase and sale records held",
+                }
+            ],
+        )
+
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(1, len(rows))
+        self.assertIn("business use false", rows[0]["answer"])
+        self.assertIn("private use false", rows[0]["answer"])
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_flat_true_flags_with_itemized_rows_stay_visible(self) -> None:
+        payload = self.guide_payload(
+            cgt_business_use=True,
+            cgt_private_use=True,
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Example shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 50,
+                    "records": "purchase and sale records held",
+                }
+            ],
+        )
+
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(1, len(rows))
+        self.assertEqual("review", rows[0]["tab_kind"])
+        self.assertIn("business use true", rows[0]["answer"])
+        self.assertIn("private use true", rows[0]["answer"])
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_nested_items_render_multiple_event_rows(self) -> None:
+        payload = self.guide_payload(
+            cgt={
+                "items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "Parcel A",
+                        "owner": "individual",
+                        "acquisition_date": "2025-07-01",
+                        "disposal_date": "2026-06-01",
+                        "proceeds": 100,
+                        "cost_base": 60,
+                        "incidental_costs": 5,
+                        "losses": 0,
+                        "records": "records held",
+                    },
+                    {
+                        "event_type": "gift",
+                        "asset": "Parcel B",
+                        "owner": "individual",
+                        "acquisition_date": "2025-08-01",
+                        "disposal_date": "2026-06-02",
+                        "proceeds": 200,
+                        "cost_base": 120,
+                        "incidental_costs": 10,
+                        "losses": 0,
+                        "records": "records held",
+                        "private_use": True,
+                    },
+                ]
+            }
+        )
+
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(["CGT-EVENT-1", "CGT-EVENT-2"], [row["number"] for row in rows])
+        self.assertIn("Asset Parcel A", rows[0]["answer"])
+        self.assertIn("Asset Parcel B", rows[1]["answer"])
+        self.assertEqual("review", rows[1]["tab_kind"])
+
+    def test_cgt_scalar_summary_plus_items_preserves_top_level_row(self) -> None:
+        payload = self.guide_payload(
+            cgt_summary="Two share parcel disposals",
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Parcel A",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 60,
+                    "incidental_costs": 0,
+                    "losses": 0,
+                    "records": "records held",
+                }
+            ],
+        )
+
+        self.assertEqual(1, len(self.cgt_event_rows(payload)))
+        row = self.cgt_row(payload)
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("summary Two share parcel disposals", row["answer"])
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_itemized_summary_malformed_aggregate_stays_evidence(self) -> None:
+        payload = self.guide_payload(
+            cgt_summary="Two share parcel disposals",
+            cgt_proceeds="bad",
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Parcel A",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 60,
+                    "records": "records held",
+                }
+            ],
+        )
+
+        row = self.cgt_row(payload)
+        evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("proceeds bad", row["answer"])
+        self.assertIn("numeric proceeds or cost-base evidence", evidence_text)
+        self.assertNotIn("event type evidence", evidence_text)
+        self.assertNotIn("asset evidence", evidence_text)
+
+    def test_cgt_itemized_top_level_evidence_stays_supplied_field_only(self) -> None:
+        payload = self.guide_payload(
+            cgt_owner="unknown",
+            cgt_acquisition_date="bad-date",
+            cgt_proceeds="bad amount",
+            cgt_business_use="maybe",
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Parcel A",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 60,
+                    "records": "records held",
+                }
+            ],
+        )
+
+        top_level = self.cgt_row(payload)
+        evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
+        self.assertEqual("Evidence", top_level["status"])
+        self.assertIn("owner unknown", top_level["answer"])
+        self.assertIn("acquired bad-date", top_level["answer"])
+        self.assertIn("proceeds bad amount", top_level["answer"])
+        self.assertIn("business use maybe", top_level["answer"])
+        self.assertIn("ownership evidence", evidence_text)
+        self.assertIn("acquisition or disposal date evidence", evidence_text)
+        self.assertIn("numeric proceeds or cost-base evidence", evidence_text)
+        self.assertIn("review signal evidence", evidence_text)
+        self.assertNotIn("event type evidence", evidence_text)
+        self.assertNotIn("asset evidence", evidence_text)
+        self.assertNotIn("CGT records", evidence_text)
+
+    def test_cgt_top_level_aggregate_only_keeps_schedule_baseline(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Example asset",
+            cgt_owner="individual",
+            cgt_acquisition_date="2025-07-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_incidental_costs=0,
+            cgt_losses=0,
+            cgt_records="records held",
+        )
+
+        row = self.cgt_row(payload)
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("incidental costs 0.00", row["answer"])
+        self.assertIn("losses 0.00", row["answer"])
+        self.assertFalse(self.cgt_event_rows(payload))
+
+    def test_cgt_top_level_and_item_totals_reconcile(self) -> None:
+        payload = self.guide_payload(
+            cgt_proceeds=300,
+            cgt_cost_base=180,
+            cgt_incidental_costs=15,
+            cgt_losses=0,
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Parcel A",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 60,
+                    "incidental_costs": 5,
+                    "losses": 0,
+                    "records": "records held",
+                },
+                {
+                    "event_type": "sale",
+                    "asset": "Parcel B",
+                    "owner": "individual",
+                    "acquisition_date": "2025-08-01",
+                    "disposal_date": "2026-06-02",
+                    "proceeds": 200,
+                    "cost_base": 120,
+                    "incidental_costs": 10,
+                    "losses": 0,
+                    "records": "records held",
+                },
+            ],
+        )
+
+        recon = next(item for item in payload["items"] if item["number"] == "CGT-RECON")
+        self.assertEqual("Accountant review", recon["status"])
+        self.assertIn("proceeds items 300.00 vs aggregate 300.00", recon["answer"])
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        self.assertFalse(any(item["question"] == "CGT reconciliation evidence required" for item in payload["evidence_items"]))
+
+    def test_cgt_top_level_item_conflict_stays_evidence(self) -> None:
+        payload = self.guide_payload(
+            cgt_proceeds=301,
+            cgt_cost_base=180,
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Parcel A",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 60,
+                    "incidental_costs": 0,
+                    "losses": 0,
+                    "records": "records held",
+                },
+                {
+                    "event_type": "sale",
+                    "asset": "Parcel B",
+                    "owner": "individual",
+                    "acquisition_date": "2025-08-01",
+                    "disposal_date": "2026-06-02",
+                    "proceeds": 200,
+                    "cost_base": 120,
+                    "incidental_costs": 0,
+                    "losses": 0,
+                    "records": "records held",
+                },
+            ],
+        )
+
+        recon = next(item for item in payload["items"] if item["number"] == "CGT-RECON")
+        evidence = next(item for item in payload["evidence_items"] if item["question"] == "CGT reconciliation evidence required")
+        self.assertEqual("Evidence", recon["status"])
+        self.assertIn("proceeds", evidence["answer"])
+
+    def test_cgt_partial_unknown_item_total_poisons_reconciliation(self) -> None:
+        payload = self.guide_payload(
+            cgt_proceeds=300,
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Parcel A",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": "unknown",
+                    "cost_base": 60,
+                    "incidental_costs": 0,
+                    "losses": 0,
+                    "records": "records held",
+                },
+                {
+                    "event_type": "sale",
+                    "asset": "Parcel B",
+                    "owner": "individual",
+                    "acquisition_date": "2025-08-01",
+                    "disposal_date": "2026-06-02",
+                    "proceeds": 200,
+                    "cost_base": 120,
+                    "incidental_costs": 0,
+                    "losses": 0,
+                    "records": "records held",
+                },
+            ],
+        )
+
+        evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
+        self.assertIn("CGT item 1 needs numeric proceeds or cost-base evidence", evidence_text)
+        self.assertIn("CGT item totals need corrected reconciliation for proceeds", evidence_text)
+
+    def test_cgt_item_missing_records_malformed_dates_and_amounts_stay_evidence(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Example shares",
+                    "owner": "unknown",
+                    "acquisition_date": "bad-date",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": "bad amount",
+                    "cost_base": 0,
+                    "incidental_costs": 0,
+                    "losses": 0,
+                    "records": "no records",
+                    "business_use": "maybe",
+                }
+            ]
+        )
+
+        row = self.cgt_event_rows(payload)[0]
+        evidence = payload["evidence_items"][0]
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("owner unknown", row["answer"])
+        self.assertIn("acquired bad-date", row["answer"])
+        self.assertIn("proceeds bad amount", row["answer"])
+        self.assertIn("records no records", row["answer"])
+        self.assertIn("ownership evidence", evidence["answer"])
+        self.assertIn("CGT records", evidence["answer"])
+        self.assertIn("acquisition or disposal date evidence", evidence["answer"])
+        self.assertIn("numeric proceeds or cost-base evidence", evidence["answer"])
+
+    def test_cgt_no_answer_plus_item_facts_stays_visible(self) -> None:
+        payload = self.guide_payload(
+            cgt_no_cgt=True,
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Example shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 50,
+                    "incidental_costs": 0,
+                    "losses": 0,
+                    "records": "records held",
+                }
+            ],
+        )
+
+        self.assertEqual(1, len(self.cgt_event_rows(payload)))
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
+        self.assertIn("CGT itemized facts need no-CGT answer with CGT facts", evidence_text)
+        self.assertIn("no-CGT answer with CGT facts", evidence_text)
+        self.assertNotIn("event type evidence", evidence_text)
+        self.assertNotIn("asset evidence", evidence_text)
+        self.assertNotIn("ownership evidence", evidence_text)
+        self.assertNotIn("numeric proceeds or cost-base evidence", evidence_text)
+
+    def test_cgt_flat_aliases_inside_items_are_normalized(self) -> None:
+        payload = self.guide_payload(
+            cgt={"cgt_items": [
+                {
+                    "cgt_event_type": "sale",
+                    "cgt_asset_description": "Alias shares",
+                    "cgt_owner": "individual",
+                    "cgt_acquisition_date": "2025-07-01",
+                    "cgt_disposal_date": "2026-06-01",
+                    "cgt_proceeds": 100,
+                    "cgt_cost_base": 50,
+                    "cgt_incidental_costs": 0,
+                    "cgt_losses": 0,
+                    "cgt_records": "records held",
+                }
+            ]}
+        )
+
+        row = self.cgt_event_rows(payload)[0]
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("Asset Alias shares", row["answer"])
+
+    def test_cgt_item_alias_conflict_without_top_level_facts_does_not_render_schedule(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Flat shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 50,
+                    "incidental_costs": 0,
+                    "losses": 0,
+                    "records": "records held",
+                }
+            ],
+            cgt={
+                "items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "Nested shares",
+                        "owner": "individual",
+                        "acquisition_date": "2025-07-01",
+                        "disposal_date": "2026-06-01",
+                        "proceeds": 100,
+                        "cost_base": 50,
+                        "incidental_costs": 0,
+                        "losses": 0,
+                        "records": "records held",
+                    }
+                ]
+            },
+        )
+
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(["CGT-EVENT-1", "CGT-EVENT-2"], [row["number"] for row in rows])
+        self.assertIn("Asset Flat shares", rows[0]["answer"])
+        self.assertIn("Asset Nested shares", rows[1]["answer"])
+        recon = next(item for item in payload["items"] if item["number"] == "CGT-RECON")
+        evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
+        self.assertEqual("Evidence", recon["status"])
+        self.assertIn("CGT item alias conflicts", recon["answer"])
+        self.assertIn("CGT item totals need corrected reconciliation for CGT item alias conflicts", evidence_text)
+        self.assertNotIn("event type evidence", evidence_text)
+        self.assertNotIn("asset evidence", evidence_text)
+        self.assertNotIn("ownership evidence", evidence_text)
+
+    def test_cgt_item_alias_conflict_preserves_conflicting_values(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Flat shares",
+                    "asset_description": "Alias shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "capital_proceeds": 200,
+                    "cost_base": 50,
+                    "records": "records held",
+                }
+            ],
+        )
+
+        row = self.cgt_event_rows(payload)[0]
+        evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("alias conflicts", row["answer"])
+        self.assertIn("asset: asset Flat shares vs asset_description Alias shares", row["answer"])
+        self.assertIn("proceeds: proceeds 100 vs capital_proceeds 200", row["answer"])
+        self.assertIn("CGT item alias conflicts", evidence_text)
+
+    def test_cgt_item_alias_equivalent_amounts_do_not_conflict(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Example shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": "100.00",
+                    "cost_base": "50.00",
+                    "records": "records held",
+                    "business_use": "false",
+                }
+            ],
+            cgt={
+                "items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "Example shares",
+                        "owner": "individual",
+                        "acquisition_date": "2025-07-01",
+                        "disposal_date": "2026-06-01",
+                        "proceeds": 100,
+                        "cost_base": 50,
+                        "records": "records held",
+                        "business_use": False,
+                    }
+                ]
+            },
+        )
+
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(1, len(rows))
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "CGT-RECON" for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_item_alias_length_conflict_preserves_extra_items(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Flat parcel",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 50,
+                    "records": "records held",
+                }
+            ],
+            cgt={
+                "items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "Flat parcel",
+                        "owner": "individual",
+                        "acquisition_date": "2025-07-01",
+                        "disposal_date": "2026-06-01",
+                        "proceeds": 100,
+                        "cost_base": 50,
+                        "records": "records held",
+                    },
+                    {
+                        "event_type": "sale",
+                        "asset": "Nested parcel",
+                        "owner": "individual",
+                        "acquisition_date": "2025-08-01",
+                        "disposal_date": "2026-06-02",
+                        "proceeds": 200,
+                        "cost_base": 120,
+                        "records": "records held",
+                    },
+                ]
+            },
+        )
+
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(["CGT-EVENT-1", "CGT-EVENT-2"], [row["number"] for row in rows])
+        self.assertIn("Asset Flat parcel", rows[0]["answer"])
+        self.assertIn("Asset Nested parcel", rows[1]["answer"])
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        self.assertEqual("Evidence", next(item for item in payload["items"] if item["number"] == "CGT-RECON")["status"])
+
+    def test_cgt_flat_and_nested_items_merge_complementary_fields(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Example shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 50,
+                    "records": "records held",
+                }
+            ],
+            cgt={
+                "items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "Example shares",
+                        "owner": "individual",
+                        "acquisition_date": "2025-07-01",
+                        "disposal_date": "2026-06-01",
+                        "proceeds": "100.00",
+                        "cost_base": "50.00",
+                        "incidental_costs": 7,
+                        "losses": 0,
+                        "records": "records held",
+                        "private_use": True,
+                    }
+                ]
+            },
+        )
+
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(1, len(rows))
+        self.assertIn("incidental costs 7.00", rows[0]["answer"])
+        self.assertIn("losses 0.00", rows[0]["answer"])
+        self.assertIn("private use true", rows[0]["answer"])
+        self.assertFalse(any(item["number"] == "CGT-RECON" for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_nested_item_aliases_merge_complementary_fields(self) -> None:
+        payload = self.guide_payload(
+            cgt={
+                "items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "Example shares",
+                        "owner": "individual",
+                        "acquisition_date": "2025-07-01",
+                        "disposal_date": "2026-06-01",
+                        "proceeds": 100,
+                        "cost_base": 50,
+                        "records": "records held",
+                    }
+                ],
+                "cgt_items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "Example shares",
+                        "owner": "individual",
+                        "acquisition_date": "2025-07-01",
+                        "disposal_date": "2026-06-01",
+                        "proceeds": 100,
+                        "cost_base": 50,
+                        "incidental_costs": 7,
+                        "losses": 0,
+                        "records": "records held",
+                        "private_use": True,
+                    }
+                ],
+            },
+        )
+
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(1, len(rows))
+        self.assertIn("incidental costs 7.00", rows[0]["answer"])
+        self.assertIn("losses 0.00", rows[0]["answer"])
+        self.assertIn("private use true", rows[0]["answer"])
+        self.assertFalse(any(item["number"] == "CGT-RECON" for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_html_has_item_evidence_review_and_provenance(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Mixed-use shares",
+                    "owner": "individual",
+                    "acquisition_date": "bad-date",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 50,
+                    "incidental_costs": 0,
+                    "losses": 0,
+                    "records": "records held",
+                    "business_use": True,
+                }
+            ]
+        )
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("CGT-EVENT-1", body)
+        self.assertIn("Mixed-use shares", body)
+        self.assertIn("acquisition or disposal date evidence", body)
+        self.assertIn("mixed, private, or business use", body)
+        self.assertIn("No final capital gain or loss has been calculated.", body)
+        self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-events", body)
+        self.assertIn("Checked ", body)
 
     def test_cgt_html_has_provenance_and_no_final_calculation_wording(self) -> None:
         payload = self.guide_payload(

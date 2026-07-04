@@ -38,7 +38,7 @@ The current individual-return handoff includes:
 - individual return field guide;
 - primary and secondary PAYG income statement rows with payer, ABN, occupation, gross, withholding, allowances, RFBA, RESC, lump sum labels, statement evidence, and aggregate reconciliation;
 - itemized investment income rows for bank interest, dividends/franking, managed fund/ETF/AMIT distributions, and trust distribution routing;
-- one general CGT event schedule row for non-crypto/non-rental event facts, records, source provenance, and no-final-calculation wording;
+- general CGT event schedule and itemized non-crypto/non-rental CGT event rows with records, source provenance, reconciliation prompts, and no-final-calculation wording;
 - ABN prep section and BAS worksheet;
 - missing facts queue, evidence queue, and accountant-review queue;
 - source/provenance appendix with source URLs and checked-at dates.
@@ -94,7 +94,7 @@ Use the taxmate-australia-individual-return skill to prepare investment income r
 ```
 
 ```text
-Use the taxmate-australia-individual-return skill to prepare one CGT schedule review row from my event type, asset, owner, acquisition date, disposal date, proceeds, cost base, records, and review flags. Do not calculate a final capital gain or loss.
+Use the taxmate-australia-individual-return skill to prepare itemized CGT event review rows from my asset list, owners, acquisition and disposal dates, proceeds, cost base, incidental costs, losses, records, and review flags. Reconcile supplied totals only as prep evidence. Do not calculate a final capital gain or loss.
 ```
 
 ```text
@@ -120,7 +120,7 @@ I have a TaxMate checkout available. Turn my reviewed answers into the print-fir
 ```
 
 ```text
-I have a reviewed answers file. Use TaxMate to create the prep-only HTML handoff with the AI confirmation table, PAYG rows, investment rows, CGT schedule row, ABN prep, BAS worksheet, review queues, and source/provenance appendix.
+I have a reviewed answers file. Use TaxMate to create the prep-only HTML handoff with the AI confirmation table, PAYG rows, investment rows, CGT schedule and item rows, ABN prep, BAS worksheet, review queues, and source/provenance appendix.
 ```
 
 If you are using portable skills only, the agent can build the checklist, review prompts, manual-copy guidance, and source-backed review flags in chat. Rendering the HTML file needs a full runtime checkout that Codex or another local agent can run.
