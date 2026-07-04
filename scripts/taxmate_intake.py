@@ -6274,7 +6274,7 @@ def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
         for key, value in raw.items()
         if key not in ("items", "cgt_items", "_item_conflicts", CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY)
         and key not in CGT_AMOUNT_FIELDS
-    ) or bool(raw.get(CGT_DECLINE_SIGNAL_KEY) or raw.get(CGT_CONFLICT_SIGNAL_KEY) or raw.get("_item_conflicts"))
+    ) or bool(raw.get(CGT_DECLINE_SIGNAL_KEY) or raw.get(CGT_CONFLICT_SIGNAL_KEY))
 
 
 def cgt_has_reconciliation_target(raw: Dict[str, Any]) -> bool:

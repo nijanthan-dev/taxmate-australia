@@ -136,7 +136,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #76 itemized CGT events",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Itemized CGT event intake must accept flat cgt_items and nested cgt.items, normalize scalar/nested/flat aliases without hiding accepted fields, render deterministic per-item event rows with asset, owner, dates, proceeds, cost base, incidental costs, losses, records, and review signals, preserve zero amounts and false flags, keep item-level Evidence or Accountant review from being cleared by top-level totals, avoid fake reconciliation rows when no aggregate was supplied, flag partial or malformed item totals and top-level-vs-item conflicts as Evidence, and keep source provenance plus no-final-gain-or-loss wording visible.",
+        "Itemized CGT event intake must accept flat cgt_items and nested cgt.items, normalize scalar/nested/flat aliases without hiding accepted fields, render deterministic per-item event rows with asset, owner, dates, proceeds, cost base, incidental costs, losses, records, and review signals, preserve zero amounts and false flags, keep item-level Evidence or Accountant review from being cleared by top-level totals, avoid fake reconciliation or top-level schedule rows when no aggregate or top-level fact was supplied, never count item conflicts as top-level CGT facts, flag partial or malformed item totals and top-level-vs-item conflicts as Evidence, and keep source provenance plus no-final-gain-or-loss wording visible.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -785,10 +785,12 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def cgt_reconciliation_conflicts(",
                 "def cgt_item_amount_total(",
                 "def cgt_reconciliation_row(",
+                "def cgt_has_top_level_details(",
                 "no-CGT answer with CGT facts",
                 "CGT field conflicts",
                 "CGT item alias conflicts",
                 "top-level and item amount reconciliation",
+                "key not in (\"items\", \"cgt_items\", \"_item_conflicts\", CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY)",
                 "CGT item {idx} needs",
                 "signal).startswith(\"records \")",
                 "conflict signals {conflict_text}",

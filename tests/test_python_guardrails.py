@@ -11773,6 +11773,50 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertEqual("Accountant review", row["status"])
         self.assertIn("Asset Alias shares", row["answer"])
 
+    def test_cgt_item_alias_conflict_without_top_level_facts_does_not_render_schedule(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Flat shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 50,
+                    "incidental_costs": 0,
+                    "losses": 0,
+                    "records": "records held",
+                }
+            ],
+            cgt={
+                "items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "Nested shares",
+                        "owner": "individual",
+                        "acquisition_date": "2025-07-01",
+                        "disposal_date": "2026-06-01",
+                        "proceeds": 100,
+                        "cost_base": 50,
+                        "incidental_costs": 0,
+                        "losses": 0,
+                        "records": "records held",
+                    }
+                ]
+            },
+        )
+
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        recon = next(item for item in payload["items"] if item["number"] == "CGT-RECON")
+        evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
+        self.assertEqual("Evidence", recon["status"])
+        self.assertIn("CGT item alias conflicts", recon["answer"])
+        self.assertIn("CGT item totals need corrected reconciliation for CGT item alias conflicts", evidence_text)
+        self.assertNotIn("event type evidence", evidence_text)
+        self.assertNotIn("asset evidence", evidence_text)
+        self.assertNotIn("ownership evidence", evidence_text)
+
     def test_cgt_html_has_item_evidence_review_and_provenance(self) -> None:
         payload = self.guide_payload(
             cgt_items=[
