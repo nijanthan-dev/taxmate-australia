@@ -136,7 +136,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #76 itemized CGT events",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Itemized CGT event intake must accept flat cgt_items and nested cgt.items, normalize scalar/nested/flat aliases without hiding accepted fields, merge complementary non-conflicting item fields across flat and nested CGT item aliases, preserve extra alias items when CGT item alias lists differ in length, preserve conflicting same-index CGT item alias facts, preserve conflicting per-item alias names and values in rendered evidence, render deterministic per-item event rows with asset, owner, dates, proceeds, cost base, incidental costs, losses, records, and review signals, compare flat and nested item facts semantically instead of raw JSON, preserve zero amounts plus false and true review flags, inherit top-level concrete review flags onto item rows without creating fake top-level schedules, keep top-level summary-only itemized context visible without single-event evidence gaps, keep malformed top-level aggregate amounts in Evidence without adding fake single-event gaps, keep item-level Evidence or Accountant review from being cleared by top-level totals, avoid fake reconciliation or top-level schedule rows when no aggregate or top-level fact was supplied, never count item conflicts or no-CGT decline signals as top-level CGT facts, keep no-CGT plus item-only facts visible without adding top-level evidence gaps, require item proceeds and cost base while keeping incidental costs and losses optional unless supplied malformed, flag partial or malformed item totals and top-level-vs-item conflicts as Evidence, and keep source provenance plus no-final-gain-or-loss wording visible.",
+        "Itemized CGT event intake must accept flat cgt_items and nested cgt.items, normalize scalar/nested/flat aliases without hiding accepted fields, merge complementary non-conflicting item fields across flat and nested CGT item aliases, preserve extra alias items when CGT item alias lists differ in length, preserve conflicting same-index CGT item alias facts, preserve conflicting per-item alias names and values in rendered evidence, render deterministic per-item event rows with asset, owner, dates, proceeds, cost base, incidental costs, losses, records, and review signals, compare flat and nested item facts semantically instead of raw JSON, preserve zero amounts plus false and true review flags, inherit top-level concrete review flags onto item rows without creating fake top-level schedules, keep top-level summary-only itemized context visible without single-event evidence gaps, keep itemized top-level evidence narrowed to supplied top-level problems instead of the single-event required-field checklist, keep malformed top-level aggregate amounts in Evidence without adding fake single-event gaps, keep item-level Evidence or Accountant review from being cleared by top-level totals, avoid fake reconciliation or top-level schedule rows when no aggregate or top-level fact was supplied, never count item conflicts or no-CGT decline signals as top-level CGT facts, keep no-CGT plus item-only facts visible without adding top-level evidence gaps, require item proceeds and cost base while keeping incidental costs and losses optional unless supplied malformed, flag partial or malformed item totals and top-level-vs-item conflicts as Evidence, and keep source provenance plus no-final-gain-or-loss wording visible.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -798,7 +798,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def cgt_reconciliation_row(",
                 "def cgt_has_top_level_details(",
                 "def cgt_itemized_top_level_evidence(",
-                "def cgt_itemized_summary_only(",
+                "def cgt_itemized_top_level_evidence_gaps(",
                 "def cgt_itemized_summary_evidence(",
                 "no-CGT answer with CGT facts",
                 "CGT field conflicts",
@@ -1906,6 +1906,7 @@ def check_review_guardrail_docs(root: Path) -> List[Finding]:
             [
                 "The script is the canonical pattern inventory",
                 "Do not duplicate PR pattern bullets",
+                "When review exposes an invariant, encode that invariant broadly in guardrails and tests before fixing the narrow line.",
             ],
         )
     )

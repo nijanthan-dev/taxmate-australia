@@ -6362,37 +6362,33 @@ def cgt_item_evidence_gaps(raw: Dict[str, Any], item: Dict[str, Any]) -> List[st
 def cgt_itemized_top_level_evidence(raw: Dict[str, Any]) -> List[str]:
     if cgt_decline_contradiction(raw):
         return ["no-CGT answer with CGT facts"]
-    if cgt_itemized_summary_context(raw):
-        return cgt_itemized_summary_evidence(raw)
     if cgt_has_top_level_details(raw):
-        return cgt_evidence_gaps(raw)
+        return cgt_itemized_top_level_evidence_gaps(raw)
     return []
 
 
-def cgt_itemized_summary_only(raw: Dict[str, Any]) -> bool:
-    return cgt_itemized_summary_context(raw) and not cgt_itemized_summary_evidence(raw)
-
-
-def cgt_itemized_summary_context(raw: Dict[str, Any]) -> bool:
-    if not cgt_has_signal("summary", raw.get("summary")):
-        return False
-
-    ignored_keys = (
-        "items",
-        "cgt_items",
-        "summary",
-        "_item_conflicts",
-        CGT_DECLINE_SIGNAL_KEY,
-        CGT_CONFLICT_SIGNAL_KEY,
-    )
-    for key, value in raw.items():
-        if key in ignored_keys or key in CGT_AMOUNT_FIELDS:
-            continue
-        if key not in CGT_BOOLEAN_REVIEW_FIELDS and has_meaningful_cgt_signal(key, value):
-            return False
-        if has_explicit_cgt_evidence_gap(key, value):
-            return False
-    return not raw.get(CGT_CONFLICT_SIGNAL_KEY)
+def cgt_itemized_top_level_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
+    evidence: List[str] = []
+    if raw.get(CGT_CONFLICT_SIGNAL_KEY):
+        evidence.append("CGT field conflicts")
+        if any(display_value(signal).startswith("records ") for signal in raw.get(CGT_CONFLICT_SIGNAL_KEY, [])):
+            evidence.append("CGT records")
+    for key, label in (
+        ("summary", "summary evidence"),
+        ("event_type", "event type evidence"),
+        ("asset", "asset evidence"),
+        ("owner", "ownership evidence"),
+    ):
+        if key in raw and has_explicit_cgt_evidence_gap(key, raw.get(key)):
+            evidence.append(label)
+    if "records" in raw and cgt_records_missing(raw.get("records")):
+        evidence.append("CGT records")
+    if any(key in raw and cgt_date_needs_evidence(raw.get(key)) for key in CGT_DATE_FIELDS):
+        evidence.append("acquisition or disposal date evidence")
+    evidence.extend(cgt_itemized_summary_evidence(raw))
+    if any(key in raw and cgt_boolean_needs_evidence(raw.get(key)) for key in CGT_BOOLEAN_REVIEW_FIELDS):
+        evidence.append("review signal evidence")
+    return list(dict.fromkeys(evidence))
 
 
 def cgt_itemized_summary_evidence(raw: Dict[str, Any]) -> List[str]:

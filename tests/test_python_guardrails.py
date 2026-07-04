@@ -11665,6 +11665,41 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertNotIn("event type evidence", evidence_text)
         self.assertNotIn("asset evidence", evidence_text)
 
+    def test_cgt_itemized_top_level_evidence_stays_supplied_field_only(self) -> None:
+        payload = self.guide_payload(
+            cgt_owner="unknown",
+            cgt_acquisition_date="bad-date",
+            cgt_proceeds="bad amount",
+            cgt_business_use="maybe",
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Parcel A",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 60,
+                    "records": "records held",
+                }
+            ],
+        )
+
+        top_level = self.cgt_row(payload)
+        evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
+        self.assertEqual("Evidence", top_level["status"])
+        self.assertIn("owner unknown", top_level["answer"])
+        self.assertIn("acquired bad-date", top_level["answer"])
+        self.assertIn("proceeds bad amount", top_level["answer"])
+        self.assertIn("business use maybe", top_level["answer"])
+        self.assertIn("ownership evidence", evidence_text)
+        self.assertIn("acquisition or disposal date evidence", evidence_text)
+        self.assertIn("numeric proceeds or cost-base evidence", evidence_text)
+        self.assertIn("review signal evidence", evidence_text)
+        self.assertNotIn("event type evidence", evidence_text)
+        self.assertNotIn("asset evidence", evidence_text)
+        self.assertNotIn("CGT records", evidence_text)
+
     def test_cgt_top_level_aggregate_only_keeps_schedule_baseline(self) -> None:
         payload = self.guide_payload(
             cgt_event_type="sale",
