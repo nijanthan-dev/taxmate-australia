@@ -77,7 +77,14 @@ bash scripts/codex-env-setup.sh
 bash scripts/codex-env-cleanup.sh
 ```
 
-4. Use this maintenance script:
+4. Re-run local workflow skill setup when this lane needs it:
+
+```bash
+set -euo pipefail
+bash scripts/install-local-skills.sh --agent codex
+```
+
+5. Use this maintenance script:
 
 ```bash
 set -euo pipefail
@@ -95,6 +102,8 @@ Run the same command sets locally:
 bash scripts/codex-env-setup.sh
 bash scripts/codex-env-cleanup.sh
 ```
+
+`scripts/codex-env-setup.sh` attempts to install repo-local Codex workflow skills from `local-skills/`, but keeps the install non-blocking when npm registry access is unavailable. `local-skills/` is not part of portable public installs.
 
 ### Runtime execution
 

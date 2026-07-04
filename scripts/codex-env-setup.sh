@@ -15,6 +15,9 @@ cd "$ROOT"
 export PYTHONDONTWRITEBYTECODE=1
 
 ./scripts/bootstrap-dev-env.sh
+if ! ./scripts/install-local-skills.sh --agent codex; then
+  echo "warning: local workflow skill install skipped" >&2
+fi
 ./scripts/taxmate validate
 ./scripts/taxmate skills generate --check
 ./scripts/taxmate skills audit --check
