@@ -5650,7 +5650,7 @@ def cgt_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     flat_items = cgt_item_values(answers.get("cgt_items"))
     flat_values = cgt_answer_values(fields, existing_context=bool(flat_items))
     if flat_items:
-        flat_values["items"] = cgt_items_with_inherited_false_flags(flat_items, flat_values)
+        flat_values["items"] = cgt_items_with_inherited_review_flags(flat_items, flat_values)
     if field_conflicts:
         flat_values[CGT_CONFLICT_SIGNAL_KEY] = field_conflicts
     flat_declines = cgt_decline_values(fields)
@@ -5685,7 +5685,7 @@ def cgt_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     if item_conflicts:
         merged["_item_conflicts"] = sorted(set(item_conflicts))
     if cgt_item_values(merged.get("items")):
-        merged["items"] = cgt_items_with_inherited_false_flags(cgt_item_values(merged.get("items")), merged)
+        merged["items"] = cgt_items_with_inherited_review_flags(cgt_item_values(merged.get("items")), merged)
     return cgt_values_with_declines(merged, {**flat_declines, **raw_declines})
 
 
@@ -5749,11 +5749,11 @@ def cgt_item_values(raw_items: Any) -> List[Dict[str, Any]]:
     return items
 
 
-def cgt_items_with_inherited_false_flags(items: List[Dict[str, Any]], context: Dict[str, Any]) -> List[Dict[str, Any]]:
+def cgt_items_with_inherited_review_flags(items: List[Dict[str, Any]], context: Dict[str, Any]) -> List[Dict[str, Any]]:
     inherited = {
         key: context.get(key)
         for key in CGT_BOOLEAN_REVIEW_FIELDS
-        if cgt_boolean_false(context.get(key))
+        if cgt_inherited_review_flag(context.get(key))
     }
     if not inherited:
         return items
@@ -5765,6 +5765,10 @@ def cgt_items_with_inherited_false_flags(items: List[Dict[str, Any]], context: D
                 merged_item[key] = value
         merged_items.append(merged_item)
     return merged_items
+
+
+def cgt_inherited_review_flag(value: Any) -> bool:
+    return cgt_boolean_false(value) or cgt_review_flag_has_signal(value)
 
 
 def cgt_merge_item_values(left: Any, right: Any) -> List[Dict[str, Any]]:
@@ -6339,7 +6343,7 @@ def cgt_itemized_top_level_evidence(raw: Dict[str, Any]) -> List[str]:
 def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
     return any(
         (
-            has_meaningful_cgt_signal(key, value)
+            (key not in CGT_BOOLEAN_REVIEW_FIELDS and has_meaningful_cgt_signal(key, value))
             or has_explicit_cgt_evidence_gap(key, value)
         )
         for key, value in raw.items()
