@@ -6681,13 +6681,19 @@ def cgt_main_residence_conflict_or_overlap(raw: Dict[str, Any]) -> bool:
 
 def cgt_main_residence_has_review_signal(raw: Dict[str, Any]) -> bool:
     return any(
-        cgt_review_flag_has_signal(raw.get(key))
+        cgt_review_flag_has_signal(raw.get(key)) or cgt_boolean_needs_evidence(raw.get(key))
         for key in (
             "main_residence_claim",
             "main_residence_rental_business_use",
             "main_residence_spouse_conflict",
         )
-    ) or any(has_meaningful_cgt_signal(key, raw.get(key)) for key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS)
+    ) or any(cgt_main_residence_text_has_signal(key, raw.get(key)) for key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS)
+
+
+def cgt_main_residence_text_has_signal(key: str, value: Any) -> bool:
+    if key == "main_residence_property_records" and cgt_records_missing(value):
+        return not is_missing(value)
+    return has_meaningful_cgt_signal(key, value) or (has_meaningful_value(value) and contains_unknown(value))
 
 
 def cgt_main_residence_evidence_gaps(raw: Dict[str, Any]) -> List[str]:

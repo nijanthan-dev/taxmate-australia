@@ -12449,6 +12449,29 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
         self.assertEqual("Accountant review", rental_row["status"])
         self.assertIn("private-use review", rental_row["tab_text"])
 
+    def test_main_residence_uncertain_claim_keeps_specific_evidence_and_sources(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "cgt_event_type": "sale",
+                "cgt_asset": "Former home",
+                "cgt_owner": "individual",
+                "cgt_acquisition_date": "2018-07-01",
+                "cgt_disposal_date": "2026-02-01",
+                "cgt_proceeds": 900000,
+                "cgt_cost_base": 600000,
+                "cgt_records": "records held",
+                "cgt_main_residence_claim": "maybe",
+            }
+        )
+        cgt_row = next(item for item in payload["items"] if item["number"] == "CGT-SCHEDULE")
+        cgt_evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+
+        self.assertEqual("Evidence", cgt_row["status"])
+        self.assertIn("main residence claim maybe", cgt_row["answer"])
+        self.assertIn("main residence claim evidence", cgt_evidence["answer"])
+        self.assertIn(taxmate_intake.ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE, cgt_row["source_urls"])
+        self.assertIn(taxmate_intake.ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE, cgt_evidence["source_urls"])
+
     def test_main_residence_falsey_values_and_missing_records_stay_visible(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
