@@ -6431,6 +6431,10 @@ def has_explicit_cgt_evidence_gap(key: str, value: Any) -> bool:
         return cgt_boolean_needs_evidence(value)
     if key in CGT_DISCOUNT_REVIEW_TEXT_FIELDS:
         return has_meaningful_value(value) and contains_unknown(value)
+    if key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS:
+        if key == "main_residence_property_records":
+            return not is_missing(value) and cgt_records_missing(value)
+        return has_meaningful_value(value) and contains_unknown(value)
     if key in ("summary", "event_type", "asset", "owner", "records"):
         return has_meaningful_value(value) and contains_unknown(value)
     return False

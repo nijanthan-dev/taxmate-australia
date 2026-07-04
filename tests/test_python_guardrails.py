@@ -12472,6 +12472,44 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
         self.assertIn(taxmate_intake.ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE, cgt_row["source_urls"])
         self.assertIn(taxmate_intake.ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE, cgt_evidence["source_urls"])
 
+    def test_main_residence_unknown_period_text_survives_flat_and_nested_normalization(self) -> None:
+        for answers in (
+            {
+                "cgt_event_type": "sale",
+                "cgt_asset": "Former home",
+                "cgt_owner": "individual",
+                "cgt_acquisition_date": "2018-07-01",
+                "cgt_disposal_date": "2026-02-01",
+                "cgt_proceeds": 900000,
+                "cgt_cost_base": 600000,
+                "cgt_records": "records held",
+                "cgt_main_residence_claim": True,
+                "cgt_main_residence_occupancy_period": "occupancy unknown",
+            },
+            {
+                "cgt": {
+                    "event_type": "sale",
+                    "asset": "Former home",
+                    "owner": "individual",
+                    "acquisition_date": "2018-07-01",
+                    "disposal_date": "2026-02-01",
+                    "proceeds": 900000,
+                    "cost_base": 600000,
+                    "records": "records held",
+                    "main_residence_claim": True,
+                    "main_residence_occupancy_period": "occupancy unknown",
+                }
+            },
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                cgt_row = next(item for item in payload["items"] if item["number"] == "CGT-SCHEDULE")
+                cgt_evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+
+                self.assertEqual("Evidence", cgt_row["status"])
+                self.assertIn("main residence occupancy period occupancy unknown", cgt_row["answer"])
+                self.assertIn("main residence ownership/occupancy/absence evidence", cgt_evidence["answer"])
+
     def test_main_residence_falsey_values_and_missing_records_stay_visible(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {

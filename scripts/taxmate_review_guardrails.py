@@ -858,6 +858,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def has_explicit_cgt_evidence_gap(",
                 "if key in CGT_BOOLEAN_REVIEW_FIELDS:\n        return cgt_boolean_needs_evidence(value)",
                 "if key in CGT_DISCOUNT_REVIEW_TEXT_FIELDS:\n        return has_meaningful_value(value) and contains_unknown(value)",
+                "if key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS:",
+                "return has_meaningful_value(value) and contains_unknown(value)",
                 "evidence.extend(cgt_main_residence_evidence_gaps(raw))",
                 "cgt_row_sources(item)",
                 "cgt_row_sources(raw)",
