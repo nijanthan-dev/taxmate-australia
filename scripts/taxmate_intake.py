@@ -5662,14 +5662,13 @@ def cgt_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     merged = dict(flat_values)
     conflicts = list(flat_values.get(CGT_CONFLICT_SIGNAL_KEY, []))
     existing_flat_context = cgt_has_facts(flat_values)
-    raw_items = first_cgt_items(raw)
-    raw_item_values = cgt_item_values(raw_items)
+    raw_item_values = cgt_merge_item_values(raw.get("items"), raw.get("cgt_items"))
     if cgt_items_conflict(raw.get("items"), raw.get("cgt_items")):
         item_conflicts.append("items")
     if flat_items and raw_item_values and cgt_items_conflict(flat_items, raw_item_values):
         item_conflicts.append("items")
-    if raw_item_values and not cgt_item_values(merged.get("items")):
-        merged["items"] = raw_item_values
+    if raw_item_values:
+        merged["items"] = cgt_merge_item_values(merged.get("items"), raw_item_values)
     for key, value in cgt_answer_values(raw, existing_context=existing_flat_context).items():
         if key == "items":
             continue
@@ -5735,14 +5734,6 @@ def cgt_answer_values(record: Dict[str, Any], existing_context: bool = False) ->
     return values
 
 
-def first_cgt_items(record: Dict[str, Any]) -> Any:
-    for key in CGT_ITEM_ALIASES:
-        value = record.get(key)
-        if cgt_item_values(value):
-            return value
-    return None
-
-
 def cgt_item_values(raw_items: Any) -> List[Dict[str, Any]]:
     if isinstance(raw_items, dict):
         raw_items = [raw_items]
@@ -5774,6 +5765,38 @@ def cgt_items_with_inherited_false_flags(items: List[Dict[str, Any]], context: D
                 merged_item[key] = value
         merged_items.append(merged_item)
     return merged_items
+
+
+def cgt_merge_item_values(left: Any, right: Any) -> List[Dict[str, Any]]:
+    left_items = cgt_item_values(left)
+    right_items = cgt_item_values(right)
+    if not left_items:
+        return right_items
+    if not right_items:
+        return left_items
+    if len(left_items) != len(right_items):
+        return left_items
+    if any(cgt_item_values_conflict(left_item, right_item) for left_item, right_item in zip(left_items, right_items)):
+        return left_items
+    return [
+        cgt_merge_item_value(left_item, right_item)
+        for left_item, right_item in zip(left_items, right_items)
+    ]
+
+
+def cgt_merge_item_value(left: Dict[str, Any], right: Dict[str, Any]) -> Dict[str, Any]:
+    merged_item = dict(left)
+    for key, value in right.items():
+        if key in (CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY, "_alias_conflicts"):
+            merged_values = list(merged_item.get(key) or [])
+            new_values = value if isinstance(value, list) else [value]
+            merged_item[key] = sorted({str(item) for item in [*merged_values, *new_values] if has_meaningful_value(item)})
+            continue
+        canonical = cgt_canonical_field_key(key)
+        if cgt_values_conflict(canonical, merged_item.get(key), value):
+            continue
+        merged_item[key] = cgt_merge_value(canonical, merged_item.get(key), value)
+    return merged_item
 
 
 def normalize_cgt_item(raw: Dict[str, Any]) -> Dict[str, Any]:
