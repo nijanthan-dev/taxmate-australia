@@ -5834,7 +5834,19 @@ def cgt_items_conflict(left: Any, right: Any) -> bool:
     right_items = cgt_item_values(right)
     if not left_items or not right_items:
         return False
-    return json.dumps(left_items, sort_keys=True, default=str) != json.dumps(right_items, sort_keys=True, default=str)
+    if len(left_items) != len(right_items):
+        return True
+    return any(cgt_item_values_conflict(left_item, right_item) for left_item, right_item in zip(left_items, right_items))
+
+
+def cgt_item_values_conflict(left: Dict[str, Any], right: Dict[str, Any]) -> bool:
+    for key in sorted(set(left) | set(right)):
+        if key in (CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY, "_alias_conflicts"):
+            continue
+        canonical = cgt_canonical_field_key(key)
+        if cgt_values_conflict(canonical, left.get(key), right.get(key)):
+            return True
+    return False
 
 
 def cgt_item_has_facts(item: Dict[str, Any]) -> bool:

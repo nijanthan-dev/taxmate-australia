@@ -11844,6 +11844,45 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertNotIn("asset evidence", evidence_text)
         self.assertNotIn("ownership evidence", evidence_text)
 
+    def test_cgt_item_alias_equivalent_amounts_do_not_conflict(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Example shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": "100.00",
+                    "cost_base": "50.00",
+                    "records": "records held",
+                    "business_use": "false",
+                }
+            ],
+            cgt={
+                "items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "Example shares",
+                        "owner": "individual",
+                        "acquisition_date": "2025-07-01",
+                        "disposal_date": "2026-06-01",
+                        "proceeds": 100,
+                        "cost_base": 50,
+                        "records": "records held",
+                        "business_use": False,
+                    }
+                ]
+            },
+        )
+
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(1, len(rows))
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "CGT-RECON" for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
     def test_cgt_html_has_item_evidence_review_and_provenance(self) -> None:
         payload = self.guide_payload(
             cgt_items=[
