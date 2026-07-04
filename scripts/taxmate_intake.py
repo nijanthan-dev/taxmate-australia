@@ -6672,9 +6672,20 @@ def cgt_review_terms(raw: Dict[str, Any]) -> List[str]:
 
 
 def cgt_row_sources(raw: Dict[str, Any]) -> List[str]:
-    if cgt_main_residence_has_review_signal(raw):
+    if cgt_main_residence_has_source_signal(raw):
         return [*ATO_CGT_SOURCES, *ATO_CGT_MAIN_RESIDENCE_SOURCES]
     return ATO_CGT_SOURCES
+
+
+def cgt_main_residence_has_source_signal(raw: Dict[str, Any]) -> bool:
+    return cgt_main_residence_has_review_signal(raw) or any(
+        key in raw and cgt_boolean_false(raw.get(key))
+        for key in (
+            "main_residence_claim",
+            "main_residence_rental_business_use",
+            "main_residence_spouse_conflict",
+        )
+    )
 
 
 def cgt_main_residence_conflict_or_overlap(raw: Dict[str, Any]) -> bool:

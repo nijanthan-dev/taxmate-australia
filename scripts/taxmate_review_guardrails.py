@@ -825,6 +825,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def cgt_discount_or_residency_has_review_signal(",
                 "def cgt_main_residence_has_review_signal(",
                 "cgt_review_flag_has_signal(raw.get(key)) or cgt_boolean_needs_evidence(raw.get(key))",
+                "def cgt_main_residence_has_source_signal(",
+                "key in raw and cgt_boolean_false(raw.get(key))",
                 "def cgt_main_residence_text_has_signal(",
                 "def cgt_main_residence_evidence_gaps(",
                 "def cgt_row_sources(",
