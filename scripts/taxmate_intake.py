@@ -1902,6 +1902,8 @@ def cgt_flat_value_is_absent(key: str, value: Any) -> bool:
         return True
     if nested_key in ("records", "main_residence_property_records") and cgt_records_missing(value):
         return True
+    if nested_key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS:
+        return True
     if nested_key in CGT_BOOLEAN_REVIEW_FIELDS and cgt_boolean_false(value):
         return True
     return cgt_source_declines_workflow(nested_key, value) or cgt_field_absence_value(nested_key, value)
@@ -5831,8 +5833,9 @@ def cgt_answer_values(record: Dict[str, Any], existing_context: bool = False) ->
                 values["summary"] = cgt_merge_value("summary", existing, value)
             continue
         evidence_gap = has_explicit_cgt_evidence_gap(canonical_key, value)
+        signal = has_meaningful_cgt_signal(canonical_key, value)
         if (
-            has_meaningful_cgt_signal(canonical_key, value)
+            (signal and (has_context or not cgt_fact_requires_context(canonical_key)))
             or (evidence_gap and (has_context or not cgt_evidence_gap_requires_context(canonical_key)))
             or cgt_preserved_false_review_flag(canonical_key, value, has_context)
         ):
@@ -5867,6 +5870,13 @@ def cgt_items_with_inherited_review_flags(items: List[Dict[str, Any]], context: 
         for key in CGT_BOOLEAN_REVIEW_FIELDS
         if cgt_inherited_review_flag(context.get(key))
     }
+    inherited.update(
+        {
+            key: context.get(key)
+            for key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS
+            if has_meaningful_cgt_signal(key, context.get(key)) or has_explicit_cgt_evidence_gap(key, context.get(key))
+        }
+    )
     if not inherited:
         return items
     merged_items = []
@@ -6039,8 +6049,9 @@ def cgt_item_values_conflict(left: Dict[str, Any], right: Dict[str, Any]) -> boo
 def cgt_item_has_facts(item: Dict[str, Any]) -> bool:
     if item.get("_alias_conflicts"):
         return True
+    has_context = any(cgt_answer_context_value(key, value) for key, value in item.items())
     return any(
-        has_meaningful_cgt_signal(key, value)
+        (has_meaningful_cgt_signal(key, value) and (has_context or not cgt_fact_requires_context(key)))
         or (
             has_explicit_cgt_evidence_gap(key, value)
             and not cgt_evidence_gap_requires_context(key)
@@ -6087,7 +6098,9 @@ def cgt_conflict_value(key: str, value: Any) -> bool:
 def cgt_answer_context_value(key: str, value: Any) -> bool:
     if key in CGT_BOOLEAN_REVIEW_FIELDS and cgt_boolean_false(value):
         return False
-    if cgt_evidence_gap_requires_context(key) and has_explicit_cgt_evidence_gap(key, value):
+    if cgt_fact_requires_context(key) and (
+        has_meaningful_cgt_signal(key, value) or has_explicit_cgt_evidence_gap(key, value)
+    ):
         return False
     return has_meaningful_cgt_signal(key, value) or has_explicit_cgt_evidence_gap(key, value)
 
@@ -6378,8 +6391,9 @@ def cgt_declines_without_facts(raw: Dict[str, Any]) -> bool:
 def cgt_has_facts(record: Dict[str, Any]) -> bool:
     if cgt_item_values(record.get("items")) or cgt_item_values(record.get("cgt_items")):
         return True
+    has_context = any(cgt_answer_context_value(key, value) for key, value in record.items())
     return any(
-        cgt_has_signal(key, value)
+        (cgt_has_signal(key, value) and (has_context or not cgt_fact_requires_context(key)))
         or (
             has_explicit_cgt_evidence_gap(key, value)
             and not cgt_evidence_gap_requires_context(key)
@@ -6454,6 +6468,10 @@ def has_explicit_cgt_evidence_gap(key: str, value: Any) -> bool:
 
 def cgt_evidence_gap_requires_context(key: str) -> bool:
     return key in ("records", "main_residence_property_records")
+
+
+def cgt_fact_requires_context(key: str) -> bool:
+    return key == "records" or key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS
 
 
 def cgt_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
@@ -6608,7 +6626,11 @@ def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
     )
     return any(
         (
-            (key not in CGT_BOOLEAN_REVIEW_FIELDS and has_meaningful_cgt_signal(key, value))
+            (
+                key not in CGT_BOOLEAN_REVIEW_FIELDS
+                and has_meaningful_cgt_signal(key, value)
+                and (has_context or not cgt_fact_requires_context(key))
+            )
             or (
                 has_explicit_cgt_evidence_gap(key, value)
                 and (has_context or not cgt_evidence_gap_requires_context(key))

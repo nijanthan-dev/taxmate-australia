@@ -227,6 +227,8 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("cgt_conflict_value" in finding.detail for finding in findings))
         self.assertTrue(any('cgt_item_values(raw.get("items"))' in finding.detail for finding in findings))
         self.assertTrue(any('cgt_item_values(raw.get("cgt_items"))' in finding.detail for finding in findings))
+        self.assertTrue(any("cgt_fact_requires_context" in finding.detail for finding in findings))
+        self.assertTrue(any("CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS" in finding.detail for finding in findings))
         self.assertTrue(any("has_context or not cgt_evidence_gap_requires_context" in finding.detail for finding in findings))
 
     def test_review_guardrails_detect_wfh_parser_fallbacks(self) -> None:
@@ -12622,6 +12624,70 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
                     any("cgt" in item["number"].lower() for item in payload["evidence_items"]),
                     payload["evidence_items"],
                 )
+
+    def test_main_residence_periods_without_cgt_context_are_not_cgt_facts(self) -> None:
+        for answers in (
+            {
+                "cgt_main_residence_ownership_period": "0 days",
+            },
+            {
+                "cgt_main_residence_absence_periods": "none",
+            },
+            {
+                "cgt": {
+                    "main_residence_occupancy_period": "0 days",
+                }
+            },
+            {
+                "cgt_items": [
+                    {
+                        "main_residence_absence_periods": "none",
+                    }
+                ]
+            },
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(
+                    any("cgt" in item["number"].lower() for item in payload["items"]),
+                    payload["items"],
+                )
+                self.assertFalse(
+                    any("cgt" in item["number"].lower() for item in payload["evidence_items"]),
+                    payload["evidence_items"],
+                )
+
+    def test_main_residence_top_level_itemized_context_inherits_records_and_periods(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "cgt_main_residence_claim": True,
+                "cgt_main_residence_ownership_period": "0 days claimed",
+                "cgt_main_residence_property_records": False,
+                "cgt_items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "Former home",
+                        "owner": "individual",
+                        "acquisition_date": "2018-07-01",
+                        "disposal_date": "2026-02-01",
+                        "proceeds": 900000,
+                        "cost_base": 600000,
+                        "records": "records held",
+                    }
+                ],
+            }
+        )
+        cgt_row = next(item for item in payload["items"] if item["number"] == "CGT-EVENT-1")
+        cgt_evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+
+        self.assertEqual("Evidence", cgt_row["status"])
+        self.assertIn("main residence claim true", cgt_row["answer"])
+        self.assertIn("main residence ownership period 0 days claimed", cgt_row["answer"])
+        self.assertIn("main residence property records false", cgt_row["answer"])
+        self.assertIn("main residence property records", cgt_evidence["answer"])
+        self.assertIn(taxmate_intake.ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE, cgt_row["source_urls"])
+        self.assertIn(taxmate_intake.ATO_PROPERTY_RECORDS_SOURCE, cgt_evidence["source_urls"])
 
     def test_main_residence_property_record_conflicts_stay_evidence(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
