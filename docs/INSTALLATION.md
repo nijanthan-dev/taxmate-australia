@@ -63,6 +63,16 @@ npx skills@1.5.13 use nijanthan-dev/taxmate-australia \
   --agent codex
 ```
 
+## Repo-local workflow skill setup (full checkout only)
+
+This repo also supports internal workflow SKILL folders under `local-skills/` that are installed from the checked-out repository, not from the public registry.
+
+```bash
+bash scripts/install-local-skills.sh --agent codex
+```
+
+Use `--agent claude` for Claude Code or Cowork-style local installs.
+
 ## Locations
 
 - Project install: `.agents/skills/`

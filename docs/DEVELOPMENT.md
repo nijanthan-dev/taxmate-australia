@@ -74,10 +74,18 @@ Use one setup for Codex Cloud and laptop-local workflows.
 ```bash
 set -euo pipefail
 bash scripts/codex-env-setup.sh
+bash scripts/install-local-skills.sh --agent codex
 bash scripts/codex-env-cleanup.sh
 ```
 
-4. Use this maintenance script:
+4. Install local workflow skills only when this lane uses them:
+
+```bash
+set -euo pipefail
+bash scripts/install-local-skills.sh --agent codex
+```
+
+5. Use this maintenance script:
 
 ```bash
 set -euo pipefail
@@ -93,8 +101,11 @@ Run the same command sets locally:
 
 ```bash
 bash scripts/codex-env-setup.sh
+bash scripts/install-local-skills.sh --agent codex
 bash scripts/codex-env-cleanup.sh
 ```
+
+`local-skills/` contains repo-local workflow SKILL definitions that are not part of portable installs.
 
 ### Runtime execution
 
