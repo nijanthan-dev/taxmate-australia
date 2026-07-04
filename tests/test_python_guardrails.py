@@ -11748,10 +11748,23 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("discount timing held more than 12 months; records held", row["answer"])
         self.assertIn("No final capital gain or loss has been calculated.", row["answer"])
         self.assertNotIn("net capital gain", row["answer"].lower())
-        self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/bringing-losses-forward", row["source_urls"])
-        self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/capital-gains-tax-discount", row["source_urls"])
-        self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/if-you-are-not-an-australian-resident", row["source_urls"])
+        self.assertIn(taxmate_intake.ATO_CGT_LOSS_SOURCE, row["source_urls"])
+        self.assertIn(taxmate_intake.ATO_CGT_DISCOUNT_SOURCE, row["source_urls"])
+        self.assertIn(taxmate_intake.ATO_CGT_FOREIGN_RESIDENT_DISCOUNT_SOURCE, row["source_urls"])
         self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_sources_are_registered_and_covered(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        registry = json.loads((root / "data" / "ato_knowledge_base" / "source_registry.json").read_text())
+        coverage = json.loads((root / "data" / "ato_knowledge_base" / "source_coverage.json").read_text())
+        registry_urls = {item["url"] for item in registry["records"]}
+        covered = {item["canonical_url"]: item for item in coverage["sources"]}
+
+        for url in taxmate_intake.ATO_CGT_SOURCES:
+            with self.subTest(url=url):
+                self.assertIn(url, registry_urls)
+                self.assertEqual("verified", covered[url]["status"])
+                self.assertIn("capital-gains-tax", covered[url]["skills"])
 
     def test_cgt_loss_discount_unknowns_stay_evidence(self) -> None:
         payload = self.guide_payload(
@@ -12343,9 +12356,9 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("foreign resident discount true", body)
         self.assertIn("discount timing or residency signals", body)
         self.assertIn("No final capital gain or loss has been calculated.", body)
-        self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/bringing-losses-forward", body)
-        self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/capital-gains-tax-discount", body)
-        self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/if-you-are-not-an-australian-resident", body)
+        self.assertIn(taxmate_intake.ATO_CGT_LOSS_SOURCE, body)
+        self.assertIn(taxmate_intake.ATO_CGT_DISCOUNT_SOURCE, body)
+        self.assertIn(taxmate_intake.ATO_CGT_FOREIGN_RESIDENT_DISCOUNT_SOURCE, body)
 
 
 if __name__ == "__main__":

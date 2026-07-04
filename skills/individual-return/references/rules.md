@@ -34,9 +34,9 @@ This orchestration skill does not bundle extracted tax-treatment summaries. It c
 - ATO records for rental properties and holiday homes: https://www.ato.gov.au/individuals-and-families/investments-and-assets/property-and-land/residential-rental-properties/records-for-rental-properties-and-holiday-homes
 - ATO property and capital gains tax: https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax
 - ATO using your home for rental or business: https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax/your-main-residence-home/using-your-home-for-rental-or-business
-- ATO bringing capital losses forward: https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/bringing-losses-forward
-- ATO capital gains tax discount: https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/capital-gains-tax-discount
-- ATO non-resident CGT discount: https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/if-you-are-not-an-australian-resident
+- ATO calculating CGT, including capital losses: https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt
+- ATO CGT discount: https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-discount
+- ATO CGT discount for foreign residents: https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/foreign-residents-and-capital-gains-tax/cgt-discount-for-foreign-residents
 - Fair Work 2025 public holidays: https://www.fairwork.gov.au/employment-conditions/public-holidays/2025-public-holidays
 - Fair Work 2026 public holidays: https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays
 

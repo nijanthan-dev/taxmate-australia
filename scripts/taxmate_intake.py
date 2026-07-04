@@ -1160,15 +1160,16 @@ ATO_RENTAL_PROPERTY_SOURCES = [
     ATO_RENTAL_HOME_USE_SOURCE,
 ]
 ATO_CGT_EVENTS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-events"
+ATO_CGT_LOSS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt"
 ATO_CGT_CALCULATION_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/how-to-calculate-your-cgt"
 ATO_CGT_COST_BASE_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/cost-base-of-asset"
 ATO_CGT_PROCEEDS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/capital-proceeds-from-disposing-of-assets"
 ATO_CGT_ASSETS_EXEMPTIONS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/list-of-cgt-assets-and-exemptions"
-ATO_CGT_LOSS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/bringing-losses-forward"
-ATO_CGT_DISCOUNT_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/capital-gains-tax-discount"
-ATO_CGT_FOREIGN_RESIDENT_DISCOUNT_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/if-you-are-not-an-australian-resident"
+ATO_CGT_DISCOUNT_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-discount"
+ATO_CGT_FOREIGN_RESIDENT_DISCOUNT_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/foreign-residents-and-capital-gains-tax/cgt-discount-for-foreign-residents"
 ATO_CGT_SOURCES = [
     ATO_CGT_EVENTS_SOURCE,
+    ATO_CGT_LOSS_SOURCE,
     ATO_CGT_CALCULATION_SOURCE,
     ATO_CGT_COST_BASE_SOURCE,
     ATO_CGT_PROCEEDS_SOURCE,

@@ -759,12 +759,12 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "CGT_CONFLICT_SIGNAL_KEY = \"_conflict_signals\"",
                 "ATO_CGT_SOURCES = [",
                 "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-events",
+                "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt",
                 "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/how-to-calculate-your-cgt",
                 "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/cost-base-of-asset",
                 "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/capital-proceeds-from-disposing-of-assets",
-                "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/bringing-losses-forward",
-                "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/capital-gains-tax-discount",
-                "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/if-you-are-not-an-australian-resident",
+                "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-discount",
+                "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/foreign-residents-and-capital-gains-tax/cgt-discount-for-foreign-residents",
                 "items.extend(cgt_rows(cgt))",
                 "rows.extend(cgt_evidence_rows(cgt_answers(answers)))",
                 "def cgt_answers(",
@@ -1462,6 +1462,26 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
             ],
         )
     )
+    for stale in [
+        "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/bringing-losses-forward",
+        "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/capital-gains-tax-discount",
+        "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/if-you-are-not-an-australian-resident",
+    ]:
+        if stale in text:
+            findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, f"stale CGT source URL: {stale}"))
+    source_state = read_optional(root, "data/ato_knowledge_base/source_registry.json") + "\n" + read_optional(root, "data/ato_knowledge_base/source_coverage.json")
+    if source_state.strip():
+        findings.extend(
+            fail_if_missing(
+                INDIVIDUAL_INTAKE_CONTRACT,
+                source_state,
+                [
+                    "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt",
+                    "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-discount",
+                    "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/foreign-residents-and-capital-gains-tax/cgt-discount-for-foreign-residents",
+                ],
+            )
+        )
     if '"checked_at": "2026-06-29"' in text:
         findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "forbidden stale checked_at literal"))
     if '"no foreign tax"' in text:
