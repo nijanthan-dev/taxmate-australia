@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOCAL_SKILLS_DIR="$ROOT/local-skills"
 CONFIG_PATH="$ROOT/config/public-skills.json"
 TARGET_AGENT="codex"
+REQUESTED_SKILLS=()
 
 if ! command -v npx >/dev/null 2>&1; then
   echo "error: npx missing; install Node.js/npm first" >&2
@@ -59,18 +60,19 @@ while [[ "$#" -gt 0 ]]; do
       exit 1
       ;;
     *)
-      break
+      REQUESTED_SKILLS=("${REQUESTED_SKILLS[@]}" "$1")
+      shift
       ;;
   esac
 done
 
-if [[ "$#" -eq 0 ]]; then
+if [[ "${#REQUESTED_SKILLS[@]}" -eq 0 ]]; then
   for skill_dir in "$LOCAL_SKILLS_DIR"/*; do
     [[ -d "$skill_dir" ]] || continue
     install_skill "$skill_dir"
   done
 else
-  for requested in "$@"; do
+  for requested in "${REQUESTED_SKILLS[@]}"; do
     install_skill "$LOCAL_SKILLS_DIR/$requested"
   done
 fi
