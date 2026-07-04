@@ -11888,6 +11888,10 @@ class CgtIntakeTests(unittest.TestCase):
         )
 
         self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(["CGT-EVENT-1", "CGT-EVENT-2"], [row["number"] for row in rows])
+        self.assertIn("Asset Flat shares", rows[0]["answer"])
+        self.assertIn("Asset Nested shares", rows[1]["answer"])
         recon = next(item for item in payload["items"] if item["number"] == "CGT-RECON")
         evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
         self.assertEqual("Evidence", recon["status"])

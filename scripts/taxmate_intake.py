@@ -5790,6 +5790,7 @@ def cgt_merge_item_values(left: Any, right: Any) -> List[Dict[str, Any]]:
         right_item = right_items[index]
         if cgt_item_values_conflict(left_item, right_item):
             merged_items.append(left_item)
+            merged_items.append(right_item)
         else:
             merged_items.append(cgt_merge_item_value(left_item, right_item))
     return merged_items
