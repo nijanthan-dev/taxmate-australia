@@ -145,6 +145,13 @@ REVIEWABLE_CGT_FIELDS = (
     "cgt_mixed_use",
     "cgt_business_use",
     "cgt_private_use",
+    "cgt_main_residence_claim",
+    "cgt_main_residence_ownership_period",
+    "cgt_main_residence_occupancy_period",
+    "cgt_main_residence_rental_business_use",
+    "cgt_main_residence_absence_periods",
+    "cgt_main_residence_spouse_conflict",
+    "cgt_main_residence_property_records",
 )
 REVIEWABLE_INVESTMENT_FIELDS = (
     "investment_interest_items",
@@ -918,6 +925,13 @@ CGT_FLAT_FIELD_KEYS = {
     "cgt_mixed_use": "mixed_use",
     "cgt_business_use": "business_use",
     "cgt_private_use": "private_use",
+    "cgt_main_residence_claim": "main_residence_claim",
+    "cgt_main_residence_ownership_period": "main_residence_ownership_period",
+    "cgt_main_residence_occupancy_period": "main_residence_occupancy_period",
+    "cgt_main_residence_rental_business_use": "main_residence_rental_business_use",
+    "cgt_main_residence_absence_periods": "main_residence_absence_periods",
+    "cgt_main_residence_spouse_conflict": "main_residence_spouse_conflict",
+    "cgt_main_residence_property_records": "main_residence_property_records",
 }
 CGT_NESTED_FIELD_KEYS = {
     "asset_description": "asset",
@@ -937,6 +951,14 @@ CGT_NESTED_FIELD_KEYS = {
     "foreign_resident_discount": "foreign_resident_discount",
     "ownership": "owner",
     "ownership_share": "owner",
+    "main_residence": "main_residence_claim",
+    "main_residence_claim": "main_residence_claim",
+    "main_residence_ownership_period": "main_residence_ownership_period",
+    "main_residence_occupancy_period": "main_residence_occupancy_period",
+    "main_residence_rental_business_use": "main_residence_rental_business_use",
+    "main_residence_absence_periods": "main_residence_absence_periods",
+    "main_residence_spouse_conflict": "main_residence_spouse_conflict",
+    "main_residence_property_records": "main_residence_property_records",
 }
 CGT_ITEM_ALIASES = ("items", "cgt_items")
 CGT_ITEM_FIELD_ALIASES = {
@@ -966,6 +988,13 @@ CGT_ITEM_FIELD_ALIASES = {
     "mixed_use": ("mixed_use", "cgt_mixed_use"),
     "business_use": ("business_use", "cgt_business_use"),
     "private_use": ("private_use", "cgt_private_use"),
+    "main_residence_claim": ("main_residence_claim", "main_residence", "cgt_main_residence_claim"),
+    "main_residence_ownership_period": ("main_residence_ownership_period", "cgt_main_residence_ownership_period"),
+    "main_residence_occupancy_period": ("main_residence_occupancy_period", "cgt_main_residence_occupancy_period"),
+    "main_residence_rental_business_use": ("main_residence_rental_business_use", "cgt_main_residence_rental_business_use"),
+    "main_residence_absence_periods": ("main_residence_absence_periods", "cgt_main_residence_absence_periods"),
+    "main_residence_spouse_conflict": ("main_residence_spouse_conflict", "cgt_main_residence_spouse_conflict"),
+    "main_residence_property_records": ("main_residence_property_records", "cgt_main_residence_property_records"),
 }
 CGT_SIGNAL_FIELDS = (
     "summary",
@@ -991,11 +1020,24 @@ CGT_SIGNAL_FIELDS = (
     "mixed_use",
     "business_use",
     "private_use",
+    "main_residence_claim",
+    "main_residence_ownership_period",
+    "main_residence_occupancy_period",
+    "main_residence_rental_business_use",
+    "main_residence_absence_periods",
+    "main_residence_spouse_conflict",
+    "main_residence_property_records",
 )
 CGT_RECONCILIATION_FIELDS = ("proceeds", "cost_base", "incidental_costs", "losses")
 CGT_LOSS_REVIEW_AMOUNT_FIELDS = ("current_year_losses", "carried_forward_losses")
 CGT_AMOUNT_FIELDS = (*CGT_RECONCILIATION_FIELDS, *CGT_LOSS_REVIEW_AMOUNT_FIELDS)
 CGT_DISCOUNT_REVIEW_TEXT_FIELDS = ("discount_timing", "discount_eligibility")
+CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS = (
+    "main_residence_ownership_period",
+    "main_residence_occupancy_period",
+    "main_residence_absence_periods",
+    "main_residence_property_records",
+)
 CGT_FLAT_AMOUNT_FIELDS = tuple(
     key for key, nested_key in CGT_FLAT_FIELD_KEYS.items() if nested_key in CGT_AMOUNT_FIELDS
 )
@@ -1009,6 +1051,9 @@ CGT_BOOLEAN_REVIEW_FIELDS = (
     "mixed_use",
     "business_use",
     "private_use",
+    "main_residence_claim",
+    "main_residence_rental_business_use",
+    "main_residence_spouse_conflict",
 )
 CGT_SOURCE_KEY_FACTS = ("no_cgt", *CGT_SIGNAL_FIELDS)
 CGT_DECLINE_SIGNAL_KEY = "_decline_signals"
@@ -1154,6 +1199,7 @@ ATO_CRYPTO_SOURCES = [
 ATO_RENTAL_RECORDS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/property-and-land/residential-rental-properties/records-for-rental-properties-and-holiday-homes"
 ATO_RENTAL_CGT_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax"
 ATO_RENTAL_HOME_USE_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax/your-main-residence-home/using-your-home-for-rental-or-business"
+ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax/your-main-residence-home/eligibility-for-main-residence-exemption"
 ATO_RENTAL_PROPERTY_SOURCES = [
     ATO_RENTAL_RECORDS_SOURCE,
     ATO_RENTAL_CGT_SOURCE,
@@ -1177,6 +1223,10 @@ ATO_CGT_SOURCES = [
     ATO_CGT_LOSS_SOURCE,
     ATO_CGT_DISCOUNT_SOURCE,
     ATO_CGT_FOREIGN_RESIDENT_DISCOUNT_SOURCE,
+]
+ATO_CGT_MAIN_RESIDENCE_SOURCES = [
+    ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE,
+    ATO_RENTAL_HOME_USE_SOURCE,
 ]
 OMITTED_SCOPE_ITEMS = [
     ("feat: add company return intake", "Company/entity return prep, company tax labels, directors, dividends, franking, retained earnings."),
@@ -1318,6 +1368,13 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("cgt_carried_forward_losses", "CGT", "CGT carried-forward capital losses", "Cost base", False),
         QuestionSpec("cgt_records", "CGT", "CGT acquisition, disposal, and cost-base records", "CGT records", False),
         QuestionSpec("cgt_no_cgt", "CGT", "No general CGT event answer", "CGT events", False),
+        QuestionSpec("cgt_main_residence_claim", "CGT", "Main residence exemption claim?", "Eligibility for main residence exemption", False),
+        QuestionSpec("cgt_main_residence_ownership_period", "CGT", "Main residence ownership period", "Eligibility for main residence exemption", False),
+        QuestionSpec("cgt_main_residence_occupancy_period", "CGT", "Main residence occupancy period", "Eligibility for main residence exemption", False),
+        QuestionSpec("cgt_main_residence_rental_business_use", "CGT", "Rental or business use during ownership?", "Using your home for rental or business", False),
+        QuestionSpec("cgt_main_residence_absence_periods", "CGT", "Absence periods or absence-rule signals", "Eligibility for main residence exemption", False),
+        QuestionSpec("cgt_main_residence_spouse_conflict", "CGT", "Spouse/partner claimed another main residence?", "Eligibility for main residence exemption", False),
+        QuestionSpec("cgt_main_residence_property_records", "CGT", "Main residence property and occupancy records", "Keeping records for property", False),
         QuestionSpec("cgt_exemption_flag", "CGT", "CGT exemption flag", "CGT review", False),
         QuestionSpec("cgt_discount_flag", "CGT", "CGT discount flag", "CGT review", False),
         QuestionSpec("cgt_discount_claim", "CGT", "CGT discount claim", "CGT review", False),
@@ -6080,6 +6137,13 @@ def cgt_schedule_row(
         f"mixed use {cgt_boolean_flag_text(raw.get('mixed_use'))}; "
         f"business use {cgt_boolean_flag_text(raw.get('business_use'))}; "
         f"private use {cgt_boolean_flag_text(raw.get('private_use'))}; "
+        f"main residence claim {cgt_boolean_flag_text(raw.get('main_residence_claim'))}; "
+        f"main residence ownership period {cgt_field_text(raw, 'main_residence_ownership_period')}; "
+        f"main residence occupancy period {cgt_field_text(raw, 'main_residence_occupancy_period')}; "
+        f"main residence rental/business use {cgt_boolean_flag_text(raw.get('main_residence_rental_business_use'))}; "
+        f"main residence absence periods {cgt_field_text(raw, 'main_residence_absence_periods')}; "
+        f"spouse/partner main residence conflict {cgt_boolean_flag_text(raw.get('main_residence_spouse_conflict'))}; "
+        f"main residence property records {cgt_field_text(raw, 'main_residence_property_records')}; "
         f"foreign resident discount {cgt_boolean_flag_text(raw.get('foreign_resident_discount'))}"
     )
     summary = cgt_field_text(raw, "summary")
@@ -6099,7 +6163,7 @@ def cgt_schedule_row(
         answer,
         "General CGT event facts are collected for review only. No final capital gain or loss has been calculated.",
         status,
-        ATO_CGT_SOURCES,
+        cgt_row_sources(raw),
         tab_text=cgt_tab_text(evidence, review),
     )
     if review:
@@ -6136,6 +6200,13 @@ def cgt_item_row(
         f"mixed use {cgt_boolean_flag_text(item.get('mixed_use'))}; "
         f"business use {cgt_boolean_flag_text(item.get('business_use'))}; "
         f"private use {cgt_boolean_flag_text(item.get('private_use'))}; "
+        f"main residence claim {cgt_boolean_flag_text(item.get('main_residence_claim'))}; "
+        f"main residence ownership period {cgt_field_text(item, 'main_residence_ownership_period')}; "
+        f"main residence occupancy period {cgt_field_text(item, 'main_residence_occupancy_period')}; "
+        f"main residence rental/business use {cgt_boolean_flag_text(item.get('main_residence_rental_business_use'))}; "
+        f"main residence absence periods {cgt_field_text(item, 'main_residence_absence_periods')}; "
+        f"spouse/partner main residence conflict {cgt_boolean_flag_text(item.get('main_residence_spouse_conflict'))}; "
+        f"main residence property records {cgt_field_text(item, 'main_residence_property_records')}; "
         f"foreign resident discount {cgt_boolean_flag_text(item.get('foreign_resident_discount'))}"
     )
     decline_text = cgt_decline_signal_text(item)
@@ -6155,7 +6226,7 @@ def cgt_item_row(
         answer,
         "Itemized CGT event facts are collected for review only. No final capital gain or loss has been calculated.",
         status,
-        ATO_CGT_SOURCES,
+        cgt_row_sources(item),
         tab_text=cgt_tab_text(evidence, review),
     )
     if review:
@@ -6395,6 +6466,7 @@ def cgt_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
         evidence.append("numeric current-year or carried-forward loss evidence")
     if cgt_discount_text_needs_evidence(raw):
         evidence.append("discount timing/eligibility evidence")
+    evidence.extend(cgt_main_residence_evidence_gaps(raw))
     if cgt_boolean_needs_evidence(raw.get("foreign_resident_discount")):
         evidence.append("foreign resident discount review signal evidence")
     if any(cgt_boolean_needs_evidence(raw.get(key)) for key in CGT_BOOLEAN_REVIEW_FIELDS):
@@ -6430,6 +6502,7 @@ def cgt_item_evidence_gaps(raw: Dict[str, Any], item: Dict[str, Any]) -> List[st
         evidence.append("numeric current-year or carried-forward loss evidence")
     if cgt_discount_text_needs_evidence(item):
         evidence.append("discount timing/eligibility evidence")
+    evidence.extend(cgt_main_residence_evidence_gaps(item))
     if cgt_boolean_needs_evidence(item.get("foreign_resident_discount")):
         evidence.append("foreign resident discount review signal evidence")
     if any(cgt_boolean_needs_evidence(item.get(key)) for key in CGT_BOOLEAN_REVIEW_FIELDS):
@@ -6485,6 +6558,7 @@ def cgt_itemized_summary_evidence(raw: Dict[str, Any]) -> List[str]:
         evidence.append("numeric current-year or carried-forward loss evidence")
     if cgt_discount_text_needs_evidence(raw):
         evidence.append("discount timing/eligibility evidence")
+    evidence.extend(cgt_main_residence_evidence_gaps(raw))
     return evidence
 
 
@@ -6584,7 +6658,53 @@ def cgt_review_terms(raw: Dict[str, Any]) -> List[str]:
         terms.append("exemption, discount claim, or concession flags")
     if cgt_discount_or_residency_has_review_signal(raw):
         terms.append("discount timing or residency signals")
+    if cgt_main_residence_has_review_signal(raw):
+        terms.append("main residence exemption review")
+    if cgt_main_residence_conflict_or_overlap(raw):
+        terms.append("rental/business use or spouse/partner main-residence conflict")
     return terms
+
+
+def cgt_row_sources(raw: Dict[str, Any]) -> List[str]:
+    if cgt_main_residence_has_review_signal(raw):
+        return [*ATO_CGT_SOURCES, *ATO_CGT_MAIN_RESIDENCE_SOURCES]
+    return ATO_CGT_SOURCES
+
+
+def cgt_main_residence_conflict_or_overlap(raw: Dict[str, Any]) -> bool:
+    return cgt_boolean_true(raw.get("main_residence_rental_business_use")) or cgt_boolean_true(
+        raw.get("main_residence_spouse_conflict")
+    )
+
+
+def cgt_main_residence_has_review_signal(raw: Dict[str, Any]) -> bool:
+    return any(
+        cgt_review_flag_has_signal(raw.get(key))
+        for key in (
+            "main_residence_claim",
+            "main_residence_rental_business_use",
+            "main_residence_spouse_conflict",
+        )
+    ) or any(has_meaningful_cgt_signal(key, raw.get(key)) for key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS)
+
+
+def cgt_main_residence_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
+    if not cgt_main_residence_has_review_signal(raw):
+        return []
+    evidence: List[str] = []
+    if cgt_boolean_needs_evidence(raw.get("main_residence_claim")):
+        evidence.append("main residence claim evidence")
+    if cgt_boolean_needs_evidence(raw.get("main_residence_rental_business_use")):
+        evidence.append("rental/business use evidence")
+    if cgt_boolean_needs_evidence(raw.get("main_residence_spouse_conflict")):
+        evidence.append("spouse/partner main residence evidence")
+    for key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS:
+        value = raw.get(key)
+        if key == "main_residence_property_records" and cgt_records_missing(value):
+            evidence.append("main residence property records")
+        elif is_missing(value) or contains_unknown(value):
+            evidence.append("main residence ownership/occupancy/absence evidence")
+    return list(dict.fromkeys(evidence))
 
 
 def cgt_decline_contradiction(raw: Dict[str, Any]) -> bool:
