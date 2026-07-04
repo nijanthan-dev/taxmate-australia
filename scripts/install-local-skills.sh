@@ -51,7 +51,7 @@ while [[ "$#" -gt 0 ]]; do
       ;;
     --help|-h)
       echo "usage: install-local-skills.sh [--agent <agent>] [skill-name ...]"
-      echo "  --agent: codex | claude | none (default: codex)"
+      echo "  --agent: codex | claude-code | none (default: codex)"
       exit 0
       ;;
     --*)
@@ -65,6 +65,10 @@ while [[ "$#" -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ "$TARGET_AGENT" == "claude" ]]; then
+  TARGET_AGENT="claude-code"
+fi
 
 if [[ "${#REQUESTED_SKILLS[@]}" -eq 0 ]]; then
   for skill_dir in "$LOCAL_SKILLS_DIR"/*; do

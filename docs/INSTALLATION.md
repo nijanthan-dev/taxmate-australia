@@ -71,7 +71,7 @@ This repo also supports internal workflow SKILL folders under `local-skills/` th
 bash scripts/install-local-skills.sh --agent codex
 ```
 
-Use `--agent claude` for Claude Code or Cowork-style local installs.
+Use `--agent claude-code` for Claude Code or Cowork-style local installs.
 
 ## Locations
 
