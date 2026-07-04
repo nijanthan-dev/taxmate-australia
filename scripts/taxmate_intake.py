@@ -5832,7 +5832,7 @@ def cgt_answer_values(record: Dict[str, Any], existing_context: bool = False) ->
         evidence_gap = has_explicit_cgt_evidence_gap(canonical_key, value)
         if (
             has_meaningful_cgt_signal(canonical_key, value)
-            or (evidence_gap and (canonical_key != "records" or has_context))
+            or (evidence_gap and (has_context or not cgt_evidence_gap_requires_context(canonical_key)))
             or cgt_preserved_false_review_flag(canonical_key, value, has_context)
         ):
             existing = values.get(canonical_key)
@@ -5939,7 +5939,10 @@ def normalize_cgt_item(raw: Dict[str, Any]) -> Dict[str, Any]:
         canonical = cgt_canonical_field_key(key)
         if canonical in item or canonical in CGT_ITEM_ALIASES:
             continue
-        if has_meaningful_cgt_signal(canonical, value) or has_explicit_cgt_evidence_gap(canonical, value):
+        if has_meaningful_cgt_signal(canonical, value) or (
+            has_explicit_cgt_evidence_gap(canonical, value)
+            and not cgt_evidence_gap_requires_context(canonical)
+        ):
             item[canonical] = value
     declines = cgt_decline_values(raw)
     if declines:
@@ -6036,7 +6039,11 @@ def cgt_item_has_facts(item: Dict[str, Any]) -> bool:
     if item.get("_alias_conflicts"):
         return True
     return any(
-        has_meaningful_cgt_signal(key, value) or has_explicit_cgt_evidence_gap(key, value)
+        has_meaningful_cgt_signal(key, value)
+        or (
+            has_explicit_cgt_evidence_gap(key, value)
+            and not cgt_evidence_gap_requires_context(key)
+        )
         for key, value in item.items()
         if key not in (CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY, "_alias_conflict_details")
     )
@@ -6079,7 +6086,7 @@ def cgt_conflict_value(key: str, value: Any) -> bool:
 def cgt_answer_context_value(key: str, value: Any) -> bool:
     if key in CGT_BOOLEAN_REVIEW_FIELDS and cgt_boolean_false(value):
         return False
-    if key == "records" and has_explicit_cgt_evidence_gap(key, value):
+    if cgt_evidence_gap_requires_context(key) and has_explicit_cgt_evidence_gap(key, value):
         return False
     return has_meaningful_cgt_signal(key, value) or has_explicit_cgt_evidence_gap(key, value)
 
@@ -6371,7 +6378,11 @@ def cgt_has_facts(record: Dict[str, Any]) -> bool:
     if cgt_item_values(record.get("items")) or cgt_item_values(record.get("cgt_items")):
         return True
     return any(
-        cgt_has_signal(key, value) or (has_explicit_cgt_evidence_gap(key, value) and key != "records")
+        cgt_has_signal(key, value)
+        or (
+            has_explicit_cgt_evidence_gap(key, value)
+            and not cgt_evidence_gap_requires_context(key)
+        )
         for key, value in record.items()
         if key != CGT_DECLINE_SIGNAL_KEY
         and key != CGT_CONFLICT_SIGNAL_KEY
@@ -6397,7 +6408,7 @@ def has_meaningful_cgt_signal(key: str, value: Any) -> bool:
         cgt_source_declines_workflow(key, value) or cgt_field_absence_value(key, value)
     ):
         return False
-    if key == "records" and cgt_records_missing(value):
+    if key in ("records", "main_residence_property_records") and cgt_records_missing(value):
         return False
     if contains_unknown(value):
         return False
@@ -6438,6 +6449,10 @@ def has_explicit_cgt_evidence_gap(key: str, value: Any) -> bool:
     if key in ("summary", "event_type", "asset", "owner", "records"):
         return has_meaningful_value(value) and contains_unknown(value)
     return False
+
+
+def cgt_evidence_gap_requires_context(key: str) -> bool:
+    return key in ("records", "main_residence_property_records")
 
 
 def cgt_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
@@ -6590,7 +6605,10 @@ def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
     return any(
         (
             (key not in CGT_BOOLEAN_REVIEW_FIELDS and has_meaningful_cgt_signal(key, value))
-            or has_explicit_cgt_evidence_gap(key, value)
+            or (
+                has_explicit_cgt_evidence_gap(key, value)
+                and not cgt_evidence_gap_requires_context(key)
+            )
         )
         for key, value in raw.items()
         if key not in ("items", "cgt_items", "_item_conflicts", CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY)

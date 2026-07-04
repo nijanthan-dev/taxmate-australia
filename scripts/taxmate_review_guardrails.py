@@ -146,7 +146,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #74 main residence CGT",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Main residence CGT intake must preserve claim, ownership, occupancy, rental/business use, absence, spouse/partner conflict, and property-record facts across flat, nested, and itemized rows; keep missing or unknown periods, missing records, rental/business use, absence, and spouse conflicts as Evidence or Accountant review; preserve false claim/use/conflict values and 0-day text with context; attach main-residence, rental/business-use, and property-record source URLs to rows and evidence queues; never calculate a final exemption; and never downgrade rental-property Accountant review.",
+        "Main residence CGT intake must preserve claim, ownership, occupancy, rental/business use, absence, spouse/partner conflict, and property-record facts across flat, nested, and itemized rows; keep missing or unknown periods, missing records, rental/business use, absence, and spouse conflicts as Evidence or Accountant review when another CGT/main-residence signal exists; preserve false claim/use/conflict values and 0-day text with context; never let a standalone missing main-residence property-record default create CGT facts; attach main-residence, rental/business-use, and property-record source URLs to rows and evidence queues; never calculate a final exemption; and never downgrade rental-property Accountant review.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -829,6 +829,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "key in raw and cgt_boolean_false(raw.get(key))",
                 "def cgt_main_residence_text_has_signal(",
                 "def cgt_main_residence_evidence_gaps(",
+                "def cgt_evidence_gap_requires_context(",
+                "return key in (\"records\", \"main_residence_property_records\")",
                 "def cgt_row_sources(",
                 "main residence claim {cgt_boolean_flag_text(raw.get('main_residence_claim'))}",
                 "main residence property records {cgt_field_text(raw, 'main_residence_property_records')}",
@@ -882,8 +884,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "return cgt_boolean_true(value) or cgt_declines_workflow(value)",
                 "if key == \"no_cgt\":\n        return False",
                 "if nested_key in CGT_AMOUNT_FIELDS and isinstance(value, bool):",
-                "key != \"records\"",
-                "if key == \"records\" and cgt_records_missing(value):",
+                "not cgt_evidence_gap_requires_context(key)",
+                "if key in (\"records\", \"main_residence_property_records\") and cgt_records_missing(value):",
                 "def cgt_records_missing(",
                 "\"record not held\"",
                 "\"receipt not held\"",

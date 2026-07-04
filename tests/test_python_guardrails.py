@@ -12510,6 +12510,39 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
                 self.assertIn("main residence occupancy period occupancy unknown", cgt_row["answer"])
                 self.assertIn("main residence ownership/occupancy/absence evidence", cgt_evidence["answer"])
 
+    def test_main_residence_missing_records_without_cgt_context_is_not_cgt_fact(self) -> None:
+        for answers in (
+            {
+                "cgt_no_cgt": True,
+                "cgt_main_residence_property_records": False,
+            },
+            {
+                "cgt": {
+                    "no_cgt": True,
+                    "main_residence_property_records": False,
+                }
+            },
+            {
+                "cgt_items": [
+                    {
+                        "no_cgt": True,
+                        "main_residence_property_records": False,
+                    }
+                ]
+            },
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(
+                    any(item["number"].startswith("CGT") for item in payload["items"]),
+                    payload["items"],
+                )
+                self.assertFalse(
+                    any(item["number"].startswith("CGT") for item in payload["evidence_items"]),
+                    payload["evidence_items"],
+                )
+
     def test_main_residence_falsey_values_and_missing_records_stay_visible(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
