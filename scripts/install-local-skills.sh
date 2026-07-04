@@ -60,7 +60,7 @@ while [[ "$#" -gt 0 ]]; do
       exit 1
       ;;
     *)
-      REQUESTED_SKILLS=("${REQUESTED_SKILLS[@]}" "$1")
+      REQUESTED_SKILLS+=("$1")
       shift
       ;;
   esac

@@ -104,7 +104,9 @@ jobs:
       - run: test -f scripts/codex-env-cleanup.sh
       - run: test -f scripts/codex-env-full-check.sh
       - run: test -f scripts/codex-cloud-post-task-cleanup.sh
+      - run: test -f scripts/test-install-local-skills.sh
       - run: bash -n scripts/*.sh scripts/taxmate
+      - run: bash scripts/test-install-local-skills.sh
       - run: bash scripts/test-codex-env-cleanup.sh
       - run: bash scripts/test-codex-env-setup-clean.sh
 

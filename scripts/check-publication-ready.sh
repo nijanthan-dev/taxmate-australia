@@ -301,12 +301,14 @@ fi
 ./scripts/taxmate skills audit --format markdown --output /tmp/source-coverage.md
 ./scripts/taxmate validate >/tmp/taxmate-australia-validate.json
 bash scripts/test-skills-install.sh
+bash scripts/test-install-local-skills.sh
 bash -n scripts/codex-env-setup.sh
 bash -n scripts/codex-env-cleanup.sh
 bash -n scripts/codex-env-full-check.sh
 bash -n scripts/codex-cloud-post-task-cleanup.sh
 bash -n scripts/test-codex-env-cleanup.sh
 bash -n scripts/test-codex-env-setup-clean.sh
+bash -n scripts/test-install-local-skills.sh
 bash scripts/test-codex-env-cleanup.sh
 bash scripts/test-codex-env-setup-clean.sh
 bash scripts/clean-source-cache.sh
