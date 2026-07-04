@@ -12689,6 +12689,39 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
         self.assertIn(taxmate_intake.ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE, cgt_row["source_urls"])
         self.assertIn(taxmate_intake.ATO_PROPERTY_RECORDS_SOURCE, cgt_evidence["source_urls"])
 
+    def test_main_residence_top_level_itemized_context_inherits_ambiguous_flags(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "cgt_main_residence_claim": "maybe",
+                "cgt_main_residence_rental_business_use": "unclear",
+                "cgt_main_residence_spouse_conflict": "unknown",
+                "cgt_items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "Former home",
+                        "owner": "individual",
+                        "acquisition_date": "2018-07-01",
+                        "disposal_date": "2026-02-01",
+                        "proceeds": 900000,
+                        "cost_base": 600000,
+                        "records": "records held",
+                    }
+                ],
+            }
+        )
+        cgt_row = next(item for item in payload["items"] if item["number"] == "CGT-EVENT-1")
+        cgt_evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+
+        self.assertEqual("Evidence", cgt_row["status"])
+        self.assertIn("main residence claim maybe", cgt_row["answer"])
+        self.assertIn("main residence rental/business use unclear", cgt_row["answer"])
+        self.assertIn("spouse/partner main residence conflict unknown", cgt_row["answer"])
+        self.assertIn("main residence claim evidence", cgt_evidence["answer"])
+        self.assertIn("rental/business use evidence", cgt_evidence["answer"])
+        self.assertIn("spouse/partner main residence evidence", cgt_evidence["answer"])
+        self.assertIn(taxmate_intake.ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE, cgt_row["source_urls"])
+        self.assertIn(taxmate_intake.ATO_RENTAL_HOME_USE_SOURCE, cgt_evidence["source_urls"])
+
     def test_main_residence_property_record_conflicts_stay_evidence(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {

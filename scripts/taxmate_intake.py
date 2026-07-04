@@ -5890,7 +5890,7 @@ def cgt_items_with_inherited_review_flags(items: List[Dict[str, Any]], context: 
 
 
 def cgt_inherited_review_flag(value: Any) -> bool:
-    return cgt_boolean_false(value) or cgt_review_flag_has_signal(value)
+    return cgt_boolean_false(value) or cgt_review_flag_has_signal(value) or cgt_boolean_needs_evidence(value)
 
 
 def cgt_merge_item_values(left: Any, right: Any) -> List[Dict[str, Any]]:

@@ -146,7 +146,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #74 main residence CGT",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Main residence CGT intake must preserve claim, ownership, occupancy, rental/business use, absence, spouse/partner conflict, and property-record facts across flat, nested, and itemized rows; keep missing or unknown periods, missing records, rental/business use, absence, and spouse conflicts as Evidence or Accountant review when another CGT/main-residence signal exists or itemized CGT rows provide context; preserve false claim/use/conflict values and 0-day text with context; never let standalone main-residence period or property-record defaults create CGT facts or fallback base rows; inherit top-level main-residence text and property-record facts into item rows when itemized context exists; keep flat-vs-nested property-record conflicts visible as Evidence; attach main-residence, rental/business-use, and property-record source URLs to rows and evidence queues; never calculate a final exemption; and never downgrade rental-property Accountant review.",
+        "Main residence CGT intake must preserve claim, ownership, occupancy, rental/business use, absence, spouse/partner conflict, and property-record facts across flat, nested, and itemized rows; keep missing or unknown periods, missing records, rental/business use, absence, and spouse conflicts as Evidence or Accountant review when another CGT/main-residence signal exists or itemized CGT rows provide context; preserve false claim/use/conflict values and 0-day text with context; never let standalone main-residence period or property-record defaults create CGT facts or fallback base rows; inherit top-level false, true, and ambiguous main-residence review flags plus text and property-record facts into item rows when itemized context exists; keep flat-vs-nested property-record conflicts visible as Evidence; attach main-residence, rental/business-use, and property-record source URLs to rows and evidence queues; never calculate a final exemption; and never downgrade rental-property Accountant review.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -791,6 +791,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def cgt_items_with_inherited_review_flags(",
                 "for key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS",
                 "cgt_inherited_review_flag(",
+                "cgt_boolean_false(value) or cgt_review_flag_has_signal(value) or cgt_boolean_needs_evidence(value)",
                 "def cgt_merge_item_values(",
                 "def cgt_merge_item_value(",
                 "merged_item[key] = cgt_merge_value(canonical, merged_item.get(key), value)",
