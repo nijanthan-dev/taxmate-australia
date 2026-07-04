@@ -14,6 +14,11 @@ icon = "tool"
 command = "bash scripts/bootstrap-dev-env.sh"
 
 [[actions]]
+name = "Install local workflow skills"
+icon = "tool"
+command = "bash scripts/install-local-skills.sh --agent codex"
+
+[[actions]]
 name = "Validate"
 icon = "tool"
 command = "./scripts/taxmate validate"
