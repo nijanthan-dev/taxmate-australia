@@ -130,6 +130,12 @@ REVIEWABLE_CGT_FIELDS = (
     "cgt_cost_base",
     "cgt_incidental_costs",
     "cgt_losses",
+    "cgt_current_year_losses",
+    "cgt_carried_forward_losses",
+    "cgt_discount_claim",
+    "cgt_discount_timing",
+    "cgt_discount_eligibility",
+    "cgt_foreign_resident_discount",
     "cgt_records",
     "cgt_items",
     "cgt_no_cgt",
@@ -898,6 +904,12 @@ CGT_FLAT_FIELD_KEYS = {
     "cgt_cost_base": "cost_base",
     "cgt_incidental_costs": "incidental_costs",
     "cgt_losses": "losses",
+    "cgt_current_year_losses": "current_year_losses",
+    "cgt_carried_forward_losses": "carried_forward_losses",
+    "cgt_discount_claim": "discount_claim",
+    "cgt_discount_timing": "discount_timing",
+    "cgt_discount_eligibility": "discount_eligibility",
+    "cgt_foreign_resident_discount": "foreign_resident_discount",
     "cgt_records": "records",
     "cgt_no_cgt": "no_cgt",
     "cgt_exemption_flag": "exemption_flag",
@@ -916,6 +928,13 @@ CGT_NESTED_FIELD_KEYS = {
     "incidental_cost": "incidental_costs",
     "capital_losses": "losses",
     "loss": "losses",
+    "current_year_losses": "current_year_losses",
+    "carry_forward_losses": "carried_forward_losses",
+    "carried_forward_losses": "carried_forward_losses",
+    "discount_claim": "discount_claim",
+    "discount_timing": "discount_timing",
+    "discount_eligibility": "discount_eligibility",
+    "foreign_resident_discount": "foreign_resident_discount",
     "ownership": "owner",
     "ownership_share": "owner",
 }
@@ -930,6 +949,15 @@ CGT_ITEM_FIELD_ALIASES = {
     "cost_base": ("cost_base", "cgt_cost_base"),
     "incidental_costs": ("incidental_costs", "incidental_cost", "cgt_incidental_costs"),
     "losses": ("losses", "capital_losses", "loss", "cgt_losses"),
+    "current_year_losses": ("current_year_losses", "cgt_current_year_losses"),
+    "carried_forward_losses": ("carried_forward_losses", "cgt_carried_forward_losses"),
+    "discount_claim": ("discount_claim", "cgt_discount_claim"),
+    "discount_timing": ("discount_timing", "cgt_discount_timing"),
+    "discount_eligibility": ("discount_eligibility", "cgt_discount_eligibility"),
+    "foreign_resident_discount": (
+        "foreign_resident_discount",
+        "cgt_foreign_resident_discount",
+    ),
     "records": ("records", "cgt_records"),
     "no_cgt": ("no_cgt", "cgt_no_cgt"),
     "exemption_flag": ("exemption_flag", "cgt_exemption_flag"),
@@ -950,6 +978,12 @@ CGT_SIGNAL_FIELDS = (
     "cost_base",
     "incidental_costs",
     "losses",
+    "current_year_losses",
+    "carried_forward_losses",
+    "discount_claim",
+    "discount_timing",
+    "discount_eligibility",
+    "foreign_resident_discount",
     "records",
     "exemption_flag",
     "discount_flag",
@@ -958,7 +992,10 @@ CGT_SIGNAL_FIELDS = (
     "business_use",
     "private_use",
 )
-CGT_AMOUNT_FIELDS = ("proceeds", "cost_base", "incidental_costs", "losses")
+CGT_RECONCILIATION_FIELDS = ("proceeds", "cost_base", "incidental_costs", "losses")
+CGT_LOSS_REVIEW_AMOUNT_FIELDS = ("current_year_losses", "carried_forward_losses")
+CGT_AMOUNT_FIELDS = (*CGT_RECONCILIATION_FIELDS, *CGT_LOSS_REVIEW_AMOUNT_FIELDS)
+CGT_DISCOUNT_REVIEW_TEXT_FIELDS = ("discount_timing", "discount_eligibility")
 CGT_FLAT_AMOUNT_FIELDS = tuple(
     key for key, nested_key in CGT_FLAT_FIELD_KEYS.items() if nested_key in CGT_AMOUNT_FIELDS
 )
@@ -966,6 +1003,8 @@ CGT_DATE_FIELDS = ("acquisition_date", "disposal_date")
 CGT_BOOLEAN_REVIEW_FIELDS = (
     "exemption_flag",
     "discount_flag",
+    "discount_claim",
+    "foreign_resident_discount",
     "concession_flag",
     "mixed_use",
     "business_use",
@@ -1121,16 +1160,23 @@ ATO_RENTAL_PROPERTY_SOURCES = [
     ATO_RENTAL_HOME_USE_SOURCE,
 ]
 ATO_CGT_EVENTS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-events"
+ATO_CGT_LOSS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt"
 ATO_CGT_CALCULATION_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/how-to-calculate-your-cgt"
 ATO_CGT_COST_BASE_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/cost-base-of-asset"
 ATO_CGT_PROCEEDS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/capital-proceeds-from-disposing-of-assets"
 ATO_CGT_ASSETS_EXEMPTIONS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/list-of-cgt-assets-and-exemptions"
+ATO_CGT_DISCOUNT_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-discount"
+ATO_CGT_FOREIGN_RESIDENT_DISCOUNT_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/foreign-residents-and-capital-gains-tax/cgt-discount-for-foreign-residents"
 ATO_CGT_SOURCES = [
     ATO_CGT_EVENTS_SOURCE,
+    ATO_CGT_LOSS_SOURCE,
     ATO_CGT_CALCULATION_SOURCE,
     ATO_CGT_COST_BASE_SOURCE,
     ATO_CGT_PROCEEDS_SOURCE,
     ATO_CGT_ASSETS_EXEMPTIONS_SOURCE,
+    ATO_CGT_LOSS_SOURCE,
+    ATO_CGT_DISCOUNT_SOURCE,
+    ATO_CGT_FOREIGN_RESIDENT_DISCOUNT_SOURCE,
 ]
 OMITTED_SCOPE_ITEMS = [
     ("feat: add company return intake", "Company/entity return prep, company tax labels, directors, dividends, franking, retained earnings."),
@@ -1268,10 +1314,16 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("cgt_disposal_date", "CGT", "CGT disposal date", "CGT records", False),
         QuestionSpec("cgt_proceeds", "CGT", "CGT capital proceeds", "Capital proceeds", False),
         QuestionSpec("cgt_cost_base", "CGT", "CGT cost base", "Cost base", False),
+        QuestionSpec("cgt_current_year_losses", "CGT", "CGT current-year capital losses", "Cost base", False),
+        QuestionSpec("cgt_carried_forward_losses", "CGT", "CGT carried-forward capital losses", "Cost base", False),
         QuestionSpec("cgt_records", "CGT", "CGT acquisition, disposal, and cost-base records", "CGT records", False),
         QuestionSpec("cgt_no_cgt", "CGT", "No general CGT event answer", "CGT events", False),
         QuestionSpec("cgt_exemption_flag", "CGT", "CGT exemption flag", "CGT review", False),
         QuestionSpec("cgt_discount_flag", "CGT", "CGT discount flag", "CGT review", False),
+        QuestionSpec("cgt_discount_claim", "CGT", "CGT discount claim", "CGT review", False),
+        QuestionSpec("cgt_discount_timing", "CGT", "CGT discount timing", "CGT review", False),
+        QuestionSpec("cgt_discount_eligibility", "CGT", "CGT discount eligibility evidence", "CGT review", False),
+        QuestionSpec("cgt_foreign_resident_discount", "CGT", "CGT foreign-resident discount signal", "CGT review", False),
         QuestionSpec("cgt_concession_flag", "CGT", "CGT concession flag", "CGT review", False),
         QuestionSpec("cgt_mixed_use", "CGT", "CGT mixed-use flag", "CGT review", False),
         QuestionSpec("cgt_business_use", "CGT", "CGT business-use flag", "CGT review", False),
@@ -6016,13 +6068,19 @@ def cgt_schedule_row(
         f"cost base {cgt_amount_text(raw.get('cost_base'))}; "
         f"incidental costs {cgt_amount_text(raw.get('incidental_costs'))}; "
         f"losses {cgt_amount_text(raw.get('losses'))}; "
+        f"current-year losses {cgt_amount_text(raw.get('current_year_losses'))}; "
+        f"carried-forward losses {cgt_amount_text(raw.get('carried_forward_losses'))}; "
         f"records {cgt_field_text(raw, 'records')}; "
         f"exemption flag {cgt_boolean_flag_text(raw.get('exemption_flag'))}; "
         f"discount flag {cgt_boolean_flag_text(raw.get('discount_flag'))}; "
+        f"discount claim {cgt_boolean_flag_text(raw.get('discount_claim'))}; "
+        f"discount timing {cgt_field_text(raw, 'discount_timing')}; "
+        f"discount eligibility {cgt_field_text(raw, 'discount_eligibility')}; "
         f"concession flag {cgt_boolean_flag_text(raw.get('concession_flag'))}; "
         f"mixed use {cgt_boolean_flag_text(raw.get('mixed_use'))}; "
         f"business use {cgt_boolean_flag_text(raw.get('business_use'))}; "
-        f"private use {cgt_boolean_flag_text(raw.get('private_use'))}"
+        f"private use {cgt_boolean_flag_text(raw.get('private_use'))}; "
+        f"foreign resident discount {cgt_boolean_flag_text(raw.get('foreign_resident_discount'))}"
     )
     summary = cgt_field_text(raw, "summary")
     if summary != "unknown":
@@ -6066,13 +6124,19 @@ def cgt_item_row(
         f"cost base {cgt_amount_text(item.get('cost_base'))}; "
         f"incidental costs {cgt_amount_text(item.get('incidental_costs'))}; "
         f"losses {cgt_amount_text(item.get('losses'))}; "
+        f"current-year losses {cgt_amount_text(item.get('current_year_losses'))}; "
+        f"carried-forward losses {cgt_amount_text(item.get('carried_forward_losses'))}; "
         f"records {cgt_field_text(item, 'records')}; "
         f"exemption flag {cgt_boolean_flag_text(item.get('exemption_flag'))}; "
         f"discount flag {cgt_boolean_flag_text(item.get('discount_flag'))}; "
+        f"discount claim {cgt_boolean_flag_text(item.get('discount_claim'))}; "
+        f"discount timing {cgt_field_text(item, 'discount_timing')}; "
+        f"discount eligibility {cgt_field_text(item, 'discount_eligibility')}; "
         f"concession flag {cgt_boolean_flag_text(item.get('concession_flag'))}; "
         f"mixed use {cgt_boolean_flag_text(item.get('mixed_use'))}; "
         f"business use {cgt_boolean_flag_text(item.get('business_use'))}; "
-        f"private use {cgt_boolean_flag_text(item.get('private_use'))}"
+        f"private use {cgt_boolean_flag_text(item.get('private_use'))}; "
+        f"foreign resident discount {cgt_boolean_flag_text(item.get('foreign_resident_discount'))}"
     )
     decline_text = cgt_decline_signal_text(item)
     if decline_text:
@@ -6292,6 +6356,8 @@ def has_explicit_cgt_evidence_gap(key: str, value: Any) -> bool:
         return cgt_date_needs_evidence(value)
     if key in CGT_BOOLEAN_REVIEW_FIELDS:
         return cgt_boolean_needs_evidence(value)
+    if key in CGT_DISCOUNT_REVIEW_TEXT_FIELDS:
+        return has_meaningful_value(value) and contains_unknown(value)
     if key in ("summary", "event_type", "asset", "owner", "records"):
         return has_meaningful_value(value) and contains_unknown(value)
     return False
@@ -6325,6 +6391,12 @@ def cgt_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
         for key in ("incidental_costs", "losses")
     ):
         evidence.append("numeric incidental-cost or loss evidence")
+    if cgt_loss_amounts_need_evidence(raw):
+        evidence.append("numeric current-year or carried-forward loss evidence")
+    if cgt_discount_text_needs_evidence(raw):
+        evidence.append("discount timing/eligibility evidence")
+    if cgt_boolean_needs_evidence(raw.get("foreign_resident_discount")):
+        evidence.append("foreign resident discount review signal evidence")
     if any(cgt_boolean_needs_evidence(raw.get(key)) for key in CGT_BOOLEAN_REVIEW_FIELDS):
         evidence.append("review signal evidence")
     return evidence
@@ -6354,6 +6426,12 @@ def cgt_item_evidence_gaps(raw: Dict[str, Any], item: Dict[str, Any]) -> List[st
         for key in ("incidental_costs", "losses")
     ):
         evidence.append("numeric proceeds, cost-base, incidental-cost, or loss evidence")
+    if cgt_loss_amounts_need_evidence(item):
+        evidence.append("numeric current-year or carried-forward loss evidence")
+    if cgt_discount_text_needs_evidence(item):
+        evidence.append("discount timing/eligibility evidence")
+    if cgt_boolean_needs_evidence(item.get("foreign_resident_discount")):
+        evidence.append("foreign resident discount review signal evidence")
     if any(cgt_boolean_needs_evidence(item.get(key)) for key in CGT_BOOLEAN_REVIEW_FIELDS):
         evidence.append("review signal evidence")
     return evidence
@@ -6403,7 +6481,29 @@ def cgt_itemized_summary_evidence(raw: Dict[str, Any]) -> List[str]:
         for key in ("incidental_costs", "losses")
     ):
         evidence.append("numeric incidental-cost or loss evidence")
+    if cgt_loss_amounts_need_evidence(raw):
+        evidence.append("numeric current-year or carried-forward loss evidence")
+    if cgt_discount_text_needs_evidence(raw):
+        evidence.append("discount timing/eligibility evidence")
     return evidence
+
+
+def cgt_loss_amounts_need_evidence(raw: Dict[str, Any]) -> bool:
+    return any(
+        not is_missing(raw.get(key)) and cgt_amount_needs_evidence(raw.get(key))
+        for key in CGT_LOSS_REVIEW_AMOUNT_FIELDS
+    )
+
+
+def cgt_discount_text_needs_evidence(raw: Dict[str, Any]) -> bool:
+    return any(contains_unknown(raw.get(key)) for key in CGT_DISCOUNT_REVIEW_TEXT_FIELDS)
+
+
+def cgt_discount_or_residency_has_review_signal(raw: Dict[str, Any]) -> bool:
+    return any(
+        has_meaningful_cgt_signal(key, raw.get(key))
+        for key in CGT_DISCOUNT_REVIEW_TEXT_FIELDS
+    ) or cgt_review_flag_has_signal(raw.get("foreign_resident_discount"))
 
 
 def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
@@ -6414,12 +6514,12 @@ def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
         )
         for key, value in raw.items()
         if key not in ("items", "cgt_items", "_item_conflicts", CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY)
-        and key not in CGT_AMOUNT_FIELDS
+        and key not in CGT_RECONCILIATION_FIELDS
     ) or bool(raw.get(CGT_CONFLICT_SIGNAL_KEY))
 
 
 def cgt_has_reconciliation_target(raw: Dict[str, Any]) -> bool:
-    return any(not is_missing(raw.get(key)) for key in CGT_AMOUNT_FIELDS) or bool(raw.get("_item_conflicts"))
+    return any(not is_missing(raw.get(key)) for key in CGT_RECONCILIATION_FIELDS) or bool(raw.get("_item_conflicts"))
 
 
 def cgt_reconciliation_conflicts(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> List[str]:
@@ -6477,8 +6577,13 @@ def cgt_review_terms(raw: Dict[str, Any]) -> List[str]:
     terms: List[str] = []
     if any(cgt_review_flag_has_signal(raw.get(key)) for key in ("mixed_use", "business_use", "private_use")):
         terms.append("mixed, private, or business use")
-    if any(cgt_review_flag_has_signal(raw.get(key)) for key in ("exemption_flag", "discount_flag", "concession_flag")):
-        terms.append("exemption, discount, or concession flags")
+    if any(
+        cgt_review_flag_has_signal(raw.get(key))
+        for key in ("exemption_flag", "discount_flag", "discount_claim", "concession_flag")
+    ):
+        terms.append("exemption, discount claim, or concession flags")
+    if cgt_discount_or_residency_has_review_signal(raw):
+        terms.append("discount timing or residency signals")
     return terms
 
 

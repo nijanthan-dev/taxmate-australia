@@ -11720,6 +11720,133 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("losses 0.00", row["answer"])
         self.assertFalse(self.cgt_event_rows(payload))
 
+    def test_cgt_loss_discount_review_preserves_falsey_and_sources(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Example shares",
+            cgt_owner="individual",
+            cgt_acquisition_date="2024-06-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_current_year_losses=0,
+            cgt_carried_forward_losses=0,
+            cgt_discount_claim=False,
+            cgt_discount_timing="held more than 12 months; records held",
+            cgt_discount_eligibility="eligibility evidence held",
+            cgt_foreign_resident_discount=False,
+            cgt_records="records held",
+        )
+
+        row = self.cgt_row(payload)
+        self.assertEqual("Accountant review", row["status"])
+        self.assertEqual("review", row["tab_kind"])
+        self.assertIn("current-year losses 0.00", row["answer"])
+        self.assertIn("carried-forward losses 0.00", row["answer"])
+        self.assertIn("discount claim false", row["answer"])
+        self.assertIn("foreign resident discount false", row["answer"])
+        self.assertIn("discount timing held more than 12 months; records held", row["answer"])
+        self.assertIn("No final capital gain or loss has been calculated.", row["answer"])
+        self.assertNotIn("net capital gain", row["answer"].lower())
+        self.assertIn(taxmate_intake.ATO_CGT_LOSS_SOURCE, row["source_urls"])
+        self.assertIn(taxmate_intake.ATO_CGT_DISCOUNT_SOURCE, row["source_urls"])
+        self.assertIn(taxmate_intake.ATO_CGT_FOREIGN_RESIDENT_DISCOUNT_SOURCE, row["source_urls"])
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_cgt_sources_are_registered_and_covered(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        registry = json.loads((root / "data" / "ato_knowledge_base" / "source_registry.json").read_text())
+        coverage = json.loads((root / "data" / "ato_knowledge_base" / "source_coverage.json").read_text())
+        registry_urls = {item["url"] for item in registry["records"]}
+        covered = {item["canonical_url"]: item for item in coverage["sources"]}
+
+        for url in taxmate_intake.ATO_CGT_SOURCES:
+            with self.subTest(url=url):
+                self.assertIn(url, registry_urls)
+                self.assertEqual("verified", covered[url]["status"])
+                self.assertIn("capital-gains-tax", covered[url]["skills"])
+
+    def test_cgt_loss_discount_unknowns_stay_evidence(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Example shares",
+            cgt_owner="individual",
+            cgt_acquisition_date="2024-06-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_current_year_losses="bad amount",
+            cgt_carried_forward_losses="unknown",
+            cgt_discount_claim="unknown",
+            cgt_discount_timing="not sure if over 12 months",
+            cgt_discount_eligibility="unknown",
+            cgt_foreign_resident_discount="maybe",
+            cgt_records="records held",
+        )
+
+        row = self.cgt_row(payload)
+        evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("current-year losses bad amount", row["answer"])
+        self.assertIn("carried-forward losses unknown", row["answer"])
+        self.assertIn("discount claim unknown", row["answer"])
+        self.assertIn("foreign resident discount maybe", row["answer"])
+        self.assertIn("numeric current-year or carried-forward loss evidence", evidence_text)
+        self.assertIn("discount timing/eligibility evidence", evidence_text)
+        self.assertIn("foreign resident discount review signal evidence", evidence_text)
+        self.assertIn("review signal evidence", evidence_text)
+
+    def test_cgt_false_foreign_resident_discount_does_not_create_review_term(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Example shares",
+            cgt_owner="individual",
+            cgt_acquisition_date="2024-06-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_foreign_resident_discount=False,
+            cgt_records="records held",
+        )
+
+        row = self.cgt_row(payload)
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("foreign resident discount false", row["answer"])
+        self.assertNotEqual("review", row.get("tab_kind"))
+        self.assertNotIn("discount timing or residency signals", row["tab_text"])
+
+    def test_cgt_top_level_loss_discount_keeps_item_evidence_visible(self) -> None:
+        payload = self.guide_payload(
+            cgt_current_year_losses=100,
+            cgt_carried_forward_losses=0,
+            cgt_discount_claim=True,
+            cgt_discount_timing="unknown",
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Example shares",
+                    "owner": "individual",
+                    "acquisition_date": "bad-date",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 50,
+                    "records": "records held",
+                }
+            ],
+        )
+
+        top_level = self.cgt_row(payload)
+        item = self.cgt_event_rows(payload)[0]
+        evidence_text = "\n".join(row["answer"] for row in payload["evidence_items"])
+        self.assertEqual("Evidence", top_level["status"])
+        self.assertEqual("Evidence", item["status"])
+        self.assertIn("current-year losses 100.00", top_level["answer"])
+        self.assertIn("carried-forward losses 0.00", top_level["answer"])
+        self.assertIn("discount claim true", top_level["answer"])
+        self.assertIn("CGT item 1 needs acquisition or disposal date evidence", evidence_text)
+        self.assertIn("CGT top-level facts need discount timing/eligibility evidence", evidence_text)
+        self.assertIn("No final capital gain or loss has been calculated.", item["answer"])
+
     def test_cgt_top_level_and_item_totals_reconcile(self) -> None:
         payload = self.guide_payload(
             cgt_proceeds=300,
@@ -12202,6 +12329,36 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("No final capital gain or loss has been calculated.", body)
         self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-events", body)
         self.assertIn("Checked ", body)
+
+    def test_cgt_loss_discount_html_has_review_queue_and_provenance(self) -> None:
+        payload = self.guide_payload(
+            cgt_event_type="sale",
+            cgt_asset="Discounted shares",
+            cgt_owner="individual",
+            cgt_acquisition_date="2024-06-01",
+            cgt_disposal_date="2026-06-01",
+            cgt_proceeds=100,
+            cgt_cost_base=50,
+            cgt_current_year_losses=0,
+            cgt_carried_forward_losses=0,
+            cgt_discount_claim=True,
+            cgt_discount_timing="held more than 12 months; records held",
+            cgt_discount_eligibility="eligibility evidence held",
+            cgt_foreign_resident_discount=True,
+            cgt_records="records held",
+        )
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("CGT-SCHEDULE", body)
+        self.assertIn("current-year losses 0.00", body)
+        self.assertIn("carried-forward losses 0.00", body)
+        self.assertIn("discount claim true", body)
+        self.assertIn("foreign resident discount true", body)
+        self.assertIn("discount timing or residency signals", body)
+        self.assertIn("No final capital gain or loss has been calculated.", body)
+        self.assertIn(taxmate_intake.ATO_CGT_LOSS_SOURCE, body)
+        self.assertIn(taxmate_intake.ATO_CGT_DISCOUNT_SOURCE, body)
+        self.assertIn(taxmate_intake.ATO_CGT_FOREIGN_RESIDENT_DISCOUNT_SOURCE, body)
 
 
 if __name__ == "__main__":
