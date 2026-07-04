@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.12.0...v0.13.0) (2026-07-04)
+
+
+### Features
+
+* add itemized CGT events ([#94](https://github.com/nijanthan-dev/taxmate-australia/issues/94)) ([ef5856b](https://github.com/nijanthan-dev/taxmate-australia/commit/ef5856b331fcd840d7f3d6d5810504878523c086))
+
 ## [0.12.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.11.1...v0.12.0) (2026-07-04)
 
 
