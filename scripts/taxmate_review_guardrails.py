@@ -136,7 +136,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #76 itemized CGT events",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Itemized CGT event intake must accept flat cgt_items and nested cgt.items, normalize scalar/nested/flat aliases without hiding accepted fields, render deterministic per-item event rows with asset, owner, dates, proceeds, cost base, incidental costs, losses, records, and review signals, preserve zero amounts and false flags, keep item-level Evidence or Accountant review from being cleared by top-level totals, avoid fake reconciliation or top-level schedule rows when no aggregate or top-level fact was supplied, never count item conflicts or no-CGT decline signals as top-level CGT facts, keep no-CGT plus item-only facts visible without adding top-level evidence gaps, flag partial or malformed item totals and top-level-vs-item conflicts as Evidence, and keep source provenance plus no-final-gain-or-loss wording visible.",
+        "Itemized CGT event intake must accept flat cgt_items and nested cgt.items, normalize scalar/nested/flat aliases without hiding accepted fields, render deterministic per-item event rows with asset, owner, dates, proceeds, cost base, incidental costs, losses, records, and review signals, preserve zero amounts and false flags, keep item-level Evidence or Accountant review from being cleared by top-level totals, avoid fake reconciliation or top-level schedule rows when no aggregate or top-level fact was supplied, never count item conflicts or no-CGT decline signals as top-level CGT facts, keep no-CGT plus item-only facts visible without adding top-level evidence gaps, require item proceeds and cost base while keeping incidental costs and losses optional unless supplied malformed, flag partial or malformed item totals and top-level-vs-item conflicts as Evidence, and keep source provenance plus no-final-gain-or-loss wording visible.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -793,6 +793,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "top-level and item amount reconciliation",
                 "key not in (\"items\", \"cgt_items\", \"_item_conflicts\", CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY)",
                 "CGT itemized facts need",
+                "for key in (\"proceeds\", \"cost_base\")",
+                "for key in (\"incidental_costs\", \"losses\")",
                 "CGT item {idx} needs",
                 "signal).startswith(\"records \")",
                 "conflict signals {conflict_text}",

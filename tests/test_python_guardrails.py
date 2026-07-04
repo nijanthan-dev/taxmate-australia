@@ -11501,6 +11501,29 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("No final capital gain or loss has been calculated.", rows[0]["answer"])
         self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
 
+    def test_cgt_item_optional_amounts_can_be_omitted(self) -> None:
+        payload = self.guide_payload(
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Example shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 50,
+                    "records": "purchase and sale records held",
+                }
+            ]
+        )
+
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(1, len(rows))
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("incidental costs unknown", rows[0]["answer"])
+        self.assertIn("losses unknown", rows[0]["answer"])
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
     def test_cgt_nested_items_render_multiple_event_rows(self) -> None:
         payload = self.guide_payload(
             cgt={
@@ -11692,7 +11715,7 @@ class CgtIntakeTests(unittest.TestCase):
         )
 
         evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
-        self.assertIn("CGT item 1 needs numeric proceeds, cost-base, incidental-cost, or loss evidence", evidence_text)
+        self.assertIn("CGT item 1 needs numeric proceeds or cost-base evidence", evidence_text)
         self.assertIn("CGT item totals need corrected reconciliation for proceeds", evidence_text)
 
     def test_cgt_item_missing_records_malformed_dates_and_amounts_stay_evidence(self) -> None:
@@ -11724,7 +11747,7 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("ownership evidence", evidence["answer"])
         self.assertIn("CGT records", evidence["answer"])
         self.assertIn("acquisition or disposal date evidence", evidence["answer"])
-        self.assertIn("numeric proceeds, cost-base, incidental-cost, or loss evidence", evidence["answer"])
+        self.assertIn("numeric proceeds or cost-base evidence", evidence["answer"])
 
     def test_cgt_no_answer_plus_item_facts_stays_visible(self) -> None:
         payload = self.guide_payload(

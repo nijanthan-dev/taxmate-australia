@@ -6261,7 +6261,12 @@ def cgt_item_evidence_gaps(raw: Dict[str, Any], item: Dict[str, Any]) -> List[st
         evidence.append("CGT records")
     if any(cgt_date_needs_evidence(item.get(key)) or is_missing(item.get(key)) for key in CGT_DATE_FIELDS):
         evidence.append("acquisition or disposal date evidence")
-    if any(cgt_amount_needs_evidence(item.get(key)) or is_missing(item.get(key)) for key in CGT_AMOUNT_FIELDS):
+    if any(cgt_amount_needs_evidence(item.get(key)) or is_missing(item.get(key)) for key in ("proceeds", "cost_base")):
+        evidence.append("numeric proceeds or cost-base evidence")
+    if any(
+        not is_missing(item.get(key)) and cgt_amount_needs_evidence(item.get(key))
+        for key in ("incidental_costs", "losses")
+    ):
         evidence.append("numeric proceeds, cost-base, incidental-cost, or loss evidence")
     if any(cgt_boolean_needs_evidence(item.get(key)) for key in CGT_BOOLEAN_REVIEW_FIELDS):
         evidence.append("review signal evidence")
