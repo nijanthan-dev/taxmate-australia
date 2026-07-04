@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LOCAL_SKILLS_DIR="$ROOT/local-codex-skills"
+LOCAL_SKILLS_DIR="$ROOT/local-skills"
 CONFIG_PATH="$ROOT/config/public-skills.json"
 
 if ! command -v npx >/dev/null 2>&1; then
