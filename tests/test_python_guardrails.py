@@ -11524,6 +11524,31 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("losses unknown", rows[0]["answer"])
         self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
 
+    def test_cgt_flat_false_flags_with_itemized_rows_stay_visible(self) -> None:
+        payload = self.guide_payload(
+            cgt_business_use=False,
+            cgt_private_use=False,
+            cgt_items=[
+                {
+                    "event_type": "sale",
+                    "asset": "Example shares",
+                    "owner": "individual",
+                    "acquisition_date": "2025-07-01",
+                    "disposal_date": "2026-06-01",
+                    "proceeds": 100,
+                    "cost_base": 50,
+                    "records": "purchase and sale records held",
+                }
+            ],
+        )
+
+        rows = self.cgt_event_rows(payload)
+        self.assertEqual(1, len(rows))
+        self.assertIn("business use false", rows[0]["answer"])
+        self.assertIn("private use false", rows[0]["answer"])
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
     def test_cgt_nested_items_render_multiple_event_rows(self) -> None:
         payload = self.guide_payload(
             cgt={

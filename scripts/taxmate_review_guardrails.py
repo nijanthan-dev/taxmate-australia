@@ -763,6 +763,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def cgt_flat_alias_should_replace(",
                 "def cgt_answer_values(",
                 "def cgt_item_values(",
+                "existing_context=bool(flat_items)",
+                "def cgt_items_with_inherited_false_flags(",
                 "def normalize_cgt_item(",
                 "def cgt_items_conflict(",
                 "def cgt_item_values_conflict(",

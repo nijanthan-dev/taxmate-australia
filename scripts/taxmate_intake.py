@@ -5647,10 +5647,10 @@ def cgt_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
             fields[nested_key] = value
     if not isinstance(raw, dict) and has_meaningful_value(raw):
         fields["summary"] = raw
-    flat_values = cgt_answer_values(fields)
     flat_items = cgt_item_values(answers.get("cgt_items"))
+    flat_values = cgt_answer_values(fields, existing_context=bool(flat_items))
     if flat_items:
-        flat_values["items"] = flat_items
+        flat_values["items"] = cgt_items_with_inherited_false_flags(flat_items, flat_values)
     if field_conflicts:
         flat_values[CGT_CONFLICT_SIGNAL_KEY] = field_conflicts
     flat_declines = cgt_decline_values(fields)
@@ -5685,6 +5685,8 @@ def cgt_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
         merged[CGT_CONFLICT_SIGNAL_KEY] = conflicts
     if item_conflicts:
         merged["_item_conflicts"] = sorted(set(item_conflicts))
+    if cgt_item_values(merged.get("items")):
+        merged["items"] = cgt_items_with_inherited_false_flags(cgt_item_values(merged.get("items")), merged)
     return cgt_values_with_declines(merged, {**flat_declines, **raw_declines})
 
 
@@ -5754,6 +5756,24 @@ def cgt_item_values(raw_items: Any) -> List[Dict[str, Any]]:
         if cgt_item_has_facts(item):
             items.append(item)
     return items
+
+
+def cgt_items_with_inherited_false_flags(items: List[Dict[str, Any]], context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    inherited = {
+        key: context.get(key)
+        for key in CGT_BOOLEAN_REVIEW_FIELDS
+        if cgt_boolean_false(context.get(key))
+    }
+    if not inherited:
+        return items
+    merged_items = []
+    for item in items:
+        merged_item = dict(item)
+        for key, value in inherited.items():
+            if is_missing(merged_item.get(key)):
+                merged_item[key] = value
+        merged_items.append(merged_item)
+    return merged_items
 
 
 def normalize_cgt_item(raw: Dict[str, Any]) -> Dict[str, Any]:
@@ -6298,7 +6318,6 @@ def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
         (
             has_meaningful_cgt_signal(key, value)
             or has_explicit_cgt_evidence_gap(key, value)
-            or (key in CGT_BOOLEAN_REVIEW_FIELDS and cgt_boolean_false(value))
         )
         for key, value in raw.items()
         if key not in ("items", "cgt_items", "_item_conflicts", CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY)
