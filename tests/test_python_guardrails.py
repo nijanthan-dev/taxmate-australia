@@ -11746,10 +11746,14 @@ class CgtIntakeTests(unittest.TestCase):
         )
 
         self.assertEqual(1, len(self.cgt_event_rows(payload)))
-        row = self.cgt_row(payload)
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
         evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
-        self.assertIn("decline signals no_cgt true", row["answer"])
+        self.assertIn("CGT itemized facts need no-CGT answer with CGT facts", evidence_text)
         self.assertIn("no-CGT answer with CGT facts", evidence_text)
+        self.assertNotIn("event type evidence", evidence_text)
+        self.assertNotIn("asset evidence", evidence_text)
+        self.assertNotIn("ownership evidence", evidence_text)
+        self.assertNotIn("numeric proceeds or cost-base evidence", evidence_text)
 
     def test_cgt_flat_aliases_inside_items_are_normalized(self) -> None:
         payload = self.guide_payload(

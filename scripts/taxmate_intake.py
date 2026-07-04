@@ -6061,15 +6061,19 @@ def cgt_evidence_rows(raw: Any) -> List[Dict[str, Any]]:
                         ATO_CGT_SOURCES,
                     )
                 )
-        top_level_evidence = cgt_evidence_gaps(raw) if cgt_has_top_level_details(raw) else []
+        top_level_evidence = cgt_itemized_top_level_evidence(raw)
         if top_level_evidence:
+            subject = "CGT top-level facts" if cgt_has_top_level_details(raw) else "CGT itemized facts"
+            evidence_prefix = (
+                "CGT top-level facts need" if cgt_has_top_level_details(raw) else "CGT itemized facts need"
+            )
             rows.append(
                 guide_row(
                     f"CGT-EVID-{len(rows) + 1}",
                     "CGT schedule",
                     "CGT evidence required",
-                    f"CGT top-level facts need {', '.join(top_level_evidence)}; no final capital gain or loss calculated.",
-                    "CGT top-level facts remain not copy-ready until evidence gaps are resolved.",
+                    f"{evidence_prefix} {', '.join(top_level_evidence)}; no final capital gain or loss calculated.",
+                    f"{subject} remain not copy-ready until evidence gaps are resolved.",
                     "Evidence",
                     ATO_CGT_SOURCES,
                 )
@@ -6264,6 +6268,14 @@ def cgt_item_evidence_gaps(raw: Dict[str, Any], item: Dict[str, Any]) -> List[st
     return evidence
 
 
+def cgt_itemized_top_level_evidence(raw: Dict[str, Any]) -> List[str]:
+    if cgt_has_top_level_details(raw):
+        return cgt_evidence_gaps(raw)
+    if cgt_decline_contradiction(raw):
+        return ["no-CGT answer with CGT facts"]
+    return []
+
+
 def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
     return any(
         (
@@ -6274,7 +6286,7 @@ def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
         for key, value in raw.items()
         if key not in ("items", "cgt_items", "_item_conflicts", CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY)
         and key not in CGT_AMOUNT_FIELDS
-    ) or bool(raw.get(CGT_DECLINE_SIGNAL_KEY) or raw.get(CGT_CONFLICT_SIGNAL_KEY))
+    ) or bool(raw.get(CGT_CONFLICT_SIGNAL_KEY))
 
 
 def cgt_has_reconciliation_target(raw: Dict[str, Any]) -> bool:
