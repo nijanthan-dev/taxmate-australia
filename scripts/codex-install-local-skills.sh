@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+LOCAL_SKILLS_DIR="$ROOT/local-codex-skills"
+CONFIG_PATH="$ROOT/config/public-skills.json"
+
+if ! command -v npx >/dev/null 2>&1; then
+  echo "error: npx missing; install Node.js/npm first" >&2
+  exit 1
+fi
+
+if [[ -f "$CONFIG_PATH" ]]; then
+  SKILLS_CLI_VERSION="$(node -e "console.log(require('$CONFIG_PATH').skillsCliVersion || '1.5.13')")"
+else
+  SKILLS_CLI_VERSION="1.5.13"
+fi
+SKILLS=(npx --yes "skills@${SKILLS_CLI_VERSION}")
+
+install_skill() {
+  local skill_dir="$1"
+  local skill_name
+  skill_name="$(basename "$skill_dir")"
+
+  if [[ ! -f "$skill_dir/SKILL.md" ]]; then
+    echo "skip: $skill_name (missing SKILL.md)"
+    return
+  fi
+
+  echo "installing local skill: $skill_name"
+  "${SKILLS[@]}" add "$skill_dir" --agent codex --global --yes
+}
+
+if [[ ! -d "$LOCAL_SKILLS_DIR" ]]; then
+  echo "error: local skill folder missing: $LOCAL_SKILLS_DIR" >&2
+  exit 1
+fi
+
+if [[ "$#" -eq 0 ]]; then
+  for skill_dir in "$LOCAL_SKILLS_DIR"/*; do
+    [[ -d "$skill_dir" ]] || continue
+    install_skill "$skill_dir"
+  done
+else
+  for requested in "$@"; do
+    install_skill "$LOCAL_SKILLS_DIR/$requested"
+  done
+fi
