@@ -324,6 +324,7 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any(pattern["id"] == "PR #38" for pattern in patterns))
         self.assertTrue(any(pattern["id"] == "PR #27 / PR #53" for pattern in patterns))
         self.assertTrue(any(pattern["id"] == "PR #53 intake" for pattern in patterns))
+        self.assertTrue(any(pattern["id"] == "Issue #74 main residence CGT" for pattern in patterns))
         self.assertTrue(any(pattern["check"] == "local_plugin_marketplace_contract" for pattern in patterns))
 
     def test_review_guardrails_list_patterns_as_markdown(self) -> None:
@@ -11765,6 +11766,11 @@ class CgtIntakeTests(unittest.TestCase):
                 self.assertIn(url, registry_urls)
                 self.assertEqual("verified", covered[url]["status"])
                 self.assertIn("capital-gains-tax", covered[url]["skills"])
+        for url in taxmate_intake.ATO_CGT_MAIN_RESIDENCE_SOURCES:
+            with self.subTest(url=url):
+                self.assertIn(url, registry_urls)
+                self.assertEqual("verified", covered[url]["status"])
+                self.assertIn("property-rental-cgt", covered[url]["skills"])
 
     def test_cgt_loss_discount_unknowns_stay_evidence(self) -> None:
         payload = self.guide_payload(
@@ -12391,7 +12397,57 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
         self.assertIn("rental/business use or spouse/partner main-residence conflict", row["tab_text"])
         self.assertIn(taxmate_intake.ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE, row["source_urls"])
         self.assertIn(taxmate_intake.ATO_RENTAL_HOME_USE_SOURCE, row["source_urls"])
+        self.assertIn(taxmate_intake.ATO_PROPERTY_RECORDS_SOURCE, row["source_urls"])
         self.assertIn("No final capital gain or loss has been calculated.", row["answer"])
+
+    def test_main_residence_item_evidence_keeps_sources_and_review_queue(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "cgt_items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "Former home",
+                        "owner": "individual",
+                        "acquisition_date": "2018-07-01",
+                        "disposal_date": "2026-02-01",
+                        "proceeds": 900000,
+                        "cost_base": 600000,
+                        "records": "records held",
+                        "main_residence_claim": True,
+                        "main_residence_ownership_period": "owned full period",
+                        "main_residence_occupancy_period": "occupancy unknown",
+                        "main_residence_rental_business_use": True,
+                        "main_residence_absence_periods": "absence unknown",
+                        "main_residence_spouse_conflict": False,
+                        "main_residence_property_records": "no occupancy records",
+                    }
+                ],
+                "rental_property": {
+                    "address": "Former home",
+                    "ownership": "individual",
+                    "income": 12000,
+                    "private_use": True,
+                    "private_use_days": 10,
+                    "available_days": 300,
+                    "records": "agent statement held",
+                },
+            }
+        )
+        cgt_row = next(item for item in payload["items"] if item["number"] == "CGT-EVENT-1")
+        cgt_evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+        rental_row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Evidence", cgt_row["status"])
+        self.assertIn("main residence occupancy period occupancy unknown", cgt_row["answer"])
+        self.assertIn("main residence property records no occupancy records", cgt_row["answer"])
+        self.assertIn("main residence exemption review", cgt_row["tab_text"])
+        self.assertIn("main residence ownership/occupancy/absence evidence", cgt_evidence["answer"])
+        self.assertIn("main residence property records", cgt_evidence["answer"])
+        self.assertIn(taxmate_intake.ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE, cgt_evidence["source_urls"])
+        self.assertIn(taxmate_intake.ATO_RENTAL_HOME_USE_SOURCE, cgt_evidence["source_urls"])
+        self.assertIn(taxmate_intake.ATO_PROPERTY_RECORDS_SOURCE, cgt_evidence["source_urls"])
+        self.assertEqual("Accountant review", rental_row["status"])
+        self.assertIn("private-use review", rental_row["tab_text"])
 
     def test_main_residence_falsey_values_and_missing_records_stay_visible(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(

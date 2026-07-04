@@ -1199,6 +1199,7 @@ ATO_CRYPTO_SOURCES = [
 ATO_RENTAL_RECORDS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/property-and-land/residential-rental-properties/records-for-rental-properties-and-holiday-homes"
 ATO_RENTAL_CGT_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax"
 ATO_RENTAL_HOME_USE_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax/your-main-residence-home/using-your-home-for-rental-or-business"
+ATO_PROPERTY_RECORDS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax/keeping-records-for-property"
 ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax/your-main-residence-home/eligibility-for-main-residence-exemption"
 ATO_RENTAL_PROPERTY_SOURCES = [
     ATO_RENTAL_RECORDS_SOURCE,
@@ -1227,6 +1228,7 @@ ATO_CGT_SOURCES = [
 ATO_CGT_MAIN_RESIDENCE_SOURCES = [
     ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE,
     ATO_RENTAL_HOME_USE_SOURCE,
+    ATO_PROPERTY_RECORDS_SOURCE,
 ]
 OMITTED_SCOPE_ITEMS = [
     ("feat: add company return intake", "Company/entity return prep, company tax labels, directors, dividends, franking, retained earnings."),
@@ -6279,7 +6281,7 @@ def cgt_evidence_rows(raw: Any) -> List[Dict[str, Any]]:
                         f"CGT item {idx} needs {', '.join(evidence)}; no final capital gain or loss calculated.",
                         "CGT item row remains not copy-ready until evidence gaps are resolved.",
                         "Evidence",
-                        ATO_CGT_SOURCES,
+                        cgt_row_sources(item),
                     )
                 )
         top_level_evidence = cgt_itemized_top_level_evidence(raw)
@@ -6296,7 +6298,7 @@ def cgt_evidence_rows(raw: Any) -> List[Dict[str, Any]]:
                     f"{evidence_prefix} {', '.join(top_level_evidence)}; no final capital gain or loss calculated.",
                     f"{subject} remain not copy-ready until evidence gaps are resolved.",
                     "Evidence",
-                    ATO_CGT_SOURCES,
+                    cgt_row_sources(raw),
                 )
             )
         reconciliation = cgt_reconciliation_conflicts(raw, items)
@@ -6323,7 +6325,7 @@ def cgt_evidence_rows(raw: Any) -> List[Dict[str, Any]]:
                 f"CGT event needs {', '.join(evidence)}; no final capital gain or loss calculated.",
                 "CGT schedule row remains not copy-ready until evidence gaps are resolved.",
                 "Evidence",
-                ATO_CGT_SOURCES,
+                cgt_row_sources(raw),
             )
         )
     return rows
