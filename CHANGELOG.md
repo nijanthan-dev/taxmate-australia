@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.11.1...v0.12.0) (2026-07-04)
+
+
+### Features
+
+* add CGT review row ([4ba60b1](https://github.com/nijanthan-dev/taxmate-australia/commit/4ba60b1ce5723d0d630c2588a2a4bc80814f1886)), closes [#75](https://github.com/nijanthan-dev/taxmate-australia/issues/75)
+
 ## [0.11.1](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.11.0...v0.11.1) (2026-07-02)
 
 
