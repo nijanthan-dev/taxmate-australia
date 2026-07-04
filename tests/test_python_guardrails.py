@@ -221,6 +221,10 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("parse_iso_date" in finding.detail for finding in findings))
         self.assertTrue(any("parse_dates" in finding.detail for finding in findings))
         self.assertTrue(any("generation_checked_at" in finding.detail for finding in findings))
+        self.assertTrue(any("cgt_evidence_gap_requires_context" in finding.detail for finding in findings))
+        self.assertTrue(any("main_residence_property_records" in finding.detail for finding in findings))
+        self.assertTrue(any("raw_context = isinstance(raw, dict)" in finding.detail for finding in findings))
+        self.assertTrue(any("cgt_conflict_value" in finding.detail for finding in findings))
 
     def test_review_guardrails_detect_wfh_parser_fallbacks(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
