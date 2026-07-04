@@ -11635,7 +11635,9 @@ class CgtIntakeTests(unittest.TestCase):
 
         self.assertEqual(1, len(self.cgt_event_rows(payload)))
         row = self.cgt_row(payload)
+        self.assertEqual("Accountant review", row["status"])
         self.assertIn("summary Two share parcel disposals", row["answer"])
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
 
     def test_cgt_top_level_aggregate_only_keeps_schedule_baseline(self) -> None:
         payload = self.guide_payload(

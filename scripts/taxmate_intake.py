@@ -5965,7 +5965,9 @@ def cgt_rows(raw: Any) -> List[Dict[str, Any]]:
             for idx, item in enumerate(items, start=1)
         ]
         if cgt_has_top_level_details(raw):
-            rows.append(cgt_schedule_row(raw, cgt_evidence_gaps(raw), cgt_review_terms(raw), itemized=True))
+            rows.append(
+                cgt_schedule_row(raw, cgt_itemized_top_level_evidence(raw), cgt_review_terms(raw), itemized=True)
+            )
         if cgt_has_reconciliation_target(raw):
             rows.append(cgt_reconciliation_row(raw, items))
         return rows
@@ -6333,11 +6335,35 @@ def cgt_item_evidence_gaps(raw: Dict[str, Any], item: Dict[str, Any]) -> List[st
 
 
 def cgt_itemized_top_level_evidence(raw: Dict[str, Any]) -> List[str]:
-    if cgt_has_top_level_details(raw):
-        return cgt_evidence_gaps(raw)
     if cgt_decline_contradiction(raw):
         return ["no-CGT answer with CGT facts"]
+    if cgt_itemized_summary_only(raw):
+        return []
+    if cgt_has_top_level_details(raw):
+        return cgt_evidence_gaps(raw)
     return []
+
+
+def cgt_itemized_summary_only(raw: Dict[str, Any]) -> bool:
+    if not cgt_has_signal("summary", raw.get("summary")):
+        return False
+
+    ignored_keys = (
+        "items",
+        "cgt_items",
+        "summary",
+        "_item_conflicts",
+        CGT_DECLINE_SIGNAL_KEY,
+        CGT_CONFLICT_SIGNAL_KEY,
+    )
+    for key, value in raw.items():
+        if key in ignored_keys or key in CGT_AMOUNT_FIELDS:
+            continue
+        if key not in CGT_BOOLEAN_REVIEW_FIELDS and has_meaningful_cgt_signal(key, value):
+            return False
+        if has_explicit_cgt_evidence_gap(key, value):
+            return False
+    return not raw.get(CGT_CONFLICT_SIGNAL_KEY)
 
 
 def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
