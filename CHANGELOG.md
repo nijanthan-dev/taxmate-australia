@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.13.0...v0.14.0) (2026-07-04)
+
+
+### Features
+
+* add CGT loss review ([#97](https://github.com/nijanthan-dev/taxmate-australia/issues/97)) ([39f6911](https://github.com/nijanthan-dev/taxmate-australia/commit/39f6911079c5fa2eab41f85c571cf7c0eadacc55))
+
 ## [0.13.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.12.0...v0.13.0) (2026-07-04)
 
 
