@@ -38,7 +38,7 @@ The current individual-return handoff includes:
 - individual return field guide;
 - primary and secondary PAYG income statement rows with payer, ABN, occupation, gross, withholding, allowances, RFBA, RESC, lump sum labels, statement evidence, and aggregate reconciliation;
 - itemized investment income rows for bank interest, dividends/franking, managed fund/ETF/AMIT distributions, and trust distribution routing;
-- general CGT event schedule and itemized non-crypto/non-rental CGT event rows with records, source provenance, reconciliation prompts, and no-final-calculation wording;
+- general CGT event schedule and itemized non-crypto/non-rental CGT event rows with records, current-year and carried-forward loss facts, discount and foreign-resident discount signals, source provenance, reconciliation prompts, and no-final-calculation wording;
 - ABN prep section and BAS worksheet;
 - missing facts queue, evidence queue, and accountant-review queue;
 - source/provenance appendix with source URLs and checked-at dates.
@@ -94,7 +94,7 @@ Use the taxmate-australia-individual-return skill to prepare investment income r
 ```
 
 ```text
-Use the taxmate-australia-individual-return skill to prepare itemized CGT event review rows from my asset list, owners, acquisition and disposal dates, proceeds, cost base, incidental costs, losses, records, and review flags. Reconcile supplied totals only as prep evidence. Do not calculate a final capital gain or loss.
+Use the taxmate-australia-individual-return skill to prepare itemized CGT event review rows from my asset list, owners, acquisition and disposal dates, proceeds, cost base, incidental costs, current-year and carried-forward capital loss facts, discount timing or eligibility signals, foreign-resident discount signals, records, and review flags. Reconcile supplied totals only as prep evidence. Do not calculate a final capital gain or loss or apply a final discount treatment.
 ```
 
 ```text

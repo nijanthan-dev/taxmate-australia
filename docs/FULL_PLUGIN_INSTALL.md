@@ -44,7 +44,7 @@ Render the self-prepared guide HTML users can save as PDF:
 
 The guide is a custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable. Users manually copy reviewed values into myTax, a paper ATO form, or provide it to an accountant after resolving missing facts, evidence gaps, and `Accountant review` queues.
 
-The individual-return handoff includes the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, and source/provenance appendix.
+The individual-return handoff includes the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, CGT schedule and item rows with loss/discount review facts, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, and source/provenance appendix.
 
 If you need local-speed, keep Python runtime wrappers and dependencies local and use the launcher directly.
 Bash + python execution is the supported default path.
