@@ -74,11 +74,10 @@ Use one setup for Codex Cloud and laptop-local workflows.
 ```bash
 set -euo pipefail
 bash scripts/codex-env-setup.sh
-bash scripts/install-local-skills.sh --agent codex
 bash scripts/codex-env-cleanup.sh
 ```
 
-4. Install local workflow skills only when this lane uses them:
+4. Re-run local workflow skill setup when this lane needs it:
 
 ```bash
 set -euo pipefail
@@ -101,11 +100,10 @@ Run the same command sets locally:
 
 ```bash
 bash scripts/codex-env-setup.sh
-bash scripts/install-local-skills.sh --agent codex
 bash scripts/codex-env-cleanup.sh
 ```
 
-`local-skills/` contains repo-local workflow SKILL definitions that are not part of portable installs.
+`scripts/codex-env-setup.sh` attempts to install repo-local Codex workflow skills from `local-skills/`, but keeps the install non-blocking when npm registry access is unavailable. `local-skills/` is not part of portable public installs.
 
 ### Runtime execution
 

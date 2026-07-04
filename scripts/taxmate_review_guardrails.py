@@ -1814,7 +1814,9 @@ def check_environment_contract(root: Path) -> List[Finding]:
     if "PYTHONDONTWRITEBYTECODE" not in setup:
         findings.append(Finding(ENVIRONMENT_WORKTREE_CONTRACT, "setup must disable Python bytecode writes"))
     if "./scripts/install-local-skills.sh --agent codex" not in setup:
-        findings.append(Finding(ENVIRONMENT_WORKTREE_CONTRACT, "setup must install repo-local workflow skills for Codex"))
+        findings.append(Finding(ENVIRONMENT_WORKTREE_CONTRACT, "setup must attempt repo-local workflow skill install for Codex"))
+    if "warning: local workflow skill install skipped" not in setup:
+        findings.append(Finding(ENVIRONMENT_WORKTREE_CONTRACT, "setup must keep local workflow skill install non-blocking"))
     return findings
 
 
