@@ -1866,8 +1866,8 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     cgt = cgt_answers(answers)
     items = base_items(answers)
     extracted_values = extraction_rows(answers.get("extracted_values", []))
-    abn_items = abn_rows(answers)
-    bas_items = bas_rows(answers)
+    abn_items = abn_rows(answers) if has_abn_inputs(answers) else []
+    bas_items = bas_rows(answers) if has_bas_inputs(answers) else []
     missing_items = missing_fact_rows(answers)
     evidence_items = evidence_rows(answers)
     items.extend(wfh_rows(wfh_answers(answers)))
@@ -2526,6 +2526,13 @@ def evidence_missing(value: Any) -> bool:
     return lowered in {"no", "n", "false", "none", "n/a", "na", "not applicable", "not held", "not available", "missing"} or any(
         phrase in lowered
         for phrase in (
+            "no record",
+            "no records",
+            "no bookkeeping records",
+            "no business records",
+            "record not held",
+            "records not held",
+            "without records",
             "no invoice",
             "no invoices",
             "no tax invoice",
@@ -2868,9 +2875,50 @@ def has_bas_inputs(answers: Dict[str, Any]) -> bool:
 
 def has_abn_inputs(answers: Dict[str, Any]) -> bool:
     for key in REVIEWABLE_ABN_FIELDS:
-        if key in answers and has_meaningful_value(answers.get(key)):
+        if key in answers and abn_input_signal(key, answers.get(key)):
             return True
-    return any(has_meaningful_value(abn_answer(answers, key)) for key in ABN_CONTEXT_SIGNAL_FIELDS)
+    return any(abn_input_signal(key, abn_answer(answers, key)) for key in ABN_CONTEXT_SIGNAL_FIELDS)
+
+
+def abn_input_signal(key: str, value: Any) -> bool:
+    if not has_meaningful_value(value):
+        return False
+    for review_key in ABN_COMPLEX_REVIEW_FIELDS:
+        if key == review_key or key in ABN_FIELD_ALIASES.get(review_key, ()) or key in ABN_NESTED_FIELD_ALIASES.get(review_key, ()):
+            return not abn_review_flag_false(value)
+    return True
+
+
+def abn_review_flag_false(value: Any) -> bool:
+    if value is False:
+        return True
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        return lowered in {
+            "false",
+            "no",
+            "n",
+            "0",
+            "off",
+            "unchecked",
+            "none",
+            "not applicable",
+            "n/a",
+            "no loss",
+            "no business loss",
+            "no home business",
+            "no motor vehicle",
+            "no vehicle",
+            "no depreciation",
+            "no capital expense",
+            "no psi",
+            "not psi",
+            "no private apportionment",
+            "no business-versus-hobby issue",
+            "no business versus hobby issue",
+            "no non-commercial loss",
+        }
+    return False
 
 
 def parse_gst_registration(value: Any) -> Optional[bool]:

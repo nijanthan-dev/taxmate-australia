@@ -9913,11 +9913,51 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertTrue(any(row["number"] == "ABN-EVID-1" for row in evidence))
         self.assertTrue(any("record system" in row["question"].lower() for row in evidence))
 
+    def test_no_records_wording_stays_missing_evidence_for_abn_and_bas(self) -> None:
+        for missing_records in ("no records", "I have no records", "without records", "no bookkeeping records", "no business records"):
+            with self.subTest(missing_records=missing_records):
+                abn_answers = {"abn_income": 1000, "business_record_system": missing_records}
+                bas_answers = {
+                    "gst_registered": True,
+                    "gst_collected": 220,
+                    "gst_credits": 55,
+                    "gst_accounting_basis": "cash",
+                    "bas_period_coverage": "full period",
+                    "tax_invoice_evidence": missing_records,
+                }
+
+                abn = taxmate_intake.abn_rows(abn_answers)
+                bas = taxmate_intake.bas_rows(bas_answers)
+                evidence = taxmate_intake.evidence_rows({**abn_answers, **bas_answers})
+
+                self.assertEqual("Evidence", abn[0]["status"])
+                self.assertEqual("Evidence", bas[0]["status"])
+                self.assertTrue(any(row["number"].startswith("ABN-EVID") and "record system" in row["question"].lower() for row in evidence))
+                self.assertTrue(any(row["number"].startswith("BAS-EVID") and "tax invoice" in row["question"].lower() for row in evidence))
+
     def test_gst_only_answers_do_not_create_blank_abn_row(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload({"gst_registered": False})
         numbers = {row["number"] for row in payload["items"]}
 
         self.assertNotIn("ABN", numbers)
+
+    def test_default_false_abn_review_flags_do_not_create_blank_abn_row(self) -> None:
+        for answers in (
+            {"business_home_use": False},
+            {"business_loss": False, "business_motor_vehicle": False},
+            {"business": {"home_business": False, "loss": False, "motor_vehicle": False}},
+            {"business_home_use": "false"},
+            {"business_loss": "no"},
+            {"business_motor_vehicle": "0"},
+            {"business_home_use": "off"},
+            {"business": {"home_business": "unchecked", "loss": "no loss"}},
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                numbers = {row["number"] for row in payload["items"]}
+
+                self.assertNotIn("ABN", numbers)
+                self.assertEqual([], payload["abn_items"])
 
     def test_psi_only_answers_do_not_create_blank_abn_row(self) -> None:
         for answers in (
@@ -9937,6 +9977,13 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("Accountant review", rows[0]["status"])
         self.assertIn("psi review", rows[0]["tab_text"])
 
+    def test_false_abn_review_flags_stay_visible_with_business_context(self) -> None:
+        rows = taxmate_intake.abn_rows({"abn_income": 1000, "business_home_use": False, "business_loss": False})
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("home business false", rows[0]["tab_text"])
+        self.assertIn("loss false", rows[0]["tab_text"])
+
     def test_empty_abn_and_bas_defaults_do_not_create_rows(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {"business_income_streams": [], "business_expense_categories": [], "tax_invoice_evidence": []}
@@ -9945,6 +9992,8 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertNotIn("ABN", numbers)
         self.assertNotIn("BAS", numbers)
+        self.assertEqual([], payload["abn_items"])
+        self.assertEqual([], payload["bas_items"])
 
     def test_top_level_generic_bas_metadata_does_not_create_bas_row(self) -> None:
         for key in (
