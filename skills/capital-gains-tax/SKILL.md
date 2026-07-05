@@ -66,3 +66,6 @@ Use for general CGT concepts and records. Do not use for routine employee deduct
 - rental or business use during ownership and spouse or partner main-residence conflict signals
 - property records such as contract, settlement, rates, lease, occupancy, and absence-rule evidence
 - main-residence source URLs and checked-at provenance for rows and evidence queues
+- small business CGT concession claim status, concession type, business asset and active asset signals
+- entity, affiliate, connected entity, retirement exemption, rollover, 15-year exemption, and 50% active asset reduction signals
+- small-business CGT concession evidence, source URLs, and checked-at provenance for rows and evidence queues

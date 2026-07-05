@@ -565,12 +565,36 @@ def Topics() -> List[Topic]:
         topic(
             "capital-gains-tax",
             "Capital Gains Tax",
-            "General CGT events, dates, ownership, proceeds, cost base, losses, discounts, and complex review flags.",
-            ["CGT", "capital gain", "capital loss", "cost base", "disposal", "CGT event"],
+            "General CGT events, dates, ownership, proceeds, cost base, losses, discounts, main residence, small business concessions, and complex review flags.",
+            ["CGT", "capital gain", "capital loss", "cost base", "disposal", "CGT event", "small business CGT concession"],
             "general CGT concepts and records",
             "routine employee deductions or GST credits",
-            ["capital-gains-tax", "cgt-events", "calculating-your-cgt", "acquiring-cgt-assets", "cost-base", "capital-proceeds", "cgt-discount", "market-valuation"],
-            ["main residence", "inherited asset", "rollover", "foreign resident", "related party", "market value substitution"],
+            [
+                "capital-gains-tax",
+                "cgt-events",
+                "calculating-your-cgt",
+                "acquiring-cgt-assets",
+                "cost-base",
+                "capital-proceeds",
+                "cgt-discount",
+                "market-valuation",
+                "small-business-cgt-concessions",
+                "active-asset-test",
+            ],
+            [
+                "main residence",
+                "inherited asset",
+                "rollover",
+                "foreign resident",
+                "related party",
+                "market value substitution",
+                "small business concession type",
+                "active asset",
+                "affiliate or connected entity",
+                "retirement exemption",
+                "15-year exemption",
+                "50% active asset reduction",
+            ],
         ),
         topic(
             "shares-etfs-managed-funds",
@@ -994,6 +1018,9 @@ def skillMarkdown(topic_obj: Topic) -> str:
                 "rental or business use during ownership and spouse or partner main-residence conflict signals",
                 "property records such as contract, settlement, rates, lease, occupancy, and absence-rule evidence",
                 "main-residence source URLs and checked-at provenance for rows and evidence queues",
+                "small business CGT concession claim status, concession type, business asset and active asset signals",
+                "entity, affiliate, connected entity, retirement exemption, rollover, 15-year exemption, and 50% active asset reduction signals",
+                "small-business CGT concession evidence, source URLs, and checked-at provenance for rows and evidence queues",
             ]
         )
     for fact in facts:
@@ -1067,7 +1094,9 @@ def rulesMarkdown(topic_obj: Topic, sources: List[Source]) -> str:
             [
                 "Main residence exemption handling is review-first and prep-only. Collect claim status, ownership period, occupancy period, rental or business use, absence periods or absence-rule signals, spouse or partner main-residence conflicts, and property-record evidence.",
                 "",
-                "Missing records, unknown periods, partial or mixed use, rental or business use, absence periods, spouse conflicts, and ownership or occupancy uncertainty stay Evidence or `Accountant review`. Preserve false claim/use/conflict values and valid `0` or `0 days` values when CGT or main-residence context exists. Do not calculate a final exemption, decide final CGT treatment, fill official ATO PDFs, or call the row copy-ready.",
+                "Small business CGT concession handling is review-first and prep-only. Collect concession claim status, supplied concession type, business asset and active asset signals, entity/affiliate/connected entity facts, retirement exemption, rollover, 15-year exemption, 50% active asset reduction, business/private use, and concession evidence.",
+                "",
+                "Missing records, unknown periods, partial or mixed use, rental or business use, absence periods, spouse conflicts, ownership or occupancy uncertainty, active asset uncertainty, concession type uncertainty, entity/affiliate/connected entity facts, and missing concession evidence stay Evidence or `Accountant review`. Preserve false claim/use/conflict/concession values and valid `0` or `0 days` values when CGT context exists. Do not work out exemption amounts, decide CGT treatment, determine small-business concession eligibility, work out concession amounts, fill official ATO PDFs, or call the row copy-ready.",
                 "",
             ]
         )
