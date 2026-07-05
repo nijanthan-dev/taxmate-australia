@@ -3,7 +3,7 @@
   "pluginId": "com.github.nijanthan-dev.taxmate-australia",
   "pluginVersion": "0.15.0",
   "generatedBy": "TaxMate Australia Maintainers",
-  "generatedAt": "2026-06-23T00:00:00Z",
+  "generatedAt": "2026-07-05T02:09:11Z",
   "skills": [
     {
       "id": "calculators",
@@ -48,7 +48,7 @@
         "type": "local",
         "path": "skills/capital-gains-tax"
       },
-      "integrity": "sha256:5879ab16b216d0b3b1b68882a65a16ef75f10af6d60b030ace0942bfc3664426"
+      "integrity": "sha256:86e14e56b8cf7d6e89d0eea1285f62303b60bc88e038a39d7a7494c9e06acd60"
     },
     {
       "id": "taxmate-australia-crypto-assets",
@@ -84,7 +84,7 @@
         "type": "local",
         "path": "skills/individual-return"
       },
-      "integrity": "sha256:19feeca0262bd7d6c426871b59857c63fd57a7b516a0775aa4e2362cc06542ec"
+      "integrity": "sha256:b8638e2775ba7dfb973845074782ea33a3bf693ea5eefbd6de56b1116acd709a"
     },
     {
       "id": "taxmate-australia-payg-employer",

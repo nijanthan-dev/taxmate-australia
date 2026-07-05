@@ -922,6 +922,17 @@ CGT_FLAT_FIELD_KEYS = {
     "cgt_exemption_flag": "exemption_flag",
     "cgt_discount_flag": "discount_flag",
     "cgt_concession_flag": "concession_flag",
+    "cgt_concession_type": "concession_type",
+    "cgt_business_asset": "business_asset",
+    "cgt_active_asset": "active_asset",
+    "cgt_entity_affiliate_connected_entity": "entity_affiliate_connected_entity",
+    "cgt_retirement_exemption": "retirement_exemption",
+    "cgt_rollover": "rollover",
+    "cgt_15_year_exemption": "fifteen_year_exemption",
+    "cgt_fifteen_year_exemption": "fifteen_year_exemption",
+    "cgt_50_percent_active_asset_reduction": "active_asset_reduction_50",
+    "cgt_active_asset_reduction_50": "active_asset_reduction_50",
+    "cgt_concession_evidence": "concession_evidence",
     "cgt_mixed_use": "mixed_use",
     "cgt_business_use": "business_use",
     "cgt_private_use": "private_use",
@@ -949,6 +960,21 @@ CGT_NESTED_FIELD_KEYS = {
     "discount_timing": "discount_timing",
     "discount_eligibility": "discount_eligibility",
     "foreign_resident_discount": "foreign_resident_discount",
+    "concession_type": "concession_type",
+    "small_business_concession_type": "concession_type",
+    "business_asset": "business_asset",
+    "active_asset": "active_asset",
+    "entity_affiliate_connected_entity": "entity_affiliate_connected_entity",
+    "affiliate_connected_entity": "entity_affiliate_connected_entity",
+    "connected_entity": "entity_affiliate_connected_entity",
+    "retirement_exemption": "retirement_exemption",
+    "rollover": "rollover",
+    "roll_over": "rollover",
+    "fifteen_year_exemption": "fifteen_year_exemption",
+    "15_year_exemption": "fifteen_year_exemption",
+    "active_asset_reduction_50": "active_asset_reduction_50",
+    "50_percent_active_asset_reduction": "active_asset_reduction_50",
+    "concession_evidence": "concession_evidence",
     "ownership": "owner",
     "ownership_share": "owner",
     "main_residence": "main_residence_claim",
@@ -985,6 +1011,25 @@ CGT_ITEM_FIELD_ALIASES = {
     "exemption_flag": ("exemption_flag", "cgt_exemption_flag"),
     "discount_flag": ("discount_flag", "cgt_discount_flag"),
     "concession_flag": ("concession_flag", "cgt_concession_flag"),
+    "concession_type": ("concession_type", "small_business_concession_type", "cgt_concession_type"),
+    "business_asset": ("business_asset", "cgt_business_asset"),
+    "active_asset": ("active_asset", "cgt_active_asset"),
+    "entity_affiliate_connected_entity": (
+        "entity_affiliate_connected_entity",
+        "affiliate_connected_entity",
+        "connected_entity",
+        "cgt_entity_affiliate_connected_entity",
+    ),
+    "retirement_exemption": ("retirement_exemption", "cgt_retirement_exemption"),
+    "rollover": ("rollover", "roll_over", "cgt_rollover"),
+    "fifteen_year_exemption": ("fifteen_year_exemption", "15_year_exemption", "cgt_15_year_exemption", "cgt_fifteen_year_exemption"),
+    "active_asset_reduction_50": (
+        "active_asset_reduction_50",
+        "50_percent_active_asset_reduction",
+        "cgt_active_asset_reduction_50",
+        "cgt_50_percent_active_asset_reduction",
+    ),
+    "concession_evidence": ("concession_evidence", "cgt_concession_evidence"),
     "mixed_use": ("mixed_use", "cgt_mixed_use"),
     "business_use": ("business_use", "cgt_business_use"),
     "private_use": ("private_use", "cgt_private_use"),
@@ -1017,6 +1062,15 @@ CGT_SIGNAL_FIELDS = (
     "exemption_flag",
     "discount_flag",
     "concession_flag",
+    "concession_type",
+    "business_asset",
+    "active_asset",
+    "entity_affiliate_connected_entity",
+    "retirement_exemption",
+    "rollover",
+    "fifteen_year_exemption",
+    "active_asset_reduction_50",
+    "concession_evidence",
     "mixed_use",
     "business_use",
     "private_use",
@@ -1032,6 +1086,24 @@ CGT_RECONCILIATION_FIELDS = ("proceeds", "cost_base", "incidental_costs", "losse
 CGT_LOSS_REVIEW_AMOUNT_FIELDS = ("current_year_losses", "carried_forward_losses")
 CGT_AMOUNT_FIELDS = (*CGT_RECONCILIATION_FIELDS, *CGT_LOSS_REVIEW_AMOUNT_FIELDS)
 CGT_DISCOUNT_REVIEW_TEXT_FIELDS = ("discount_timing", "discount_eligibility")
+CGT_SMALL_BUSINESS_CONCESSION_TEXT_FIELDS = (
+    "concession_type",
+    "concession_evidence",
+)
+CGT_SMALL_BUSINESS_CONCESSION_FLAG_FIELDS = (
+    "concession_flag",
+    "business_asset",
+    "active_asset",
+    "entity_affiliate_connected_entity",
+    "retirement_exemption",
+    "rollover",
+    "fifteen_year_exemption",
+    "active_asset_reduction_50",
+)
+CGT_SMALL_BUSINESS_CONCESSION_FIELDS = (
+    *CGT_SMALL_BUSINESS_CONCESSION_FLAG_FIELDS,
+    *CGT_SMALL_BUSINESS_CONCESSION_TEXT_FIELDS,
+)
 CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS = (
     "main_residence_ownership_period",
     "main_residence_occupancy_period",
@@ -1057,6 +1129,13 @@ CGT_BOOLEAN_REVIEW_FIELDS = (
     "discount_claim",
     "foreign_resident_discount",
     "concession_flag",
+    "business_asset",
+    "active_asset",
+    "entity_affiliate_connected_entity",
+    "retirement_exemption",
+    "rollover",
+    "fifteen_year_exemption",
+    "active_asset_reduction_50",
     "mixed_use",
     "business_use",
     "private_use",
@@ -1223,6 +1302,28 @@ ATO_CGT_PROCEEDS_SOURCE = "https://www.ato.gov.au/individuals-and-families/inves
 ATO_CGT_ASSETS_EXEMPTIONS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/list-of-cgt-assets-and-exemptions"
 ATO_CGT_DISCOUNT_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-discount"
 ATO_CGT_FOREIGN_RESIDENT_DISCOUNT_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/foreign-residents-and-capital-gains-tax/cgt-discount-for-foreign-residents"
+ATO_CGT_SMALL_BUSINESS_CONCESSIONS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions"
+ATO_CGT_SMALL_BUSINESS_ELIGIBILITY_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions"
+ATO_CGT_SMALL_BUSINESS_ACTIVE_ASSET_TEST_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/active-asset-test"
+ATO_CGT_SMALL_BUSINESS_ENTITY_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/cgt-small-business-entity-eligibility"
+ATO_CGT_SMALL_BUSINESS_AFFILIATES_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/small-business-affiliates"
+ATO_CGT_SMALL_BUSINESS_CONNECTED_ENTITIES_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/entities-connected-with-you-and-control-relationships"
+ATO_CGT_SMALL_BUSINESS_15_YEAR_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-15-year-exemption"
+ATO_CGT_SMALL_BUSINESS_50_PERCENT_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-50-percent-active-asset-reduction"
+ATO_CGT_SMALL_BUSINESS_RETIREMENT_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-retirement-exemption"
+ATO_CGT_SMALL_BUSINESS_ROLLOVER_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-roll-over"
+ATO_CGT_SMALL_BUSINESS_CONCESSION_SOURCES = [
+    ATO_CGT_SMALL_BUSINESS_CONCESSIONS_SOURCE,
+    ATO_CGT_SMALL_BUSINESS_ELIGIBILITY_SOURCE,
+    ATO_CGT_SMALL_BUSINESS_ACTIVE_ASSET_TEST_SOURCE,
+    ATO_CGT_SMALL_BUSINESS_ENTITY_SOURCE,
+    ATO_CGT_SMALL_BUSINESS_AFFILIATES_SOURCE,
+    ATO_CGT_SMALL_BUSINESS_CONNECTED_ENTITIES_SOURCE,
+    ATO_CGT_SMALL_BUSINESS_15_YEAR_SOURCE,
+    ATO_CGT_SMALL_BUSINESS_50_PERCENT_SOURCE,
+    ATO_CGT_SMALL_BUSINESS_RETIREMENT_SOURCE,
+    ATO_CGT_SMALL_BUSINESS_ROLLOVER_SOURCE,
+]
 ATO_CGT_SOURCES = [
     ATO_CGT_EVENTS_SOURCE,
     ATO_CGT_LOSS_SOURCE,
@@ -5773,9 +5874,12 @@ def cgt_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     raw_context = isinstance(raw, dict) and any(cgt_answer_context_value(key, value) for key, value in raw.items())
     flat_values = cgt_answer_values(fields, existing_context=bool(flat_items) or raw_context)
     if flat_items:
+        review_conflicts = cgt_itemized_review_field_conflicts(flat_values, flat_items)
+        if review_conflicts:
+            flat_values.setdefault(CGT_CONFLICT_SIGNAL_KEY, []).extend(review_conflicts)
         flat_values["items"] = cgt_items_with_inherited_review_flags(flat_items, flat_values)
     if field_conflicts:
-        flat_values[CGT_CONFLICT_SIGNAL_KEY] = field_conflicts
+        flat_values.setdefault(CGT_CONFLICT_SIGNAL_KEY, []).extend(field_conflicts)
     flat_declines = cgt_decline_values(fields)
     if not isinstance(raw, dict):
         return cgt_values_with_declines(flat_values, flat_declines)
@@ -5808,7 +5912,11 @@ def cgt_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     if item_conflicts:
         merged["_item_conflicts"] = sorted(set(item_conflicts))
     if cgt_item_values(merged.get("items")):
-        merged["items"] = cgt_items_with_inherited_review_flags(cgt_item_values(merged.get("items")), merged)
+        items = cgt_item_values(merged.get("items"))
+        review_conflicts = cgt_itemized_review_field_conflicts(merged, items)
+        if review_conflicts:
+            merged.setdefault(CGT_CONFLICT_SIGNAL_KEY, []).extend(review_conflicts)
+        merged["items"] = cgt_items_with_inherited_review_flags(items, merged)
     return cgt_values_with_declines(merged, {**flat_declines, **raw_declines})
 
 
@@ -5886,6 +5994,13 @@ def cgt_items_with_inherited_review_flags(items: List[Dict[str, Any]], context: 
             if has_meaningful_cgt_signal(key, context.get(key)) or has_explicit_cgt_evidence_gap(key, context.get(key))
         }
     )
+    inherited.update(
+        {
+            key: context.get(key)
+            for key in CGT_SMALL_BUSINESS_CONCESSION_TEXT_FIELDS
+            if has_meaningful_cgt_signal(key, context.get(key)) or has_explicit_cgt_evidence_gap(key, context.get(key))
+        }
+    )
     if not inherited:
         return items
     merged_items = []
@@ -5896,6 +6011,17 @@ def cgt_items_with_inherited_review_flags(items: List[Dict[str, Any]], context: 
                 merged_item[key] = value
         merged_items.append(merged_item)
     return merged_items
+
+
+def cgt_itemized_review_field_conflicts(context: Dict[str, Any], items: List[Dict[str, Any]]) -> List[str]:
+    conflicts: List[str] = []
+    for index, item in enumerate(items, start=1):
+        for key in CGT_MAIN_RESIDENCE_REVIEW_FIELDS + CGT_SMALL_BUSINESS_CONCESSION_FIELDS:
+            top_value = context.get(key)
+            item_value = item.get(key)
+            if cgt_values_conflict(key, top_value, item_value):
+                conflicts.append(f"item {index} {key} {display_value(top_value)} vs {display_value(item_value)}")
+    return conflicts
 
 
 def cgt_inherited_review_flag(value: Any) -> bool:
@@ -6140,6 +6266,21 @@ def cgt_rows(raw: Any) -> List[Dict[str, Any]]:
     return [cgt_schedule_row(raw, cgt_evidence_gaps(raw), cgt_review_terms(raw), itemized=False)]
 
 
+def cgt_small_business_concession_answer_text(raw: Dict[str, Any]) -> str:
+    return (
+        f"concession flag {cgt_boolean_flag_text(raw.get('concession_flag'))}; "
+        f"concession type {cgt_field_text(raw, 'concession_type')}; "
+        f"business asset {cgt_boolean_flag_text(raw.get('business_asset'))}; "
+        f"active asset {cgt_boolean_flag_text(raw.get('active_asset'))}; "
+        f"entity/affiliate/connected entity {cgt_boolean_flag_text(raw.get('entity_affiliate_connected_entity'))}; "
+        f"retirement exemption {cgt_boolean_flag_text(raw.get('retirement_exemption'))}; "
+        f"rollover {cgt_boolean_flag_text(raw.get('rollover'))}; "
+        f"15-year exemption {cgt_boolean_flag_text(raw.get('fifteen_year_exemption'))}; "
+        f"50% active asset reduction {cgt_boolean_flag_text(raw.get('active_asset_reduction_50'))}; "
+        f"concession evidence {cgt_field_text(raw, 'concession_evidence')}"
+    )
+
+
 def cgt_schedule_row(
     raw: Dict[str, Any],
     evidence: List[str],
@@ -6165,7 +6306,7 @@ def cgt_schedule_row(
         f"discount claim {cgt_boolean_flag_text(raw.get('discount_claim'))}; "
         f"discount timing {cgt_field_text(raw, 'discount_timing')}; "
         f"discount eligibility {cgt_field_text(raw, 'discount_eligibility')}; "
-        f"concession flag {cgt_boolean_flag_text(raw.get('concession_flag'))}; "
+        f"{cgt_small_business_concession_answer_text(raw)}; "
         f"mixed use {cgt_boolean_flag_text(raw.get('mixed_use'))}; "
         f"business use {cgt_boolean_flag_text(raw.get('business_use'))}; "
         f"private use {cgt_boolean_flag_text(raw.get('private_use'))}; "
@@ -6187,13 +6328,13 @@ def cgt_schedule_row(
     conflict_text = cgt_conflict_signal_text(raw)
     if conflict_text:
         answer = f"{answer}; conflict signals {conflict_text}"
-    answer = f"{answer}; No final capital gain or loss has been calculated."
+    answer = f"{answer}; No capital gain or loss amount is worked out."
     row = guide_row(
         "CGT-SCHEDULE",
         "CGT schedule",
         "General CGT event intake and accountant-review schedule" if not itemized else "CGT top-level supplied facts",
         answer,
-        "General CGT event facts are collected for review only. No final capital gain or loss has been calculated.",
+        "General CGT event facts are collected for review only. No capital gain or loss amount is worked out.",
         status,
         cgt_row_sources(raw),
         tab_text=cgt_tab_text(evidence, review),
@@ -6228,7 +6369,7 @@ def cgt_item_row(
         f"discount claim {cgt_boolean_flag_text(item.get('discount_claim'))}; "
         f"discount timing {cgt_field_text(item, 'discount_timing')}; "
         f"discount eligibility {cgt_field_text(item, 'discount_eligibility')}; "
-        f"concession flag {cgt_boolean_flag_text(item.get('concession_flag'))}; "
+        f"{cgt_small_business_concession_answer_text(item)}; "
         f"mixed use {cgt_boolean_flag_text(item.get('mixed_use'))}; "
         f"business use {cgt_boolean_flag_text(item.get('business_use'))}; "
         f"private use {cgt_boolean_flag_text(item.get('private_use'))}; "
@@ -6250,13 +6391,13 @@ def cgt_item_row(
     alias_text = cgt_alias_conflict_text(item)
     if alias_text:
         answer = f"{answer}; alias conflicts {alias_text}"
-    answer = f"{answer}; No final capital gain or loss has been calculated."
+    answer = f"{answer}; No capital gain or loss amount is worked out."
     row = guide_row(
         f"CGT-EVENT-{index}",
         "CGT schedule",
         "Itemized CGT event prep row",
         answer,
-        "Itemized CGT event facts are collected for review only. No final capital gain or loss has been calculated.",
+        "Itemized CGT event facts are collected for review only. No capital gain or loss amount is worked out.",
         status,
         cgt_row_sources(item),
         tab_text=cgt_tab_text(evidence, review),
@@ -6286,7 +6427,7 @@ def cgt_reconciliation_row(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> 
         "CGT-RECON",
         "CGT schedule",
         "CGT item total reconciliation",
-        "; ".join(parts) + "; No final capital gain or loss has been calculated.",
+        "; ".join(parts) + "; No capital gain or loss amount is worked out.",
         "Itemized CGT totals are reconciled to supplied aggregate totals before accountant review.",
         "Evidence" if conflicts else "Accountant review",
         ATO_CGT_SOURCES,
@@ -6308,7 +6449,7 @@ def cgt_evidence_rows(raw: Any) -> List[Dict[str, Any]]:
                         f"CGT-EVID-{len(rows) + 1}",
                         "CGT schedule",
                         "CGT evidence required",
-                        f"CGT item {idx} needs {', '.join(evidence)}; no final capital gain or loss calculated.",
+                        f"CGT item {idx} needs {', '.join(evidence)}; no capital gain or loss amount worked out.",
                         "CGT item row remains not copy-ready until evidence gaps are resolved.",
                         "Evidence",
                         cgt_row_sources(item),
@@ -6325,7 +6466,7 @@ def cgt_evidence_rows(raw: Any) -> List[Dict[str, Any]]:
                     f"CGT-EVID-{len(rows) + 1}",
                     "CGT schedule",
                     "CGT evidence required",
-                    f"{evidence_prefix} {', '.join(top_level_evidence)}; no final capital gain or loss calculated.",
+                    f"{evidence_prefix} {', '.join(top_level_evidence)}; no capital gain or loss amount worked out.",
                     f"{subject} remain not copy-ready until evidence gaps are resolved.",
                     "Evidence",
                     cgt_row_sources(raw),
@@ -6352,7 +6493,7 @@ def cgt_evidence_rows(raw: Any) -> List[Dict[str, Any]]:
                 "CGT-EVID-1",
                 "CGT schedule",
                 "CGT evidence required",
-                f"CGT event needs {', '.join(evidence)}; no final capital gain or loss calculated.",
+                f"CGT event needs {', '.join(evidence)}; no capital gain or loss amount worked out.",
                 "CGT schedule row remains not copy-ready until evidence gaps are resolved.",
                 "Evidence",
                 cgt_row_sources(raw),
@@ -6466,6 +6607,10 @@ def has_explicit_cgt_evidence_gap(key: str, value: Any) -> bool:
         return cgt_boolean_needs_evidence(value)
     if key in CGT_DISCOUNT_REVIEW_TEXT_FIELDS:
         return has_meaningful_value(value) and contains_unknown(value)
+    if key in CGT_SMALL_BUSINESS_CONCESSION_TEXT_FIELDS:
+        if key == "concession_evidence":
+            return not is_missing(value) and cgt_records_missing(value)
+        return has_meaningful_value(value) and contains_unknown(value)
     if key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS:
         if key == "main_residence_property_records":
             return not is_missing(value) and cgt_records_missing(value)
@@ -6476,11 +6621,11 @@ def has_explicit_cgt_evidence_gap(key: str, value: Any) -> bool:
 
 
 def cgt_evidence_gap_requires_context(key: str) -> bool:
-    return key == "records" or key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS
+    return key == "records" or key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS or key in CGT_SMALL_BUSINESS_CONCESSION_TEXT_FIELDS
 
 
 def cgt_fact_requires_context(key: str) -> bool:
-    return key == "records" or key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS
+    return key == "records" or key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS or key in CGT_SMALL_BUSINESS_CONCESSION_TEXT_FIELDS
 
 
 def cgt_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
@@ -6489,8 +6634,7 @@ def cgt_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
         evidence.append("no-CGT answer with CGT facts")
     if raw.get(CGT_CONFLICT_SIGNAL_KEY):
         evidence.append("CGT field conflicts")
-        if any(display_value(signal).startswith("records ") for signal in raw.get(CGT_CONFLICT_SIGNAL_KEY, [])):
-            evidence.append("CGT records")
+        evidence.extend(cgt_conflict_evidence_labels(raw))
     if raw.get("_item_conflicts"):
         evidence.append("CGT item alias conflicts")
     for key, label in (
@@ -6515,6 +6659,7 @@ def cgt_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
         evidence.append("numeric current-year or carried-forward loss evidence")
     if cgt_discount_text_needs_evidence(raw):
         evidence.append("discount timing/eligibility evidence")
+    evidence.extend(cgt_small_business_concession_evidence_gaps(raw))
     evidence.extend(cgt_main_residence_evidence_gaps(raw))
     if cgt_boolean_needs_evidence(raw.get("foreign_resident_discount")):
         evidence.append("foreign resident discount review signal evidence")
@@ -6551,6 +6696,7 @@ def cgt_item_evidence_gaps(raw: Dict[str, Any], item: Dict[str, Any]) -> List[st
         evidence.append("numeric current-year or carried-forward loss evidence")
     if cgt_discount_text_needs_evidence(item):
         evidence.append("discount timing/eligibility evidence")
+    evidence.extend(cgt_small_business_concession_evidence_gaps(item))
     evidence.extend(cgt_main_residence_evidence_gaps(item))
     if cgt_boolean_needs_evidence(item.get("foreign_resident_discount")):
         evidence.append("foreign resident discount review signal evidence")
@@ -6571,8 +6717,7 @@ def cgt_itemized_top_level_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
     evidence: List[str] = []
     if raw.get(CGT_CONFLICT_SIGNAL_KEY):
         evidence.append("CGT field conflicts")
-        if any(display_value(signal).startswith("records ") for signal in raw.get(CGT_CONFLICT_SIGNAL_KEY, [])):
-            evidence.append("CGT records")
+        evidence.extend(cgt_conflict_evidence_labels(raw))
     for key, label in (
         ("summary", "summary evidence"),
         ("event_type", "event type evidence"),
@@ -6591,6 +6736,16 @@ def cgt_itemized_top_level_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
     return list(dict.fromkeys(evidence))
 
 
+def cgt_conflict_evidence_labels(raw: Dict[str, Any]) -> List[str]:
+    labels: List[str] = []
+    signals = [display_value(signal) for signal in raw.get(CGT_CONFLICT_SIGNAL_KEY, [])]
+    if any(signal.startswith("records ") for signal in signals):
+        labels.append("CGT records")
+    if any(signal.startswith("item ") for signal in signals):
+        labels.append("CGT item review field conflicts")
+    return labels
+
+
 def cgt_itemized_summary_evidence(raw: Dict[str, Any]) -> List[str]:
     evidence: List[str] = []
     if any(
@@ -6607,6 +6762,7 @@ def cgt_itemized_summary_evidence(raw: Dict[str, Any]) -> List[str]:
         evidence.append("numeric current-year or carried-forward loss evidence")
     if cgt_discount_text_needs_evidence(raw):
         evidence.append("discount timing/eligibility evidence")
+    evidence.extend(cgt_small_business_concession_evidence_gaps(raw))
     evidence.extend(cgt_main_residence_evidence_gaps(raw))
     return evidence
 
@@ -6627,6 +6783,46 @@ def cgt_discount_or_residency_has_review_signal(raw: Dict[str, Any]) -> bool:
         has_meaningful_cgt_signal(key, raw.get(key))
         for key in CGT_DISCOUNT_REVIEW_TEXT_FIELDS
     ) or cgt_review_flag_has_signal(raw.get("foreign_resident_discount"))
+
+
+def cgt_small_business_concession_has_review_signal(raw: Dict[str, Any]) -> bool:
+    return any(
+        cgt_review_flag_has_signal(raw.get(key)) or cgt_boolean_needs_evidence(raw.get(key))
+        for key in CGT_SMALL_BUSINESS_CONCESSION_FLAG_FIELDS
+    ) or any(
+        cgt_small_business_concession_text_has_signal(key, raw.get(key))
+        for key in CGT_SMALL_BUSINESS_CONCESSION_TEXT_FIELDS
+    )
+
+
+def cgt_small_business_concession_text_has_signal(key: str, value: Any) -> bool:
+    if key == "concession_evidence" and cgt_records_missing(value):
+        return not is_missing(value)
+    return has_meaningful_cgt_signal(key, value) or (has_meaningful_value(value) and contains_unknown(value))
+
+
+def cgt_small_business_concession_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
+    if not cgt_small_business_concession_has_review_signal(raw):
+        return []
+    evidence: List[str] = []
+    if cgt_boolean_needs_evidence(raw.get("concession_flag")):
+        evidence.append("small business CGT concession claim evidence")
+    if is_missing(raw.get("concession_type")) or contains_unknown(raw.get("concession_type")):
+        evidence.append("small business CGT concession type evidence")
+    for key, label in (
+        ("business_asset", "business asset evidence"),
+        ("active_asset", "active asset evidence"),
+        ("entity_affiliate_connected_entity", "entity, affiliate, or connected entity evidence"),
+        ("retirement_exemption", "retirement exemption signal evidence"),
+        ("rollover", "rollover signal evidence"),
+        ("fifteen_year_exemption", "15-year exemption signal evidence"),
+        ("active_asset_reduction_50", "50% active asset reduction signal evidence"),
+    ):
+        if is_missing(raw.get(key)) or cgt_boolean_needs_evidence(raw.get(key)):
+            evidence.append(label)
+    if cgt_records_missing(raw.get("concession_evidence")):
+        evidence.append("small business CGT concession evidence")
+    return list(dict.fromkeys(evidence))
 
 
 def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
@@ -6654,7 +6850,7 @@ def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
 
 
 def cgt_itemized_inherited_main_residence_key(key: str) -> bool:
-    return key in CGT_MAIN_RESIDENCE_REVIEW_FIELDS
+    return key in CGT_MAIN_RESIDENCE_REVIEW_FIELDS or key in CGT_SMALL_BUSINESS_CONCESSION_FIELDS
 
 
 def cgt_has_reconciliation_target(raw: Dict[str, Any]) -> bool:
@@ -6697,8 +6893,8 @@ def cgt_item_amount_total(items: List[Dict[str, Any]], key: str) -> Optional[flo
 
 def cgt_reconciliation_tab_text(conflicts: List[str]) -> str:
     if conflicts:
-        return f"CGT item totals need corrected reconciliation for {', '.join(conflicts)} before accountant review; no final capital gain or loss calculated."
-    return "CGT item totals reconcile to supplied aggregates; still prep-only and review-first; no final capital gain or loss calculated."
+        return f"CGT item totals need corrected reconciliation for {', '.join(conflicts)} before accountant review; no capital gain or loss amount worked out."
+    return "CGT item totals reconcile to supplied aggregates; still prep-only and review-first; no capital gain or loss amount worked out."
 
 
 def cgt_alias_conflict_text(raw: Dict[str, Any]) -> str:
@@ -6723,6 +6919,8 @@ def cgt_review_terms(raw: Dict[str, Any]) -> List[str]:
         terms.append("exemption, discount claim, or concession flags")
     if cgt_discount_or_residency_has_review_signal(raw):
         terms.append("discount timing or residency signals")
+    if cgt_small_business_concession_has_review_signal(raw):
+        terms.append("small business CGT concession review")
     if cgt_main_residence_has_review_signal(raw):
         terms.append("main residence exemption review")
     if cgt_main_residence_conflict_or_overlap(raw):
@@ -6731,9 +6929,19 @@ def cgt_review_terms(raw: Dict[str, Any]) -> List[str]:
 
 
 def cgt_row_sources(raw: Dict[str, Any]) -> List[str]:
+    sources = list(ATO_CGT_SOURCES)
     if cgt_main_residence_has_source_signal(raw):
-        return [*ATO_CGT_SOURCES, *ATO_CGT_MAIN_RESIDENCE_SOURCES]
-    return ATO_CGT_SOURCES
+        sources.extend(ATO_CGT_MAIN_RESIDENCE_SOURCES)
+    if cgt_small_business_concession_has_source_signal(raw):
+        sources.extend(ATO_CGT_SMALL_BUSINESS_CONCESSION_SOURCES)
+    return list(dict.fromkeys(sources))
+
+
+def cgt_small_business_concession_has_source_signal(raw: Dict[str, Any]) -> bool:
+    return cgt_small_business_concession_has_review_signal(raw) or any(
+        key in raw and cgt_boolean_false(raw.get(key))
+        for key in CGT_SMALL_BUSINESS_CONCESSION_FLAG_FIELDS
+    )
 
 
 def cgt_main_residence_has_source_signal(raw: Dict[str, Any]) -> bool:
@@ -7010,13 +7218,13 @@ def cgt_tab_text(evidence: List[str], review: List[str]) -> str:
     if evidence and review:
         return (
             f"CGT event needs {', '.join(evidence)} and stays accountant review for "
-            f"{', '.join(review)}; no final capital gain or loss calculated."
+            f"{', '.join(review)}; no capital gain or loss amount worked out."
         )
     if evidence:
-        return f"CGT event needs {', '.join(evidence)} before accountant review; no final capital gain or loss calculated."
+        return f"CGT event needs {', '.join(evidence)} before accountant review; no capital gain or loss amount worked out."
     if review:
-        return f"CGT event stays accountant review for {', '.join(review)}; no final capital gain or loss calculated."
-    return "CGT event stays accountant review; no final capital gain or loss calculated."
+        return f"CGT event stays accountant review for {', '.join(review)}; no capital gain or loss amount worked out."
+    return "CGT event stays accountant review; no capital gain or loss amount worked out."
 
 
 def crypto_answers(answers: Dict[str, Any]) -> Dict[str, Any]:

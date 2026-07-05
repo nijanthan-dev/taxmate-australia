@@ -41,6 +41,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: 8b214e08dcb93c0ee2e2a97fefd6298d748ee6411dd9d2b8f9c6de295b56bbe7
 
+- Small business affiliates
+  - Source ID: ato-2f39fa49352f
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/small-business-affiliates
+  - Source last updated: 2023-06-05T14:00:00.000+00:00
+  - Checked at: 2026-07-05T01:52:00Z
+  - Content hash: 5eb8827ffb2e61b3d47cd90a028e9df017866eb63f7b172787bc06eb02f952c5
+
 - Indexing the cost base
   - Source ID: ato-329bcce487e3
   - URL: https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/indexing-the-cost-base
@@ -68,6 +75,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Source last updated: 2026-06-21T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: e55f2c950ed0d644c7a499f5acacef685c58e8ed1364a8b2141b8cef5b5270fd
+
+- Small business roll-over
+  - Source ID: ato-42a73bfd0df0
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-roll-over
+  - Source last updated: 2025-09-03T14:00:00.000+00:00
+  - Checked at: 2026-07-05T01:52:00Z
+  - Content hash: 18f8071139bbc003444747c508f103f8736265cbeb926b639b8813bbfe26e687
 
 - Capital proceeds from disposing of assets
   - Source ID: ato-531bacc15d56
@@ -97,12 +111,33 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: eaee9a1be7d6b9335cba3f46b9645613ac86d804e154bbf8127c1b73ff55d403
 
+- Entities connected with you and control relationships
+  - Source ID: ato-78a16dadc1cb
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/entities-connected-with-you-and-control-relationships
+  - Source last updated: 2025-09-08T14:00:00.000+00:00
+  - Checked at: 2026-07-05T01:52:00Z
+  - Content hash: 04c4b3fb8f93e94d245a9da0954f81dbbf8bc1ca4612b3e9e65fb169fb592765
+
 - Inherited property and CGT
   - Source ID: ato-7b2f52af4bc7
   - URL: https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/inherited-assets-and-capital-gains-tax/inherited-property-and-cgt
   - Source last updated: 2026-06-21T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: 34ee371707fee6773d236cc4ff6c619df03cb98eb9f129d0b5f241b61070aac5
+
+- Small business 50% active asset reduction
+  - Source ID: ato-823b764b6186
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-50-percent-active-asset-reduction
+  - Source last updated: 2023-06-05T14:00:00.000+00:00
+  - Checked at: 2026-07-05T01:52:00Z
+  - Content hash: 81789b500e4d22719c8d5694b89689be9853a9f47822d9ec6b726eaf024f6425
+
+- Active asset test
+  - Source ID: ato-8d1d13fd4c6f
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/active-asset-test
+  - Source last updated: 2026-02-01T13:00:00.000+00:00
+  - Checked at: 2026-07-05T01:52:00Z
+  - Content hash: e6d1a173bb363e6df91ff0013abc89d86f16291b69713896688ef24554063da0
 
 - Main residence exemption in relationship breakdown
   - Source ID: ato-a1b882bd62f6
@@ -125,6 +160,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: 01e5455e2787e9aa0d19f3ba9a6ac8bcaee12f18ee983ed5058df7b8e4994a8a
 
+- CGT small business entity eligibility
+  - Source ID: ato-bfcb1b93f9c0
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/cgt-small-business-entity-eligibility
+  - Source last updated: 2023-06-05T14:00:00.000+00:00
+  - Checked at: 2026-07-05T01:52:00Z
+  - Content hash: d2e5b0ced071838a1d8fd21e62c56b71d7bc224d6c479769c01f928a03e0a355
+
 - Capital gains tax
   - Source ID: ato-c7a6a9032eab
   - URL: https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax
@@ -132,12 +174,26 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: 45934b8d7491d2c47997ccac2883ccfa962f7a9da776f2e5fd1bc397382ea458
 
+- Small business 15-year exemption
+  - Source ID: ato-c9fc77737318
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-15-year-exemption
+  - Source last updated: 2023-06-05T14:00:00.000+00:00
+  - Checked at: 2026-07-05T01:52:00Z
+  - Content hash: f6516c5fb8db74990005581931b90ac7982c140bd156796fb2ccc7de05fb4f10
+
 - Foreign resident investments
   - Source ID: ato-ca7036921304
   - URL: https://www.ato.gov.au/individuals-and-families/investments-and-assets/foreign-resident-investments
   - Source last updated: 2026-06-21T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: 63f1ef4402c9cc3cac4c56b97191a438a0ac81b2920c4c551987958d71217607
+
+- Small business CGT concessions
+  - Source ID: ato-d09dabf29db8
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions
+  - Source last updated: 2023-06-05T14:00:00.000+00:00
+  - Checked at: 2026-07-05T01:52:00Z
+  - Content hash: 7cbbffc02118cb4637a2ef72b13d0f35425e42ccbfb0389681175b6640a38ecd
 
 - Calculating your CGT
   - Source ID: ato-e4bcd98f4ecb
@@ -153,6 +209,20 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: 526652892a1d61395664e0e2bfa50960a2891010abb8c08c48e27c508be7ae78
 
+- Small business CGT concessions eligibility conditions
+  - Source ID: ato-f0e73faff945
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions
+  - Source last updated: 2023-06-05T14:00:00.000+00:00
+  - Checked at: 2026-07-05T01:52:00Z
+  - Content hash: aecc277d5e0bdabf45b3157808771f9e22ff3d0e67c8704a9583fd976516e37d
+
+- Small business retirement exemption
+  - Source ID: ato-f2a26bb7cacc
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-retirement-exemption
+  - Source last updated: 2023-06-05T14:00:00.000+00:00
+  - Checked at: 2026-07-05T01:52:00Z
+  - Content hash: bb024f05c3f6278b7575138c3e58efd9a3181d87ec0d69d020a5bf84f34ea583
+
 ## Metadata-only official-source links
 
 - No metadata-only assigned sources for this topic.
@@ -166,7 +236,9 @@ These are conservative topic summaries from official sources, not copied ATO pag
 ## Accountant-review boundaries
 Main residence exemption handling is review-first and prep-only. Collect claim status, ownership period, occupancy period, rental or business use, absence periods or absence-rule signals, spouse or partner main-residence conflicts, and property-record evidence.
 
-Missing records, unknown periods, partial or mixed use, rental or business use, absence periods, spouse conflicts, and ownership or occupancy uncertainty stay Evidence or `Accountant review`. Preserve false claim/use/conflict values and valid `0` or `0 days` values when CGT or main-residence context exists. Do not calculate a final exemption, decide final CGT treatment, fill official ATO PDFs, or call the row copy-ready.
+Small business CGT concession handling is review-first and prep-only. Collect concession claim status, supplied concession type, business asset and active asset signals, entity/affiliate/connected entity facts, retirement exemption, rollover, 15-year exemption, 50% active asset reduction, business/private use, and concession evidence.
+
+Missing records, unknown periods, partial or mixed use, rental or business use, absence periods, spouse conflicts, ownership or occupancy uncertainty, active asset uncertainty, concession type uncertainty, entity/affiliate/connected entity facts, and missing concession evidence stay Evidence or `Accountant review`. Preserve false claim/use/conflict/concession values and valid `0` or `0 days` values when CGT context exists. Do not work out exemption amounts, decide CGT treatment, determine small-business concession eligibility, work out concession amounts, fill official ATO PDFs, or call the row copy-ready.
 
 - main residence
 - inherited asset
@@ -174,6 +246,12 @@ Missing records, unknown periods, partial or mixed use, rental or business use, 
 - foreign resident
 - related party
 - market value substitution
+- small business concession type
+- active asset
+- affiliate or connected entity
+- retirement exemption
+- 15-year exemption
+- 50% active asset reduction
 - mixed business/private use
 - missing ownership or entity details
 - missing evidence

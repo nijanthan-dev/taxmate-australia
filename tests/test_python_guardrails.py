@@ -234,7 +234,12 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("main residence exemption claim" in finding.detail for finding in findings))
         self.assertTrue(any("main-residence source URLs" in finding.detail for finding in findings))
         self.assertTrue(any("review-first and prep-only" in finding.detail for finding in findings))
-        self.assertTrue(any("final main residence exemption" in finding.detail for finding in findings))
+        self.assertTrue(any("main residence exemption" in finding.detail for finding in findings))
+        self.assertTrue(any("CGT_SMALL_BUSINESS_CONCESSION_TEXT_FIELDS" in finding.detail for finding in findings))
+        self.assertTrue(any("ATO_CGT_SMALL_BUSINESS_CONCESSION_SOURCES" in finding.detail for finding in findings))
+        self.assertTrue(any("cgt_small_business_concession_evidence_gaps" in finding.detail for finding in findings))
+        self.assertTrue(any("small business CGT concession review" in finding.detail for finding in findings))
+        self.assertTrue(any("entity/affiliate/connected entity" in finding.detail for finding in findings))
 
     def test_review_guardrails_detect_wfh_parser_fallbacks(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -9949,9 +9954,9 @@ class SkillGenerationTests(unittest.TestCase):
             "ownership period",
             "occupancy period",
             "absence periods",
-            "Preserve false claim/use/conflict values",
+            "Preserve false claim/use/conflict/concession values",
             "valid `0` or `0 days` values",
-            "Do not calculate a final exemption",
+            "Do not work out exemption amounts",
             "fill official ATO PDFs",
         ]:
             self.assertIn(token, rules)
@@ -11143,7 +11148,7 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("exemption flag false", row["answer"])
         self.assertIn("discount flag false", row["answer"])
         self.assertIn("business use false", row["answer"])
-        self.assertIn("No final capital gain or loss has been calculated.", row["answer"])
+        self.assertIn("No capital gain or loss amount is worked out.", row["answer"])
         self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-events", row["source_urls"])
 
     def test_cgt_no_answer_plus_nested_facts_stays_evidence(self) -> None:
@@ -11362,7 +11367,7 @@ class CgtIntakeTests(unittest.TestCase):
 
         row = self.cgt_row(payload)
         self.assertIn("asset Example asset", row["answer"])
-        self.assertNotIn("asset unknown", row["answer"])
+        self.assertNotIn("Event sale; asset unknown;", row["answer"])
         self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
 
     def test_cgt_flat_alias_prefers_concrete_over_unknown(self) -> None:
@@ -11380,7 +11385,7 @@ class CgtIntakeTests(unittest.TestCase):
 
         row = self.cgt_row(payload)
         self.assertIn("asset Example asset", row["answer"])
-        self.assertNotIn("asset unknown", row["answer"])
+        self.assertNotIn("Event sale; asset unknown;", row["answer"])
         self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
 
     def test_cgt_conflicting_flat_asset_aliases_stay_evidence(self) -> None:
@@ -11543,7 +11548,7 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("incidental costs 0.00", rows[0]["answer"])
         self.assertIn("losses 0.00", rows[0]["answer"])
         self.assertIn("business use false", rows[0]["answer"])
-        self.assertIn("No final capital gain or loss has been calculated.", rows[0]["answer"])
+        self.assertIn("No capital gain or loss amount is worked out.", rows[0]["answer"])
         self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
 
     def test_cgt_item_optional_amounts_can_be_omitted(self) -> None:
@@ -11851,7 +11856,7 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("discount claim false", row["answer"])
         self.assertIn("foreign resident discount false", row["answer"])
         self.assertIn("discount timing held more than 12 months; records held", row["answer"])
-        self.assertIn("No final capital gain or loss has been calculated.", row["answer"])
+        self.assertIn("No capital gain or loss amount is worked out.", row["answer"])
         self.assertNotIn("net capital gain", row["answer"].lower())
         self.assertIn(taxmate_intake.ATO_CGT_LOSS_SOURCE, row["source_urls"])
         self.assertIn(taxmate_intake.ATO_CGT_DISCOUNT_SOURCE, row["source_urls"])
@@ -11875,6 +11880,11 @@ class CgtIntakeTests(unittest.TestCase):
                 self.assertIn(url, registry_urls)
                 self.assertEqual("verified", covered[url]["status"])
                 self.assertIn("property-rental-cgt", covered[url]["skills"])
+        for url in taxmate_intake.ATO_CGT_SMALL_BUSINESS_CONCESSION_SOURCES:
+            with self.subTest(url=url):
+                self.assertIn(url, registry_urls)
+                self.assertEqual("verified", covered[url]["status"])
+                self.assertIn("capital-gains-tax", covered[url]["skills"])
 
     def test_cgt_loss_discount_unknowns_stay_evidence(self) -> None:
         payload = self.guide_payload(
@@ -11955,7 +11965,7 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("discount claim true", top_level["answer"])
         self.assertIn("CGT item 1 needs acquisition or disposal date evidence", evidence_text)
         self.assertIn("CGT top-level facts need discount timing/eligibility evidence", evidence_text)
-        self.assertIn("No final capital gain or loss has been calculated.", item["answer"])
+        self.assertIn("No capital gain or loss amount is worked out.", item["answer"])
 
     def test_cgt_top_level_and_item_totals_reconcile(self) -> None:
         payload = self.guide_payload(
@@ -12417,7 +12427,7 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("Mixed-use shares", body)
         self.assertIn("acquisition or disposal date evidence", body)
         self.assertIn("mixed, private, or business use", body)
-        self.assertIn("No final capital gain or loss has been calculated.", body)
+        self.assertIn("No capital gain or loss amount is worked out.", body)
         self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-events", body)
         self.assertIn("Checked ", body)
 
@@ -12436,7 +12446,7 @@ class CgtIntakeTests(unittest.TestCase):
 
         self.assertIn("CGT-SCHEDULE", body)
         self.assertIn("CGT records", body)
-        self.assertIn("No final capital gain or loss has been calculated.", body)
+        self.assertIn("No capital gain or loss amount is worked out.", body)
         self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-events", body)
         self.assertIn("Checked ", body)
 
@@ -12465,7 +12475,7 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("discount claim true", body)
         self.assertIn("foreign resident discount true", body)
         self.assertIn("discount timing or residency signals", body)
-        self.assertIn("No final capital gain or loss has been calculated.", body)
+        self.assertIn("No capital gain or loss amount is worked out.", body)
         self.assertIn(taxmate_intake.ATO_CGT_LOSS_SOURCE, body)
         self.assertIn(taxmate_intake.ATO_CGT_DISCOUNT_SOURCE, body)
         self.assertIn(taxmate_intake.ATO_CGT_FOREIGN_RESIDENT_DISCOUNT_SOURCE, body)
@@ -12502,7 +12512,7 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
         self.assertIn(taxmate_intake.ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE, row["source_urls"])
         self.assertIn(taxmate_intake.ATO_RENTAL_HOME_USE_SOURCE, row["source_urls"])
         self.assertIn(taxmate_intake.ATO_PROPERTY_RECORDS_SOURCE, row["source_urls"])
-        self.assertIn("No final capital gain or loss has been calculated.", row["answer"])
+        self.assertIn("No capital gain or loss amount is worked out.", row["answer"])
 
     def test_main_residence_item_evidence_keeps_sources_and_review_queue(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
@@ -12859,6 +12869,255 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
         self.assertEqual("Evidence", rental_row["status"])
         self.assertIn("private use false", rental_row["answer"])
         self.assertIn("worksheet net unknown", rental_row["answer"])
+
+
+class SmallBusinessCgtConcessionWorkflowTests(unittest.TestCase):
+    def test_small_business_concession_claim_is_review_first_and_source_backed(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "cgt_event_type": "sale",
+                "cgt_asset": "Workshop goodwill",
+                "cgt_owner": "individual sole trader",
+                "cgt_acquisition_date": "2018-07-01",
+                "cgt_disposal_date": "2026-02-01",
+                "cgt_proceeds": 180000,
+                "cgt_cost_base": 30000,
+                "cgt_records": "contract and business records held",
+                "cgt_concession_flag": True,
+                "cgt_concession_type": "retirement exemption and 50% active asset reduction mentioned",
+                "cgt_business_asset": True,
+                "cgt_active_asset": True,
+                "cgt_entity_affiliate_connected_entity": True,
+                "cgt_retirement_exemption": True,
+                "cgt_rollover": False,
+                "cgt_15_year_exemption": False,
+                "cgt_50_percent_active_asset_reduction": True,
+                "cgt_concession_evidence": "business asset, active asset and turnover evidence held",
+                "cgt_business_use": True,
+                "cgt_private_use": False,
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CGT-SCHEDULE")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertEqual("review", row["tab_kind"])
+        self.assertIn("concession flag true", row["answer"])
+        self.assertIn("concession type retirement exemption and 50% active asset reduction mentioned", row["answer"])
+        self.assertIn("business asset true", row["answer"])
+        self.assertIn("active asset true", row["answer"])
+        self.assertIn("entity/affiliate/connected entity true", row["answer"])
+        self.assertIn("retirement exemption true", row["answer"])
+        self.assertIn("rollover false", row["answer"])
+        self.assertIn("15-year exemption false", row["answer"])
+        self.assertIn("50% active asset reduction true", row["answer"])
+        self.assertIn("private use false", row["answer"])
+        self.assertIn("small business CGT concession review", row["tab_text"])
+        for url in taxmate_intake.ATO_CGT_SMALL_BUSINESS_CONCESSION_SOURCES:
+            self.assertIn(url, row["source_urls"])
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+        self.assertNotRegex((row["answer"] + " " + row["tab_text"]).lower(), r"\b(eligible|final|claimable|lodgment-ready|calculated)\b")
+
+    def test_small_business_concession_false_claim_is_preserved_with_cgt_context(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "cgt": {
+                    "event_type": "sale",
+                    "asset": "Business equipment",
+                    "owner": "individual",
+                    "acquisition_date": "2023-07-01",
+                    "disposal_date": "2026-02-01",
+                    "proceeds": 0,
+                    "cost_base": 0,
+                    "records": "records held",
+                    "concession_flag": False,
+                    "business_asset": False,
+                    "active_asset": False,
+                    "entity_affiliate_connected_entity": False,
+                    "retirement_exemption": False,
+                    "rollover": False,
+                    "fifteen_year_exemption": False,
+                    "active_asset_reduction_50": False,
+                    "business_use": False,
+                    "private_use": False,
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CGT-SCHEDULE")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("proceeds 0.00", row["answer"])
+        self.assertIn("concession flag false", row["answer"])
+        self.assertIn("business asset false", row["answer"])
+        self.assertIn("active asset false", row["answer"])
+        self.assertIn("entity/affiliate/connected entity false", row["answer"])
+        self.assertIn(taxmate_intake.ATO_CGT_SMALL_BUSINESS_CONCESSIONS_SOURCE, row["source_urls"])
+        self.assertFalse(any(item["number"] == "CGT-EVID-1" for item in payload["evidence_items"]))
+
+    def test_small_business_concession_uncertainty_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "cgt": {
+                    "event_type": "sale",
+                    "asset": "Business premises",
+                    "owner": "individual",
+                    "acquisition_date": "2018-07-01",
+                    "disposal_date": "2026-02-01",
+                    "proceeds": 200000,
+                    "cost_base": 100000,
+                    "records": "records held",
+                    "concession_flag": "maybe",
+                    "concession_type": "unknown",
+                    "business_asset": True,
+                    "active_asset": "unclear",
+                    "entity_affiliate_connected_entity": "unknown",
+                    "retirement_exemption": "maybe",
+                    "rollover": "unknown",
+                    "fifteen_year_exemption": "maybe",
+                    "active_asset_reduction_50": "unclear",
+                    "concession_evidence": "no concession records",
+                    "business_use": True,
+                    "private_use": "mixed business/private use",
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CGT-SCHEDULE")
+        evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertEqual("review", row["tab_kind"])
+        self.assertIn("concession flag maybe", row["answer"])
+        self.assertIn("concession type unknown", row["answer"])
+        self.assertIn("active asset unclear", row["answer"])
+        self.assertIn("entity/affiliate/connected entity unknown", row["answer"])
+        self.assertIn("concession evidence no concession records", row["answer"])
+        self.assertIn("small business CGT concession type evidence", evidence["answer"])
+        self.assertIn("active asset evidence", evidence["answer"])
+        self.assertIn("entity, affiliate, or connected entity evidence", evidence["answer"])
+        self.assertIn("small business CGT concession evidence", evidence["answer"])
+        self.assertIn(taxmate_intake.ATO_CGT_SMALL_BUSINESS_ACTIVE_ASSET_TEST_SOURCE, evidence["source_urls"])
+
+    def test_small_business_concession_itemized_aliases_inherit_top_level_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "cgt_concession_flag": True,
+                "cgt_concession_type": "rollover",
+                "cgt_active_asset": True,
+                "cgt_entity_affiliate_connected_entity": "affiliate facts unknown",
+                "cgt_concession_evidence": False,
+                "cgt_items": [
+                    {
+                        "cgt_event_type": "sale",
+                        "cgt_asset_description": "Business asset",
+                        "cgt_owner": "individual",
+                        "cgt_acquisition_date": "2018-07-01",
+                        "cgt_disposal_date": "2026-02-01",
+                        "cgt_proceeds": 200000,
+                        "cgt_cost_base": 100000,
+                        "cgt_records": "records held",
+                        "cgt_rollover": True,
+                        "cgt_50_percent_active_asset_reduction": False,
+                    }
+                ],
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CGT-EVENT-1")
+        evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("concession flag true", row["answer"])
+        self.assertIn("concession type rollover", row["answer"])
+        self.assertIn("active asset true", row["answer"])
+        self.assertIn("entity/affiliate/connected entity affiliate facts unknown", row["answer"])
+        self.assertIn("rollover true", row["answer"])
+        self.assertIn("50% active asset reduction false", row["answer"])
+        self.assertIn("concession evidence false", row["answer"])
+        self.assertIn("entity, affiliate, or connected entity evidence", evidence["answer"])
+        self.assertIn("small business CGT concession evidence", evidence["answer"])
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+
+    def test_small_business_concession_itemized_conflict_keeps_top_level_fact_visible(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "cgt_active_asset": True,
+                "cgt_items": [
+                    {
+                        "cgt_event_type": "sale",
+                        "cgt_asset_description": "Business asset",
+                        "cgt_owner": "individual",
+                        "cgt_acquisition_date": "2018-07-01",
+                        "cgt_disposal_date": "2026-02-01",
+                        "cgt_proceeds": 200000,
+                        "cgt_cost_base": 100000,
+                        "cgt_records": "records held",
+                        "cgt_active_asset": False,
+                    }
+                ],
+            }
+        )
+        top_level = next(item for item in payload["items"] if item["number"] == "CGT-SCHEDULE")
+        event = next(item for item in payload["items"] if item["number"] == "CGT-EVENT-1")
+        evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
+
+        self.assertEqual("Evidence", top_level["status"])
+        self.assertIn("active asset true", top_level["answer"])
+        self.assertIn("conflict signals item 1 active_asset true vs false", top_level["answer"])
+        self.assertIn("active asset false", event["answer"])
+        self.assertIn("CGT item review field conflicts", evidence["answer"])
+        self.assertIn(taxmate_intake.ATO_CGT_SMALL_BUSINESS_ACTIVE_ASSET_TEST_SOURCE, top_level["source_urls"])
+
+    def test_small_business_concession_itemized_conflict_survives_flat_alias_conflict(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "cgt_asset": "Top asset",
+                "cgt_asset_description": "Alias asset",
+                "cgt_active_asset": True,
+                "cgt_items": [
+                    {
+                        "cgt_event_type": "sale",
+                        "cgt_asset_description": "Business asset",
+                        "cgt_owner": "individual",
+                        "cgt_acquisition_date": "2018-07-01",
+                        "cgt_disposal_date": "2026-02-01",
+                        "cgt_proceeds": 200000,
+                        "cgt_cost_base": 100000,
+                        "cgt_records": "records held",
+                        "cgt_active_asset": False,
+                    }
+                ],
+            }
+        )
+        top_level = next(item for item in payload["items"] if item["number"] == "CGT-SCHEDULE")
+
+        self.assertIn("conflict signals item 1 active_asset true vs false, asset Top asset vs Alias asset", top_level["answer"])
+
+    def test_small_business_concession_html_has_review_queue_and_provenance(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "cgt_event_type": "sale",
+                "cgt_asset": "Workshop goodwill",
+                "cgt_owner": "individual",
+                "cgt_acquisition_date": "2018-07-01",
+                "cgt_disposal_date": "2026-02-01",
+                "cgt_proceeds": 180000,
+                "cgt_cost_base": 30000,
+                "cgt_records": "records held",
+                "cgt_concession_flag": True,
+                "cgt_concession_type": "15-year exemption",
+                "cgt_business_asset": True,
+                "cgt_active_asset": True,
+                "cgt_entity_affiliate_connected_entity": True,
+                "cgt_15_year_exemption": True,
+                "cgt_concession_evidence": "records held",
+            }
+        )
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+        row = next(item for item in payload["items"] if item["number"] == "CGT-SCHEDULE")
+
+        self.assertIn("CGT-SCHEDULE", body)
+        self.assertIn("small business CGT concession review", body)
+        self.assertIn("15-year exemption true", body)
+        self.assertIn(taxmate_intake.ATO_CGT_SMALL_BUSINESS_15_YEAR_SOURCE, body)
+        self.assertNotRegex((row["answer"] + " " + row["tab_text"]).lower(), r"\b(eligible|final|claimable|lodgment-ready|calculated)\b")
 
 
 if __name__ == "__main__":

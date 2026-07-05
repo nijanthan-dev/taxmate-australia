@@ -1,6 +1,6 @@
 {
   "fetched_at": "2026-06-23T08:53:57Z",
-  "refreshed_at": "2026-06-30T06:30:53Z",
+  "refreshed_at": "2026-07-05T01:52:00Z",
   "scope": "ATO official pages relevant to Australian FY2025-26 individual, employment, ABN/sole trader, GST/BAS, PAYG instalments, PAYG withholding, STP, TPAR, FBT, CGT, ETF/investment, crypto, rental-property records, super, and private health tax preparation.",
   "records": [
     {
@@ -3614,6 +3614,126 @@
       "content_hash": "6f51a62f9e9615d95f3dcca0c76d8bde7ec2cac1c295a37f2f1a14db3d29a845",
       "content_verified": true,
       "last_checked": "2026-06-30T06:30:53Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions",
+      "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions",
+      "status": 200,
+      "title": "Small business CGT concessions",
+      "last_updated": "2023-06-05T14:00:00.000+00:00",
+      "raw_file": "raw/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__d65aa5fa.html",
+      "text_file": "text/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__d65aa5fa.txt",
+      "content_hash": "7cbbffc02118cb4637a2ef72b13d0f35425e42ccbfb0389681175b6640a38ecd",
+      "content_verified": true,
+      "last_checked": "2026-07-05T01:52:00Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-15-year-exemption",
+      "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-15-year-exemption",
+      "status": 200,
+      "title": "Small business 15-year exemption",
+      "last_updated": "2023-06-05T14:00:00.000+00:00",
+      "raw_file": "raw/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-15-year-exemption__984389f3.html",
+      "text_file": "text/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-15-year-exemption__984389f3.txt",
+      "content_hash": "f6516c5fb8db74990005581931b90ac7982c140bd156796fb2ccc7de05fb4f10",
+      "content_verified": true,
+      "last_checked": "2026-07-05T01:52:00Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-50-percent-active-asset-reduction",
+      "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-50-percent-active-asset-reduction",
+      "status": 200,
+      "title": "Small business 50% active asset reduction",
+      "last_updated": "2023-06-05T14:00:00.000+00:00",
+      "raw_file": "raw/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-50-percent-active-asset-reduction__56164324.html",
+      "text_file": "text/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-50-percent-active-asset-reduction__56164324.txt",
+      "content_hash": "81789b500e4d22719c8d5694b89689be9853a9f47822d9ec6b726eaf024f6425",
+      "content_verified": true,
+      "last_checked": "2026-07-05T01:52:00Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions",
+      "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions",
+      "status": 200,
+      "title": "Small business CGT concessions eligibility conditions",
+      "last_updated": "2023-06-05T14:00:00.000+00:00",
+      "raw_file": "raw/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-cgt-concessions-eligibility-conditions__3cc9433d.html",
+      "text_file": "text/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-cgt-concessions-eligibility-conditions__3cc9433d.txt",
+      "content_hash": "aecc277d5e0bdabf45b3157808771f9e22ff3d0e67c8704a9583fd976516e37d",
+      "content_verified": true,
+      "last_checked": "2026-07-05T01:52:00Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/active-asset-test",
+      "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/active-asset-test",
+      "status": 200,
+      "title": "Active asset test",
+      "last_updated": "2026-02-01T13:00:00.000+00:00",
+      "raw_file": "raw/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-cgt-concessions-eligibility-conditions__active-asset-test__26043e23.html",
+      "text_file": "text/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-cgt-concessions-eligibility-conditions__active-asset-test__26043e23.txt",
+      "content_hash": "e6d1a173bb363e6df91ff0013abc89d86f16291b69713896688ef24554063da0",
+      "content_verified": true,
+      "last_checked": "2026-07-05T01:52:00Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/cgt-small-business-entity-eligibility",
+      "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/cgt-small-business-entity-eligibility",
+      "status": 200,
+      "title": "CGT small business entity eligibility",
+      "last_updated": "2023-06-05T14:00:00.000+00:00",
+      "raw_file": "raw/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-cgt-concessions-eligibility-conditions__cgt-small-business-entity-eligibility__c9d090ba.html",
+      "text_file": "text/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-cgt-concessions-eligibility-conditions__cgt-small-business-entity-eligibility__c9d090ba.txt",
+      "content_hash": "d2e5b0ced071838a1d8fd21e62c56b71d7bc224d6c479769c01f928a03e0a355",
+      "content_verified": true,
+      "last_checked": "2026-07-05T01:52:00Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/entities-connected-with-you-and-control-relationships",
+      "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/entities-connected-with-you-and-control-relationships",
+      "status": 200,
+      "title": "Entities connected with you and control relationships",
+      "last_updated": "2025-09-08T14:00:00.000+00:00",
+      "raw_file": "raw/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-cgt-concessions-eligibility-conditions__entities-connected-with-you-and-control-relationships__7b765da6.html",
+      "text_file": "text/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-cgt-concessions-eligibility-conditions__entities-connected-with-you-and-control-relationships__7b765da6.txt",
+      "content_hash": "04c4b3fb8f93e94d245a9da0954f81dbbf8bc1ca4612b3e9e65fb169fb592765",
+      "content_verified": true,
+      "last_checked": "2026-07-05T01:52:00Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/small-business-affiliates",
+      "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-cgt-concessions-eligibility-conditions/small-business-affiliates",
+      "status": 200,
+      "title": "Small business affiliates",
+      "last_updated": "2023-06-05T14:00:00.000+00:00",
+      "raw_file": "raw/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-cgt-concessions-eligibility-conditions__small-business-affiliates__a91d095d.html",
+      "text_file": "text/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-cgt-concessions-eligibility-conditions__small-business-affiliates__a91d095d.txt",
+      "content_hash": "5eb8827ffb2e61b3d47cd90a028e9df017866eb63f7b172787bc06eb02f952c5",
+      "content_verified": true,
+      "last_checked": "2026-07-05T01:52:00Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-retirement-exemption",
+      "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-retirement-exemption",
+      "status": 200,
+      "title": "Small business retirement exemption",
+      "last_updated": "2023-06-05T14:00:00.000+00:00",
+      "raw_file": "raw/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-retirement-exemption__dffa7b62.html",
+      "text_file": "text/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-retirement-exemption__dffa7b62.txt",
+      "content_hash": "bb024f05c3f6278b7575138c3e58efd9a3181d87ec0d69d020a5bf84f34ea583",
+      "content_verified": true,
+      "last_checked": "2026-07-05T01:52:00Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-roll-over",
+      "final_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/incentives-and-concessions/small-business-cgt-concessions/small-business-roll-over",
+      "status": 200,
+      "title": "Small business roll-over",
+      "last_updated": "2025-09-03T14:00:00.000+00:00",
+      "raw_file": "raw/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-roll-over__70891319.html",
+      "text_file": "text/businesses-and-organisations__income-deductions-and-concessions__incentives-and-concessions__small-business-cgt-concessions__small-business-roll-over__70891319.txt",
+      "content_hash": "18f8071139bbc003444747c508f103f8736265cbeb926b639b8813bbfe26e687",
+      "content_verified": true,
+      "last_checked": "2026-07-05T01:52:00Z"
     }
   ],
   "failures": [
