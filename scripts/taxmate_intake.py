@@ -2294,11 +2294,13 @@ def answer_value(answers: Dict[str, Any], aliases: tuple[str, ...], nested_keys:
     return fallback
 
 
-def alias_answer_value(values: Dict[str, Any], aliases: tuple[str, ...]) -> Any:
+def alias_answer_value(values: Dict[str, Any], aliases: tuple[str, ...], amount: bool = False) -> Any:
     fallback = None
     for key in aliases:
         if key in values and not is_missing(values.get(key)):
             value = values.get(key)
+            if amount and amount_alias_default_false(value):
+                continue
             if not contains_unknown(value):
                 return value
             if fallback is None:
@@ -2332,6 +2334,8 @@ def normalized_alias_values(values: List[Any], amount: bool = False, gst_registr
     for value in values:
         if is_missing(value):
             continue
+        if amount and amount_alias_default_false(value):
+            continue
         if amount and isinstance(value, (dict, list)):
             item_total = supplied_item_total(item_values(value))
             if item_total is not None:
@@ -2356,6 +2360,14 @@ def normalized_alias_values(values: List[Any], amount: bool = False, gst_registr
         if rendered:
             normalized.append(rendered)
     return normalized
+
+
+def amount_alias_default_false(value: Any) -> bool:
+    if value is False:
+        return True
+    if not isinstance(value, str):
+        return False
+    return value.strip().lower() in {"false", "no", "n", "off", "unchecked", "none", "n/a", "not applicable"}
 
 
 def alias_values_conflict(values: List[Any], amount: bool = False, gst_registration: bool = False) -> bool:
@@ -2393,14 +2405,15 @@ def bas_alias_conflicts(answers: Dict[str, Any]) -> List[str]:
 
 
 def abn_answer(answers: Dict[str, Any], key: str) -> Any:
-    value = alias_answer_value(answers, ABN_FIELD_ALIASES[key])
+    amount = key in {"income_total", "expense_total", "income_streams", "expense_categories"}
+    value = alias_answer_value(answers, ABN_FIELD_ALIASES[key], amount=amount)
     if value is not None and not contains_unknown(value):
         return value
     fallback = value
     for nested_key in ABN_NESTED_KEYS:
         nested = answers.get(nested_key)
         if isinstance(nested, dict):
-            value = alias_answer_value(nested, ABN_NESTED_FIELD_ALIASES[key])
+            value = alias_answer_value(nested, ABN_NESTED_FIELD_ALIASES[key], amount=amount)
             if value is not None and not contains_unknown(value):
                 return value
             if fallback is None:
@@ -2409,14 +2422,15 @@ def abn_answer(answers: Dict[str, Any], key: str) -> Any:
 
 
 def bas_answer(answers: Dict[str, Any], key: str) -> Any:
-    value = alias_answer_value(answers, BAS_FIELD_ALIASES[key])
+    amount = key in BAS_AMOUNT_FIELDS
+    value = alias_answer_value(answers, BAS_FIELD_ALIASES[key], amount=amount)
     if value is not None and not contains_unknown(value):
         return value
     fallback = value
     for nested_key in BAS_NESTED_KEYS:
         nested = answers.get(nested_key)
         if isinstance(nested, dict):
-            value = alias_answer_value(nested, BAS_NESTED_FIELD_ALIASES[key])
+            value = alias_answer_value(nested, BAS_NESTED_FIELD_ALIASES[key], amount=amount)
             if value is not None and not contains_unknown(value):
                 return value
             if fallback is None:
@@ -2568,7 +2582,7 @@ def review_flag_terms(raw: Dict[str, Any], keys: tuple[str, ...]) -> List[str]:
         value = raw.get(key)
         if is_missing(value):
             continue
-        if isinstance(value, bool) and value is False:
+        if abn_review_flag_false(value):
             terms.append(f"{key.replace('_', ' ')} false")
         elif contains_unknown(value):
             terms.append(f"{key.replace('_', ' ')} unknown")
@@ -2648,7 +2662,7 @@ def bas_summary(answers: Dict[str, Any]) -> Dict[str, Any]:
     alias_conflicts = bas_alias_conflicts(answers)
     if has_bas_contextual_signal(answers):
         for key in BAS_CONTEXTUAL_FIELD_ALIASES:
-            candidate = alias_answer_value(answers, BAS_CONTEXTUAL_FIELD_ALIASES.get(key, ()))
+            candidate = alias_answer_value(answers, BAS_CONTEXTUAL_FIELD_ALIASES.get(key, ()), amount=key in BAS_AMOUNT_FIELDS)
             if candidate is not None and (is_missing(raw.get(key)) or contains_unknown(raw.get(key))):
                 raw[key] = candidate
     for key in BAS_AMOUNT_FIELDS:

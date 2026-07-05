@@ -9730,6 +9730,48 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("Accountant review", by_number["abn_income"]["status"])
         self.assertEqual("Accountant review", by_number["gst_collected"]["status"])
 
+    def test_false_default_amount_aliases_do_not_conflict_with_zero_abn_amounts(self) -> None:
+        for default in (False, "false", "no", "n", "0", "off", "unchecked", "none", "n/a", "not applicable"):
+            with self.subTest(default=default):
+                answers = {
+                    "abn_income": default,
+                    "business_income": 0,
+                    "abn_expenses": default,
+                    "business_expenses": 0,
+                    "business_record_system": "ledger",
+                }
+
+                rows = taxmate_intake.abn_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("income 0.00; expenses 0.00", rows[0]["answer"])
+                self.assertIn("alias conflicts none", rows[0]["answer"])
+                self.assertFalse(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+
+    def test_false_default_amount_aliases_do_not_conflict_with_zero_bas_amounts(self) -> None:
+        for default in (False, "false", "no", "n", "0", "off", "unchecked", "none", "n/a", "not applicable"):
+            with self.subTest(default=default):
+                answers = {
+                    "gst_registered": False,
+                    "gst_collected": default,
+                    "label_1a": 0,
+                    "gst_credits": default,
+                    "label_1b": 0,
+                    "gst_accounting_basis": "cash",
+                    "bas_period_coverage": "full period",
+                    "tax_invoice_evidence": "tax invoices held",
+                }
+
+                rows = taxmate_intake.bas_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("GST registered false", rows[0]["answer"])
+                self.assertIn("1A 0.00; 1B 0.00; net GST 0.00", rows[0]["answer"])
+                self.assertIn("alias conflicts none", rows[0]["answer"])
+                self.assertFalse(any(row["question"] == "BAS alias reconciliation required" for row in evidence))
+
     def test_equivalent_gst_registration_aliases_do_not_create_conflict(self) -> None:
         rows = taxmate_intake.bas_rows(
             {
@@ -10110,6 +10152,25 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("Accountant review", rows[0]["status"])
         self.assertIn("home business false", rows[0]["tab_text"])
         self.assertIn("loss false", rows[0]["tab_text"])
+
+    def test_serialized_false_abn_review_flags_stay_false_with_business_context(self) -> None:
+        rows = taxmate_intake.abn_rows(
+            {
+                "abn_income": 1000,
+                "business_home_use": "off",
+                "business_loss": "no business loss",
+                "business_motor_vehicle": "unchecked",
+                "psi_income": "not psi",
+            }
+        )
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("home business false", rows[0]["tab_text"])
+        self.assertIn("loss false", rows[0]["tab_text"])
+        self.assertIn("motor vehicle false", rows[0]["tab_text"])
+        self.assertIn("psi false", rows[0]["tab_text"])
+        self.assertNotIn("loss review", rows[0]["tab_text"])
+        self.assertNotIn("psi review", rows[0]["tab_text"])
 
     def test_empty_abn_and_bas_defaults_do_not_create_rows(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
@@ -11780,6 +11841,32 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("<li>Missing WFH pattern requires accountant review.</li>", body)
         self.assertIn("<li>Evidence gap requires accountant review.</li>", body)
         self.assertNotIn("Missing WFH pattern requires accountant review.; Evidence gap", body)
+
+    def test_false_tab_text_uses_fallback_without_polluting_review_queue(self) -> None:
+        item = taxmate_taxpack.guide_item(
+            {
+                "number": "ABN",
+                "ato_area": "Sole-trader ABN",
+                "question": "Sole-trader ABN prep",
+                "answer": "Needs review",
+                "status": "Accountant review",
+                "tab_text": False,
+            }
+        )
+
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="29 Jun 2026",
+                summary_note="False tab text regression.",
+                items=[item],
+            )
+        )
+
+        self.assertIn("<p>Row ABN: Accountant review.</p>", body)
+        self.assertIn("<li>Row ABN: Accountant review.</li>", body)
+        self.assertNotIn("<p>false</p>", body)
+        self.assertNotIn("<li>false</li>", body)
 
     def test_guide_canonicalizes_color_status_aliases(self) -> None:
         aliases = {
