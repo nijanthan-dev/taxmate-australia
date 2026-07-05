@@ -391,6 +391,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "BAS_NESTED_KEYS = (",
                 "ABN_FIELD_ALIASES = {",
                 "ABN_NESTED_FIELD_ALIASES = {",
+                "\"income_total\": (\"abn_income\", \"business_income\", \"income_total\", \"gross_income\", \"income\")",
+                "\"expense_total\": (\"abn_expenses\", \"business_expenses\", \"expense_total\", \"expenses\")",
                 "ABN_BUSINESS_SIGNAL_FIELDS = (",
                 "ABN_CONTEXT_SIGNAL_FIELDS = tuple(key for key in ABN_BUSINESS_SIGNAL_FIELDS if key != \"psi\")",
                 "BAS_FIELD_ALIASES = {",

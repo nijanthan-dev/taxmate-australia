@@ -207,6 +207,11 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("wfh_answers" in finding.detail for finding in findings))
         self.assertTrue(any("has_abn_inputs" in finding.detail for finding in findings))
         self.assertTrue(any("has_bas_inputs" in finding.detail for finding in findings))
+        self.assertTrue(any('"income_total": ("abn_income", "business_income", "income_total", "gross_income", "income")' in finding.detail for finding in findings))
+        self.assertTrue(any('"expense_total": ("abn_expenses", "business_expenses", "expense_total", "expenses")' in finding.detail for finding in findings))
+        self.assertTrue(any("supplied_item_total_conflict" in finding.detail for finding in findings))
+        self.assertTrue(any("item_amount_evidence_needed" in finding.detail for finding in findings))
+        self.assertTrue(any("if not amounts or any(amount is None for amount in amounts):" in finding.detail for finding in findings))
         self.assertTrue(any("state-wide public holidays" in finding.detail for finding in findings))
         self.assertTrue(any("regional, capital-city-only, sector-only, and partial-day" in finding.detail for finding in findings))
         self.assertTrue(any("parse_gst_registration" in finding.detail for finding in findings))
@@ -10077,6 +10082,33 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("Accountant review", rows[0]["status"])
         self.assertIn("income unknown; expenses 0.00", rows[0]["answer"])
         self.assertIn("income streams consulting 100.00, digital sales unknown", rows[0]["answer"])
+
+    def test_nested_explicit_abn_totals_survive_partial_item_lists(self) -> None:
+        answers = {
+            "business": {
+                "income_total": 1200,
+                "income": [
+                    {"stream": "consulting", "amount": 1000, "evidence": "invoice held"},
+                    {"stream": "digital sales", "evidence": "statement held"},
+                ],
+                "expense_total": 300,
+                "expenses": [
+                    {"category": "software", "amount": 120, "evidence": "receipt held"},
+                    {"category": "travel", "evidence": "receipt pending"},
+                ],
+                "record_system": "ledger",
+            }
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income 1200.00; expenses 300.00", rows[0]["answer"])
+        self.assertIn("income streams consulting 1000.00, digital sales unknown", rows[0]["answer"])
+        self.assertIn("expense categories software 120.00, travel unknown", rows[0]["answer"])
+        self.assertTrue(any(row["number"] == "ABN-EVID-1" for row in evidence))
+        self.assertFalse(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
 
     def test_abn_item_amount_alias_conflict_keeps_review_and_evidence_rows(self) -> None:
         answers = {

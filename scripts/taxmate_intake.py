@@ -2219,8 +2219,8 @@ ABN_NESTED_FIELD_ALIASES = {
     "start_date": ("business_start_date", "start_date", "started", "commencement_date"),
     "end_date": ("business_end_date", "end_date", "ceased", "cessation_date"),
     "record_system": ("business_record_system", "record_system", "records", "bookkeeping_system"),
-    "income_total": ("abn_income", "business_income", "income", "income_total", "gross_income"),
-    "expense_total": ("abn_expenses", "business_expenses", "expenses", "expense_total"),
+    "income_total": ("abn_income", "business_income", "income_total", "gross_income", "income"),
+    "expense_total": ("abn_expenses", "business_expenses", "expense_total", "expenses"),
     "income_streams": ("business_income_streams", "income_streams", "income_items", "income", "sales"),
     "expense_categories": ("business_expense_categories", "expense_categories", "expense_items", "expenses_by_category", "expenses"),
 }
