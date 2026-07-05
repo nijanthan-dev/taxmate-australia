@@ -12665,6 +12665,9 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
                 "cgt_main_residence_ownership_period": "0 days",
             },
             {
+                "cgt_main_residence_occupancy_period": "occupancy unknown",
+            },
+            {
                 "cgt_main_residence_absence_periods": "none",
             },
             {
@@ -12673,9 +12676,21 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
                 }
             },
             {
+                "cgt": {
+                    "main_residence_ownership_period": "ownership unknown",
+                }
+            },
+            {
                 "cgt_items": [
                     {
                         "main_residence_absence_periods": "none",
+                    }
+                ]
+            },
+            {
+                "cgt_items": [
+                    {
+                        "main_residence_occupancy_period": "occupancy unknown",
                     }
                 ]
             },

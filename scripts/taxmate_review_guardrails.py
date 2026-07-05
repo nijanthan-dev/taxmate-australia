@@ -865,7 +865,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def cgt_main_residence_text_has_signal(",
                 "def cgt_main_residence_evidence_gaps(",
                 "def cgt_evidence_gap_requires_context(",
-                "return key in (\"records\", \"main_residence_property_records\")",
+                "return key == \"records\" or key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS",
                 "def cgt_fact_requires_context(",
                 "return key == \"records\" or key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS",
                 "def cgt_row_sources(",

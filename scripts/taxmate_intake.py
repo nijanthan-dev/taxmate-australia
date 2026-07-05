@@ -6467,7 +6467,7 @@ def has_explicit_cgt_evidence_gap(key: str, value: Any) -> bool:
 
 
 def cgt_evidence_gap_requires_context(key: str) -> bool:
-    return key in ("records", "main_residence_property_records")
+    return key == "records" or key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS
 
 
 def cgt_fact_requires_context(key: str) -> bool:
