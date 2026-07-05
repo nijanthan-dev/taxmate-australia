@@ -20,8 +20,41 @@ DEFAULT_INCOME_YEAR = "2025-26"
 SUPPORTED_WFH_START = date(2025, 7, 1)
 SUPPORTED_WFH_END = date(2026, 6, 30)
 WFH_FIXED_RATE_2025_26 = 0.70
-REVIEWABLE_ABN_FIELDS = ("abn_income", "abn_expenses")
-REVIEWABLE_BAS_FIELDS = ("bas_period", "gst_collected", "gst_credits")
+REVIEWABLE_ABN_FIELDS = (
+    "abn_income",
+    "abn_expenses",
+    "abn",
+    "business_abn",
+    "business_name",
+    "business_activity",
+    "business_start_date",
+    "business_end_date",
+    "business_record_system",
+    "business_income_streams",
+    "business_expense_categories",
+    "business_private_apportionment",
+    "business_home_use",
+    "business_motor_vehicle",
+    "business_depreciation",
+    "business_capital_expense",
+    "business_loss",
+    "business_vs_hobby",
+    "business_non_commercial_loss",
+)
+REVIEWABLE_BAS_FIELDS = (
+    "bas_period",
+    "gst_collected",
+    "gst_credits",
+    "gst_registration_date",
+    "gst_accounting_basis",
+    "bas_period_coverage",
+    "gst_free_sales",
+    "input_taxed_sales",
+    "bas_adjustments",
+    "payg_instalments",
+    "payg_withholding",
+    "tax_invoice_evidence",
+)
 REVIEWABLE_ESS_FIELDS = (
     "ess_statement",
     "ess_taxed_upfront_discount",
@@ -1251,6 +1284,13 @@ ATO_WFH_ACTUAL_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-
 ATO_ASSET_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work"
 ATO_BAS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas"
 ATO_GST_CREDITS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/claiming-gst-credits"
+ATO_TAX_INVOICES_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/tax-invoices"
+ATO_GST_ACCOUNTING_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/accounting-for-gst-in-your-business"
+ATO_GST_FREE_SALES_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/when-to-charge-gst-and-when-not-to/gst-free-sales"
+ATO_INPUT_TAXED_SALES_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/when-to-charge-gst-and-when-not-to/input-taxed-sales"
+ATO_BAS_ADJUSTMENTS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/fixing-bas-mistakes-or-making-adjustments"
+ATO_PAYG_INSTALMENTS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/payg-instalments"
+ATO_PAYG_WITHHOLDING_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/pay-as-you-go-payg-withholding"
 ATO_ESS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/employee-share-schemes"
 ATO_ESS_STATEMENT_SOURCE = "https://www.ato.gov.au/forms-and-instructions/employee-share-scheme-statement"
 ATO_ETP_SOURCE = "https://www.ato.gov.au/tax-rates-and-codes/payg-withholding-schedule-11-tax-table-for-employment-termination-payments"
@@ -1271,10 +1311,35 @@ ATO_FOREIGN_INCOME_SOURCES = [
     ATO_FOREIGN_INCOME_TAX_OFFSET_SOURCE,
 ]
 ATO_BUSINESS_INCOME_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business"
+ATO_BUSINESS_DEDUCTIONS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions"
+ATO_HOME_BUSINESS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-business-expenses-sole-trader-or-partnership"
+ATO_BUSINESS_LOSSES_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/business-losses"
+ATO_MOTOR_VEHICLE_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-motor-vehicle-expenses"
+ATO_BUSINESS_DEPRECIATING_ASSETS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-depreciating-assets-and-capital-expenses"
 ATO_PSI_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/personal-services-income"
 ATO_PSI_SOURCES = [
     ATO_PSI_SOURCE,
     ATO_BUSINESS_INCOME_SOURCE,
+]
+ATO_ABN_BUSINESS_SOURCES = [
+    ATO_BUSINESS_INCOME_SOURCE,
+    ATO_BUSINESS_DEDUCTIONS_SOURCE,
+    ATO_HOME_BUSINESS_SOURCE,
+    ATO_BUSINESS_LOSSES_SOURCE,
+    ATO_MOTOR_VEHICLE_SOURCE,
+    ATO_BUSINESS_DEPRECIATING_ASSETS_SOURCE,
+    ATO_PSI_SOURCE,
+]
+ATO_BAS_SOURCES = [
+    ATO_BAS_SOURCE,
+    ATO_GST_CREDITS_SOURCE,
+    ATO_TAX_INVOICES_SOURCE,
+    ATO_GST_ACCOUNTING_SOURCE,
+    ATO_GST_FREE_SALES_SOURCE,
+    ATO_INPUT_TAXED_SALES_SOURCE,
+    ATO_BAS_ADJUSTMENTS_SOURCE,
+    ATO_PAYG_INSTALMENTS_SOURCE,
+    ATO_PAYG_WITHHOLDING_SOURCE,
 ]
 ATO_CRYPTO_ASSETS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/crypto-asset-investments"
 ATO_CRYPTO_RECORDS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/crypto-asset-investments/keeping-crypto-records"
@@ -1836,6 +1901,8 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     cgt = cgt_answers(answers)
     has_payg_items = bool(payg_item_values(payg.get("items")))
     has_cgt = has_cgt_inputs(cgt)
+    abn = abn_summary(answers) if has_abn_inputs(answers) else {}
+    bas = bas_summary(answers) if has_bas_inputs(answers) else {}
     for spec in question_specs():
         value = investment_base_item_value(spec.key, answers, investment)
         if spec.key in ("payg_gross", "payg_withheld", "main_occupation") and has_payg_items:
@@ -1860,6 +1927,10 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
             ):
                 status = "Evidence"
             if spec.key in REVIEWABLE_PAYG_FIELDS and payg_aggregate_evidence_gaps(payg):
+                status = "Evidence"
+            if spec.key in REVIEWABLE_ABN_FIELDS and abn.get("alias_conflict"):
+                status = "Evidence"
+            if (spec.key in REVIEWABLE_BAS_FIELDS or spec.key == "gst_registered") and bas.get("alias_conflict"):
                 status = "Evidence"
             rows.append(
                 guide_row(
@@ -2099,39 +2170,607 @@ def base_item_status(key: str, value: Any) -> str:
     return "Evidence" if is_missing(value) or contains_unknown(value) else "Used"
 
 
+ABN_NESTED_KEYS = ("abn_profile", "abn_business", "business", "business_profile", "sole_trader")
+BAS_NESTED_KEYS = ("bas", "gst", "gst_bas", "bas_worksheet")
+ABN_FIELD_ALIASES = {
+    "abn": ("abn", "business_abn", "abn_number"),
+    "business_name": ("business_name", "trading_name"),
+    "activity": ("business_activity",),
+    "start_date": ("business_start_date",),
+    "end_date": ("business_end_date",),
+    "gst_registered": ("gst_registered", "gst_registration_status"),
+    "gst_registration_date": ("gst_registration_date", "registered_from", "registration_date"),
+    "accounting_basis": ("gst_accounting_basis", "accounting_basis", "bas_accounting_basis"),
+    "record_system": ("business_record_system",),
+    "income_total": ("abn_income", "business_income", "income_total", "gross_income"),
+    "expense_total": ("abn_expenses", "business_expenses", "expense_total"),
+    "income_streams": ("business_income_streams", "income_items"),
+    "expense_categories": ("business_expense_categories", "expense_items", "expenses_by_category"),
+    "private_apportionment": ("business_private_apportionment", "private_apportionment", "business_private_use"),
+    "home_business": ("business_home_use", "home_business", "home_based_business"),
+    "motor_vehicle": ("business_motor_vehicle", "motor_vehicle", "vehicle_expenses"),
+    "depreciation": ("business_depreciation", "depreciation", "depreciating_assets"),
+    "capital_expense": ("business_capital_expense", "capital_expense", "capital_expenses"),
+    "loss": ("business_loss", "business_losses", "loss", "net_loss"),
+    "psi": ("psi", "psi_income", "personal_services_income"),
+    "business_vs_hobby": ("business_vs_hobby", "business_versus_hobby", "hobby"),
+    "non_commercial_loss": ("business_non_commercial_loss", "non_commercial_loss", "non_commercial_losses"),
+}
+ABN_NESTED_FIELD_ALIASES = {
+    **ABN_FIELD_ALIASES,
+    "business_name": ("business_name", "name", "trading_name"),
+    "activity": ("business_activity", "activity", "industry", "description"),
+    "start_date": ("business_start_date", "start_date", "started", "commencement_date"),
+    "end_date": ("business_end_date", "end_date", "ceased", "cessation_date"),
+    "record_system": ("business_record_system", "record_system", "records", "bookkeeping_system"),
+    "income_total": ("abn_income", "business_income", "income", "income_total", "gross_income"),
+    "expense_total": ("abn_expenses", "business_expenses", "expenses", "expense_total"),
+    "income_streams": ("business_income_streams", "income_streams", "income_items", "income", "sales"),
+    "expense_categories": ("business_expense_categories", "expense_categories", "expense_items", "expenses_by_category", "expenses"),
+}
+BAS_FIELD_ALIASES = {
+    "gst_registered": ("gst_registered", "gst_registration_status"),
+    "gst_registration_date": ("gst_registration_date",),
+    "accounting_basis": ("gst_accounting_basis", "bas_accounting_basis"),
+    "period": ("bas_period",),
+    "period_coverage": ("bas_period_coverage",),
+    "gst_collected": ("gst_collected", "gst_on_sales", "1a", "label_1a"),
+    "gst_credits": ("gst_credits", "gst_on_purchases", "1b", "label_1b"),
+    "gst_free_sales": ("gst_free_sales", "gst_free", "gst_free_supplies"),
+    "input_taxed_sales": ("input_taxed_sales", "input_taxed", "input_taxed_supplies"),
+    "adjustments": ("bas_adjustments", "gst_adjustments"),
+    "payg_instalments": ("payg_instalments", "payg_instalment", "t7"),
+    "payg_withholding": ("payg_withholding", "bas_payg_withholding", "bas_payg_withheld", "w2"),
+    "tax_invoice_evidence": ("tax_invoice_evidence", "tax_invoices"),
+}
+BAS_NESTED_FIELD_ALIASES = {
+    **BAS_FIELD_ALIASES,
+    "gst_registered": ("gst_registered", "gst_registration_status", "registered"),
+    "gst_registration_date": ("gst_registration_date", "registered_from", "registration_date"),
+    "accounting_basis": ("gst_accounting_basis", "accounting_basis", "bas_accounting_basis"),
+    "period": ("bas_period", "period", "tax_period"),
+    "period_coverage": ("bas_period_coverage", "period_coverage", "coverage"),
+    "adjustments": ("bas_adjustments", "adjustments", "gst_adjustments"),
+    "payg_withholding": ("payg_withholding", "payg_withheld", "bas_payg_withholding", "bas_payg_withheld", "w2"),
+    "tax_invoice_evidence": ("tax_invoice_evidence", "tax_invoices", "invoice_evidence", "invoices"),
+}
+BAS_CONTEXTUAL_FIELD_ALIASES = {
+    "gst_registered": ("registered",),
+    "gst_registration_date": ("registered_from", "registration_date"),
+    "accounting_basis": ("accounting_basis",),
+    "period": ("period", "tax_period"),
+    "period_coverage": ("period_coverage", "coverage"),
+    "adjustments": ("adjustments",),
+    "tax_invoice_evidence": ("invoice_evidence", "invoices"),
+}
+ITEM_AMOUNT_ALIASES = ("amount", "gross", "total", "value")
+ITEM_LABEL_ALIASES = ("label", "name", "description", "category", "stream", "source")
+ITEM_EVIDENCE_ALIASES = ("evidence", "records", "invoice", "invoices", "tax_invoice", "statement")
+ABN_COMPLEX_REVIEW_FIELDS = (
+    "private_apportionment",
+    "home_business",
+    "motor_vehicle",
+    "depreciation",
+    "capital_expense",
+    "loss",
+    "psi",
+    "business_vs_hobby",
+    "non_commercial_loss",
+)
+ABN_BUSINESS_SIGNAL_FIELDS = (
+    "abn",
+    "business_name",
+    "activity",
+    "start_date",
+    "end_date",
+    "record_system",
+    "income_total",
+    "expense_total",
+    "income_streams",
+    "expense_categories",
+    *ABN_COMPLEX_REVIEW_FIELDS,
+)
+ABN_CONTEXT_SIGNAL_FIELDS = tuple(key for key in ABN_BUSINESS_SIGNAL_FIELDS if key != "psi")
+BAS_AMOUNT_FIELDS = (
+    "gst_collected",
+    "gst_credits",
+    "gst_free_sales",
+    "input_taxed_sales",
+    "adjustments",
+    "payg_instalments",
+    "payg_withholding",
+)
+
+
+def answer_value(answers: Dict[str, Any], aliases: tuple[str, ...], nested_keys: tuple[str, ...]) -> Any:
+    value = alias_answer_value(answers, aliases)
+    if value is not None and not contains_unknown(value):
+        return value
+    fallback = value
+    for nested_key in nested_keys:
+        nested = answers.get(nested_key)
+        if isinstance(nested, dict):
+            value = alias_answer_value(nested, aliases)
+            if value is not None and not contains_unknown(value):
+                return value
+            if fallback is None:
+                fallback = value
+    return fallback
+
+
+def alias_answer_value(values: Dict[str, Any], aliases: tuple[str, ...]) -> Any:
+    fallback = None
+    for key in aliases:
+        if key in values and not is_missing(values.get(key)):
+            value = values.get(key)
+            if not contains_unknown(value):
+                return value
+            if fallback is None:
+                fallback = value
+    return fallback
+
+
+def alias_candidates(values: Dict[str, Any], aliases: tuple[str, ...]) -> List[Any]:
+    return [values.get(key) for key in aliases if key in values and not is_missing(values.get(key))]
+
+
+def answer_candidates(
+    answers: Dict[str, Any],
+    aliases: tuple[str, ...],
+    nested_keys: tuple[str, ...],
+    nested_aliases: tuple[str, ...],
+    contextual_aliases: tuple[str, ...] = (),
+) -> List[Any]:
+    candidates = alias_candidates(answers, aliases)
+    if contextual_aliases:
+        candidates.extend(alias_candidates(answers, contextual_aliases))
+    for nested_key in nested_keys:
+        nested = answers.get(nested_key)
+        if isinstance(nested, dict):
+            candidates.extend(alias_candidates(nested, nested_aliases))
+    return candidates
+
+
+def normalized_alias_values(values: List[Any], amount: bool = False, gst_registration: bool = False) -> List[str]:
+    normalized: List[str] = []
+    for value in values:
+        if is_missing(value) or contains_unknown(value):
+            continue
+        if amount and isinstance(value, (dict, list)):
+            item_total = supplied_item_total(item_values(value))
+            if item_total is not None:
+                normalized.append(f"{item_total:.2f}")
+            continue
+        if isinstance(value, (dict, list)):
+            normalized.append(json.dumps(value, sort_keys=True, default=str))
+            continue
+        if gst_registration:
+            parsed = parse_gst_registration(value)
+            if parsed is not None:
+                normalized.append("true" if parsed else "false")
+                continue
+        if amount:
+            amount_value = safe_money_value(value)
+            if amount_value is not None:
+                normalized.append(f"{amount_value:.2f}")
+                continue
+        rendered = display_value(value).strip().lower()
+        if rendered:
+            normalized.append(rendered)
+    return normalized
+
+
+def alias_values_conflict(values: List[Any], amount: bool = False, gst_registration: bool = False) -> bool:
+    normalized = normalized_alias_values(values, amount=amount, gst_registration=gst_registration)
+    return len(set(normalized)) > 1
+
+
+def abn_alias_conflicts(answers: Dict[str, Any]) -> List[str]:
+    conflicts: List[str] = []
+    for key in ABN_FIELD_ALIASES:
+        values = answer_candidates(answers, ABN_FIELD_ALIASES[key], ABN_NESTED_KEYS, ABN_NESTED_FIELD_ALIASES[key])
+        if alias_values_conflict(values, amount=key in {"income_total", "expense_total"}, gst_registration=key == "gst_registered"):
+            conflicts.append(key)
+    return conflicts
+
+
+def bas_alias_conflicts(answers: Dict[str, Any]) -> List[str]:
+    conflicts: List[str] = []
+    contextual = has_bas_contextual_signal(answers)
+    for key in BAS_FIELD_ALIASES:
+        values = answer_candidates(
+            answers,
+            BAS_FIELD_ALIASES[key],
+            BAS_NESTED_KEYS,
+            BAS_NESTED_FIELD_ALIASES[key],
+            BAS_CONTEXTUAL_FIELD_ALIASES.get(key, ()) if contextual else (),
+        )
+        if alias_values_conflict(values, amount=key in BAS_AMOUNT_FIELDS, gst_registration=key == "gst_registered"):
+            conflicts.append(key)
+    return conflicts
+
+
+def abn_answer(answers: Dict[str, Any], key: str) -> Any:
+    value = alias_answer_value(answers, ABN_FIELD_ALIASES[key])
+    if value is not None and not contains_unknown(value):
+        return value
+    fallback = value
+    for nested_key in ABN_NESTED_KEYS:
+        nested = answers.get(nested_key)
+        if isinstance(nested, dict):
+            value = alias_answer_value(nested, ABN_NESTED_FIELD_ALIASES[key])
+            if value is not None and not contains_unknown(value):
+                return value
+            if fallback is None:
+                fallback = value
+    return fallback
+
+
+def bas_answer(answers: Dict[str, Any], key: str) -> Any:
+    value = alias_answer_value(answers, BAS_FIELD_ALIASES[key])
+    if value is not None and not contains_unknown(value):
+        return value
+    fallback = value
+    for nested_key in BAS_NESTED_KEYS:
+        nested = answers.get(nested_key)
+        if isinstance(nested, dict):
+            value = alias_answer_value(nested, BAS_NESTED_FIELD_ALIASES[key])
+            if value is not None and not contains_unknown(value):
+                return value
+            if fallback is None:
+                fallback = value
+    return fallback
+
+
+def has_bas_contextual_signal(answers: Dict[str, Any]) -> bool:
+    if has_meaningful_value(answers.get("gst_registered")):
+        return True
+    for aliases in BAS_FIELD_ALIASES.values():
+        if any(key in answers and has_meaningful_value(answers.get(key)) for key in aliases):
+            return True
+    for nested_key in BAS_NESTED_KEYS:
+        nested = answers.get(nested_key)
+        if isinstance(nested, dict):
+            for aliases in BAS_NESTED_FIELD_ALIASES.values():
+                if any(key in nested and has_meaningful_value(nested.get(key)) for key in aliases):
+                    return True
+    return any(key in answers and has_meaningful_value(answers.get(key)) for key in REVIEWABLE_BAS_FIELDS)
+
+
+def item_values(raw_items: Any) -> List[Dict[str, Any]]:
+    if isinstance(raw_items, dict):
+        raw_items = [raw_items]
+    if not isinstance(raw_items, list):
+        return []
+    return [item for item in raw_items if isinstance(item, dict) and has_meaningful_value(item)]
+
+
+def safe_money_value(value: Any) -> Optional[float]:
+    try:
+        return money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return None
+
+
+def amount_malformed(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    if contains_unknown(value):
+        return True
+    try:
+        money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return True
+    return False
+
+
+def item_amount(item: Dict[str, Any]) -> Optional[float]:
+    values = item_amount_values(item)
+    return values[0] if values else None
+
+
+def item_amount_values(item: Dict[str, Any]) -> List[float]:
+    values: List[float] = []
+    for key in ITEM_AMOUNT_ALIASES:
+        if key in item:
+            amount = safe_money_value(item.get(key))
+            if amount is not None:
+                values.append(amount)
+    return values
+
+
+def item_amount_alias_conflict(item: Dict[str, Any]) -> bool:
+    return len(set(item_amount_values(item))) > 1
+
+
+def item_amount_evidence_needed(item: Dict[str, Any]) -> bool:
+    return item_amount(item) is None or item_amount_alias_conflict(item)
+
+
+def item_label(item: Dict[str, Any]) -> str:
+    for key in ITEM_LABEL_ALIASES:
+        if has_meaningful_value(item.get(key)):
+            return display_value(item.get(key))
+    return "item"
+
+
+def item_evidence_value(item: Dict[str, Any]) -> Any:
+    for key in ITEM_EVIDENCE_ALIASES:
+        if key in item:
+            return item.get(key)
+    return None
+
+
+def supplied_item_total(items: List[Dict[str, Any]]) -> Optional[float]:
+    amounts = [item_amount(item) for item in items]
+    if not amounts or any(amount is None for amount in amounts):
+        return None
+    return round(sum(amounts), 2)
+
+
+def supplied_item_total_conflict(explicit_total: Optional[float], items: List[Dict[str, Any]]) -> bool:
+    item_total = supplied_item_total(items)
+    return explicit_total is not None and item_total is not None and round(explicit_total, 2) != item_total
+
+
+def evidence_missing(value: Any) -> bool:
+    if isinstance(value, bool):
+        return not value
+    if is_missing(value) or contains_unknown(value):
+        return True
+    if isinstance(value, list):
+        return not value or any(evidence_missing(item) for item in value)
+    if isinstance(value, dict):
+        return not value or any(evidence_missing(item) for item in value.values())
+    lowered = text(value).strip().lower()
+    return lowered in {"no", "n", "false", "none", "n/a", "na", "not applicable", "not held", "not available", "missing"} or any(
+        phrase in lowered
+        for phrase in (
+            "no invoice",
+            "no invoices",
+            "no tax invoice",
+            "no tax invoices",
+            "missing invoice",
+            "missing tax invoice",
+            "invoice not held",
+            "tax invoice not held",
+            "invoice not applicable",
+            "tax invoice not applicable",
+            "records missing",
+            "tax invoices not available",
+            "not available",
+            "unavailable",
+        )
+    )
+
+
+def item_list_text(label: str, items: List[Dict[str, Any]]) -> str:
+    if not items:
+        return f"{label} none supplied"
+    parts = [f"{item_label(item)} {money_text(item_amount(item))}" for item in items[:4]]
+    if len(items) > 4:
+        parts.append(f"{len(items) - 4} more")
+    return f"{label} {', '.join(parts)}"
+
+
+def review_flag_terms(raw: Dict[str, Any], keys: tuple[str, ...]) -> List[str]:
+    terms: List[str] = []
+    for key in keys:
+        value = raw.get(key)
+        if is_missing(value):
+            continue
+        if isinstance(value, bool) and value is False:
+            terms.append(f"{key.replace('_', ' ')} false")
+        elif contains_unknown(value):
+            terms.append(f"{key.replace('_', ' ')} unknown")
+        else:
+            terms.append(f"{key.replace('_', ' ')} review")
+    return terms
+
+
+def abn_summary(answers: Dict[str, Any]) -> Dict[str, Any]:
+    raw = {key: abn_answer(answers, key) for key in ABN_FIELD_ALIASES}
+    alias_conflicts = abn_alias_conflicts(answers)
+    raw_income_total = raw.get("income_total")
+    raw_expense_total = raw.get("expense_total")
+    income_streams = item_values(raw.get("income_streams"))
+    expense_categories = item_values(raw.get("expense_categories"))
+    if isinstance(raw_income_total, (dict, list)):
+        if not income_streams:
+            income_streams = item_values(raw_income_total)
+        raw_income_total = None
+    if isinstance(raw_expense_total, (dict, list)):
+        if not expense_categories:
+            expense_categories = item_values(raw_expense_total)
+        raw_expense_total = None
+    income_total = safe_money_value(raw_income_total)
+    expense_total = safe_money_value(raw_expense_total)
+    if supplied_item_total_conflict(income_total, income_streams):
+        alias_conflicts.append("income_total")
+    if supplied_item_total_conflict(expense_total, expense_categories):
+        alias_conflicts.append("expense_total")
+    if any(item_amount_alias_conflict(item) for item in income_streams):
+        alias_conflicts.append("income_streams")
+    if any(item_amount_alias_conflict(item) for item in expense_categories):
+        alias_conflicts.append("expense_categories")
+    alias_conflicts = sorted(set(alias_conflicts))
+    if "income_total" in alias_conflicts:
+        income_total = None
+    elif income_total is None:
+        income_total = supplied_item_total(income_streams)
+    if "expense_total" in alias_conflicts:
+        expense_total = None
+    elif expense_total is None:
+        expense_total = supplied_item_total(expense_categories)
+    raw["income_streams"] = income_streams
+    raw["expense_categories"] = expense_categories
+    raw["income_total"] = income_total
+    raw["expense_total"] = expense_total
+    raw["alias_conflicts"] = alias_conflicts
+    raw["alias_conflict"] = bool(alias_conflicts)
+    raw["amount_evidence"] = (
+        amount_malformed(raw_income_total)
+        or amount_malformed(raw_expense_total)
+        or "income_total" in alias_conflicts
+        or "expense_total" in alias_conflicts
+        or any(item_amount_evidence_needed(item) for item in income_streams + expense_categories)
+    )
+    raw["record_system_required"] = any(
+        has_meaningful_value(raw.get(key))
+        for key in (
+            "abn",
+            "business_name",
+            "activity",
+            "start_date",
+            "end_date",
+            "income_total",
+            "expense_total",
+        )
+    ) or bool(income_streams or expense_categories)
+    raw["record_evidence"] = raw["record_system_required"] and evidence_missing(raw.get("record_system"))
+    raw["item_evidence"] = any(evidence_missing(item_evidence_value(item)) for item in income_streams + expense_categories)
+    return raw
+
+
+def bas_summary(answers: Dict[str, Any]) -> Dict[str, Any]:
+    raw = {key: bas_answer(answers, key) for key in BAS_FIELD_ALIASES}
+    alias_conflicts = bas_alias_conflicts(answers)
+    if has_bas_contextual_signal(answers):
+        for key in BAS_CONTEXTUAL_FIELD_ALIASES:
+            candidate = alias_answer_value(answers, BAS_CONTEXTUAL_FIELD_ALIASES.get(key, ()))
+            if candidate is not None and (is_missing(raw.get(key)) or contains_unknown(raw.get(key))):
+                raw[key] = candidate
+    for key in BAS_AMOUNT_FIELDS:
+        if key in alias_conflicts:
+            raw[key] = None
+    raw["alias_conflicts"] = alias_conflicts
+    raw["alias_conflict"] = bool(alias_conflicts)
+    for key in BAS_AMOUNT_FIELDS:
+        raw[f"{key}_amount"] = safe_money_value(raw.get(key))
+        raw[f"{key}_malformed"] = amount_malformed(raw.get(key))
+    collected = raw["gst_collected_amount"]
+    credits = raw["gst_credits_amount"]
+    raw["net_gst"] = None if collected is None or credits is None else round(collected - credits, 2)
+    raw["invoice_evidence"] = raw["gst_credits_amount"] is not None and raw["gst_credits_amount"] > 0 and evidence_missing(
+        raw.get("tax_invoice_evidence")
+    )
+    raw["worksheet_facts"] = any(
+        has_meaningful_value(raw.get(key))
+        for key in ("period", "period_coverage", "tax_invoice_evidence", *BAS_AMOUNT_FIELDS)
+    )
+    raw["basis_evidence"] = contains_unknown(raw.get("accounting_basis")) or (
+        raw["worksheet_facts"] and is_missing(raw.get("accounting_basis"))
+    )
+    raw["period_coverage_evidence"] = contains_unknown(raw.get("period_coverage")) or (
+        raw["worksheet_facts"] and is_missing(raw.get("period_coverage"))
+    )
+    return raw
+
+
+def abn_answer_text(raw: Dict[str, Any]) -> str:
+    flags = review_flag_terms(raw, ABN_COMPLEX_REVIEW_FIELDS)
+    flag_text = ", ".join(flags) if flags else "none supplied"
+    conflict_text = ", ".join(str(key).replace("_", " ") for key in raw.get("alias_conflicts", [])) or "none"
+    return (
+        f"ABN {display_value(raw.get('abn'))}; business {display_value(raw.get('business_name'))}; "
+        f"activity {display_value(raw.get('activity'))}; dates {display_value(raw.get('start_date'))} to {display_value(raw.get('end_date'))}; "
+        f"GST registered {display_value(raw.get('gst_registered'))}; GST date {display_value(raw.get('gst_registration_date'))}; "
+        f"basis {display_value(raw.get('accounting_basis'))}; records {display_value(raw.get('record_system'))}; "
+        f"income {money_text(raw.get('income_total'))}; expenses {money_text(raw.get('expense_total'))}; "
+        f"{item_list_text('income streams', raw.get('income_streams', []))}; "
+        f"{item_list_text('expense categories', raw.get('expense_categories', []))}; alias conflicts {conflict_text}; review flags {flag_text}"
+    )
+
+
+def bas_answer_text(raw: Dict[str, Any]) -> str:
+    conflict_text = ", ".join(str(key).replace("_", " ") for key in raw.get("alias_conflicts", [])) or "none"
+    return (
+        f"GST registered {display_value(raw.get('gst_registered'))}; GST date {display_value(raw.get('gst_registration_date'))}; "
+        f"basis {display_value(raw.get('accounting_basis'))}; period {display_value(raw.get('period'))}; "
+        f"coverage {display_value(raw.get('period_coverage'))}; 1A {money_text(raw.get('gst_collected_amount'))}; "
+        f"1B {money_text(raw.get('gst_credits_amount'))}; net GST {money_text(raw.get('net_gst'))}; "
+        f"GST-free sales {money_text(raw.get('gst_free_sales_amount'))}; input-taxed sales {money_text(raw.get('input_taxed_sales_amount'))}; "
+        f"adjustments {money_text(raw.get('adjustments_amount'))}; PAYG instalments {money_text(raw.get('payg_instalments_amount'))}; "
+        f"PAYG withholding {money_text(raw.get('payg_withholding_amount'))}; tax invoices {display_value(raw.get('tax_invoice_evidence'))}; "
+        f"alias conflicts {conflict_text}"
+    )
+
+
+def abn_tab_text(raw: Dict[str, Any]) -> str:
+    terms: List[str] = []
+    if raw.get("amount_evidence"):
+        terms.append("amount evidence")
+    if raw.get("record_evidence"):
+        terms.append("record-system evidence")
+    if raw.get("item_evidence"):
+        terms.append("income or expense evidence")
+    if raw.get("alias_conflict"):
+        terms.append("alias conflict evidence")
+    terms.extend(review_flag_terms(raw, ABN_COMPLEX_REVIEW_FIELDS))
+    if not terms:
+        terms.append("sole-trader business schedule review")
+    return "ABN prep only; " + ", ".join(terms) + "."
+
+
+def bas_tab_text(raw: Dict[str, Any]) -> str:
+    terms: List[str] = []
+    if any(raw.get(f"{key}_malformed") for key in BAS_AMOUNT_FIELDS):
+        terms.append("amount evidence")
+    if raw.get("invoice_evidence"):
+        terms.append("tax invoice evidence")
+    if raw.get("basis_evidence"):
+        terms.append("accounting basis review")
+    if raw.get("period_coverage_evidence"):
+        terms.append("period coverage review")
+    if raw.get("alias_conflict"):
+        terms.append("alias conflict evidence")
+    if not terms:
+        terms.append("BAS worksheet review")
+    return "BAS prep only. No BAS lodgment support. " + ", ".join(terms) + "."
+
+
 def abn_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
-    income = money_value(answers.get("abn_income"), unknown_as_missing=True)
-    expenses = money_value(answers.get("abn_expenses"), unknown_as_missing=True)
+    summary = abn_summary(answers)
     status = "Accountant review" if has_abn_inputs(answers) else "N/A skipped"
+    if status == "Accountant review" and not review_flag_terms(summary, ABN_COMPLEX_REVIEW_FIELDS) and (
+        summary.get("amount_evidence") or summary.get("record_evidence") or summary.get("item_evidence") or summary.get("alias_conflict")
+    ):
+        status = "Evidence"
     return [
         guide_row(
             "ABN",
             "Sole-trader ABN",
-            "ABN business income and expenses",
-            f"Income {money_text(income)}; expenses {money_text(expenses)}",
-            "Sole-trader ABN amounts feed individual return business schedules and need accountant review for PSI, losses, GST, and business-versus-hobby.",
+            "Sole-trader ABN profile, income, expenses, and review routing",
+            abn_answer_text(summary),
+            "Sole-trader ABN facts feed individual return business schedules and need review for PSI, losses, GST/BAS, private-use apportionment, home-business, motor vehicle, depreciation, capital items, and business-versus-hobby.",
             status,
-            "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business",
-            tab_text="ABN figures are prep-only and not a final business schedule.",
+            ATO_ABN_BUSINESS_SOURCES,
+            tab_text=abn_tab_text(summary),
         )
     ]
 
 
 def bas_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
-    collected = money_value(answers.get("gst_collected"), unknown_as_missing=True)
-    credits = money_value(answers.get("gst_credits"), unknown_as_missing=True)
-    net = None if collected is None or credits is None else round(collected - credits, 2)
+    summary = bas_summary(answers)
     status = "Accountant review" if has_bas_inputs(answers) else "N/A skipped"
+    if status == "Accountant review" and (
+        summary.get("invoice_evidence")
+        or summary.get("basis_evidence")
+        or summary.get("period_coverage_evidence")
+        or summary.get("alias_conflict")
+        or any(summary.get(f"{key}_malformed") for key in BAS_AMOUNT_FIELDS)
+    ):
+        status = "Evidence"
     return [
         guide_row(
             "BAS",
             "BAS worksheet",
-            "GST collected less GST credits",
-            f"1A {money_text(collected)}; 1B {money_text(credits)}; net GST {money_text(net)}",
-            "BAS worksheet only. Confirm labels, tax invoices, adjustments, and accounting basis before manual use.",
+            "GST/BAS prep worksheet labels and evidence",
+            bas_answer_text(summary),
+            "BAS worksheet only. Confirm 1A, 1B, GST-free/input-taxed sales, adjustments, PAYG labels, tax invoices, period coverage, and accounting basis before manual use.",
             status,
-            [ATO_BAS_SOURCE, ATO_GST_CREDITS_SOURCE],
-            tab_text="BAS prep only. No BAS lodgment support.",
+            ATO_BAS_SOURCES,
+            tab_text=bas_tab_text(summary),
         )
     ]
 
@@ -2217,21 +2856,21 @@ def wfh_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def has_bas_inputs(answers: Dict[str, Any]) -> bool:
-    gst_registered = answers.get("gst_registered")
+    gst_registered = bas_answer(answers, "gst_registered")
     gst_status = parse_gst_registration(gst_registered)
     if gst_status is True or (gst_status is None and not is_missing(gst_registered)):
         return True
     for key in REVIEWABLE_BAS_FIELDS:
-        if key in answers and not is_missing(answers.get(key)):
+        if key in answers and has_meaningful_value(answers.get(key)):
             return True
-    return False
+    return any(has_meaningful_value(bas_answer(answers, key)) for key in BAS_FIELD_ALIASES if key != "gst_registered")
 
 
 def has_abn_inputs(answers: Dict[str, Any]) -> bool:
     for key in REVIEWABLE_ABN_FIELDS:
-        if key in answers and not is_missing(answers.get(key)):
+        if key in answers and has_meaningful_value(answers.get(key)):
             return True
-    return False
+    return any(has_meaningful_value(abn_answer(answers, key)) for key in ABN_CONTEXT_SIGNAL_FIELDS)
 
 
 def parse_gst_registration(value: Any) -> Optional[bool]:
@@ -2264,12 +2903,143 @@ def evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
         rows.append(evidence_row("WFH records", "D5 WFH", "Diary, timesheet, roster, or similar records"))
     rows.extend(investment_evidence_rows(investment_answers(answers), answers))
     rows.extend(payg_evidence_rows(payg_answers(answers), answers))
+    rows.extend(abn_business_evidence_rows(answers))
+    rows.extend(bas_evidence_rows(answers))
     rows.extend(cgt_evidence_rows(cgt_answers(answers)))
     return rows
 
 
 def evidence_row(number: Any, area: str, evidence: str) -> Dict[str, Any]:
     return guide_row(number, area, "Evidence required", evidence, "Draft value remains not copy-ready until evidence is confirmed.", "Evidence", ATO_INDIVIDUAL_SOURCE)
+
+
+def abn_business_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if not has_abn_inputs(answers):
+        return []
+    summary = abn_summary(answers)
+    rows: List[Dict[str, Any]] = []
+    if summary.get("amount_evidence"):
+        rows.append(
+            guide_row(
+                "ABN-EVID-1",
+                "Sole-trader ABN",
+                "ABN amount evidence required",
+                "Confirm malformed or unknown business income and expense amounts before manual use.",
+                "ABN income and expense rows stay not copy-ready until amount records are reconciled.",
+                "Evidence",
+                ATO_ABN_BUSINESS_SOURCES,
+            )
+        )
+    if summary.get("alias_conflict"):
+        rows.append(
+            guide_row(
+                f"ABN-EVID-{len(rows) + 1}",
+                "Sole-trader ABN",
+                "ABN alias reconciliation required",
+                "Reconcile conflicting ABN aliases: " + ", ".join(str(key).replace("_", " ") for key in summary.get("alias_conflicts", [])) + ".",
+                "Conflicting ABN aliases stay Evidence until source records show which business fact should be used.",
+                "Evidence",
+                ATO_ABN_BUSINESS_SOURCES,
+            )
+        )
+    item_gaps = [
+        item_label(item)
+        for item in summary.get("income_streams", []) + summary.get("expense_categories", [])
+        if evidence_missing(item_evidence_value(item))
+    ]
+    if item_gaps:
+        rows.append(
+            guide_row(
+                f"ABN-EVID-{len(rows) + 1}",
+                "Sole-trader ABN",
+                "ABN income or expense evidence required",
+                f"Confirm invoices, receipts, statements, or records for {', '.join(item_gaps[:6])}.",
+                "Itemized business income and expense rows need evidence before accountant review.",
+                "Evidence",
+                ATO_ABN_BUSINESS_SOURCES,
+            )
+        )
+    if summary.get("record_evidence"):
+        rows.append(
+            guide_row(
+                f"ABN-EVID-{len(rows) + 1}",
+                "Sole-trader ABN",
+                "ABN record system evidence required",
+                "Confirm the bookkeeping or record system used for the business period.",
+                "Record-system gaps remain Evidence for the business schedule workflow.",
+                "Evidence",
+                ATO_ABN_BUSINESS_SOURCES,
+            )
+        )
+    return rows
+
+
+def bas_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if not has_bas_inputs(answers):
+        return []
+    summary = bas_summary(answers)
+    rows: List[Dict[str, Any]] = []
+    if any(summary.get(f"{key}_malformed") for key in BAS_AMOUNT_FIELDS):
+        rows.append(
+            guide_row(
+                "BAS-EVID-1",
+                "BAS worksheet",
+                "BAS amount evidence required",
+                "Confirm malformed or unknown BAS label amounts before manual use.",
+                "BAS label rows stay not copy-ready until 1A, 1B, GST-free/input-taxed, adjustment, and PAYG amounts are reconciled.",
+                "Evidence",
+                ATO_BAS_SOURCES,
+            )
+        )
+    if summary.get("alias_conflict"):
+        rows.append(
+            guide_row(
+                f"BAS-EVID-{len(rows) + 1}",
+                "BAS worksheet",
+                "BAS alias reconciliation required",
+                "Reconcile conflicting BAS aliases: " + ", ".join(str(key).replace("_", " ") for key in summary.get("alias_conflicts", [])) + ".",
+                "Conflicting BAS aliases keep worksheet labels unknown until source records show which amount or fact should be used.",
+                "Evidence",
+                ATO_BAS_SOURCES,
+            )
+        )
+    if summary.get("invoice_evidence"):
+        rows.append(
+            guide_row(
+                f"BAS-EVID-{len(rows) + 1}",
+                "BAS worksheet",
+                "GST credit tax invoice evidence required",
+                "GST credits were supplied but tax invoice evidence is missing or unknown.",
+                "GST credits need valid tax invoice and creditable-purpose evidence before manual BAS use.",
+                "Evidence",
+                ATO_BAS_SOURCES,
+            )
+        )
+    if summary.get("basis_evidence"):
+        rows.append(
+            guide_row(
+                f"BAS-EVID-{len(rows) + 1}",
+                "BAS worksheet",
+                "GST accounting basis evidence required",
+                "Confirm cash or non-cash accounting basis for the BAS period.",
+                "Unknown GST accounting basis stays visible before any manual BAS worksheet use.",
+                "Evidence",
+                ATO_BAS_SOURCES,
+            )
+        )
+    if summary.get("period_coverage_evidence"):
+        rows.append(
+            guide_row(
+                f"BAS-EVID-{len(rows) + 1}",
+                "BAS worksheet",
+                "BAS period coverage evidence required",
+                "Confirm whether the supplied BAS facts cover the full period.",
+                "Unknown BAS period coverage stays visible before any manual BAS worksheet use.",
+                "Evidence",
+                ATO_BAS_SOURCES,
+            )
+        )
+    return rows
 
 
 def wfh_rows(raw: Any) -> List[Dict[str, Any]]:
