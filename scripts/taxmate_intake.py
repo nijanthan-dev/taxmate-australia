@@ -2458,8 +2458,15 @@ def alias_values_conflict(values: List[Any], amount: bool = False, gst_registrat
 
 def abn_alias_conflicts(answers: Dict[str, Any]) -> List[str]:
     conflicts: List[str] = []
+    contextual = abn_contextual_aliases_allowed(answers)
     for key in ABN_FIELD_ALIASES:
-        values = answer_candidates(answers, ABN_FIELD_ALIASES[key], ABN_NESTED_KEYS, ABN_NESTED_FIELD_ALIASES[key])
+        values = answer_candidates(
+            answers,
+            ABN_FIELD_ALIASES[key],
+            ABN_NESTED_KEYS,
+            ABN_NESTED_FIELD_ALIASES[key],
+            ABN_CONTEXTUAL_FIELD_ALIASES.get(key, ()) if contextual else (),
+        )
         if alias_values_conflict(
             values,
             amount=key in {"income_total", "expense_total", "income_streams", "expense_categories"},
@@ -2766,7 +2773,7 @@ def abn_summary(answers: Dict[str, Any]) -> Dict[str, Any]:
             "income_total",
             "expense_total",
         )
-    ) or bool(income_streams or expense_categories)
+    ) or bool(income_streams or expense_categories or raw["amount_evidence"])
     raw["record_evidence"] = raw["record_system_required"] and evidence_missing(raw.get("record_system"))
     raw["item_evidence"] = any(evidence_missing(item_evidence_value(item)) for item in income_streams + expense_categories)
     return raw

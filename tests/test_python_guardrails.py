@@ -212,6 +212,9 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("supplied_item_total_conflict" in finding.detail for finding in findings))
         self.assertTrue(any("item_amount_evidence_needed" in finding.detail for finding in findings))
         self.assertTrue(any("if not amounts or any(amount is None for amount in amounts):" in finding.detail for finding in findings))
+        self.assertTrue(any("contextual = abn_contextual_aliases_allowed(answers)" in finding.detail for finding in findings))
+        self.assertTrue(any("ABN_CONTEXTUAL_FIELD_ALIASES.get(key, ()) if contextual else ()" in finding.detail for finding in findings))
+        self.assertTrue(any('bool(income_streams or expense_categories or raw["amount_evidence"])' in finding.detail for finding in findings))
         self.assertTrue(any("state-wide public holidays" in finding.detail for finding in findings))
         self.assertTrue(any("regional, capital-city-only, sector-only, and partial-day" in finding.detail for finding in findings))
         self.assertTrue(any("parse_gst_registration" in finding.detail for finding in findings))
@@ -10109,6 +10112,72 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("expense categories software 120.00, travel unknown", rows[0]["answer"])
         self.assertTrue(any(row["number"] == "ABN-EVID-1" for row in evidence))
         self.assertFalse(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+
+    def test_contextual_abn_amount_alias_conflicts_stay_evidence(self) -> None:
+        answers = {
+            "abn": "12 345 678 901",
+            "abn_income": 1000,
+            "income": 1200,
+            "abn_expenses": 200,
+            "expenses": 300,
+            "business_record_system": "ledger",
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income unknown; expenses unknown", rows[0]["answer"])
+        self.assertIn("alias conflicts expense total, income total", rows[0]["answer"])
+        self.assertTrue(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+
+    def test_contextual_abn_activity_alias_conflicts_stay_evidence(self) -> None:
+        answers = {
+            "abn": "12 345 678 901",
+            "business_activity": "design services",
+            "activity": "retail trade",
+            "business_record_system": "ledger",
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("activity design services", rows[0]["answer"])
+        self.assertIn("alias conflicts activity", rows[0]["answer"])
+        self.assertTrue(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+
+    def test_malformed_abn_amount_requires_record_system_evidence(self) -> None:
+        answers = {"abn_income": "about 1000"}
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+        questions = [row["question"] for row in evidence]
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("amount evidence", rows[0]["tab_text"])
+        self.assertIn("record-system evidence", rows[0]["tab_text"])
+        self.assertIn("ABN amount evidence required", questions)
+        self.assertIn("ABN record system evidence required", questions)
+
+    def test_malformed_abn_amount_aliases_require_record_system_evidence(self) -> None:
+        for answers in (
+            {"abn_expenses": "about 200"},
+            {"business_income": "unknown"},
+            {"business_expenses": "about 200"},
+            {"abn": "12 345 678 901", "income": "about 1000"},
+            {"abn": "12 345 678 901", "expenses": "unknown"},
+        ):
+            with self.subTest(answers=answers):
+                rows = taxmate_intake.abn_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+                questions = [row["question"] for row in evidence]
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("amount evidence", rows[0]["tab_text"])
+                self.assertIn("record-system evidence", rows[0]["tab_text"])
+                self.assertIn("ABN amount evidence required", questions)
+                self.assertIn("ABN record system evidence required", questions)
 
     def test_abn_item_amount_alias_conflict_keeps_review_and_evidence_rows(self) -> None:
         answers = {
