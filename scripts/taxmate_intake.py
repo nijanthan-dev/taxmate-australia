@@ -2015,6 +2015,10 @@ def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
         return False
     if spec.key in REVIEWABLE_CGT_FIELDS and cgt_flat_value_is_absent(spec.key, value):
         return False
+    if spec.key in REVIEWABLE_ABN_FIELDS and abn_flat_value_is_absent(spec.key, value):
+        return False
+    if spec.key in REVIEWABLE_BAS_FIELDS and bas_flat_value_is_absent(spec.key, value):
+        return False
     return spec.required or has_meaningful_value(value)
 
 
@@ -2094,6 +2098,22 @@ def cgt_flat_field_key(key: str) -> str:
 
 def cgt_canonical_field_key(key: str) -> str:
     return CGT_FLAT_FIELD_KEYS.get(key, CGT_NESTED_FIELD_KEYS.get(key, key))
+
+
+def abn_flat_value_is_absent(key: str, value: Any) -> bool:
+    if abn_amount_signal_key(key) and amount_alias_default_false(value):
+        return True
+    return False
+
+
+def bas_flat_value_is_absent(key: str, value: Any) -> bool:
+    if bas_amount_signal_key(key) and amount_alias_default_false(value):
+        return True
+    if key == "tax_invoice_evidence":
+        return True
+    if key in {"gst_accounting_basis", "bas_period_coverage"} and evidence_missing(value):
+        return True
+    return False
 
 
 def base_item_status(key: str, value: Any) -> str:
@@ -2276,6 +2296,34 @@ BAS_AMOUNT_FIELDS = (
     "payg_instalments",
     "payg_withholding",
 )
+ABN_AMOUNT_SIGNAL_KEYS = {
+    "income_total",
+    "expense_total",
+    "income_streams",
+    "expense_categories",
+    "abn_income",
+    "abn_expenses",
+    "business_income",
+    "business_expenses",
+    "business_income_streams",
+    "business_expense_categories",
+    "income",
+    "expenses",
+    "income_items",
+    "expense_items",
+    "expenses_by_category",
+}
+BAS_AMOUNT_SIGNAL_KEYS = set(BAS_AMOUNT_FIELDS).union(
+    alias for field, aliases in BAS_FIELD_ALIASES.items() if field in BAS_AMOUNT_FIELDS for alias in aliases
+)
+
+
+def abn_amount_signal_key(key: str) -> bool:
+    return key in ABN_AMOUNT_SIGNAL_KEYS
+
+
+def bas_amount_signal_key(key: str) -> bool:
+    return key in BAS_AMOUNT_SIGNAL_KEYS
 
 
 def answer_value(answers: Dict[str, Any], aliases: tuple[str, ...], nested_keys: tuple[str, ...]) -> Any:
@@ -2300,6 +2348,8 @@ def alias_answer_value(values: Dict[str, Any], aliases: tuple[str, ...], amount:
         if key in values and not is_missing(values.get(key)):
             value = values.get(key)
             if amount and amount_alias_default_false(value):
+                if fallback is None:
+                    fallback = value
                 continue
             if not contains_unknown(value):
                 return value
@@ -2874,9 +2924,9 @@ def has_bas_inputs(answers: Dict[str, Any]) -> bool:
     if gst_status is True or (gst_status is None and not is_missing(gst_registered)):
         return True
     for key in REVIEWABLE_BAS_FIELDS:
-        if key in answers and has_meaningful_value(answers.get(key)):
+        if key in answers and bas_input_signal(key, answers.get(key)):
             return True
-    return any(has_meaningful_value(bas_answer(answers, key)) for key in BAS_FIELD_ALIASES if key != "gst_registered")
+    return any(bas_input_signal(key, bas_answer(answers, key)) for key in BAS_FIELD_ALIASES if key != "gst_registered")
 
 
 def has_abn_inputs(answers: Dict[str, Any]) -> bool:
@@ -2889,9 +2939,23 @@ def has_abn_inputs(answers: Dict[str, Any]) -> bool:
 def abn_input_signal(key: str, value: Any) -> bool:
     if not has_meaningful_value(value):
         return False
+    if abn_amount_signal_key(key) and amount_alias_default_false(value):
+        return False
     for review_key in ABN_COMPLEX_REVIEW_FIELDS:
         if key == review_key or key in ABN_FIELD_ALIASES.get(review_key, ()) or key in ABN_NESTED_FIELD_ALIASES.get(review_key, ()):
             return not abn_review_flag_false(value)
+    return True
+
+
+def bas_input_signal(key: str, value: Any) -> bool:
+    if not has_meaningful_value(value):
+        return False
+    if bas_amount_signal_key(key) and amount_alias_default_false(value):
+        return False
+    if key == "tax_invoice_evidence":
+        return False
+    if key in {"accounting_basis", "period_coverage", "gst_accounting_basis", "bas_period_coverage"} and evidence_missing(value):
+        return False
     return True
 
 

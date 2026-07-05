@@ -9772,6 +9772,77 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertIn("alias conflicts none", rows[0]["answer"])
                 self.assertFalse(any(row["question"] == "BAS alias reconciliation required" for row in evidence))
 
+    def test_abn_amount_placeholders_with_business_context_stay_evidence(self) -> None:
+        for placeholder in ("false", "no", "n", "off", "unchecked", "none", "n/a", "not applicable"):
+            with self.subTest(placeholder=placeholder):
+                answers = {"abn_income": placeholder, "business_record_system": "ledger"}
+
+                rows = taxmate_intake.abn_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("income unknown", rows[0]["answer"])
+                self.assertIn("amount evidence", rows[0]["tab_text"])
+                self.assertTrue(any(row["question"] == "ABN amount evidence required" for row in evidence))
+
+    def test_bas_amount_placeholders_with_worksheet_context_stay_evidence(self) -> None:
+        for placeholder in ("false", "no", "n", "off", "unchecked", "none", "n/a", "not applicable"):
+            with self.subTest(placeholder=placeholder):
+                answers = {
+                    "gst_registered": True,
+                    "gst_collected": placeholder,
+                    "gst_credits": 0,
+                    "gst_accounting_basis": "cash",
+                    "bas_period_coverage": "full period",
+                    "tax_invoice_evidence": "tax invoices held",
+                }
+
+                rows = taxmate_intake.bas_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("1A unknown; 1B 0.00; net GST unknown", rows[0]["answer"])
+                self.assertIn("amount evidence", rows[0]["tab_text"])
+                self.assertTrue(any(row["question"] == "BAS amount evidence required" for row in evidence))
+
+    def test_standalone_abn_default_amounts_do_not_create_rows(self) -> None:
+        for answers in (
+            {"abn_income": False},
+            {"abn_income": "n/a"},
+            {"business": {"income": False}},
+            {"business": {"income": "not applicable"}},
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(payload["abn_items"])
+                self.assertFalse(any(row["number"] == "ABN" for row in payload["items"]))
+                self.assertFalse(any(str(row["number"]).startswith("ABN-EVID") for row in payload["evidence_items"]))
+                self.assertFalse(any(row["number"] in {"abn_income", "business_income"} for row in payload["items"]))
+
+    def test_standalone_bas_default_fields_do_not_create_rows(self) -> None:
+        for answers in (
+            {"tax_invoice_evidence": False},
+            {"tax_invoice_evidence": "no tax invoice"},
+            {"payg_withholding": False},
+            {"payg_withholding": "not applicable"},
+            {"gst_accounting_basis": "n/a"},
+            {"bas_period_coverage": "not applicable"},
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(payload["bas_items"])
+                self.assertFalse(any(row["number"] == "BAS" for row in payload["items"]))
+                self.assertFalse(any(str(row["number"]).startswith("BAS-EVID") for row in payload["evidence_items"]))
+                self.assertFalse(
+                    any(
+                        row["number"]
+                        in {"tax_invoice_evidence", "payg_withholding", "gst_accounting_basis", "bas_period_coverage"}
+                        for row in payload["items"]
+                    )
+                )
+
     def test_equivalent_gst_registration_aliases_do_not_create_conflict(self) -> None:
         rows = taxmate_intake.bas_rows(
             {
