@@ -156,7 +156,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #73 ABN/BAS intake",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Sole-trader ABN and BAS worksheet intake must preserve flat and nested ABN/BAS facts, itemized income streams and expense categories, zero amounts, false GST registration, source provenance, and prep-only/no-lodgment wording; keep unknown, placeholder, or malformed ABN/BAS amounts, structured missing evidence, no-records wording, missing tax invoices, unknown or placeholder accounting basis, and unknown or placeholder BAS period coverage as Evidence; keep false ABN review flags visible when real business context exists without letting standalone default false review flags, including serialized false/no/0/off/unchecked values, create blank ABN rows or payload sections; keep completed complex ABN/BAS rows under Accountant review; and never imply BAS lodgment, official-form filling, copy-ready treatment, or final business schedule treatment.",
+        "Sole-trader ABN and BAS worksheet intake must preserve flat and nested ABN/BAS facts, itemized income streams and expense categories, zero amounts, false GST registration, source provenance, and prep-only/no-lodgment wording; keep unknown, placeholder, or malformed ABN/BAS amounts, structured missing evidence, no-records wording, missing tax invoices, unknown or placeholder accounting basis, and unknown or placeholder BAS period coverage as Evidence; compare itemized ABN amount aliases even when item evidence is unknown; keep false ABN review flags visible when real business context exists without letting standalone default false review flags, including serialized false/no/0/off/unchecked values, create blank ABN rows or payload sections; keep completed complex ABN/BAS rows under Accountant review; and never imply BAS lodgment, official-form filling, copy-ready treatment, or final business schedule treatment.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -413,6 +413,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "json.dumps(value, sort_keys=True, default=str)",
                 "def alias_values_conflict(",
                 "def abn_alias_conflicts(",
+                "amount=key in {\"income_total\", \"expense_total\", \"income_streams\", \"expense_categories\"}",
                 "def bas_alias_conflicts(",
                 "def abn_answer(",
                 "def bas_answer(",
@@ -439,6 +440,10 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "if any(item_amount_alias_conflict(item) for item in expense_categories):",
                 "or \"income_total\" in alias_conflicts",
                 "or \"expense_total\" in alias_conflicts",
+                "and \"income_streams\" not in alias_conflicts",
+                "and \"expense_categories\" not in alias_conflicts",
+                "or \"income_streams\" in alias_conflicts",
+                "or \"expense_categories\" in alias_conflicts",
                 "if key in alias_conflicts:\n            raw[key] = None",
                 "if has_bas_contextual_signal(answers):",
                 "candidate = alias_answer_value(answers, BAS_CONTEXTUAL_FIELD_ALIASES.get(key, ()))",

@@ -2334,12 +2334,14 @@ def answer_candidates(
 def normalized_alias_values(values: List[Any], amount: bool = False, gst_registration: bool = False) -> List[str]:
     normalized: List[str] = []
     for value in values:
-        if is_missing(value) or contains_unknown(value):
+        if is_missing(value):
             continue
         if amount and isinstance(value, (dict, list)):
             item_total = supplied_item_total(item_values(value))
             if item_total is not None:
                 normalized.append(f"{item_total:.2f}")
+            continue
+        if contains_unknown(value):
             continue
         if isinstance(value, (dict, list)):
             normalized.append(json.dumps(value, sort_keys=True, default=str))
@@ -2369,7 +2371,11 @@ def abn_alias_conflicts(answers: Dict[str, Any]) -> List[str]:
     conflicts: List[str] = []
     for key in ABN_FIELD_ALIASES:
         values = answer_candidates(answers, ABN_FIELD_ALIASES[key], ABN_NESTED_KEYS, ABN_NESTED_FIELD_ALIASES[key])
-        if alias_values_conflict(values, amount=key in {"income_total", "expense_total"}, gst_registration=key == "gst_registered"):
+        if alias_values_conflict(
+            values,
+            amount=key in {"income_total", "expense_total", "income_streams", "expense_categories"},
+            gst_registration=key == "gst_registered",
+        ):
             conflicts.append(key)
     return conflicts
 
@@ -2603,11 +2609,11 @@ def abn_summary(answers: Dict[str, Any]) -> Dict[str, Any]:
     alias_conflicts = sorted(set(alias_conflicts))
     if "income_total" in alias_conflicts:
         income_total = None
-    elif income_total is None:
+    elif income_total is None and "income_streams" not in alias_conflicts:
         income_total = supplied_item_total(income_streams)
     if "expense_total" in alias_conflicts:
         expense_total = None
-    elif expense_total is None:
+    elif expense_total is None and "expense_categories" not in alias_conflicts:
         expense_total = supplied_item_total(expense_categories)
     raw["income_streams"] = income_streams
     raw["expense_categories"] = expense_categories
@@ -2620,6 +2626,8 @@ def abn_summary(answers: Dict[str, Any]) -> Dict[str, Any]:
         or amount_malformed(raw_expense_total)
         or "income_total" in alias_conflicts
         or "expense_total" in alias_conflicts
+        or "income_streams" in alias_conflicts
+        or "expense_categories" in alias_conflicts
         or any(item_amount_evidence_needed(item) for item in income_streams + expense_categories)
     )
     raw["record_system_required"] = any(

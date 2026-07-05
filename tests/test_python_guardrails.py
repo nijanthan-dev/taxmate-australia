@@ -9886,6 +9886,78 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("Evidence", rows[0]["status"])
         self.assertIn("alias conflicts income streams", rows[0]["answer"])
 
+    def test_abn_list_alias_conflict_survives_unknown_item_evidence(self) -> None:
+        answers = {
+            "business_income_streams": [{"stream": "consulting", "amount": 100, "evidence": "unknown"}],
+            "business": {
+                "income_streams": [{"stream": "consulting", "amount": 200, "evidence": "unknown"}],
+                "record_system": "ledger",
+            },
+            "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Evidence", rows[0]["status"])
+        self.assertIn("income unknown; expenses 0.00", rows[0]["answer"])
+        self.assertIn("alias conflicts income streams", rows[0]["answer"])
+        self.assertTrue(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+        self.assertTrue(any(row["question"] == "ABN income or expense evidence required" for row in evidence))
+
+    def test_matching_abn_list_alias_totals_with_unknown_item_evidence_do_not_conflict(self) -> None:
+        answers = {
+            "business_income_streams": [{"stream": "consulting", "amount": 100, "evidence": "unknown"}],
+            "business": {
+                "income_streams": [{"stream": "consulting", "amount": 100, "evidence": "unknown"}],
+                "record_system": "ledger",
+            },
+            "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Evidence", rows[0]["status"])
+        self.assertIn("income 100.00; expenses 0.00", rows[0]["answer"])
+        self.assertIn("alias conflicts none", rows[0]["answer"])
+        self.assertFalse(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+        self.assertTrue(any(row["question"] == "ABN income or expense evidence required" for row in evidence))
+
+    def test_abn_expense_list_alias_conflict_survives_unknown_item_evidence(self) -> None:
+        answers = {
+            "business_income_streams": [{"stream": "consulting", "amount": 0, "evidence": "invoice held"}],
+            "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "unknown"}],
+            "business": {
+                "expense_categories": [{"category": "software", "amount": 120, "evidence": "unknown"}],
+                "record_system": "ledger",
+            },
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Evidence", rows[0]["status"])
+        self.assertIn("income 0.00; expenses unknown", rows[0]["answer"])
+        self.assertIn("alias conflicts expense categories", rows[0]["answer"])
+        self.assertTrue(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+
+    def test_zero_abn_item_alias_totals_compare_without_false_conflict(self) -> None:
+        rows = taxmate_intake.abn_rows(
+            {
+                "business_income_streams": [{"stream": "consulting", "amount": 0, "evidence": "unknown"}],
+                "business": {
+                    "income_streams": [{"stream": "consulting", "amount": 0, "evidence": "unknown"}],
+                    "record_system": "ledger",
+                },
+                "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+            }
+        )
+
+        self.assertEqual("Evidence", rows[0]["status"])
+        self.assertIn("income 0.00; expenses 0.00", rows[0]["answer"])
+        self.assertIn("alias conflicts none", rows[0]["answer"])
+
     def test_abn_item_amount_aliases_continue_past_blank_or_malformed_values(self) -> None:
         for first_value in ("", "bad amount"):
             with self.subTest(first_value=first_value):
