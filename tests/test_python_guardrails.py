@@ -8550,6 +8550,23 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("payer name or ABN", evidence)
         self.assertTrue(payload["abn_items"])
 
+    def test_payg_only_bare_abn_stays_payg_employer_abn(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "abn": "22 222 222 222",
+                "payer": "Example Pty Ltd",
+                "gross": 9000,
+                "withheld": 900,
+            }
+        )
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Accountant review", rows["payg_employer_abn"]["status"])
+        self.assertEqual("22 222 222 222", rows["payg_employer_abn"]["answer"])
+        self.assertNotIn("payer name or ABN", evidence)
+        self.assertFalse(payload["abn_items"])
+
     def test_explicit_payg_employer_abn_still_renders_payg_detail(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
@@ -9820,6 +9837,50 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertFalse(any(str(row["number"]).startswith("ABN-EVID") for row in payload["evidence_items"]))
                 self.assertFalse(any(row["number"] in {"abn_income", "business_income"} for row in payload["items"]))
 
+    def test_numeric_zero_abn_review_flags_do_not_create_blank_rows(self) -> None:
+        for answers in ({"business_home_use": 0}, {"business_loss": 0}, {"business": {"home_business": 0}}):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(payload["abn_items"])
+                self.assertFalse(any(row["number"] == "ABN" for row in payload["items"]))
+                self.assertFalse(any(str(row["number"]).startswith("ABN-EVID") for row in payload["evidence_items"]))
+
+    def test_numeric_zero_abn_review_flags_stay_false_with_business_context(self) -> None:
+        rows = taxmate_intake.abn_rows(
+            {
+                "abn_income": 100,
+                "business_record_system": "ledger",
+                "business_home_use": 0,
+                "business_loss": 0,
+            }
+        )
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("home business false", rows[0]["tab_text"])
+        self.assertIn("loss false", rows[0]["tab_text"])
+
+    def test_malformed_abn_item_amount_aliases_stay_evidence(self) -> None:
+        for answers in (
+            {
+                "business_income_streams": [{"stream": "consulting", "amount": 100, "total": "bad", "evidence": "invoice held"}],
+                "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+                "business_record_system": "ledger",
+            },
+            {
+                "business_income_streams": [{"stream": "consulting", "amount": 0, "evidence": "invoice held"}],
+                "business_expense_categories": [{"category": "software", "amount": 100, "value": "bad", "evidence": "receipt held"}],
+                "business_record_system": "ledger",
+            },
+        ):
+            with self.subTest(answers=answers):
+                rows = taxmate_intake.abn_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("amount evidence", rows[0]["tab_text"])
+                self.assertTrue(any(row["question"] == "ABN amount evidence required" for row in evidence))
+
     def test_standalone_bas_default_fields_do_not_create_rows(self) -> None:
         for answers in (
             {"tax_invoice_evidence": False},
@@ -10126,22 +10187,20 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("income 0.00; expenses 0.00", rows[0]["answer"])
         self.assertIn("alias conflicts none", rows[0]["answer"])
 
-    def test_abn_item_amount_aliases_continue_past_blank_or_malformed_values(self) -> None:
-        for first_value in ("", "bad amount"):
-            with self.subTest(first_value=first_value):
-                answers = {
-                    "business_income_streams": [{"stream": "consulting", "amount": first_value, "total": 1000, "evidence": "invoice held"}],
-                    "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
-                    "business_record_system": "ledger",
-                }
+    def test_abn_item_amount_aliases_continue_past_blank_values(self) -> None:
+        answers = {
+            "business_income_streams": [{"stream": "consulting", "amount": "", "total": 1000, "evidence": "invoice held"}],
+            "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+            "business_record_system": "ledger",
+        }
 
-                rows = taxmate_intake.abn_rows(answers)
-                evidence = taxmate_intake.evidence_rows(answers)
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
 
-                self.assertEqual("Accountant review", rows[0]["status"])
-                self.assertIn("income streams consulting 1000.00", rows[0]["answer"])
-                self.assertIn("expense categories software 0.00", rows[0]["answer"])
-                self.assertFalse(any(row["number"].startswith("ABN-EVID") for row in evidence))
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income streams consulting 1000.00", rows[0]["answer"])
+        self.assertIn("expense categories software 0.00", rows[0]["answer"])
+        self.assertFalse(any(row["number"].startswith("ABN-EVID") for row in evidence))
 
     def test_abn_amounts_without_record_system_keep_review_and_evidence_rows(self) -> None:
         answers = {"abn_income": 1000, "abn_expenses": 200}

@@ -2549,8 +2549,12 @@ def item_amount_alias_conflict(item: Dict[str, Any]) -> bool:
     return len(set(item_amount_values(item))) > 1
 
 
+def item_amount_alias_malformed(item: Dict[str, Any]) -> bool:
+    return any(key in item and amount_malformed(item.get(key)) for key in ITEM_AMOUNT_ALIASES)
+
+
 def item_amount_evidence_needed(item: Dict[str, Any]) -> bool:
-    return item_amount(item) is None or item_amount_alias_conflict(item)
+    return item_amount(item) is None or item_amount_alias_conflict(item) or item_amount_alias_malformed(item)
 
 
 def item_label(item: Dict[str, Any]) -> str:
@@ -2931,9 +2935,15 @@ def has_bas_inputs(answers: Dict[str, Any]) -> bool:
 
 def has_abn_inputs(answers: Dict[str, Any]) -> bool:
     for key in REVIEWABLE_ABN_FIELDS:
+        if key == "abn" and bare_abn_is_payg(answers):
+            continue
         if key in answers and abn_input_signal(key, answers.get(key)):
             return True
-    return any(abn_input_signal(key, abn_answer(answers, key)) for key in ABN_CONTEXT_SIGNAL_FIELDS)
+    return any(
+        key != "abn" or not bare_abn_is_payg(answers)
+        for key in ABN_CONTEXT_SIGNAL_FIELDS
+        if abn_input_signal(key, abn_answer(answers, key))
+    )
 
 
 def abn_input_signal(key: str, value: Any) -> bool:
@@ -2961,6 +2971,8 @@ def bas_input_signal(key: str, value: Any) -> bool:
 
 def abn_review_flag_false(value: Any) -> bool:
     if value is False:
+        return True
+    if isinstance(value, (int, float)) and not isinstance(value, bool) and value == 0:
         return True
     if isinstance(value, str):
         lowered = value.strip().lower()
@@ -4301,11 +4313,43 @@ def payg_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def payg_top_level_alias_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
-    if "abn" not in answers:
+    if "abn" not in answers or bare_abn_is_payg(answers):
         return answers
     narrowed = dict(answers)
     narrowed.pop("abn", None)
     return narrowed
+
+
+def bare_abn_is_payg(answers: Dict[str, Any]) -> bool:
+    return "abn" in answers and has_payg_context_for_bare_abn(answers) and not has_business_context_for_bare_abn(answers)
+
+
+def has_payg_context_for_bare_abn(answers: Dict[str, Any]) -> bool:
+    for key, value in answers.items():
+        canonical = PAYG_FLAT_FIELD_KEYS.get(key, PAYG_ALIAS_TO_FIELD.get(key))
+        if canonical and canonical != "abn" and has_meaningful_payg_flat_value(canonical, value):
+            return True
+    for nested_key in PAYG_NESTED_KEYS:
+        nested = answers.get(nested_key)
+        if isinstance(nested, dict):
+            for key, value in nested.items():
+                canonical = PAYG_ALIAS_TO_FIELD.get(key)
+                if canonical and canonical != "abn" and has_meaningful_payg_flat_value(canonical, value):
+                    return True
+    return False
+
+
+def has_business_context_for_bare_abn(answers: Dict[str, Any]) -> bool:
+    for key in REVIEWABLE_ABN_FIELDS:
+        if key in {"abn", "business_abn"}:
+            continue
+        if key in answers and abn_input_signal(key, answers.get(key)):
+            return True
+    return any(
+        abn_input_signal(key, abn_answer(answers, key))
+        for key in ABN_CONTEXT_SIGNAL_FIELDS
+        if key not in {"abn"}
+    )
 
 
 def first_payg_nested(answers: Dict[str, Any]) -> Any:
