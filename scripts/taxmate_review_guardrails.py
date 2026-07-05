@@ -146,7 +146,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #74 main residence CGT",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Main residence CGT intake and generated portable skills must preserve claim, ownership, occupancy, rental/business use, absence, spouse/partner conflict, and property-record facts across flat, nested, and itemized rows; keep missing or unknown periods, missing records, rental/business use, absence, and spouse conflicts as Evidence or Accountant review when another CGT/main-residence signal exists or itemized CGT rows provide context; preserve false claim/use/conflict values and 0-day text with context; never let standalone main-residence period or property-record defaults create CGT facts or fallback base rows; inherit top-level false, true, and ambiguous main-residence review flags plus text and property-record facts into item rows when itemized context exists; keep flat-vs-nested property-record conflicts visible as Evidence; attach main-residence, rental/business-use, and property-record source URLs to rows and evidence queues; keep capital-gains-tax skill/rules/evidence and individual-return routing aligned through scripts/skillgen.py where generated; never calculate a final exemption; and never downgrade rental-property Accountant review.",
+        "Main residence CGT intake and generated portable skills must preserve claim, ownership, occupancy, rental/business use, absence, spouse/partner conflict, and property-record facts across flat, nested, and itemized rows; keep missing or unknown periods, missing records, rental/business use, absence, and spouse conflicts as Evidence or Accountant review when another CGT/main-residence signal exists or itemized CGT rows provide context; preserve false claim/use/conflict values and 0-day text with context; never let standalone main-residence period or property-record defaults create CGT facts or fallback base rows; inherit top-level false, true, and ambiguous main-residence review flags plus text and property-record facts into item rows when itemized context exists without creating fake top-level CGT schedules; keep flat-vs-nested property-record conflicts visible as Evidence; attach main-residence, rental/business-use, and property-record source URLs to rows and evidence queues; keep capital-gains-tax skill/rules/evidence and individual-return routing aligned through scripts/skillgen.py where generated; never calculate a final exemption; and never downgrade rental-property Accountant review.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -849,7 +849,10 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def cgt_item_amount_total(",
                 "def cgt_reconciliation_row(",
                 "def cgt_has_top_level_details(",
-                "has_context = bool(cgt_item_values(raw.get(\"items\")) or cgt_item_values(raw.get(\"cgt_items\")))",
+                "has_item_context = bool(cgt_item_values(raw.get(\"items\")) or cgt_item_values(raw.get(\"cgt_items\")))",
+                "has_context = has_item_context or any(",
+                "not (has_item_context and cgt_itemized_inherited_main_residence_key(key))",
+                "def cgt_itemized_inherited_main_residence_key(",
                 "has_context or not cgt_fact_requires_context(key)",
                 "and (has_context or not cgt_evidence_gap_requires_context(key))",
                 "def cgt_itemized_top_level_evidence(",

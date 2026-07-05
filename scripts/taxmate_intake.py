@@ -6621,7 +6621,8 @@ def cgt_discount_or_residency_has_review_signal(raw: Dict[str, Any]) -> bool:
 
 
 def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
-    has_context = bool(cgt_item_values(raw.get("items")) or cgt_item_values(raw.get("cgt_items"))) or any(
+    has_item_context = bool(cgt_item_values(raw.get("items")) or cgt_item_values(raw.get("cgt_items")))
+    has_context = has_item_context or any(
         cgt_answer_context_value(key, value) for key, value in raw.items()
     )
     return any(
@@ -6639,7 +6640,12 @@ def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
         for key, value in raw.items()
         if key not in ("items", "cgt_items", "_item_conflicts", CGT_DECLINE_SIGNAL_KEY, CGT_CONFLICT_SIGNAL_KEY)
         and key not in CGT_RECONCILIATION_FIELDS
+        and not (has_item_context and cgt_itemized_inherited_main_residence_key(key))
     ) or bool(raw.get(CGT_CONFLICT_SIGNAL_KEY))
+
+
+def cgt_itemized_inherited_main_residence_key(key: str) -> bool:
+    return key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS
 
 
 def cgt_has_reconciliation_target(raw: Dict[str, Any]) -> bool:

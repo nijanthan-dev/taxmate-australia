@@ -11768,7 +11768,7 @@ class CgtIntakeTests(unittest.TestCase):
                 self.assertIn("records false", top_level["answer"])
                 self.assertIn("CGT top-level facts need CGT records", evidence_text)
 
-    def test_main_residence_itemized_top_level_property_records_gap_stays_evidence(self) -> None:
+    def test_main_residence_itemized_top_level_property_records_gap_inherits_without_schedule(self) -> None:
         item = {
             "event_type": "sale",
             "asset": "Former home",
@@ -11796,10 +11796,12 @@ class CgtIntakeTests(unittest.TestCase):
         ):
             with self.subTest(answers=answers):
                 payload = self.guide_payload(**answers)
-                top_level = self.cgt_row(payload)
+                item_row = next(item for item in payload["items"] if item["number"] == "CGT-EVENT-1")
                 evidence_text = "\n".join(item["answer"] for item in payload["evidence_items"])
-                self.assertEqual("Evidence", top_level["status"])
-                self.assertIn("main residence property records false", top_level["answer"])
+
+                self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
+                self.assertEqual("Evidence", item_row["status"])
+                self.assertIn("main residence property records false", item_row["answer"])
                 self.assertIn("main residence property records", evidence_text)
 
     def test_cgt_top_level_aggregate_only_keeps_schedule_baseline(self) -> None:
@@ -12737,6 +12739,7 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
         self.assertIn("main residence property records", cgt_evidence["answer"])
         self.assertIn(taxmate_intake.ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE, cgt_row["source_urls"])
         self.assertIn(taxmate_intake.ATO_PROPERTY_RECORDS_SOURCE, cgt_evidence["source_urls"])
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
 
     def test_main_residence_top_level_itemized_context_inherits_ambiguous_flags(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
