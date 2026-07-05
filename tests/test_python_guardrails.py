@@ -10240,6 +10240,68 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertNotIn("ABN", numbers)
 
+    def test_gst_bas_context_keeps_bare_abn_out_of_payg_aliases(self) -> None:
+        answers = {
+            "abn": "12 345 678 901",
+            "payg_gross": 10000,
+            "payg_withheld": 1000,
+            "gst_registered": True,
+            "gst_collected": 0,
+            "gst_credits": 0,
+            "gst_accounting_basis": "cash",
+            "bas_period_coverage": "full period",
+            "tax_invoice_evidence": "tax invoices held",
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        item_rows = {row["number"]: row for row in payload["items"]}
+        abn_rows = {row["number"]: row for row in payload["abn_items"]}
+        bas_rows = {row["number"]: row for row in payload["bas_items"]}
+
+        self.assertIn("ABN", abn_rows)
+        self.assertIn("BAS", bas_rows)
+        self.assertIn("ABN 12 345 678 901", abn_rows["ABN"]["answer"])
+        self.assertFalse(
+            any("ABN 12 345 678 901" in row["answer"] for row in item_rows.values() if row["number"] != "abn")
+        )
+
+    def test_bare_abn_with_payg_and_generic_business_amounts_routes_abn(self) -> None:
+        answers = {
+            "abn": "12 345 678 901",
+            "payg_gross": 10000,
+            "payg_withheld": 1000,
+            "income": 2500,
+            "expenses": 500,
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        abn_rows = {row["number"]: row for row in payload["abn_items"]}
+
+        self.assertIn("ABN", abn_rows)
+        self.assertIn("ABN 12 345 678 901", abn_rows["ABN"]["answer"])
+        self.assertIn("income 2500.00; expenses 500.00", abn_rows["ABN"]["answer"])
+
+    def test_bare_abn_with_payg_and_generic_activity_routes_abn(self) -> None:
+        answers = {
+            "abn": "12 345 678 901",
+            "payg_gross": 10000,
+            "payg_withheld": 1000,
+            "activity": "design services",
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        abn_rows = {row["number"]: row for row in payload["abn_items"]}
+
+        self.assertIn("ABN", abn_rows)
+        self.assertIn("activity design services", abn_rows["ABN"]["answer"])
+
+    def test_generic_activity_and_amounts_without_business_context_do_not_create_abn_row(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload({"activity": "employment", "income": 2500, "expenses": 500})
+        numbers = {row["number"] for row in payload["items"]}
+
+        self.assertNotIn("ABN", numbers)
+        self.assertEqual([], payload["abn_items"])
+
     def test_default_false_abn_review_flags_do_not_create_blank_abn_row(self) -> None:
         for answers in (
             {"business_home_use": False},
@@ -10373,6 +10435,28 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("1A 220.00; 1B 55.00; net GST 165.00", rows[0]["answer"])
         self.assertFalse(any(row["number"].startswith("BAS-EVID") for row in evidence))
 
+    def test_uppercase_bas_labels_enable_contextual_metadata_aliases(self) -> None:
+        answers = {
+            "1A": 220,
+            "1B": 55,
+            "T7": 0,
+            "W2": 0,
+            "period": "Q4",
+            "accounting_basis": "cash",
+            "period_coverage": "full period",
+            "invoice_evidence": "tax invoices held",
+        }
+
+        rows = taxmate_intake.bas_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("period Q4", rows[0]["answer"])
+        self.assertIn("1A 220.00; 1B 55.00; net GST 165.00", rows[0]["answer"])
+        self.assertIn("PAYG instalments 0.00", rows[0]["answer"])
+        self.assertIn("PAYG withholding 0.00", rows[0]["answer"])
+        self.assertFalse(any(row["number"].startswith("BAS-EVID") for row in evidence))
+
     def test_nested_bas_label_aliases_enable_contextual_metadata_aliases(self) -> None:
         answers = {
             "bas": {"label_1a": 220, "label_1b": 55},
@@ -10390,6 +10474,44 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("basis cash", rows[0]["answer"])
         self.assertIn("1A 220.00; 1B 55.00; net GST 165.00", rows[0]["answer"])
         self.assertFalse(any(row["number"].startswith("BAS-EVID") for row in evidence))
+
+    def test_nested_uppercase_bas_labels_enable_contextual_metadata_aliases(self) -> None:
+        answers = {
+            "gst_bas": {"1A": 220, "1B": 55, "T7": 0, "W2": 0},
+            "period": "Q4",
+            "accounting_basis": "cash",
+            "period_coverage": "full period",
+            "invoice_evidence": "tax invoices held",
+        }
+
+        rows = taxmate_intake.bas_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("period Q4", rows[0]["answer"])
+        self.assertIn("1A 220.00; 1B 55.00; net GST 165.00", rows[0]["answer"])
+        self.assertIn("PAYG instalments 0.00", rows[0]["answer"])
+        self.assertIn("PAYG withholding 0.00", rows[0]["answer"])
+        self.assertFalse(any(row["number"].startswith("BAS-EVID") for row in evidence))
+
+    def test_bas_label_aliases_normalize_common_separators(self) -> None:
+        answers = {
+            "label 1A": 220,
+            "label-1B": 55,
+            "BAS T7": 0,
+            "BAS W2": 0,
+            "period": "Q4",
+            "accounting_basis": "cash",
+            "period_coverage": "full period",
+            "invoice_evidence": "tax invoices held",
+        }
+
+        rows = taxmate_intake.bas_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("1A 220.00; 1B 55.00; net GST 165.00", rows[0]["answer"])
+        self.assertIn("PAYG instalments 0.00", rows[0]["answer"])
+        self.assertIn("PAYG withholding 0.00", rows[0]["answer"])
 
     def test_top_level_generic_metadata_does_not_create_abn_row(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload({"name": "Jane Doe", "description": "2025 records"})

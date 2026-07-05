@@ -2230,13 +2230,13 @@ BAS_FIELD_ALIASES = {
     "accounting_basis": ("gst_accounting_basis", "bas_accounting_basis"),
     "period": ("bas_period",),
     "period_coverage": ("bas_period_coverage",),
-    "gst_collected": ("gst_collected", "gst_on_sales", "1a", "label_1a"),
-    "gst_credits": ("gst_credits", "gst_on_purchases", "1b", "label_1b"),
+    "gst_collected": ("gst_collected", "gst_on_sales", "1a", "label_1a", "bas_1a"),
+    "gst_credits": ("gst_credits", "gst_on_purchases", "1b", "label_1b", "bas_1b"),
     "gst_free_sales": ("gst_free_sales", "gst_free", "gst_free_supplies"),
     "input_taxed_sales": ("input_taxed_sales", "input_taxed", "input_taxed_supplies"),
     "adjustments": ("bas_adjustments", "gst_adjustments"),
-    "payg_instalments": ("payg_instalments", "payg_instalment", "t7"),
-    "payg_withholding": ("payg_withholding", "bas_payg_withholding", "bas_payg_withheld", "w2"),
+    "payg_instalments": ("payg_instalments", "payg_instalment", "t7", "bas_t7"),
+    "payg_withholding": ("payg_withholding", "bas_payg_withholding", "bas_payg_withheld", "w2", "bas_w2"),
     "tax_invoice_evidence": ("tax_invoice_evidence", "tax_invoices"),
 }
 BAS_NESTED_FIELD_ALIASES = {
@@ -2258,6 +2258,11 @@ BAS_CONTEXTUAL_FIELD_ALIASES = {
     "period_coverage": ("period_coverage", "coverage"),
     "adjustments": ("adjustments",),
     "tax_invoice_evidence": ("invoice_evidence", "invoices"),
+}
+ABN_CONTEXTUAL_FIELD_ALIASES = {
+    "activity": ("activity",),
+    "income_total": ("income",),
+    "expense_total": ("expenses",),
 }
 ITEM_AMOUNT_ALIASES = ("amount", "gross", "total", "value")
 ITEM_LABEL_ALIASES = ("label", "name", "description", "category", "stream", "source")
@@ -2342,11 +2347,31 @@ def answer_value(answers: Dict[str, Any], aliases: tuple[str, ...], nested_keys:
     return fallback
 
 
+def normalized_alias_key(key: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", key.casefold())
+
+
+def alias_keys(values: Dict[str, Any], alias: str) -> List[str]:
+    keys: List[str] = []
+    if alias in values:
+        keys.append(alias)
+    alias_folded = alias.casefold()
+    alias_normalized = normalized_alias_key(alias)
+    for key in values:
+        if not isinstance(key, str) or key == alias:
+            continue
+        if key.casefold() == alias_folded or normalized_alias_key(key) == alias_normalized:
+            keys.append(key)
+    return keys
+
+
 def alias_answer_value(values: Dict[str, Any], aliases: tuple[str, ...], amount: bool = False) -> Any:
     fallback = None
     for key in aliases:
-        if key in values and not is_missing(values.get(key)):
-            value = values.get(key)
+        for actual_key in alias_keys(values, key):
+            value = values.get(actual_key)
+            if is_missing(value):
+                continue
             if amount and amount_alias_default_false(value):
                 if fallback is None:
                     fallback = value
@@ -2359,7 +2384,13 @@ def alias_answer_value(values: Dict[str, Any], aliases: tuple[str, ...], amount:
 
 
 def alias_candidates(values: Dict[str, Any], aliases: tuple[str, ...]) -> List[Any]:
-    return [values.get(key) for key in aliases if key in values and not is_missing(values.get(key))]
+    candidates: List[Any] = []
+    for key in aliases:
+        for actual_key in alias_keys(values, key):
+            value = values.get(actual_key)
+            if not is_missing(value):
+                candidates.append(value)
+    return candidates
 
 
 def answer_candidates(
@@ -2468,7 +2499,37 @@ def abn_answer(answers: Dict[str, Any], key: str) -> Any:
                 return value
             if fallback is None:
                 fallback = value
+    if abn_contextual_aliases_allowed(answers):
+        value = alias_answer_value(answers, ABN_CONTEXTUAL_FIELD_ALIASES.get(key, ()), amount=amount)
+        if value is not None and not contains_unknown(value):
+            return value
+        if fallback is None:
+            fallback = value
     return fallback
+
+
+def abn_contextual_aliases_allowed(answers: Dict[str, Any]) -> bool:
+    if has_meaningful_value(answers.get("abn")) or has_meaningful_value(answers.get("business_abn")):
+        return True
+    for key in REVIEWABLE_ABN_FIELDS:
+        if key in {"abn", "business_abn"}:
+            continue
+        if key in answers and abn_input_signal(key, answers.get(key)):
+            return True
+    for nested_key in ABN_NESTED_KEYS:
+        nested = answers.get(nested_key)
+        if isinstance(nested, dict):
+            for aliases in ABN_NESTED_FIELD_ALIASES.values():
+                if any(has_meaningful_value(value) for value in alias_candidates(nested, aliases)):
+                    return True
+    return False
+
+
+def has_abn_contextual_alias_signal(answers: Dict[str, Any]) -> bool:
+    return any(
+        abn_input_signal(key, alias_answer_value(answers, aliases, amount=key in {"income_total", "expense_total"}))
+        for key, aliases in ABN_CONTEXTUAL_FIELD_ALIASES.items()
+    )
 
 
 def bas_answer(answers: Dict[str, Any], key: str) -> Any:
@@ -2492,13 +2553,13 @@ def has_bas_contextual_signal(answers: Dict[str, Any]) -> bool:
     if has_meaningful_value(answers.get("gst_registered")):
         return True
     for aliases in BAS_FIELD_ALIASES.values():
-        if any(key in answers and has_meaningful_value(answers.get(key)) for key in aliases):
+        if any(has_meaningful_value(value) for value in alias_candidates(answers, aliases)):
             return True
     for nested_key in BAS_NESTED_KEYS:
         nested = answers.get(nested_key)
         if isinstance(nested, dict):
             for aliases in BAS_NESTED_FIELD_ALIASES.values():
-                if any(key in nested and has_meaningful_value(nested.get(key)) for key in aliases):
+                if any(has_meaningful_value(value) for value in alias_candidates(nested, aliases)):
                     return True
     return any(key in answers and has_meaningful_value(answers.get(key)) for key in REVIEWABLE_BAS_FIELDS)
 
@@ -4340,11 +4401,15 @@ def has_payg_context_for_bare_abn(answers: Dict[str, Any]) -> bool:
 
 
 def has_business_context_for_bare_abn(answers: Dict[str, Any]) -> bool:
+    if has_bas_inputs(answers):
+        return True
     for key in REVIEWABLE_ABN_FIELDS:
         if key in {"abn", "business_abn"}:
             continue
         if key in answers and abn_input_signal(key, answers.get(key)):
             return True
+    if has_abn_contextual_alias_signal(answers):
+        return True
     return any(
         abn_input_signal(key, abn_answer(answers, key))
         for key in ABN_CONTEXT_SIGNAL_FIELDS
