@@ -39,7 +39,7 @@ The current individual-return handoff includes:
 - primary and secondary PAYG income statement rows with payer, ABN, occupation, gross, withholding, allowances, RFBA, RESC, lump sum labels, statement evidence, and aggregate reconciliation;
 - itemized investment income rows for bank interest, dividends/franking, managed fund/ETF/AMIT distributions, and trust distribution routing;
 - general CGT event schedule and itemized non-crypto/non-rental CGT event rows with records, current-year and carried-forward loss facts, discount, foreign-resident discount, main residence, and small-business CGT concession review signals, source provenance, reconciliation prompts, and amount-not-worked-out wording;
-- ABN prep section and BAS worksheet;
+- ABN prep section and BAS worksheet, including ABN profile, income streams, expense categories, 1A/1B, GST-free/input-taxed sales, adjustments, PAYG labels, tax invoice evidence, and accounting-basis review;
 - missing facts queue, evidence queue, and accountant-review queue;
 - source/provenance appendix with source URLs and checked-at dates.
 
@@ -80,7 +80,7 @@ I have PAYG income statements, some bank interest and dividends, and a small ABN
 ```
 
 ```text
-I am GST registered and have ABN income and expenses. Use the taxmate-australia-individual-return, taxmate-australia-abn-business, and taxmate-australia-gst-bas skills to prepare the income-tax and BAS review items without treating anything as lodged or final.
+I am GST registered and have ABN income, expenses, tax invoices, and BAS period facts. Use the taxmate-australia-individual-return, taxmate-australia-abn-business, and taxmate-australia-gst-bas skills to prepare the income-tax and BAS review items without treating anything as lodged or final.
 ```
 
 Topic examples:
@@ -106,7 +106,7 @@ Use the taxmate-australia-individual-return skill to prepare a rental property w
 ```
 
 ```text
-Use the taxmate-australia-gst-bas skill to review my GST collected, GST credits, tax invoices, adjustments, and BAS period. Identify missing evidence and accountant-review items only; do not lodge anything.
+Use the taxmate-australia-gst-bas skill to review my 1A GST collected, 1B GST credits, GST-free/input-taxed sales, adjustments, PAYG labels, tax invoices, accounting basis, and BAS period. Identify missing evidence and accountant-review items only; do not lodge anything.
 ```
 
 ```text
@@ -120,7 +120,7 @@ I have a TaxMate checkout available. Turn my reviewed answers into the print-fir
 ```
 
 ```text
-I have a reviewed answers file. Use TaxMate to create the prep-only HTML handoff with the AI confirmation table, PAYG rows, investment rows, CGT schedule and item rows, ABN prep, BAS worksheet, review queues, and source/provenance appendix.
+I have a reviewed answers file. Use TaxMate to create the prep-only HTML handoff with the AI confirmation table, PAYG rows, investment rows, CGT schedule and item rows, detailed ABN prep, BAS worksheet, review queues, and source/provenance appendix.
 ```
 
 If you are using portable skills only, the agent can build the checklist, review prompts, manual-copy guidance, and source-backed review flags in chat. Rendering the HTML file needs a full runtime checkout that Codex or another local agent can run.

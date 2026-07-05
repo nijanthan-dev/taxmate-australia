@@ -207,6 +207,14 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("wfh_answers" in finding.detail for finding in findings))
         self.assertTrue(any("has_abn_inputs" in finding.detail for finding in findings))
         self.assertTrue(any("has_bas_inputs" in finding.detail for finding in findings))
+        self.assertTrue(any('"income_total": ("abn_income", "business_income", "income_total", "gross_income", "income")' in finding.detail for finding in findings))
+        self.assertTrue(any('"expense_total": ("abn_expenses", "business_expenses", "expense_total", "expenses")' in finding.detail for finding in findings))
+        self.assertTrue(any("supplied_item_total_conflict" in finding.detail for finding in findings))
+        self.assertTrue(any("item_amount_evidence_needed" in finding.detail for finding in findings))
+        self.assertTrue(any("if not amounts or any(amount is None for amount in amounts):" in finding.detail for finding in findings))
+        self.assertTrue(any("contextual = abn_contextual_aliases_allowed(answers)" in finding.detail for finding in findings))
+        self.assertTrue(any("ABN_CONTEXTUAL_FIELD_ALIASES.get(key, ()) if contextual else ()" in finding.detail for finding in findings))
+        self.assertTrue(any('bool(income_streams or expense_categories or raw["amount_evidence"])' in finding.detail for finding in findings))
         self.assertTrue(any("state-wide public holidays" in finding.detail for finding in findings))
         self.assertTrue(any("regional, capital-city-only, sector-only, and partial-day" in finding.detail for finding in findings))
         self.assertTrue(any("parse_gst_registration" in finding.detail for finding in findings))
@@ -7623,6 +7631,46 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("PAYG-RECON", rows)
         self.assertFalse(any(row["number"].startswith("PAYG-EVID") for row in payload["evidence_items"]))
 
+    def test_payg_item_aliases_bare_abn_stay_payg_employer_abn(self) -> None:
+        item = {
+            "payer": "Example Pty Ltd",
+            "gross": 1000,
+            "withheld": 100,
+            "statement": "income statement held",
+            "finalised": True,
+        }
+        for alias in taxmate_intake.PAYG_ITEM_ALIASES:
+            with self.subTest(alias=alias):
+                payload = taxmate_intake.answers_to_pack_payload({"abn": "12 345 678 901", alias: [item]})
+                rows = {row["number"]: row for row in payload["items"]}
+
+                self.assertIn("PAYG-1", rows)
+                self.assertIn("ABN 12 345 678 901", rows["PAYG-1"]["answer"])
+                self.assertNotIn("PAYG-SUPP", rows)
+                self.assertEqual([], payload["abn_items"])
+                self.assertFalse(any(row["number"].startswith("PAYG-EVID") for row in payload["evidence_items"]))
+                self.assertFalse(any(row["number"].startswith("ABN-EVID") for row in payload["evidence_items"]))
+
+    def test_nested_payg_direct_items_bare_abn_stay_payg_employer_abn(self) -> None:
+        item = {
+            "payer": "Nested Pty Ltd",
+            "gross": 1000,
+            "withheld": 100,
+            "statement": "income statement held",
+            "finalised": True,
+        }
+        for nested_key in taxmate_intake.PAYG_NESTED_KEYS:
+            with self.subTest(nested_key=nested_key):
+                payload = taxmate_intake.answers_to_pack_payload({"abn": "12 345 678 901", nested_key: {"items": [item]}})
+                rows = {row["number"]: row for row in payload["items"]}
+
+                self.assertIn("PAYG-1", rows)
+                self.assertIn("ABN 12 345 678 901", rows["PAYG-1"]["answer"])
+                self.assertNotIn("PAYG-SUPP", rows)
+                self.assertEqual([], payload["abn_items"])
+                self.assertFalse(any(row["number"].startswith("PAYG-EVID") for row in payload["evidence_items"]))
+                self.assertFalse(any(row["number"].startswith("ABN-EVID") for row in payload["evidence_items"]))
+
     def test_payg_itemized_conflict_stays_evidence_in_row_and_queue(self) -> None:
         answers = taxmate_intake.sample_answers()
         answers["payg_gross"] = 119000
@@ -8508,6 +8556,124 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("Evidence", rows["payg_gross"]["status"])
         self.assertEqual("Evidence", rows["payg_withheld"]["status"])
         self.assertIn("no-PAYG answer with PAYG facts", evidence)
+
+    def test_sole_trader_abn_profile_does_not_create_payg_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "abn": "12 345 678 901",
+                "business_name": "Example Studio",
+                "business_record_system": "ledger",
+            }
+        )
+        numbers = {row["number"] for row in payload["items"]}
+        evidence_numbers = {row["number"] for row in payload["evidence_items"]}
+
+        self.assertNotIn("payg_employer_abn", numbers)
+        self.assertFalse(any(number.startswith("PAYG-EVID") for number in evidence_numbers))
+        self.assertTrue(payload["abn_items"])
+
+    def test_top_level_abn_only_does_not_create_payg_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload({"abn": "12 345 678 901"})
+        numbers = {row["number"] for row in payload["items"]}
+        evidence_numbers = {row["number"] for row in payload["evidence_items"]}
+
+        self.assertNotIn("payg_employer_abn", numbers)
+        self.assertFalse(any(number.startswith("PAYG-EVID") for number in evidence_numbers))
+        self.assertTrue(payload["abn_items"])
+
+    def test_business_abn_does_not_supply_missing_flat_payg_abn(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "abn": "12 345 678 901",
+                "business_record_system": "ledger",
+                "payg_employer_name": "Example Pty Ltd",
+                "payg_gross": 9000,
+                "payg_withheld": 900,
+            }
+        )
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertNotIn("payg_employer_abn", rows)
+        self.assertIn("payer name or ABN", evidence)
+        self.assertTrue(payload["abn_items"])
+
+    def test_payg_only_bare_abn_stays_payg_employer_abn(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "abn": "22 222 222 222",
+                "payer": "Example Pty Ltd",
+                "gross": 9000,
+                "withheld": 900,
+            }
+        )
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Accountant review", rows["payg_employer_abn"]["status"])
+        self.assertEqual("22 222 222 222", rows["payg_employer_abn"]["answer"])
+        self.assertNotIn("payer name or ABN", evidence)
+        self.assertFalse(payload["abn_items"])
+
+    def test_payg_only_negative_gst_bare_abn_stays_payg_employer_abn(self) -> None:
+        for answers in (
+            {"gst_registered": False},
+            {"gst_registered": "no"},
+            {"gst_registered": "false"},
+            {"gst_registration_status": "not registered"},
+            {"registered": False},
+            {"registered": "no"},
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "abn": "22 222 222 222",
+                        "payer": "Example Pty Ltd",
+                        "gross": 9000,
+                        "withheld": 900,
+                        **answers,
+                    }
+                )
+                rows = {row["number"]: row for row in payload["items"]}
+                evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+                self.assertEqual("Accountant review", rows["payg_employer_abn"]["status"])
+                self.assertEqual("22 222 222 222", rows["payg_employer_abn"]["answer"])
+                self.assertNotIn("payer name or ABN", evidence)
+                self.assertEqual([], payload["abn_items"])
+                self.assertEqual([], payload["bas_items"])
+
+    def test_nested_payg_negative_gst_bare_abn_stays_payg_employer_abn(self) -> None:
+        item = {
+            "payer": "Nested Pty Ltd",
+            "gross": 9000,
+            "withheld": 900,
+            "statement": "income statement held",
+            "finalised": True,
+        }
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"abn": "22 222 222 222", "payg": {"items": [item]}, "gst_registered": "not registered"}
+        )
+        rows = {row["number"]: row for row in payload["items"]}
+
+        self.assertIn("PAYG-1", rows)
+        self.assertIn("ABN 22 222 222 222", rows["PAYG-1"]["answer"])
+        self.assertEqual([], payload["abn_items"])
+        self.assertEqual([], payload["bas_items"])
+
+    def test_explicit_payg_employer_abn_still_renders_payg_detail(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "payg_employer_name": "Example Pty Ltd",
+                "payg_employer_abn": "22 222 222 222",
+                "payg_gross": 9000,
+                "payg_withheld": 900,
+            }
+        )
+        rows = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Accountant review", rows["payg_employer_abn"]["status"])
+        self.assertEqual("22 222 222 222", rows["payg_employer_abn"]["answer"])
 
     def test_payg_placeholder_only_item_list_without_facts_skips_workflow(self) -> None:
         cases = [
@@ -9505,14 +9671,18 @@ class IndividualIntakeTests(unittest.TestCase):
                 "gst_registered": True,
                 "gst_collected": 300,
                 "gst_credits": 110,
+                "gst_accounting_basis": "cash",
+                "bas_period_coverage": "full period",
+                "tax_invoice_evidence": "tax invoices held",
             }
         )
 
         self.assertEqual(rows[0]["status"], "Accountant review")
         self.assertIn("net GST 190.00", rows[0]["answer"])
+        self.assertIn("basis cash", rows[0]["answer"])
         self.assertIn("BAS worksheet only", rows[0]["why_included"])
 
-    def test_bas_amounts_stay_review_when_registration_flag_missing(self) -> None:
+    def test_bas_amounts_keep_review_when_registration_or_invoice_facts_missing(self) -> None:
         rows = taxmate_intake.bas_rows({"gst_collected": 300, "gst_credits": 110})
 
         self.assertEqual("Accountant review", rows[0]["status"])
@@ -9532,12 +9702,15 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertIn("1A unknown; 1B unknown; net GST unknown", rows[0]["answer"])
 
         rows = taxmate_intake.bas_rows({"gst_registered": "no"})
-        self.assertEqual("N/A skipped", rows[0]["status"])
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("GST registered no", rows[0]["answer"])
 
-    def test_zero_amount_abn_answers_stay_review(self) -> None:
+    def test_zero_amount_abn_answers_stay_visible_with_record_evidence(self) -> None:
         rows = taxmate_intake.abn_rows({"abn_income": 0, "abn_expenses": 0})
 
         self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income 0.00; expenses 0.00", rows[0]["answer"])
+        self.assertIn("record-system evidence", rows[0]["tab_text"])
 
     def test_abn_and_bas_base_answers_stay_review(self) -> None:
         rows = taxmate_intake.base_items(taxmate_intake.sample_answers())
@@ -9566,6 +9739,281 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("1A unknown; 1B 110.00; net GST unknown", bas[0]["answer"])
         self.assertEqual("Evidence", asset[0]["status"])
         self.assertIn("Cost unknown; work use 80%; work-use amount unknown", asset[0]["answer"])
+
+    def test_unknown_abn_and_bas_amounts_keep_review_and_evidence_rows(self) -> None:
+        abn = taxmate_intake.abn_rows({"abn_income": "unknown", "abn_expenses": 0})
+        bas = taxmate_intake.bas_rows(
+            {
+                "gst_registered": True,
+                "gst_collected": 0,
+                "gst_credits": "unknown",
+                "gst_accounting_basis": "cash",
+                "tax_invoice_evidence": "tax invoices held",
+            }
+        )
+        evidence = taxmate_intake.evidence_rows(
+            {
+                "abn_income": "unknown",
+                "abn_expenses": 0,
+                "gst_registered": True,
+                "gst_collected": 0,
+                "gst_credits": "unknown",
+                "gst_accounting_basis": "cash",
+                "tax_invoice_evidence": "tax invoices held",
+            }
+        )
+
+        self.assertEqual("Accountant review", abn[0]["status"])
+        self.assertIn("income unknown; expenses 0.00", abn[0]["answer"])
+        self.assertEqual("Accountant review", bas[0]["status"])
+        self.assertIn("1A 0.00; 1B unknown; net GST unknown", bas[0]["answer"])
+        self.assertTrue(any(row["number"] == "ABN-EVID-1" for row in evidence))
+        self.assertTrue(any(row["number"] == "BAS-EVID-1" for row in evidence))
+
+    def test_concrete_abn_and_bas_aliases_override_unknown_placeholders(self) -> None:
+        abn = taxmate_intake.abn_rows(
+            {"abn_income": "unknown", "business_income": 1000, "abn_expenses": 0, "business_record_system": "ledger"}
+        )
+        bas = taxmate_intake.bas_rows(
+            {
+                "gst_registered": True,
+                "gst_collected": "unknown",
+                "label_1a": 220,
+                "gst_credits": 55,
+                "gst_accounting_basis": "cash",
+                "bas_period_coverage": "full period",
+                "tax_invoice_evidence": "tax invoices held",
+            }
+        )
+
+        self.assertEqual("Accountant review", abn[0]["status"])
+        self.assertIn("income 1000.00; expenses 0.00", abn[0]["answer"])
+        self.assertEqual("Accountant review", bas[0]["status"])
+        self.assertIn("1A 220.00; 1B 55.00; net GST 165.00", bas[0]["answer"])
+
+    def test_conflicting_abn_and_bas_aliases_keep_review_and_evidence_rows(self) -> None:
+        abn_answers = {
+            "abn_income": 1000,
+            "business_income": 1200,
+            "abn_expenses": 0,
+            "business_record_system": "ledger",
+        }
+        bas_answers = {
+            "gst_registered": True,
+            "gst_collected": 220,
+            "label_1a": 330,
+            "gst_credits": 55,
+            "gst_accounting_basis": "cash",
+            "bas_period_coverage": "full period",
+            "tax_invoice_evidence": "tax invoices held",
+        }
+
+        abn = taxmate_intake.abn_rows(abn_answers)
+        bas = taxmate_intake.bas_rows(bas_answers)
+        evidence = taxmate_intake.evidence_rows({**abn_answers, **bas_answers})
+
+        self.assertEqual("Accountant review", abn[0]["status"])
+        self.assertIn("income unknown; expenses 0.00", abn[0]["answer"])
+        self.assertIn("alias conflicts income total", abn[0]["answer"])
+        self.assertEqual("Accountant review", bas[0]["status"])
+        self.assertIn("1A unknown; 1B 55.00; net GST unknown", bas[0]["answer"])
+        self.assertIn("alias conflicts gst collected", bas[0]["answer"])
+        self.assertTrue(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+        self.assertTrue(any(row["question"] == "BAS alias reconciliation required" for row in evidence))
+
+    def test_abn_alias_conflicts_keep_direct_base_rows_under_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "abn_income": 1000,
+                "business_income": 1200,
+                "abn_expenses": 0,
+                "business_record_system": "ledger",
+                "gst_registered": True,
+                "gst_collected": 220,
+                "label_1a": 330,
+                "gst_credits": 55,
+                "gst_accounting_basis": "cash",
+                "bas_period_coverage": "full period",
+                "tax_invoice_evidence": "tax invoices held",
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Accountant review", by_number["abn_income"]["status"])
+        self.assertEqual("Accountant review", by_number["gst_collected"]["status"])
+
+    def test_false_default_amount_aliases_do_not_conflict_with_zero_abn_amounts(self) -> None:
+        for default in (False, "false", "no", "n", "0", "off", "unchecked", "none", "n/a", "not applicable"):
+            with self.subTest(default=default):
+                answers = {
+                    "abn_income": default,
+                    "business_income": 0,
+                    "abn_expenses": default,
+                    "business_expenses": 0,
+                    "business_record_system": "ledger",
+                }
+
+                rows = taxmate_intake.abn_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("income 0.00; expenses 0.00", rows[0]["answer"])
+                self.assertIn("alias conflicts none", rows[0]["answer"])
+                self.assertFalse(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+
+    def test_false_default_amount_aliases_do_not_conflict_with_zero_bas_amounts(self) -> None:
+        for default in (False, "false", "no", "n", "0", "off", "unchecked", "none", "n/a", "not applicable"):
+            with self.subTest(default=default):
+                answers = {
+                    "gst_registered": False,
+                    "gst_collected": default,
+                    "label_1a": 0,
+                    "gst_credits": default,
+                    "label_1b": 0,
+                    "gst_accounting_basis": "cash",
+                    "bas_period_coverage": "full period",
+                    "tax_invoice_evidence": "tax invoices held",
+                }
+
+                rows = taxmate_intake.bas_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("GST registered false", rows[0]["answer"])
+                self.assertIn("1A 0.00; 1B 0.00; net GST 0.00", rows[0]["answer"])
+                self.assertIn("alias conflicts none", rows[0]["answer"])
+                self.assertFalse(any(row["question"] == "BAS alias reconciliation required" for row in evidence))
+
+    def test_abn_amount_placeholders_with_business_context_stay_evidence(self) -> None:
+        for placeholder in ("false", "no", "n", "off", "unchecked", "none", "n/a", "not applicable"):
+            with self.subTest(placeholder=placeholder):
+                answers = {"abn_income": placeholder, "business_record_system": "ledger"}
+
+                rows = taxmate_intake.abn_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("income unknown", rows[0]["answer"])
+                self.assertIn("amount evidence", rows[0]["tab_text"])
+                self.assertTrue(any(row["question"] == "ABN amount evidence required" for row in evidence))
+
+    def test_bas_amount_placeholders_with_worksheet_context_stay_evidence(self) -> None:
+        for placeholder in ("false", "no", "n", "off", "unchecked", "none", "n/a", "not applicable"):
+            with self.subTest(placeholder=placeholder):
+                answers = {
+                    "gst_registered": True,
+                    "gst_collected": placeholder,
+                    "gst_credits": 0,
+                    "gst_accounting_basis": "cash",
+                    "bas_period_coverage": "full period",
+                    "tax_invoice_evidence": "tax invoices held",
+                }
+
+                rows = taxmate_intake.bas_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("1A unknown; 1B 0.00; net GST unknown", rows[0]["answer"])
+                self.assertIn("amount evidence", rows[0]["tab_text"])
+                self.assertTrue(any(row["question"] == "BAS amount evidence required" for row in evidence))
+
+    def test_standalone_abn_default_amounts_do_not_create_rows(self) -> None:
+        for answers in (
+            {"abn_income": False},
+            {"abn_income": "n/a"},
+            {"business": {"income": False}},
+            {"business": {"income": "not applicable"}},
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(payload["abn_items"])
+                self.assertFalse(any(row["number"] == "ABN" for row in payload["items"]))
+                self.assertFalse(any(str(row["number"]).startswith("ABN-EVID") for row in payload["evidence_items"]))
+                self.assertFalse(any(row["number"] in {"abn_income", "business_income"} for row in payload["items"]))
+
+    def test_numeric_zero_abn_review_flags_do_not_create_blank_rows(self) -> None:
+        for answers in ({"business_home_use": 0}, {"business_loss": 0}, {"business": {"home_business": 0}}):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(payload["abn_items"])
+                self.assertFalse(any(row["number"] == "ABN" for row in payload["items"]))
+                self.assertFalse(any(str(row["number"]).startswith("ABN-EVID") for row in payload["evidence_items"]))
+
+    def test_numeric_zero_abn_review_flags_stay_false_with_business_context(self) -> None:
+        rows = taxmate_intake.abn_rows(
+            {
+                "abn_income": 100,
+                "business_record_system": "ledger",
+                "business_home_use": 0,
+                "business_loss": 0,
+            }
+        )
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("home business false", rows[0]["tab_text"])
+        self.assertIn("loss false", rows[0]["tab_text"])
+
+    def test_malformed_abn_item_amount_aliases_stay_evidence(self) -> None:
+        for answers in (
+            {
+                "business_income_streams": [{"stream": "consulting", "amount": 100, "total": "bad", "evidence": "invoice held"}],
+                "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+                "business_record_system": "ledger",
+            },
+            {
+                "business_income_streams": [{"stream": "consulting", "amount": 0, "evidence": "invoice held"}],
+                "business_expense_categories": [{"category": "software", "amount": 100, "value": "bad", "evidence": "receipt held"}],
+                "business_record_system": "ledger",
+            },
+        ):
+            with self.subTest(answers=answers):
+                rows = taxmate_intake.abn_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("amount evidence", rows[0]["tab_text"])
+                self.assertTrue(any(row["question"] == "ABN amount evidence required" for row in evidence))
+
+    def test_standalone_bas_default_fields_do_not_create_rows(self) -> None:
+        for answers in (
+            {"tax_invoice_evidence": False},
+            {"tax_invoice_evidence": "no tax invoice"},
+            {"payg_withholding": False},
+            {"payg_withholding": "not applicable"},
+            {"gst_accounting_basis": "n/a"},
+            {"bas_period_coverage": "not applicable"},
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(payload["bas_items"])
+                self.assertFalse(any(row["number"] == "BAS" for row in payload["items"]))
+                self.assertFalse(any(str(row["number"]).startswith("BAS-EVID") for row in payload["evidence_items"]))
+                self.assertFalse(
+                    any(
+                        row["number"]
+                        in {"tax_invoice_evidence", "payg_withholding", "gst_accounting_basis", "bas_period_coverage"}
+                        for row in payload["items"]
+                    )
+                )
+
+    def test_equivalent_gst_registration_aliases_do_not_create_conflict(self) -> None:
+        rows = taxmate_intake.bas_rows(
+            {
+                "gst_registered": True,
+                "gst_registration_status": "yes",
+                "gst_collected": 0,
+                "gst_credits": 0,
+                "gst_accounting_basis": "cash",
+                "bas_period_coverage": "full period",
+                "tax_invoice_evidence": "tax invoices held",
+            }
+        )
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("alias conflicts none", rows[0]["answer"])
 
     def test_embedded_unconfirmed_answers_create_evidence_rows(self) -> None:
         rows = taxmate_intake.evidence_rows(taxmate_intake.sample_answers())
@@ -9600,8 +10048,1013 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertIn('data-target="row-201-ABN"', body)
         self.assertIn('data-target="row-301-BAS"', body)
-        self.assertIn("ABN figures are prep-only and not a final business schedule.", body)
+        self.assertIn("ABN prep only", body)
         self.assertIn("BAS prep only. No BAS lodgment support.", body)
+
+    def test_deep_abn_profile_preserves_nested_falsey_and_review_flags(self) -> None:
+        rows = taxmate_intake.abn_rows(
+            {
+                "abn_profile": {
+                    "abn": "12 345 678 901",
+                    "name": "Example Studio",
+                    "activity": "design services",
+                    "start_date": "2025-07-01",
+                    "end_date": "",
+                    "gst_registered": False,
+                    "accounting_basis": "cash",
+                    "record_system": "spreadsheet",
+                    "income_streams": [
+                        {"stream": "consulting", "amount": 0, "evidence": "invoice held"},
+                        {"stream": "digital sales", "amount": 1200, "evidence": "statement held"},
+                    ],
+                    "expense_categories": [
+                        {"category": "software", "amount": 0, "evidence": "receipt held"},
+                    ],
+                    "private_apportionment": "mixed use",
+                    "home_business": True,
+                    "motor_vehicle": False,
+                    "depreciation": "laptop",
+                    "loss": 0,
+                    "psi": "possible",
+                    "business_vs_hobby": "review activity",
+                    "non_commercial_loss": "possible",
+                }
+            }
+        )
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("ABN 12 345 678 901", rows[0]["answer"])
+        self.assertIn("GST registered false", rows[0]["answer"])
+        self.assertIn("consulting 0.00", rows[0]["answer"])
+        self.assertIn("software 0.00", rows[0]["answer"])
+        self.assertIn("private apportionment review", rows[0]["tab_text"])
+        self.assertIn("motor vehicle false", rows[0]["tab_text"])
+
+    def test_abn_item_evidence_rows_keep_missing_invoices_visible(self) -> None:
+        rows = taxmate_intake.evidence_rows(
+            {
+                "business_income_streams": [{"stream": "consulting", "amount": 1000, "evidence": "no invoice"}],
+                "business_expense_categories": [{"category": "software", "amount": 200, "evidence": "unknown"}],
+            }
+        )
+
+        self.assertTrue(any(row["number"] == "ABN-EVID-1" for row in rows))
+        self.assertTrue(any("consulting" in row["answer"] and "software" in row["answer"] for row in rows))
+
+    def test_abn_item_missing_amount_keeps_review_and_evidence_rows(self) -> None:
+        answers = {
+            "business_income_streams": [{"stream": "consulting", "evidence": "invoice held"}],
+            "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+            "business_record_system": "ledger",
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income streams consulting unknown", rows[0]["answer"])
+        self.assertIn("expense categories software 0.00", rows[0]["answer"])
+        self.assertTrue(any(row["number"] == "ABN-EVID-1" for row in evidence))
+        self.assertTrue(any("amount evidence" in row["question"].lower() for row in evidence))
+
+    def test_partial_abn_item_total_stays_unknown_without_explicit_total(self) -> None:
+        answers = {
+            "business_income_streams": [
+                {"stream": "consulting", "amount": 100, "evidence": "invoice held"},
+                {"stream": "digital sales", "evidence": "statement held"},
+            ],
+            "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+            "business_record_system": "ledger",
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income unknown; expenses 0.00", rows[0]["answer"])
+        self.assertIn("income streams consulting 100.00, digital sales unknown", rows[0]["answer"])
+
+    def test_nested_explicit_abn_totals_survive_partial_item_lists(self) -> None:
+        answers = {
+            "business": {
+                "income_total": 1200,
+                "income": [
+                    {"stream": "consulting", "amount": 1000, "evidence": "invoice held"},
+                    {"stream": "digital sales", "evidence": "statement held"},
+                ],
+                "expense_total": 300,
+                "expenses": [
+                    {"category": "software", "amount": 120, "evidence": "receipt held"},
+                    {"category": "travel", "evidence": "receipt pending"},
+                ],
+                "record_system": "ledger",
+            }
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income 1200.00; expenses 300.00", rows[0]["answer"])
+        self.assertIn("income streams consulting 1000.00, digital sales unknown", rows[0]["answer"])
+        self.assertIn("expense categories software 120.00, travel unknown", rows[0]["answer"])
+        self.assertTrue(any(row["number"] == "ABN-EVID-1" for row in evidence))
+        self.assertFalse(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+
+    def test_contextual_abn_amount_alias_conflicts_stay_evidence(self) -> None:
+        answers = {
+            "abn": "12 345 678 901",
+            "abn_income": 1000,
+            "income": 1200,
+            "abn_expenses": 200,
+            "expenses": 300,
+            "business_record_system": "ledger",
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income unknown; expenses unknown", rows[0]["answer"])
+        self.assertIn("alias conflicts expense total, income total", rows[0]["answer"])
+        self.assertTrue(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+
+    def test_contextual_abn_activity_alias_conflicts_stay_evidence(self) -> None:
+        answers = {
+            "abn": "12 345 678 901",
+            "business_activity": "design services",
+            "activity": "retail trade",
+            "business_record_system": "ledger",
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("activity design services", rows[0]["answer"])
+        self.assertIn("alias conflicts activity", rows[0]["answer"])
+        self.assertTrue(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+
+    def test_malformed_abn_amount_requires_record_system_evidence(self) -> None:
+        answers = {"abn_income": "about 1000"}
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+        questions = [row["question"] for row in evidence]
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("amount evidence", rows[0]["tab_text"])
+        self.assertIn("record-system evidence", rows[0]["tab_text"])
+        self.assertIn("ABN amount evidence required", questions)
+        self.assertIn("ABN record system evidence required", questions)
+
+    def test_malformed_abn_amount_aliases_require_record_system_evidence(self) -> None:
+        for answers in (
+            {"abn_expenses": "about 200"},
+            {"business_income": "unknown"},
+            {"business_expenses": "about 200"},
+            {"abn": "12 345 678 901", "income": "about 1000"},
+            {"abn": "12 345 678 901", "expenses": "unknown"},
+        ):
+            with self.subTest(answers=answers):
+                rows = taxmate_intake.abn_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+                questions = [row["question"] for row in evidence]
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("amount evidence", rows[0]["tab_text"])
+                self.assertIn("record-system evidence", rows[0]["tab_text"])
+                self.assertIn("ABN amount evidence required", questions)
+                self.assertIn("ABN record system evidence required", questions)
+
+    def test_abn_item_amount_alias_conflict_keeps_review_and_evidence_rows(self) -> None:
+        answers = {
+            "business_income_streams": [{"stream": "consulting", "amount": 100, "total": 200, "evidence": "invoice held"}],
+            "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+            "business_record_system": "ledger",
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("alias conflicts income streams", rows[0]["answer"])
+        self.assertTrue(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+
+    def test_abn_explicit_total_item_total_conflict_keeps_review_and_evidence_rows(self) -> None:
+        answers = {
+            "abn_income": 1000,
+            "business_income_streams": [{"stream": "consulting", "amount": 1200, "evidence": "invoice held"}],
+            "abn_expenses": 0,
+            "business_record_system": "ledger",
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income unknown; expenses 0.00", rows[0]["answer"])
+        self.assertIn("alias conflicts income total", rows[0]["answer"])
+
+    def test_matching_nested_abn_item_and_scalar_totals_do_not_conflict(self) -> None:
+        rows = taxmate_intake.abn_rows(
+            {
+                "business": {
+                    "income": [{"stream": "consulting", "amount": 500, "evidence": "invoice held"}],
+                    "income_total": 500,
+                    "expenses": [{"category": "software", "amount": 120, "evidence": "receipt held"}],
+                    "expense_total": 120,
+                    "record_system": "ledger",
+                }
+            }
+        )
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income 500.00; expenses 120.00", rows[0]["answer"])
+        self.assertIn("alias conflicts none", rows[0]["answer"])
+
+    def test_mismatched_nested_abn_item_and_scalar_totals_keep_review_and_evidence_rows(self) -> None:
+        rows = taxmate_intake.abn_rows(
+            {
+                "business": {
+                    "income": [{"stream": "consulting", "amount": 500, "evidence": "invoice held"}],
+                    "income_total": 700,
+                    "expenses": [{"category": "software", "amount": 120, "evidence": "receipt held"}],
+                    "expense_total": 120,
+                    "record_system": "ledger",
+                }
+            }
+        )
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income unknown; expenses 120.00", rows[0]["answer"])
+        self.assertIn("alias conflicts income total", rows[0]["answer"])
+
+    def test_abn_list_alias_conflict_keeps_review_and_evidence_rows(self) -> None:
+        answers = {
+            "business_income_streams": [{"stream": "consulting", "amount": 100, "evidence": "invoice held"}],
+            "business": {
+                "income_streams": [{"stream": "digital sales", "amount": 200, "evidence": "statement held"}],
+                "record_system": "ledger",
+            },
+            "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("alias conflicts income streams", rows[0]["answer"])
+
+    def test_abn_list_alias_conflict_survives_unknown_item_evidence(self) -> None:
+        answers = {
+            "business_income_streams": [{"stream": "consulting", "amount": 100, "evidence": "unknown"}],
+            "business": {
+                "income_streams": [{"stream": "consulting", "amount": 200, "evidence": "unknown"}],
+                "record_system": "ledger",
+            },
+            "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income unknown; expenses 0.00", rows[0]["answer"])
+        self.assertIn("alias conflicts income streams", rows[0]["answer"])
+        self.assertTrue(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+        self.assertTrue(any(row["question"] == "ABN income or expense evidence required" for row in evidence))
+
+    def test_matching_abn_list_alias_totals_with_unknown_item_evidence_do_not_conflict(self) -> None:
+        answers = {
+            "business_income_streams": [{"stream": "consulting", "amount": 100, "evidence": "unknown"}],
+            "business": {
+                "income_streams": [{"stream": "consulting", "amount": 100, "evidence": "unknown"}],
+                "record_system": "ledger",
+            },
+            "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income 100.00; expenses 0.00", rows[0]["answer"])
+        self.assertIn("alias conflicts none", rows[0]["answer"])
+        self.assertFalse(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+        self.assertTrue(any(row["question"] == "ABN income or expense evidence required" for row in evidence))
+
+    def test_abn_expense_list_alias_conflict_survives_unknown_item_evidence(self) -> None:
+        answers = {
+            "business_income_streams": [{"stream": "consulting", "amount": 0, "evidence": "invoice held"}],
+            "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "unknown"}],
+            "business": {
+                "expense_categories": [{"category": "software", "amount": 120, "evidence": "unknown"}],
+                "record_system": "ledger",
+            },
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income 0.00; expenses unknown", rows[0]["answer"])
+        self.assertIn("alias conflicts expense categories", rows[0]["answer"])
+        self.assertTrue(any(row["question"] == "ABN alias reconciliation required" for row in evidence))
+
+    def test_zero_abn_item_alias_totals_compare_without_false_conflict(self) -> None:
+        rows = taxmate_intake.abn_rows(
+            {
+                "business_income_streams": [{"stream": "consulting", "amount": 0, "evidence": "unknown"}],
+                "business": {
+                    "income_streams": [{"stream": "consulting", "amount": 0, "evidence": "unknown"}],
+                    "record_system": "ledger",
+                },
+                "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+            }
+        )
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income 0.00; expenses 0.00", rows[0]["answer"])
+        self.assertIn("alias conflicts none", rows[0]["answer"])
+
+    def test_abn_item_amount_aliases_continue_past_blank_values(self) -> None:
+        answers = {
+            "business_income_streams": [{"stream": "consulting", "amount": "", "total": 1000, "evidence": "invoice held"}],
+            "business_expense_categories": [{"category": "software", "amount": 0, "evidence": "receipt held"}],
+            "business_record_system": "ledger",
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income streams consulting 1000.00", rows[0]["answer"])
+        self.assertIn("expense categories software 0.00", rows[0]["answer"])
+        self.assertFalse(any(row["number"].startswith("ABN-EVID") for row in evidence))
+
+    def test_abn_amounts_without_record_system_keep_review_and_evidence_rows(self) -> None:
+        answers = {"abn_income": 1000, "abn_expenses": 200}
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertTrue(any(row["number"] == "ABN-EVID-1" for row in evidence))
+        self.assertTrue(any("record system" in row["question"].lower() for row in evidence))
+
+    def test_no_records_wording_keeps_missing_evidence_for_abn_and_bas(self) -> None:
+        for missing_records in ("no records", "I have no records", "without records", "no bookkeeping records", "no business records"):
+            with self.subTest(missing_records=missing_records):
+                abn_answers = {"abn_income": 1000, "business_record_system": missing_records}
+                bas_answers = {
+                    "gst_registered": True,
+                    "gst_collected": 220,
+                    "gst_credits": 55,
+                    "gst_accounting_basis": "cash",
+                    "bas_period_coverage": "full period",
+                    "tax_invoice_evidence": missing_records,
+                }
+
+                abn = taxmate_intake.abn_rows(abn_answers)
+                bas = taxmate_intake.bas_rows(bas_answers)
+                evidence = taxmate_intake.evidence_rows({**abn_answers, **bas_answers})
+
+                self.assertEqual("Accountant review", abn[0]["status"])
+                self.assertEqual("Accountant review", bas[0]["status"])
+                self.assertTrue(any(row["number"].startswith("ABN-EVID") and "record system" in row["question"].lower() for row in evidence))
+                self.assertTrue(any(row["number"].startswith("BAS-EVID") and "tax invoice" in row["question"].lower() for row in evidence))
+
+    def test_gst_only_answers_do_not_create_blank_abn_row(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload({"gst_registered": False})
+        numbers = {row["number"] for row in payload["items"]}
+
+        self.assertNotIn("ABN", numbers)
+
+    def test_gst_bas_context_keeps_bare_abn_out_of_payg_aliases(self) -> None:
+        answers = {
+            "abn": "12 345 678 901",
+            "payg_gross": 10000,
+            "payg_withheld": 1000,
+            "gst_registered": True,
+            "gst_collected": 0,
+            "gst_credits": 0,
+            "gst_accounting_basis": "cash",
+            "bas_period_coverage": "full period",
+            "tax_invoice_evidence": "tax invoices held",
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        item_rows = {row["number"]: row for row in payload["items"]}
+        abn_rows = {row["number"]: row for row in payload["abn_items"]}
+        bas_rows = {row["number"]: row for row in payload["bas_items"]}
+
+        self.assertIn("ABN", abn_rows)
+        self.assertIn("BAS", bas_rows)
+        self.assertIn("ABN 12 345 678 901", abn_rows["ABN"]["answer"])
+        self.assertFalse(
+            any("ABN 12 345 678 901" in row["answer"] for row in item_rows.values() if row["number"] != "abn")
+        )
+
+    def test_bare_abn_with_payg_and_generic_business_amounts_routes_abn(self) -> None:
+        answers = {
+            "abn": "12 345 678 901",
+            "payg_gross": 10000,
+            "payg_withheld": 1000,
+            "income": 2500,
+            "expenses": 500,
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        abn_rows = {row["number"]: row for row in payload["abn_items"]}
+
+        self.assertIn("ABN", abn_rows)
+        self.assertIn("ABN 12 345 678 901", abn_rows["ABN"]["answer"])
+        self.assertIn("income 2500.00; expenses 500.00", abn_rows["ABN"]["answer"])
+
+    def test_bare_abn_with_payg_and_generic_activity_routes_abn(self) -> None:
+        answers = {
+            "abn": "12 345 678 901",
+            "payg_gross": 10000,
+            "payg_withheld": 1000,
+            "activity": "design services",
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        abn_rows = {row["number"]: row for row in payload["abn_items"]}
+
+        self.assertIn("ABN", abn_rows)
+        self.assertIn("activity design services", abn_rows["ABN"]["answer"])
+
+    def test_generic_activity_and_amounts_without_business_context_do_not_create_abn_row(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload({"activity": "employment", "income": 2500, "expenses": 500})
+        numbers = {row["number"] for row in payload["items"]}
+
+        self.assertNotIn("ABN", numbers)
+        self.assertEqual([], payload["abn_items"])
+
+    def test_default_false_abn_review_flags_do_not_create_blank_abn_row(self) -> None:
+        for answers in (
+            {"business_home_use": False},
+            {"business_loss": False, "business_motor_vehicle": False},
+            {"business": {"home_business": False, "loss": False, "motor_vehicle": False}},
+            {"business_home_use": "false"},
+            {"business_loss": "no"},
+            {"business_motor_vehicle": "0"},
+            {"business_home_use": "off"},
+            {"business": {"home_business": "unchecked", "loss": "no loss"}},
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                numbers = {row["number"] for row in payload["items"]}
+
+                self.assertNotIn("ABN", numbers)
+                self.assertEqual([], payload["abn_items"])
+
+    def test_psi_only_answers_do_not_create_blank_abn_row(self) -> None:
+        for answers in (
+            {"psi_income": 5000},
+            {"psi": {"income": 5000}},
+            {"business": {"personal_services_income": "not psi"}},
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                numbers = {row["number"] for row in payload["items"]}
+
+                self.assertNotIn("ABN", numbers)
+
+    def test_nested_business_psi_flag_creates_abn_review_row(self) -> None:
+        for answers in (
+            {"business": {"psi": True}},
+            {"business": {"personal_services_income": "possible"}},
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                abn_rows = {row["number"]: row for row in payload["abn_items"]}
+
+                self.assertIn("ABN", abn_rows)
+                self.assertEqual("Accountant review", abn_rows["ABN"]["status"])
+                self.assertIn("psi review", abn_rows["ABN"]["tab_text"])
+
+    def test_nested_abn_profile_gst_date_and_basis_create_abn_review_row(self) -> None:
+        for answers, expected in (
+            ({"abn_profile": {"gst_registered": False}}, "GST registered false"),
+            ({"abn_business": {"registration_date": "2025-07-01"}}, "GST date 2025-07-01"),
+            ({"sole_trader": {"accounting_basis": "cash"}}, "basis cash"),
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                abn_rows = {row["number"]: row for row in payload["abn_items"]}
+
+                self.assertIn("ABN", abn_rows)
+                self.assertEqual("Accountant review", abn_rows["ABN"]["status"])
+                self.assertIn(expected, abn_rows["ABN"]["answer"])
+
+    def test_psi_flag_renders_when_abn_context_exists(self) -> None:
+        rows = taxmate_intake.abn_rows({"abn_income": 1000, "psi_income": 5000})
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("psi review", rows[0]["tab_text"])
+
+    def test_false_abn_review_flags_stay_visible_with_business_context(self) -> None:
+        rows = taxmate_intake.abn_rows({"abn_income": 1000, "business_home_use": False, "business_loss": False})
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("home business false", rows[0]["tab_text"])
+        self.assertIn("loss false", rows[0]["tab_text"])
+
+    def test_serialized_false_abn_review_flags_stay_false_with_business_context(self) -> None:
+        rows = taxmate_intake.abn_rows(
+            {
+                "abn_income": 1000,
+                "business_home_use": "off",
+                "business_loss": "no business loss",
+                "business_motor_vehicle": "unchecked",
+                "psi_income": "not psi",
+            }
+        )
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("home business false", rows[0]["tab_text"])
+        self.assertIn("loss false", rows[0]["tab_text"])
+        self.assertIn("motor vehicle false", rows[0]["tab_text"])
+        self.assertIn("psi false", rows[0]["tab_text"])
+        self.assertNotIn("loss review", rows[0]["tab_text"])
+        self.assertNotIn("psi review", rows[0]["tab_text"])
+
+    def test_empty_abn_and_bas_defaults_do_not_create_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"business_income_streams": [], "business_expense_categories": [], "tax_invoice_evidence": []}
+        )
+        numbers = {row["number"] for row in payload["items"]}
+
+        self.assertNotIn("ABN", numbers)
+        self.assertNotIn("BAS", numbers)
+        self.assertEqual([], payload["abn_items"])
+        self.assertEqual([], payload["bas_items"])
+
+    def test_top_level_generic_bas_metadata_does_not_create_bas_row(self) -> None:
+        for key in (
+            "period",
+            "tax_period",
+            "period_coverage",
+            "coverage",
+            "registered",
+            "registered_from",
+            "registration_date",
+            "accounting_basis",
+            "adjustments",
+            "invoice_evidence",
+            "invoices",
+        ):
+            with self.subTest(key=key):
+                payload = taxmate_intake.answers_to_pack_payload({key: "2025 records"})
+                numbers = {row["number"] for row in payload["items"]}
+
+                self.assertNotIn("BAS", numbers)
+
+    def test_top_level_contextual_bas_aliases_create_bas_rows_when_bas_specific(self) -> None:
+        for answers, expected in (
+            ({"tax_period": "Q4"}, "period Q4"),
+            ({"period": "quarter 4"}, "period quarter 4"),
+            ({"accounting_basis": "cash"}, "basis cash"),
+            ({"coverage": "full period"}, "coverage full period"),
+            ({"period_coverage": "partial"}, "coverage partial"),
+            ({"registered_from": "2025-10-01"}, "GST date 2025-10-01"),
+            ({"registration_date": "2025-10-01"}, "GST date 2025-10-01"),
+            ({"invoices": "tax invoices held"}, "tax invoices tax invoices held"),
+            ({"invoice_evidence": "tax invoices held"}, "tax invoices tax invoices held"),
+            ({"adjustments": 0}, "adjustments 0.00"),
+            ({"adjustments": "0"}, "adjustments 0.00"),
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                bas_rows = {row["number"]: row for row in payload["bas_items"]}
+
+                self.assertIn("BAS", bas_rows)
+                self.assertEqual("Accountant review", bas_rows["BAS"]["status"])
+                self.assertIn(expected, bas_rows["BAS"]["answer"])
+
+    def test_flat_generic_bas_aliases_fill_when_bas_context_exists(self) -> None:
+        answers = {
+            "period": "Q4",
+            "accounting_basis": "cash",
+            "period_coverage": "full period",
+            "adjustments": 0,
+            "gst_collected": 220,
+            "gst_credits": 55,
+            "invoice_evidence": "tax invoices held",
+        }
+
+        rows = taxmate_intake.bas_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("period Q4", rows[0]["answer"])
+        self.assertIn("basis cash", rows[0]["answer"])
+        self.assertIn("adjustments 0.00", rows[0]["answer"])
+        self.assertNotIn("period coverage review", rows[0]["tab_text"])
+        self.assertFalse(any(row["number"].startswith("BAS-EVID") for row in evidence))
+
+    def test_bas_label_aliases_enable_contextual_metadata_aliases(self) -> None:
+        answers = {
+            "label_1a": 220,
+            "label_1b": 55,
+            "period": "Q4",
+            "accounting_basis": "cash",
+            "period_coverage": "full period",
+            "invoice_evidence": "tax invoices held",
+        }
+
+        rows = taxmate_intake.bas_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("period Q4", rows[0]["answer"])
+        self.assertIn("basis cash", rows[0]["answer"])
+        self.assertIn("1A 220.00; 1B 55.00; net GST 165.00", rows[0]["answer"])
+        self.assertFalse(any(row["number"].startswith("BAS-EVID") for row in evidence))
+
+    def test_uppercase_bas_labels_enable_contextual_metadata_aliases(self) -> None:
+        answers = {
+            "1A": 220,
+            "1B": 55,
+            "T7": 0,
+            "W2": 0,
+            "period": "Q4",
+            "accounting_basis": "cash",
+            "period_coverage": "full period",
+            "invoice_evidence": "tax invoices held",
+        }
+
+        rows = taxmate_intake.bas_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("period Q4", rows[0]["answer"])
+        self.assertIn("1A 220.00; 1B 55.00; net GST 165.00", rows[0]["answer"])
+        self.assertIn("PAYG instalments 0.00", rows[0]["answer"])
+        self.assertIn("PAYG withholding 0.00", rows[0]["answer"])
+        self.assertFalse(any(row["number"].startswith("BAS-EVID") for row in evidence))
+
+    def test_nested_bas_label_aliases_enable_contextual_metadata_aliases(self) -> None:
+        answers = {
+            "bas": {"label_1a": 220, "label_1b": 55},
+            "period": "Q4",
+            "accounting_basis": "cash",
+            "period_coverage": "full period",
+            "invoice_evidence": "tax invoices held",
+        }
+
+        rows = taxmate_intake.bas_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("period Q4", rows[0]["answer"])
+        self.assertIn("basis cash", rows[0]["answer"])
+        self.assertIn("1A 220.00; 1B 55.00; net GST 165.00", rows[0]["answer"])
+        self.assertFalse(any(row["number"].startswith("BAS-EVID") for row in evidence))
+
+    def test_nested_uppercase_bas_labels_enable_contextual_metadata_aliases(self) -> None:
+        answers = {
+            "gst_bas": {"1A": 220, "1B": 55, "T7": 0, "W2": 0},
+            "period": "Q4",
+            "accounting_basis": "cash",
+            "period_coverage": "full period",
+            "invoice_evidence": "tax invoices held",
+        }
+
+        rows = taxmate_intake.bas_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("period Q4", rows[0]["answer"])
+        self.assertIn("1A 220.00; 1B 55.00; net GST 165.00", rows[0]["answer"])
+        self.assertIn("PAYG instalments 0.00", rows[0]["answer"])
+        self.assertIn("PAYG withholding 0.00", rows[0]["answer"])
+        self.assertFalse(any(row["number"].startswith("BAS-EVID") for row in evidence))
+
+    def test_bas_label_aliases_normalize_common_separators(self) -> None:
+        answers = {
+            "label 1A": 220,
+            "label-1B": 55,
+            "BAS T7": 0,
+            "BAS W2": 0,
+            "period": "Q4",
+            "accounting_basis": "cash",
+            "period_coverage": "full period",
+            "invoice_evidence": "tax invoices held",
+        }
+
+        rows = taxmate_intake.bas_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("1A 220.00; 1B 55.00; net GST 165.00", rows[0]["answer"])
+        self.assertIn("PAYG instalments 0.00", rows[0]["answer"])
+        self.assertIn("PAYG withholding 0.00", rows[0]["answer"])
+
+    def test_top_level_generic_metadata_does_not_create_abn_row(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload({"name": "Jane Doe", "description": "2025 records"})
+        numbers = {row["number"] for row in payload["items"]}
+
+        self.assertNotIn("ABN", numbers)
+
+    def test_nested_generic_business_aliases_still_render_abn(self) -> None:
+        rows = taxmate_intake.abn_rows(
+            {"business": {"name": "Example Studio", "description": "design services", "record_system": "ledger"}}
+        )
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("business Example Studio", rows[0]["answer"])
+        self.assertIn("activity design services", rows[0]["answer"])
+
+    def test_abn_review_flags_stay_review_when_evidence_missing(self) -> None:
+        answers = {"abn_income": 1000, "business_home_use": True}
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("record-system evidence", rows[0]["tab_text"])
+        self.assertIn("home business review", rows[0]["tab_text"])
+        self.assertTrue(any(row["number"] == "ABN-EVID-1" for row in evidence))
+
+    def test_nested_list_expenses_render_as_expense_categories(self) -> None:
+        answers = {
+            "business": {
+                "income": [{"stream": "consulting", "amount": 500, "evidence": "invoice held"}],
+                "expenses": [{"category": "software", "amount": 120, "evidence": "receipt held"}],
+                "record_system": "ledger",
+            }
+        }
+
+        rows = taxmate_intake.abn_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("income streams consulting 500.00", rows[0]["answer"])
+        self.assertIn("expense categories software 120.00", rows[0]["answer"])
+        self.assertFalse(any(row["number"].startswith("ABN-EVID") for row in evidence))
+
+    def test_structured_missing_abn_and_bas_evidence_keeps_review_rows(self) -> None:
+        abn = taxmate_intake.abn_rows(
+            {"business_income_streams": [{"stream": "consulting", "amount": 1000, "evidence": {"invoice": False}}]}
+        )
+        bas = taxmate_intake.bas_rows(
+            {
+                "gst_registered": True,
+                "gst_collected": 110,
+                "gst_credits": 55,
+                "gst_accounting_basis": "cash",
+                "tax_invoice_evidence": {"invoice": False},
+            }
+        )
+        evidence = taxmate_intake.evidence_rows(
+            {
+                "business_income_streams": [{"stream": "consulting", "amount": 1000, "evidence": {"invoice": False}}],
+                "gst_registered": True,
+                "gst_collected": 110,
+                "gst_credits": 55,
+                "gst_accounting_basis": "cash",
+                "tax_invoice_evidence": {"invoice": False},
+            }
+        )
+
+        self.assertEqual("Accountant review", abn[0]["status"])
+        self.assertEqual("Accountant review", bas[0]["status"])
+        self.assertTrue(any(row["number"] == "ABN-EVID-1" for row in evidence))
+        self.assertTrue(any(row["number"] == "BAS-EVID-1" for row in evidence))
+
+    def test_deep_bas_nested_labels_falsey_values_and_evidence_queue(self) -> None:
+        answers = {
+            "gst_bas": {
+                "registered": False,
+                "registered_from": "2025-10-01",
+                "accounting_basis": "not sure",
+                "period": "Q4",
+                "period_coverage": "partial",
+                "1a": 0,
+                "1b": 0,
+                "gst_free": 0,
+                "input_taxed": 0,
+                "adjustments": 0,
+                "payg_instalment": 0,
+                "payg_withheld": 0,
+                "tax_invoices": "unknown",
+            }
+        }
+
+        rows = taxmate_intake.bas_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("GST registered false", rows[0]["answer"])
+        self.assertIn("1A 0.00; 1B 0.00; net GST 0.00", rows[0]["answer"])
+        self.assertIn("GST-free sales 0.00", rows[0]["answer"])
+        self.assertIn("PAYG withholding 0.00", rows[0]["answer"])
+        self.assertTrue(any(row["number"].startswith("BAS-EVID") for row in evidence))
+
+    def test_nested_false_gst_registration_creates_bas_review_row(self) -> None:
+        for answers, expected in (
+            ({"gst_bas": {"registered": False}}, "GST registered false"),
+            ({"bas": {"gst_registration_status": "no"}}, "GST registered no"),
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                bas_rows = {row["number"]: row for row in payload["bas_items"]}
+
+                self.assertIn("BAS", bas_rows)
+                self.assertEqual("Accountant review", bas_rows["BAS"]["status"])
+                self.assertIn(expected, bas_rows["BAS"]["answer"])
+
+    def test_nested_bas_unknown_basis_and_coverage_create_evidence_rows(self) -> None:
+        for answers, expected_question in (
+            ({"gst_bas": {"accounting_basis": "unknown"}}, "GST accounting basis evidence required"),
+            ({"gst_bas": {"coverage": "unknown"}}, "BAS period coverage evidence required"),
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                bas_rows = {row["number"]: row for row in payload["bas_items"]}
+                questions = [row["question"] for row in payload["evidence_items"]]
+
+                self.assertIn("BAS", bas_rows)
+                self.assertEqual("Accountant review", bas_rows["BAS"]["status"])
+                self.assertIn(expected_question, questions)
+
+    def test_bas_period_coverage_omission_keeps_review_and_evidence_rows(self) -> None:
+        answers = {
+            "bas_period": "Q4",
+            "gst_collected": 110,
+            "gst_credits": 55,
+            "gst_accounting_basis": "cash",
+            "tax_invoice_evidence": "tax invoices held",
+        }
+
+        rows = taxmate_intake.bas_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("period coverage review", rows[0]["tab_text"])
+        self.assertTrue(any(row["number"].startswith("BAS-EVID") and "period coverage" in row["question"] for row in evidence))
+
+    def test_bas_basis_and_coverage_absence_placeholders_keep_review_and_evidence_rows(self) -> None:
+        for answers in (
+            {
+                "gst_collected": 220,
+                "gst_credits": 55,
+                "gst_accounting_basis": "n/a",
+                "bas_period_coverage": "not applicable",
+                "tax_invoice_evidence": "tax invoices held",
+            },
+            {
+                "gst_bas": {
+                    "1a": 220,
+                    "1b": 55,
+                    "accounting_basis": "not available",
+                    "period_coverage": "n/a",
+                    "tax_invoices": "tax invoices held",
+                }
+            },
+        ):
+            with self.subTest(answers=answers):
+                rows = taxmate_intake.bas_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("accounting basis review", rows[0]["tab_text"])
+                self.assertIn("period coverage review", rows[0]["tab_text"])
+                self.assertTrue(
+                    any(row["number"].startswith("BAS-EVID") and "accounting basis" in row["question"].lower() for row in evidence)
+                )
+                self.assertTrue(
+                    any(row["number"].startswith("BAS-EVID") and "period coverage" in row["question"].lower() for row in evidence)
+                )
+
+    def test_bas_payg_withholding_does_not_reuse_employment_withheld(self) -> None:
+        employment_only = taxmate_intake.bas_rows(
+            {
+                "gst_registered": True,
+                "gst_collected": 0,
+                "gst_credits": 0,
+                "payg_withheld": 31000,
+                "tax_invoice_evidence": "tax invoices held",
+            }
+        )
+        nested_bas = taxmate_intake.bas_rows(
+            {
+                "gst_bas": {
+                    "registered": True,
+                    "1a": 0,
+                    "1b": 0,
+                    "payg_withheld": 33,
+                    "tax_invoices": "tax invoices held",
+                }
+            }
+        )
+
+        self.assertNotIn("PAYG withholding 31000.00", employment_only[0]["answer"])
+        self.assertIn("PAYG withholding 33.00", nested_bas[0]["answer"])
+
+    def test_top_level_bas_payg_withholding_is_preserved(self) -> None:
+        rows = taxmate_intake.bas_rows(
+            {
+                "gst_registered": True,
+                "gst_collected": 0,
+                "gst_credits": 0,
+                "payg_withholding": 123,
+                "tax_invoice_evidence": "tax invoices held",
+            }
+        )
+
+        self.assertIn("PAYG withholding 123.00", rows[0]["answer"])
+
+    def test_bas_missing_tax_invoice_evidence_keeps_review_and_evidence_rows(self) -> None:
+        rows = taxmate_intake.bas_rows(
+            {
+                "gst_registered": True,
+                "gst_collected": 220,
+                "gst_credits": 55,
+                "gst_accounting_basis": "cash",
+                "tax_invoice_evidence": "no invoices",
+            }
+        )
+        evidence = taxmate_intake.evidence_rows(
+            {
+                "gst_registered": True,
+                "gst_collected": 220,
+                "gst_credits": 55,
+                "gst_accounting_basis": "cash",
+                "tax_invoice_evidence": "no invoices",
+            }
+        )
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertTrue(any(row["number"] == "BAS-EVID-1" for row in evidence))
+
+    def test_bas_not_applicable_tax_invoice_evidence_keeps_review_and_evidence_rows(self) -> None:
+        for evidence_text in ("n/a", "N/A", "not applicable", "tax invoice not applicable"):
+            with self.subTest(evidence=evidence_text):
+                answers = {
+                    "gst_registered": True,
+                    "gst_collected": 220,
+                    "gst_credits": 55,
+                    "gst_accounting_basis": "cash",
+                    "bas_period_coverage": "full period",
+                    "tax_invoice_evidence": evidence_text,
+                }
+
+                rows = taxmate_intake.bas_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("tax invoice evidence", rows[0]["tab_text"])
+                self.assertTrue(any(row["number"] == "BAS-EVID-1" for row in evidence))
+
+    def test_bas_unavailable_tax_invoice_evidence_keeps_review_and_evidence_rows(self) -> None:
+        for evidence_text in ("tax invoices not available", "records not available", "tax invoices unavailable"):
+            with self.subTest(evidence=evidence_text):
+                answers = {
+                    "gst_registered": True,
+                    "gst_collected": 220,
+                    "gst_credits": 55,
+                    "gst_accounting_basis": "cash",
+                    "bas_period_coverage": "full period",
+                    "tax_invoice_evidence": evidence_text,
+                }
+
+                rows = taxmate_intake.bas_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertIn("tax invoice evidence", rows[0]["tab_text"])
+                self.assertTrue(any(row["number"] == "BAS-EVID-1" for row in evidence))
+
+    def test_bas_mixed_structured_invoice_evidence_keeps_review_rows(self) -> None:
+        answers = {
+            "gst_registered": True,
+            "gst_collected": 220,
+            "gst_credits": 55,
+            "gst_accounting_basis": "cash",
+            "tax_invoice_evidence": {"tax_invoice": False, "bank_statement": True},
+        }
+
+        rows = taxmate_intake.bas_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertTrue(any(row["number"] == "BAS-EVID-1" for row in evidence))
+
+    def test_no_tax_invoice_wording_keeps_review_and_evidence_rows(self) -> None:
+        for evidence_text in ["no tax invoice", "no tax invoices"]:
+            with self.subTest(evidence=evidence_text):
+                rows = taxmate_intake.bas_rows(
+                    {
+                        "gst_registered": True,
+                        "gst_collected": 220,
+                        "gst_credits": 55,
+                        "gst_accounting_basis": "cash",
+                        "tax_invoice_evidence": evidence_text,
+                    }
+                )
+
+                self.assertEqual("Accountant review", rows[0]["status"])
 
 
 class FinanceTests(unittest.TestCase):
@@ -10904,6 +12357,32 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("<li>Missing WFH pattern requires accountant review.</li>", body)
         self.assertIn("<li>Evidence gap requires accountant review.</li>", body)
         self.assertNotIn("Missing WFH pattern requires accountant review.; Evidence gap", body)
+
+    def test_false_tab_text_uses_fallback_without_polluting_review_queue(self) -> None:
+        item = taxmate_taxpack.guide_item(
+            {
+                "number": "ABN",
+                "ato_area": "Sole-trader ABN",
+                "question": "Sole-trader ABN prep",
+                "answer": "Needs review",
+                "status": "Accountant review",
+                "tab_text": False,
+            }
+        )
+
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="29 Jun 2026",
+                summary_note="False tab text regression.",
+                items=[item],
+            )
+        )
+
+        self.assertIn("<p>Row ABN: Accountant review.</p>", body)
+        self.assertIn("<li>Row ABN: Accountant review.</li>", body)
+        self.assertNotIn("<p>false</p>", body)
+        self.assertNotIn("<li>false</li>", body)
 
     def test_guide_canonicalizes_color_status_aliases(self) -> None:
         aliases = {

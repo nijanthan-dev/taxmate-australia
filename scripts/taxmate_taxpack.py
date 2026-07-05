@@ -551,7 +551,14 @@ def tab_title(item: GuideItem, row_index: int) -> str:
 
 
 def review_text(item: GuideItem) -> str:
-    return scalar_text(item.tab_text).strip() or fallback_tab_text(item.number, effective_status_kind(item))
+    return tab_text_value(item.tab_text).strip() or fallback_tab_text(item.number, effective_status_kind(item))
+
+
+def tab_text_value(value: Any) -> str:
+    if value is False:
+        return ""
+    text = scalar_text(value)
+    return "" if text.strip().lower() == "false" else text
 
 
 def effective_status_kind(item: GuideItem) -> str:
