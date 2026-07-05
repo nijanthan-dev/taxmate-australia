@@ -8615,6 +8615,52 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("payer name or ABN", evidence)
         self.assertFalse(payload["abn_items"])
 
+    def test_payg_only_negative_gst_bare_abn_stays_payg_employer_abn(self) -> None:
+        for answers in (
+            {"gst_registered": False},
+            {"gst_registered": "no"},
+            {"gst_registered": "false"},
+            {"gst_registration_status": "not registered"},
+            {"registered": False},
+            {"registered": "no"},
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "abn": "22 222 222 222",
+                        "payer": "Example Pty Ltd",
+                        "gross": 9000,
+                        "withheld": 900,
+                        **answers,
+                    }
+                )
+                rows = {row["number"]: row for row in payload["items"]}
+                evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+                self.assertEqual("Accountant review", rows["payg_employer_abn"]["status"])
+                self.assertEqual("22 222 222 222", rows["payg_employer_abn"]["answer"])
+                self.assertNotIn("payer name or ABN", evidence)
+                self.assertEqual([], payload["abn_items"])
+                self.assertEqual([], payload["bas_items"])
+
+    def test_nested_payg_negative_gst_bare_abn_stays_payg_employer_abn(self) -> None:
+        item = {
+            "payer": "Nested Pty Ltd",
+            "gross": 9000,
+            "withheld": 900,
+            "statement": "income statement held",
+            "finalised": True,
+        }
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"abn": "22 222 222 222", "payg": {"items": [item]}, "gst_registered": "not registered"}
+        )
+        rows = {row["number"]: row for row in payload["items"]}
+
+        self.assertIn("PAYG-1", rows)
+        self.assertIn("ABN 22 222 222 222", rows["PAYG-1"]["answer"])
+        self.assertEqual([], payload["abn_items"])
+        self.assertEqual([], payload["bas_items"])
+
     def test_explicit_payg_employer_abn_still_renders_payg_detail(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
@@ -10563,6 +10609,28 @@ class IndividualIntakeTests(unittest.TestCase):
                 numbers = {row["number"] for row in payload["items"]}
 
                 self.assertNotIn("BAS", numbers)
+
+    def test_top_level_contextual_bas_aliases_create_bas_rows_when_bas_specific(self) -> None:
+        for answers, expected in (
+            ({"tax_period": "Q4"}, "period Q4"),
+            ({"period": "quarter 4"}, "period quarter 4"),
+            ({"accounting_basis": "cash"}, "basis cash"),
+            ({"coverage": "full period"}, "coverage full period"),
+            ({"period_coverage": "partial"}, "coverage partial"),
+            ({"registered_from": "2025-10-01"}, "GST date 2025-10-01"),
+            ({"registration_date": "2025-10-01"}, "GST date 2025-10-01"),
+            ({"invoices": "tax invoices held"}, "tax invoices tax invoices held"),
+            ({"invoice_evidence": "tax invoices held"}, "tax invoices tax invoices held"),
+            ({"adjustments": 0}, "adjustments 0.00"),
+            ({"adjustments": "0"}, "adjustments 0.00"),
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                bas_rows = {row["number"]: row for row in payload["bas_items"]}
+
+                self.assertIn("BAS", bas_rows)
+                self.assertEqual("Accountant review", bas_rows["BAS"]["status"])
+                self.assertIn(expected, bas_rows["BAS"]["answer"])
 
     def test_flat_generic_bas_aliases_fill_when_bas_context_exists(self) -> None:
         answers = {

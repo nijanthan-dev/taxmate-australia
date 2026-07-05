@@ -2478,7 +2478,7 @@ def abn_alias_conflicts(answers: Dict[str, Any]) -> List[str]:
 
 def bas_alias_conflicts(answers: Dict[str, Any]) -> List[str]:
     conflicts: List[str] = []
-    contextual = has_bas_contextual_signal(answers)
+    contextual = has_bas_contextual_signal(answers) or has_bas_contextual_input_signal(answers)
     for key in BAS_FIELD_ALIASES:
         values = answer_candidates(
             answers,
@@ -2569,6 +2569,48 @@ def has_bas_contextual_signal(answers: Dict[str, Any]) -> bool:
                 if any(has_meaningful_value(value) for value in alias_candidates(nested, aliases)):
                     return True
     return any(key in answers and has_meaningful_value(answers.get(key)) for key in REVIEWABLE_BAS_FIELDS)
+
+
+def has_bas_contextual_input_signal(answers: Dict[str, Any], exclude: set[str] | None = None) -> bool:
+    excluded = exclude or set()
+    return any(
+        bas_contextual_input_signal(key, alias_answer_value(answers, aliases, amount=key in BAS_AMOUNT_FIELDS))
+        for key, aliases in BAS_CONTEXTUAL_FIELD_ALIASES.items()
+        if key not in excluded
+    )
+
+
+def bas_contextual_answer(answers: Dict[str, Any], key: str) -> Any:
+    candidate = alias_answer_value(answers, BAS_CONTEXTUAL_FIELD_ALIASES.get(key, ()), amount=key in BAS_AMOUNT_FIELDS)
+    return candidate if bas_contextual_input_signal(key, candidate) else None
+
+
+def bas_gst_registration_answer(answers: Dict[str, Any]) -> Any:
+    value = bas_answer(answers, "gst_registered")
+    if not is_missing(value):
+        return value
+    return bas_contextual_answer(answers, "gst_registered")
+
+
+def bas_contextual_input_signal(key: str, value: Any) -> bool:
+    if not has_meaningful_value(value):
+        return False
+    if key in BAS_AMOUNT_FIELDS:
+        return safe_money_value(value) is not None or contains_unknown(value) or amount_malformed(value)
+    lowered = display_value(value).strip().lower()
+    if key == "gst_registered":
+        return parse_gst_registration(value) is not None or contains_unknown(value)
+    if key == "gst_registration_date":
+        return contains_unknown(value) or bool(re.search(r"\b20\d{2}-\d{2}-\d{2}\b", lowered))
+    if key == "accounting_basis":
+        return contains_unknown(value) or any(term in lowered for term in ("cash", "accrual", "non-cash", "noncash"))
+    if key == "period":
+        return contains_unknown(value) or bool(re.search(r"\bq[1-4]\b|quarter|monthly|annual|bas period", lowered))
+    if key == "period_coverage":
+        return contains_unknown(value) or any(term in lowered for term in ("full period", "partial", "coverage"))
+    if key == "tax_invoice_evidence":
+        return evidence_missing(value) or "invoice" in lowered
+    return False
 
 
 def item_values(raw_items: Any) -> List[Dict[str, Any]]:
@@ -2782,7 +2824,7 @@ def abn_summary(answers: Dict[str, Any]) -> Dict[str, Any]:
 def bas_summary(answers: Dict[str, Any]) -> Dict[str, Any]:
     raw = {key: bas_answer(answers, key) for key in BAS_FIELD_ALIASES}
     alias_conflicts = bas_alias_conflicts(answers)
-    if has_bas_contextual_signal(answers):
+    if has_bas_contextual_signal(answers) or has_bas_contextual_input_signal(answers):
         for key in BAS_CONTEXTUAL_FIELD_ALIASES:
             candidate = alias_answer_value(answers, BAS_CONTEXTUAL_FIELD_ALIASES.get(key, ()), amount=key in BAS_AMOUNT_FIELDS)
             if candidate is not None and (is_missing(raw.get(key)) or contains_unknown(raw.get(key))):
@@ -2991,14 +3033,30 @@ def wfh_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def has_bas_inputs(answers: Dict[str, Any]) -> bool:
-    gst_registered = bas_answer(answers, "gst_registered")
+    gst_registered = bas_gst_registration_answer(answers)
     gst_status = parse_gst_registration(gst_registered)
-    if gst_status is True or (gst_status is None and not is_missing(gst_registered)):
+    if not is_missing(gst_registered):
+        if gst_status is not None:
+            return not (gst_status is False and bas_negative_gst_only_payg_context(answers))
         return True
     for key in REVIEWABLE_BAS_FIELDS:
         if key in answers and bas_input_signal(key, answers.get(key)):
             return True
+    if has_bas_contextual_input_signal(answers):
+        return True
     return any(bas_input_signal(key, bas_answer(answers, key)) for key in BAS_FIELD_ALIASES)
+
+
+def bas_negative_gst_only_payg_context(answers: Dict[str, Any]) -> bool:
+    if not has_payg_context_for_bare_abn(answers):
+        return False
+    for key in BAS_FIELD_ALIASES:
+        if key == "gst_registered":
+            continue
+        value = bas_answer(answers, key)
+        if bas_input_signal(key, value):
+            return False
+    return not has_bas_contextual_input_signal(answers, exclude={"gst_registered"})
 
 
 def has_abn_inputs(answers: Dict[str, Any]) -> bool:
