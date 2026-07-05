@@ -2659,10 +2659,10 @@ def bas_summary(answers: Dict[str, Any]) -> Dict[str, Any]:
         for key in ("period", "period_coverage", "tax_invoice_evidence", *BAS_AMOUNT_FIELDS)
     )
     raw["basis_evidence"] = contains_unknown(raw.get("accounting_basis")) or (
-        raw["worksheet_facts"] and is_missing(raw.get("accounting_basis"))
+        raw["worksheet_facts"] and evidence_missing(raw.get("accounting_basis"))
     )
     raw["period_coverage_evidence"] = contains_unknown(raw.get("period_coverage")) or (
-        raw["worksheet_facts"] and is_missing(raw.get("period_coverage"))
+        raw["worksheet_facts"] and evidence_missing(raw.get("period_coverage"))
     )
     return raw
 

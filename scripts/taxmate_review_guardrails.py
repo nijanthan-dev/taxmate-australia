@@ -156,7 +156,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #73 ABN/BAS intake",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Sole-trader ABN and BAS worksheet intake must preserve flat and nested ABN/BAS facts, itemized income streams and expense categories, zero amounts, false GST registration, source provenance, and prep-only/no-lodgment wording; keep unknown or malformed ABN/BAS amounts, structured missing evidence, missing tax invoices, unknown accounting basis, and unknown BAS period coverage as Evidence; keep completed complex ABN/BAS rows under Accountant review; and never imply BAS lodgment, official-form filling, copy-ready treatment, or final business schedule treatment.",
+        "Sole-trader ABN and BAS worksheet intake must preserve flat and nested ABN/BAS facts, itemized income streams and expense categories, zero amounts, false GST registration, source provenance, and prep-only/no-lodgment wording; keep unknown, placeholder, or malformed ABN/BAS amounts, structured missing evidence, missing tax invoices, unknown or placeholder accounting basis, and unknown or placeholder BAS period coverage as Evidence; keep completed complex ABN/BAS rows under Accountant review; and never imply BAS lodgment, official-form filling, copy-ready treatment, or final business schedule treatment.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -465,8 +465,9 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "raw[\"record_evidence\"] = raw[\"record_system_required\"] and evidence_missing(raw.get(\"record_system\"))",
                 "raw[\"worksheet_facts\"] = any(",
                 "raw[\"basis_evidence\"] = contains_unknown(raw.get(\"accounting_basis\")) or (",
+                "raw[\"worksheet_facts\"] and evidence_missing(raw.get(\"accounting_basis\"))",
                 "raw[\"period_coverage_evidence\"] = contains_unknown(raw.get(\"period_coverage\"))",
-                "raw[\"worksheet_facts\"] and is_missing(raw.get(\"period_coverage\"))",
+                "raw[\"worksheet_facts\"] and evidence_missing(raw.get(\"period_coverage\"))",
                 "summary.get(\"basis_evidence\")",
                 "summary.get(\"period_coverage_evidence\")",
                 "summary.get(\"alias_conflict\")",

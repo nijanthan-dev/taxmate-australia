@@ -10141,6 +10141,39 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("period coverage review", rows[0]["tab_text"])
         self.assertTrue(any(row["number"].startswith("BAS-EVID") and "period coverage" in row["question"] for row in evidence))
 
+    def test_bas_basis_and_coverage_absence_placeholders_stay_evidence(self) -> None:
+        for answers in (
+            {
+                "gst_collected": 220,
+                "gst_credits": 55,
+                "gst_accounting_basis": "n/a",
+                "bas_period_coverage": "not applicable",
+                "tax_invoice_evidence": "tax invoices held",
+            },
+            {
+                "gst_bas": {
+                    "1a": 220,
+                    "1b": 55,
+                    "accounting_basis": "not available",
+                    "period_coverage": "n/a",
+                    "tax_invoices": "tax invoices held",
+                }
+            },
+        ):
+            with self.subTest(answers=answers):
+                rows = taxmate_intake.bas_rows(answers)
+                evidence = taxmate_intake.evidence_rows(answers)
+
+                self.assertEqual("Evidence", rows[0]["status"])
+                self.assertIn("accounting basis review", rows[0]["tab_text"])
+                self.assertIn("period coverage review", rows[0]["tab_text"])
+                self.assertTrue(
+                    any(row["number"].startswith("BAS-EVID") and "accounting basis" in row["question"].lower() for row in evidence)
+                )
+                self.assertTrue(
+                    any(row["number"].startswith("BAS-EVID") and "period coverage" in row["question"].lower() for row in evidence)
+                )
+
     def test_bas_payg_withholding_does_not_reuse_employment_withheld(self) -> None:
         employment_only = taxmate_intake.bas_rows(
             {
