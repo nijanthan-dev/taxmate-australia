@@ -9656,7 +9656,8 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertIn("1A unknown; 1B unknown; net GST unknown", rows[0]["answer"])
 
         rows = taxmate_intake.bas_rows({"gst_registered": "no"})
-        self.assertEqual("N/A skipped", rows[0]["status"])
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("GST registered no", rows[0]["answer"])
 
     def test_zero_amount_abn_answers_stay_visible_with_record_evidence(self) -> None:
         rows = taxmate_intake.abn_rows({"abn_income": 0, "abn_expenses": 0})
@@ -10465,13 +10466,40 @@ class IndividualIntakeTests(unittest.TestCase):
         for answers in (
             {"psi_income": 5000},
             {"psi": {"income": 5000}},
-            {"business": {"personal_services_income": "possible"}},
+            {"business": {"personal_services_income": "not psi"}},
         ):
             with self.subTest(answers=answers):
                 payload = taxmate_intake.answers_to_pack_payload(answers)
                 numbers = {row["number"] for row in payload["items"]}
 
                 self.assertNotIn("ABN", numbers)
+
+    def test_nested_business_psi_flag_creates_abn_review_row(self) -> None:
+        for answers in (
+            {"business": {"psi": True}},
+            {"business": {"personal_services_income": "possible"}},
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                abn_rows = {row["number"]: row for row in payload["abn_items"]}
+
+                self.assertIn("ABN", abn_rows)
+                self.assertEqual("Accountant review", abn_rows["ABN"]["status"])
+                self.assertIn("psi review", abn_rows["ABN"]["tab_text"])
+
+    def test_nested_abn_profile_gst_date_and_basis_create_abn_review_row(self) -> None:
+        for answers, expected in (
+            ({"abn_profile": {"gst_registered": False}}, "GST registered false"),
+            ({"abn_business": {"registration_date": "2025-07-01"}}, "GST date 2025-07-01"),
+            ({"sole_trader": {"accounting_basis": "cash"}}, "basis cash"),
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                abn_rows = {row["number"]: row for row in payload["abn_items"]}
+
+                self.assertIn("ABN", abn_rows)
+                self.assertEqual("Accountant review", abn_rows["ABN"]["status"])
+                self.assertIn(expected, abn_rows["ABN"]["answer"])
 
     def test_psi_flag_renders_when_abn_context_exists(self) -> None:
         rows = taxmate_intake.abn_rows({"abn_income": 1000, "psi_income": 5000})
@@ -10754,6 +10782,33 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("GST-free sales 0.00", rows[0]["answer"])
         self.assertIn("PAYG withholding 0.00", rows[0]["answer"])
         self.assertTrue(any(row["number"].startswith("BAS-EVID") for row in evidence))
+
+    def test_nested_false_gst_registration_creates_bas_review_row(self) -> None:
+        for answers, expected in (
+            ({"gst_bas": {"registered": False}}, "GST registered false"),
+            ({"bas": {"gst_registration_status": "no"}}, "GST registered no"),
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                bas_rows = {row["number"]: row for row in payload["bas_items"]}
+
+                self.assertIn("BAS", bas_rows)
+                self.assertEqual("Accountant review", bas_rows["BAS"]["status"])
+                self.assertIn(expected, bas_rows["BAS"]["answer"])
+
+    def test_nested_bas_unknown_basis_and_coverage_create_evidence_rows(self) -> None:
+        for answers, expected_question in (
+            ({"gst_bas": {"accounting_basis": "unknown"}}, "GST accounting basis evidence required"),
+            ({"gst_bas": {"coverage": "unknown"}}, "BAS period coverage evidence required"),
+        ):
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                bas_rows = {row["number"]: row for row in payload["bas_items"]}
+                questions = [row["question"] for row in payload["evidence_items"]]
+
+                self.assertIn("BAS", bas_rows)
+                self.assertEqual("Accountant review", bas_rows["BAS"]["status"])
+                self.assertIn(expected_question, questions)
 
     def test_bas_period_coverage_omission_keeps_review_and_evidence_rows(self) -> None:
         answers = {

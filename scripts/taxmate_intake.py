@@ -2998,7 +2998,7 @@ def has_bas_inputs(answers: Dict[str, Any]) -> bool:
     for key in REVIEWABLE_BAS_FIELDS:
         if key in answers and bas_input_signal(key, answers.get(key)):
             return True
-    return any(bas_input_signal(key, bas_answer(answers, key)) for key in BAS_FIELD_ALIASES if key != "gst_registered")
+    return any(bas_input_signal(key, bas_answer(answers, key)) for key in BAS_FIELD_ALIASES)
 
 
 def has_abn_inputs(answers: Dict[str, Any]) -> bool:
@@ -3007,11 +3007,29 @@ def has_abn_inputs(answers: Dict[str, Any]) -> bool:
             continue
         if key in answers and abn_input_signal(key, answers.get(key)):
             return True
+    if has_nested_abn_inputs(answers):
+        return True
     return any(
         key != "abn" or not bare_abn_is_payg(answers)
         for key in ABN_CONTEXT_SIGNAL_FIELDS
         if abn_input_signal(key, abn_answer(answers, key))
     )
+
+
+def has_nested_abn_inputs(answers: Dict[str, Any]) -> bool:
+    for nested_key in ABN_NESTED_KEYS:
+        nested = answers.get(nested_key)
+        if not isinstance(nested, dict):
+            continue
+        for key in ABN_FIELD_ALIASES:
+            value = alias_answer_value(
+                nested,
+                ABN_NESTED_FIELD_ALIASES.get(key, ()),
+                amount=key in {"income_total", "expense_total", "income_streams", "expense_categories"},
+            )
+            if abn_input_signal(key, value):
+                return True
+    return False
 
 
 def abn_input_signal(key: str, value: Any) -> bool:
@@ -3033,7 +3051,7 @@ def bas_input_signal(key: str, value: Any) -> bool:
     if key == "tax_invoice_evidence":
         return False
     if key in {"accounting_basis", "period_coverage", "gst_accounting_basis", "bas_period_coverage"} and evidence_missing(value):
-        return False
+        return contains_unknown(value)
     return True
 
 
