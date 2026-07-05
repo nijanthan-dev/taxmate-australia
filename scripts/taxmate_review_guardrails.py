@@ -156,7 +156,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #73 ABN/BAS intake",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Sole-trader ABN and BAS worksheet intake must preserve flat and nested ABN/BAS facts, itemized income streams and expense categories, zero amounts, false GST registration, source provenance, and prep-only/no-lodgment wording; keep unknown, placeholder, or malformed ABN/BAS amounts, structured missing evidence, no-records wording, missing tax invoices, unknown or placeholder accounting basis, and unknown or placeholder BAS period coverage as Evidence; compare itemized ABN amount aliases even when item evidence is unknown; keep false ABN review flags visible when real business context exists without letting standalone default false review flags, including serialized false/no/0/off/unchecked values, create blank ABN rows or payload sections; keep completed complex ABN/BAS rows under Accountant review; and never imply BAS lodgment, official-form filling, copy-ready treatment, or final business schedule treatment.",
+        "Sole-trader ABN and BAS worksheet intake must preserve flat and nested ABN/BAS facts, itemized income streams and expense categories, zero amounts, false GST registration, source provenance, and prep-only/no-lodgment wording; keep unknown, placeholder, or malformed ABN/BAS amounts, structured missing evidence, no-records wording, missing tax invoices, unknown or placeholder accounting basis, and unknown or placeholder BAS period coverage visible in Evidence rows without downgrading ABN/BAS section rows from Accountant review; compare itemized ABN amount aliases even when item evidence is unknown; keep false ABN review flags visible when real business context exists without letting standalone default false review flags, including serialized false/no/0/off/unchecked values, create blank ABN rows or payload sections; keep completed complex ABN/BAS rows under Accountant review; and never imply BAS lodgment, official-form filling, copy-ready treatment, or final business schedule treatment.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -434,6 +434,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def bas_summary(",
                 "raw[\"alias_conflicts\"] = alias_conflicts",
                 "raw[\"alias_conflict\"] = bool(alias_conflicts)",
+                "status = \"Accountant review\" if has_abn_inputs(answers) else \"N/A skipped\"",
+                "status = \"Accountant review\" if has_bas_inputs(answers) else \"N/A skipped\"",
                 "if supplied_item_total_conflict(income_total, income_streams):",
                 "if supplied_item_total_conflict(expense_total, expense_categories):",
                 "if any(item_amount_alias_conflict(item) for item in income_streams):",
@@ -492,9 +494,6 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "\"BAS alias reconciliation required\"",
                 "abn = abn_summary(answers) if has_abn_inputs(answers) else {}",
                 "bas = bas_summary(answers) if has_bas_inputs(answers) else {}",
-                "spec.key in REVIEWABLE_ABN_FIELDS",
-                "spec.key in REVIEWABLE_BAS_FIELDS or spec.key == \"gst_registered\"",
-                "if status == \"Accountant review\" and not review_flag_terms(summary, ABN_COMPLEX_REVIEW_FIELDS) and (",
                 "if key in answers and has_meaningful_value(answers.get(key)):",
                 "for key in ABN_CONTEXT_SIGNAL_FIELDS",
                 "def base_item_status(",

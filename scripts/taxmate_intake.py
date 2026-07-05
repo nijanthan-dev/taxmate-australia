@@ -1928,10 +1928,6 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                 status = "Evidence"
             if spec.key in REVIEWABLE_PAYG_FIELDS and payg_aggregate_evidence_gaps(payg):
                 status = "Evidence"
-            if spec.key in REVIEWABLE_ABN_FIELDS and abn.get("alias_conflict"):
-                status = "Evidence"
-            if (spec.key in REVIEWABLE_BAS_FIELDS or spec.key == "gst_registered") and bas.get("alias_conflict"):
-                status = "Evidence"
             rows.append(
                 guide_row(
                     spec.key,
@@ -2747,10 +2743,6 @@ def bas_tab_text(raw: Dict[str, Any]) -> str:
 def abn_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     summary = abn_summary(answers)
     status = "Accountant review" if has_abn_inputs(answers) else "N/A skipped"
-    if status == "Accountant review" and not review_flag_terms(summary, ABN_COMPLEX_REVIEW_FIELDS) and (
-        summary.get("amount_evidence") or summary.get("record_evidence") or summary.get("item_evidence") or summary.get("alias_conflict")
-    ):
-        status = "Evidence"
     return [
         guide_row(
             "ABN",
@@ -2768,14 +2760,6 @@ def abn_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 def bas_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     summary = bas_summary(answers)
     status = "Accountant review" if has_bas_inputs(answers) else "N/A skipped"
-    if status == "Accountant review" and (
-        summary.get("invoice_evidence")
-        or summary.get("basis_evidence")
-        or summary.get("period_coverage_evidence")
-        or summary.get("alias_conflict")
-        or any(summary.get(f"{key}_malformed") for key in BAS_AMOUNT_FIELDS)
-    ):
-        status = "Evidence"
     return [
         guide_row(
             "BAS",
