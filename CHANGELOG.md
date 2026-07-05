@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.15.0...v0.16.0) (2026-07-05)
+
+
+### Features
+
+* route small business cgt concessions ([53d966c](https://github.com/nijanthan-dev/taxmate-australia/commit/53d966cdaa4e670956c38d1d5695bbbdb3676bfb)), closes [#78](https://github.com/nijanthan-dev/taxmate-australia/issues/78)
+
 ## [0.15.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.14.0...v0.15.0) (2026-07-05)
 
 
