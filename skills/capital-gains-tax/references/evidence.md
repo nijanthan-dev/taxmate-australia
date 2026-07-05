@@ -8,6 +8,8 @@ Collect records before classifying anything as `Claim candidate`.
 - GST registration and creditable-purpose evidence where relevant
 - CGT acquisition, disposal, proceeds, cost-base, and adjustment records where relevant
 - logbooks, diaries, rosters, timesheets, or usage records where relevant
+- main residence property records such as purchase contract, settlement statement, rates notices, lease records, occupancy evidence, and absence-rule support
+- rental or business use evidence and spouse or partner main-residence conflict evidence where relevant
 
 Missing or altered evidence means `Insufficient evidence` or `Accountant review`, never a confirmed claim.
 

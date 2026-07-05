@@ -61,3 +61,8 @@ Use for general CGT concepts and records. Do not use for routine employee deduct
 - dates acquired, used, paid, received, and disposed
 - records held and missing evidence
 - prior claims, reimbursements, and duplicate-risk factors
+- main residence exemption claim, including false, uncertain, or partial claim signals
+- main residence ownership, occupancy, and absence periods, preserving valid 0-day text
+- rental or business use during ownership and spouse or partner main-residence conflict signals
+- property records such as contract, settlement, rates, lease, occupancy, and absence-rule evidence
+- main-residence source URLs and checked-at provenance for rows and evidence queues

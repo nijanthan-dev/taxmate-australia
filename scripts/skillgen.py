@@ -986,6 +986,16 @@ def skillMarkdown(topic_obj: Topic) -> str:
                 "own-wallet transfer support and records preserving source provenance",
             ]
         )
+    if topic_obj.slug == "capital-gains-tax":
+        facts.extend(
+            [
+                "main residence exemption claim, including false, uncertain, or partial claim signals",
+                "main residence ownership, occupancy, and absence periods, preserving valid 0-day text",
+                "rental or business use during ownership and spouse or partner main-residence conflict signals",
+                "property records such as contract, settlement, rates, lease, occupancy, and absence-rule evidence",
+                "main-residence source URLs and checked-at provenance for rows and evidence queues",
+            ]
+        )
     for fact in facts:
         lines.append(f"- {fact}")
     return "\n".join(lines) + "\n"
@@ -1052,6 +1062,15 @@ def rulesMarkdown(topic_obj: Topic, sources: List[Source]) -> str:
                 "",
             ]
         )
+    if topic_obj.slug == "capital-gains-tax":
+        lines.extend(
+            [
+                "Main residence exemption handling is review-first and prep-only. Collect claim status, ownership period, occupancy period, rental or business use, absence periods or absence-rule signals, spouse or partner main-residence conflicts, and property-record evidence.",
+                "",
+                "Missing records, unknown periods, partial or mixed use, rental or business use, absence periods, spouse conflicts, and ownership or occupancy uncertainty stay Evidence or `Accountant review`. Preserve false claim/use/conflict values and valid `0` or `0 days` values when CGT or main-residence context exists. Do not calculate a final exemption, decide final CGT treatment, fill official ATO PDFs, or call the row copy-ready.",
+                "",
+            ]
+        )
     for review in topic_obj.review:
         lines.append(f"- {review}")
     lines.extend(["- mixed business/private use", "- missing ownership or entity details", "- missing evidence", "- pre-revenue expenses", "- capital versus revenue treatment", "- GST/BAS, FBT, payroll, or complex CGT uncertainty"])
@@ -1069,6 +1088,13 @@ def evidenceMarkdown(topic_obj: Topic, sources: List[Source]) -> str:
         "logbooks, diaries, rosters, timesheets, or usage records where relevant",
     ]:
         lines.append(f"- {item}")
+    if topic_obj.slug == "capital-gains-tax":
+        lines.extend(
+            [
+                "- main residence property records such as purchase contract, settlement statement, rates notices, lease records, occupancy evidence, and absence-rule support",
+                "- rental or business use evidence and spouse or partner main-residence conflict evidence where relevant",
+            ]
+        )
     lines.extend(["", "Missing or altered evidence means `Insufficient evidence` or `Accountant review`, never a confirmed claim."])
     if len(sources) > 0:
         lines.append("\n### Topic source coverage\n")

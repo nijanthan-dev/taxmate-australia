@@ -164,6 +164,10 @@ These are conservative topic summaries from official sources, not copied ATO pag
 - Do not claim source-backed treatment from metadata-only sources without explicit validation.
 
 ## Accountant-review boundaries
+Main residence exemption handling is review-first and prep-only. Collect claim status, ownership period, occupancy period, rental or business use, absence periods or absence-rule signals, spouse or partner main-residence conflicts, and property-record evidence.
+
+Missing records, unknown periods, partial or mixed use, rental or business use, absence periods, spouse conflicts, and ownership or occupancy uncertainty stay Evidence or `Accountant review`. Preserve false claim/use/conflict values and valid `0` or `0 days` values when CGT or main-residence context exists. Do not calculate a final exemption, decide final CGT treatment, fill official ATO PDFs, or call the row copy-ready.
+
 - main residence
 - inherited asset
 - rollover
