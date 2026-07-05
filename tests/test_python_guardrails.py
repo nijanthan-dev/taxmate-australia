@@ -229,6 +229,7 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any('cgt_item_values(raw.get("cgt_items"))' in finding.detail for finding in findings))
         self.assertTrue(any("cgt_fact_requires_context" in finding.detail for finding in findings))
         self.assertTrue(any("CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS" in finding.detail for finding in findings))
+        self.assertTrue(any("CGT_MAIN_RESIDENCE_REVIEW_FIELDS" in finding.detail for finding in findings))
         self.assertTrue(any("has_context or not cgt_evidence_gap_requires_context" in finding.detail for finding in findings))
         self.assertTrue(any("main residence exemption claim" in finding.detail for finding in findings))
         self.assertTrue(any("main-residence source URLs" in finding.detail for finding in findings))
@@ -12773,6 +12774,7 @@ class MainResidenceCgtWorkflowTests(unittest.TestCase):
         self.assertIn("spouse/partner main residence evidence", cgt_evidence["answer"])
         self.assertIn(taxmate_intake.ATO_CGT_MAIN_RESIDENCE_ELIGIBILITY_SOURCE, cgt_row["source_urls"])
         self.assertIn(taxmate_intake.ATO_RENTAL_HOME_USE_SOURCE, cgt_evidence["source_urls"])
+        self.assertFalse(any(item["number"] == "CGT-SCHEDULE" for item in payload["items"]))
 
     def test_main_residence_property_record_conflicts_stay_evidence(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(

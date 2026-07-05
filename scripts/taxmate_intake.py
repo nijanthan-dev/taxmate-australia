@@ -1038,6 +1038,15 @@ CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS = (
     "main_residence_absence_periods",
     "main_residence_property_records",
 )
+CGT_MAIN_RESIDENCE_REVIEW_FLAG_FIELDS = (
+    "main_residence_claim",
+    "main_residence_rental_business_use",
+    "main_residence_spouse_conflict",
+)
+CGT_MAIN_RESIDENCE_REVIEW_FIELDS = (
+    *CGT_MAIN_RESIDENCE_REVIEW_FLAG_FIELDS,
+    *CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS,
+)
 CGT_FLAT_AMOUNT_FIELDS = tuple(
     key for key, nested_key in CGT_FLAT_FIELD_KEYS.items() if nested_key in CGT_AMOUNT_FIELDS
 )
@@ -6645,7 +6654,7 @@ def cgt_has_top_level_details(raw: Dict[str, Any]) -> bool:
 
 
 def cgt_itemized_inherited_main_residence_key(key: str) -> bool:
-    return key in CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS
+    return key in CGT_MAIN_RESIDENCE_REVIEW_FIELDS
 
 
 def cgt_has_reconciliation_target(raw: Dict[str, Any]) -> bool:
