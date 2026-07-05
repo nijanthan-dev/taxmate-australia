@@ -8509,6 +8509,61 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("Evidence", rows["payg_withheld"]["status"])
         self.assertIn("no-PAYG answer with PAYG facts", evidence)
 
+    def test_sole_trader_abn_profile_does_not_create_payg_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "abn": "12 345 678 901",
+                "business_name": "Example Studio",
+                "business_record_system": "ledger",
+            }
+        )
+        numbers = {row["number"] for row in payload["items"]}
+        evidence_numbers = {row["number"] for row in payload["evidence_items"]}
+
+        self.assertNotIn("payg_employer_abn", numbers)
+        self.assertFalse(any(number.startswith("PAYG-EVID") for number in evidence_numbers))
+        self.assertTrue(payload["abn_items"])
+
+    def test_top_level_abn_only_does_not_create_payg_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload({"abn": "12 345 678 901"})
+        numbers = {row["number"] for row in payload["items"]}
+        evidence_numbers = {row["number"] for row in payload["evidence_items"]}
+
+        self.assertNotIn("payg_employer_abn", numbers)
+        self.assertFalse(any(number.startswith("PAYG-EVID") for number in evidence_numbers))
+        self.assertTrue(payload["abn_items"])
+
+    def test_business_abn_does_not_supply_missing_flat_payg_abn(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "abn": "12 345 678 901",
+                "business_record_system": "ledger",
+                "payg_employer_name": "Example Pty Ltd",
+                "payg_gross": 9000,
+                "payg_withheld": 900,
+            }
+        )
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertNotIn("payg_employer_abn", rows)
+        self.assertIn("payer name or ABN", evidence)
+        self.assertTrue(payload["abn_items"])
+
+    def test_explicit_payg_employer_abn_still_renders_payg_detail(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "payg_employer_name": "Example Pty Ltd",
+                "payg_employer_abn": "22 222 222 222",
+                "payg_gross": 9000,
+                "payg_withheld": 900,
+            }
+        )
+        rows = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Accountant review", rows["payg_employer_abn"]["status"])
+        self.assertEqual("22 222 222 222", rows["payg_employer_abn"]["answer"])
+
     def test_payg_placeholder_only_item_list_without_facts_skips_workflow(self) -> None:
         cases = [
             {"payg_income_statements": [{"payer": "no PAYG"}]},

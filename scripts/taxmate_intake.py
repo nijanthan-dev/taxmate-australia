@@ -4171,7 +4171,7 @@ def payg_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     nested = first_payg_nested(answers)
     merged: Dict[str, Any] = dict(nested) if isinstance(nested, dict) else {}
     merged = payg_drop_absence_fields(merged)
-    normalized_answer_fields = normalize_payg_fields(answers)
+    normalized_answer_fields = normalize_payg_fields(payg_top_level_alias_answers(answers))
     flat = {
         "payer": answers.get("payg_employer_name"),
         "abn": answers.get("payg_employer_abn"),
@@ -4236,6 +4236,14 @@ def payg_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     merged = payg_merge_flat_values(merged, flat_values)
     merged = payg_values_with_declines(merged, {**answer_declines, **flat_declines, **raw_declines})
     return merged
+
+
+def payg_top_level_alias_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
+    if "abn" not in answers:
+        return answers
+    narrowed = dict(answers)
+    narrowed.pop("abn", None)
+    return narrowed
 
 
 def first_payg_nested(answers: Dict[str, Any]) -> Any:
