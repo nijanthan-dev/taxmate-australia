@@ -7623,6 +7623,46 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("PAYG-RECON", rows)
         self.assertFalse(any(row["number"].startswith("PAYG-EVID") for row in payload["evidence_items"]))
 
+    def test_payg_item_aliases_bare_abn_stay_payg_employer_abn(self) -> None:
+        item = {
+            "payer": "Example Pty Ltd",
+            "gross": 1000,
+            "withheld": 100,
+            "statement": "income statement held",
+            "finalised": True,
+        }
+        for alias in taxmate_intake.PAYG_ITEM_ALIASES:
+            with self.subTest(alias=alias):
+                payload = taxmate_intake.answers_to_pack_payload({"abn": "12 345 678 901", alias: [item]})
+                rows = {row["number"]: row for row in payload["items"]}
+
+                self.assertIn("PAYG-1", rows)
+                self.assertIn("ABN 12 345 678 901", rows["PAYG-1"]["answer"])
+                self.assertNotIn("PAYG-SUPP", rows)
+                self.assertEqual([], payload["abn_items"])
+                self.assertFalse(any(row["number"].startswith("PAYG-EVID") for row in payload["evidence_items"]))
+                self.assertFalse(any(row["number"].startswith("ABN-EVID") for row in payload["evidence_items"]))
+
+    def test_nested_payg_direct_items_bare_abn_stay_payg_employer_abn(self) -> None:
+        item = {
+            "payer": "Nested Pty Ltd",
+            "gross": 1000,
+            "withheld": 100,
+            "statement": "income statement held",
+            "finalised": True,
+        }
+        for nested_key in taxmate_intake.PAYG_NESTED_KEYS:
+            with self.subTest(nested_key=nested_key):
+                payload = taxmate_intake.answers_to_pack_payload({"abn": "12 345 678 901", nested_key: {"items": [item]}})
+                rows = {row["number"]: row for row in payload["items"]}
+
+                self.assertIn("PAYG-1", rows)
+                self.assertIn("ABN 12 345 678 901", rows["PAYG-1"]["answer"])
+                self.assertNotIn("PAYG-SUPP", rows)
+                self.assertEqual([], payload["abn_items"])
+                self.assertFalse(any(row["number"].startswith("PAYG-EVID") for row in payload["evidence_items"]))
+                self.assertFalse(any(row["number"].startswith("ABN-EVID") for row in payload["evidence_items"]))
+
     def test_payg_itemized_conflict_stays_evidence_in_row_and_queue(self) -> None:
         answers = taxmate_intake.sample_answers()
         answers["payg_gross"] = 119000

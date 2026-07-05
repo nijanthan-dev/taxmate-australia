@@ -4369,6 +4369,7 @@ def payg_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
         merged = {key: value for key, value in merged.items() if key not in PAYG_ITEM_ALIASES}
         merged["items"] = normalized_items
     merged = payg_merge_flat_values(merged, flat_values)
+    merged = payg_backfill_single_item_context(merged)
     merged = payg_values_with_declines(merged, {**answer_declines, **flat_declines, **raw_declines})
     return merged
 
@@ -4386,6 +4387,8 @@ def bare_abn_is_payg(answers: Dict[str, Any]) -> bool:
 
 
 def has_payg_context_for_bare_abn(answers: Dict[str, Any]) -> bool:
+    if payg_item_context_for_bare_abn(answers):
+        return True
     for key, value in answers.items():
         canonical = PAYG_FLAT_FIELD_KEYS.get(key, PAYG_ALIAS_TO_FIELD.get(key))
         if canonical and canonical != "abn" and has_meaningful_payg_flat_value(canonical, value):
@@ -4393,11 +4396,17 @@ def has_payg_context_for_bare_abn(answers: Dict[str, Any]) -> bool:
     for nested_key in PAYG_NESTED_KEYS:
         nested = answers.get(nested_key)
         if isinstance(nested, dict):
+            if payg_item_context_for_bare_abn(nested):
+                return True
             for key, value in nested.items():
                 canonical = PAYG_ALIAS_TO_FIELD.get(key)
                 if canonical and canonical != "abn" and has_meaningful_payg_flat_value(canonical, value):
                     return True
     return False
+
+
+def payg_item_context_for_bare_abn(record: Dict[str, Any]) -> bool:
+    return first_payg_items(record) is not None or bool(payg_item_values(record.get("items")))
 
 
 def has_business_context_for_bare_abn(answers: Dict[str, Any]) -> bool:
@@ -4460,6 +4469,25 @@ def first_payg_items(record: Dict[str, Any]) -> Any:
         if payg_item_values(value):
             return value
     return None
+
+
+def payg_backfill_single_item_context(record: Dict[str, Any]) -> Dict[str, Any]:
+    items = payg_item_values(record.get("items"))
+    if len(items) != 1:
+        return record
+    item = dict(items[0])
+    moved_keys: List[str] = []
+    for key in ("abn",):
+        if not has_meaningful_payg_item_value(key, item.get(key)) and has_meaningful_payg_flat_value(key, record.get(key)):
+            item[key] = record.get(key)
+            moved_keys.append(key)
+    if not moved_keys:
+        return record
+    merged = dict(record)
+    for key in moved_keys:
+        merged.pop(key, None)
+    merged["items"] = [item]
+    return merged
 
 
 def payg_items_conflict(left: Any, right: Any) -> bool:
