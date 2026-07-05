@@ -230,6 +230,10 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("cgt_fact_requires_context" in finding.detail for finding in findings))
         self.assertTrue(any("CGT_MAIN_RESIDENCE_REVIEW_TEXT_FIELDS" in finding.detail for finding in findings))
         self.assertTrue(any("has_context or not cgt_evidence_gap_requires_context" in finding.detail for finding in findings))
+        self.assertTrue(any("main residence exemption claim" in finding.detail for finding in findings))
+        self.assertTrue(any("main-residence source URLs" in finding.detail for finding in findings))
+        self.assertTrue(any("review-first and prep-only" in finding.detail for finding in findings))
+        self.assertTrue(any("final main residence exemption" in finding.detail for finding in findings))
 
     def test_review_guardrails_detect_wfh_parser_fallbacks(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -9922,6 +9926,36 @@ class SkillGenerationTests(unittest.TestCase):
         self.assertIn("## Common Mistakes", body)
         self.assertIn("Claude Code", frontmatter["compatibility"])
         self.assertIn("Cowork", frontmatter["compatibility"])
+
+    def test_capital_gains_skill_includes_main_residence_workflow(self) -> None:
+        topic = next(topic for topic in skillgen.Topics() if topic.slug == "capital-gains-tax")
+
+        body = skillgen.skillMarkdown(topic)
+        rules = skillgen.rulesMarkdown(topic, [])
+        evidence = skillgen.evidenceMarkdown(topic, [])
+
+        for token in [
+            "main residence exemption claim",
+            "main residence ownership, occupancy, and absence periods",
+            "rental or business use",
+            "spouse or partner main-residence conflict",
+            "property records such as contract, settlement, rates, lease, occupancy, and absence-rule evidence",
+            "main-residence source URLs and checked-at provenance",
+        ]:
+            self.assertIn(token, body)
+        for token in [
+            "review-first and prep-only",
+            "ownership period",
+            "occupancy period",
+            "absence periods",
+            "Preserve false claim/use/conflict values",
+            "valid `0` or `0 days` values",
+            "Do not calculate a final exemption",
+            "fill official ATO PDFs",
+        ]:
+            self.assertIn(token, rules)
+        self.assertIn("main residence property records", evidence)
+        self.assertIn("rental or business use evidence", evidence)
 
     def test_source_coverage_error_is_returned_not_thrown(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

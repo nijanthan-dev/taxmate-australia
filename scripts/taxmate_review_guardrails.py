@@ -146,7 +146,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #74 main residence CGT",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Main residence CGT intake must preserve claim, ownership, occupancy, rental/business use, absence, spouse/partner conflict, and property-record facts across flat, nested, and itemized rows; keep missing or unknown periods, missing records, rental/business use, absence, and spouse conflicts as Evidence or Accountant review when another CGT/main-residence signal exists or itemized CGT rows provide context; preserve false claim/use/conflict values and 0-day text with context; never let standalone main-residence period or property-record defaults create CGT facts or fallback base rows; inherit top-level false, true, and ambiguous main-residence review flags plus text and property-record facts into item rows when itemized context exists; keep flat-vs-nested property-record conflicts visible as Evidence; attach main-residence, rental/business-use, and property-record source URLs to rows and evidence queues; never calculate a final exemption; and never downgrade rental-property Accountant review.",
+        "Main residence CGT intake and generated portable skills must preserve claim, ownership, occupancy, rental/business use, absence, spouse/partner conflict, and property-record facts across flat, nested, and itemized rows; keep missing or unknown periods, missing records, rental/business use, absence, and spouse conflicts as Evidence or Accountant review when another CGT/main-residence signal exists or itemized CGT rows provide context; preserve false claim/use/conflict values and 0-day text with context; never let standalone main-residence period or property-record defaults create CGT facts or fallback base rows; inherit top-level false, true, and ambiguous main-residence review flags plus text and property-record facts into item rows when itemized context exists; keep flat-vs-nested property-record conflicts visible as Evidence; attach main-residence, rental/business-use, and property-record source URLs to rows and evidence queues; keep capital-gains-tax skill/rules/evidence and individual-return routing aligned through scripts/skillgen.py where generated; never calculate a final exemption; and never downgrade rental-property Accountant review.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -308,6 +308,9 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     text = read(root, "scripts/taxmate_intake.py")
     skill_text = read_optional(root, "skills/individual-return/SKILL.md")
     skill_rules = read_optional(root, "skills/individual-return/references/rules.md")
+    capital_gains_skill = read_optional(root, "skills/capital-gains-tax/SKILL.md")
+    capital_gains_rules = read_optional(root, "skills/capital-gains-tax/references/rules.md")
+    capital_gains_evidence = read_optional(root, "skills/capital-gains-tax/references/evidence.md")
     findings: List[Finding] = []
     route_line = ""
     for line in skill_text.splitlines():
@@ -331,6 +334,28 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "`taxmate-australia-crypto-assets`",
                 "`taxmate-australia-property-rental-cgt`",
                 "`taxmate-australia-records-evidence`",
+            ],
+        )
+    )
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            "\n".join([skill_text, skill_rules, capital_gains_skill, capital_gains_rules, capital_gains_evidence]),
+            [
+                "main residence exemption claim",
+                "ownership period",
+                "occupancy period",
+                "rental or business use",
+                "absence periods",
+                "spouse or partner main-residence conflict",
+                "property records",
+                "main-residence source URLs",
+                "review-first and prep-only",
+                "Preserve false claim/use/conflict values",
+                "valid `0` or `0 days` values",
+                "Do not calculate a final exemption",
+                "fill official ATO PDFs",
+                "final main residence exemption",
             ],
         )
     )
