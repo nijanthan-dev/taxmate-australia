@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.14.0...v0.15.0) (2026-07-05)
+
+
+### Features
+
+* add main residence CGT review workflow ([807c56d](https://github.com/nijanthan-dev/taxmate-australia/commit/807c56da2e09bb5b6bcfe417981cfd07e49db381))
+
 ## [0.14.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.13.0...v0.14.0) (2026-07-04)
 
 
