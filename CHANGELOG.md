@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.16.0...v0.17.0) (2026-07-05)
+
+
+### Features
+
+* deepen abn bas worksheet ([#104](https://github.com/nijanthan-dev/taxmate-australia/issues/104)) ([4108cd1](https://github.com/nijanthan-dev/taxmate-australia/commit/4108cd1ab8328fa52048a002499e3a820e46dded))
+
 ## [0.16.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.15.0...v0.16.0) (2026-07-05)
 
 
