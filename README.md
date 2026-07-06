@@ -1,6 +1,6 @@
 # TaxMate Australia
 
-TaxMate Australia helps Codex, Claude Code, Cowork, and OpenAgentSkill CLI turn Australian tax records into conservative prep checklists, review flags, accountant-ready handoffs, and print-first HTML guides. It is linked to official ATO sources and keeps GST/BAS, CGT, missing evidence, and manual-copy boundaries visible.
+TaxMate Australia helps Codex, Claude Code, Cowork, and OpenAgentSkill CLI prepare Australian individual tax return materials with conservative checklists, review flags, accountant handoffs, and print-first HTML guides. It is linked to official ATO sources and keeps GST/BAS, CGT, missing evidence, and manual-copy boundaries visible.
 
 > [!WARNING]
 > **Not tax advice.** TaxMate Australia is a preparation aid, not professional advice or lodgment software. For complex situations, binding decisions, or lodgment, consult a registered tax agent or use the official ATO channel directly. See [DISCLAIMER.md](DISCLAIMER.md).
@@ -11,7 +11,7 @@ Pick the smallest path that matches what you need:
 
 | Need | Install | What you get |
 | --- | --- | --- |
-| HTML guide, taxpack output, source refresh, finance review, or calculators in Codex | Codex plugin install | Bash + Python runtime, MCP tools, source pipeline, guide generation, and audit tooling. |
+| HTML guide, taxpack output, source refresh, finance review, or calculators in Codex or Claude Code | Plugin install | Bash + Python runtime, MCP tools, source pipeline, guide generation, and audit tooling. |
 | Quick use in Codex, Claude Code, Cowork, or OpenAgentSkill CLI | `npx skills` guidance only | Topic guidance, source-backed review prompts, and `Accountant review` flags. No renderer or runtime scripts. |
 
 Codex plugin install:
@@ -21,7 +21,14 @@ codex plugin marketplace add nijanthan-dev/taxmate-australia
 codex plugin add taxmate-australia@taxmate-local-marketplace
 ```
 
-After install, ask Codex to use TaxMate Australia to validate the runtime, create sample individual answers, or render the individual-return HTML guide.
+Claude Code plugin install:
+
+```bash
+claude plugin marketplace add nijanthan-dev/taxmate-australia
+claude plugin install taxmate-australia@taxmate-australia
+```
+
+After install, ask your agent to use TaxMate Australia to validate the runtime, create sample individual answers, or render the individual-return HTML guide.
 
 Optional `npx skills` guidance-only install:
 
@@ -31,6 +38,8 @@ npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
   --agent codex --global --skill '*' --yes
 ```
 
+Use `--agent claude-code` instead of `--agent codex` for Claude Code guidance-only skill installs. Generated files in Claude Code need the Claude Code plugin install above.
+
 Install details: [docs/INSTALLATION.md](docs/INSTALLATION.md).
 Developer runtime details: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md).
 
@@ -38,7 +47,7 @@ Developer runtime details: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTAL
 
 The optional `npx skills` install produces source-backed guidance, missing-evidence prompts, and conservative `Accountant review` routing. It does not install the renderer and does not render files.
 
-The Codex plugin runtime produces a print-first HTML handoff from reviewed or user-supplied facts. The handoff is a custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable. Users manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff after evidence and review queues are resolved.
+The plugin runtime produces a print-first HTML handoff from reviewed or user-supplied facts. The handoff is a custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable. Users manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff after evidence and review queues are resolved.
 
 The current individual-return handoff includes:
 
@@ -66,17 +75,17 @@ The sample data is synthetic. Screenshot maintenance is a contributor task docum
 
 ## What It Does
 
-- Helps users describe PAYG income statements, ABN/sole-trader records, GST/BAS facts, investment statements, general CGT event and main residence exemption claim facts, rental property records, crypto events, superannuation, private health, and other individual-return material in plain language.
-- Turns those facts into missing-evidence prompts, review queues, source-backed notes, and conservative `Accountant review` flags.
+- Helps users prepare PAYG income statements, ABN/sole-trader facts, GST/BAS facts, investment statements, general CGT event and main residence exemption claim facts, rental property facts, crypto events, superannuation, private health, and other individual-return material.
+- Keeps missing-evidence prompts, review queues, source-backed notes, and conservative `Accountant review` flags visible.
 - Keeps source URLs, checked-at dates, source coverage checks, and generated topic skills visible.
 - Builds taxpack and print-first HTML guide handoffs from reviewed data.
 - Helps users manually copy reviewed answers into myTax, paper ATO forms, or an accountant handoff. TaxMate does not fill official ATO PDFs or create returns users can submit directly to the ATO.
 
 ## Use It
 
-Start with the outcome, not an internal command. For a broad individual return, [Individual Return Prep](docs/INDIVIDUAL_RETURN_PREP.md) shows the guidance-only skill path, the Codex plugin HTML guide path, and the prep-only boundaries for myTax, paper ATO form, or accountant handoff.
+Start with the outcome, not an internal command. For a broad individual return, [Individual Return Prep](docs/INDIVIDUAL_RETURN_PREP.md) shows the guidance-only skill path, the plugin HTML guide path, and the prep-only boundaries for myTax, paper ATO form, or accountant handoff.
 
-Talk to the agent in natural language. TaxMate works best when the user describes the records they have, the income year, and what they want prepared. The agent can use a specific guidance skill when the topic is clear, or use the installed Codex plugin when you want a rendered HTML handoff.
+Talk to the agent in natural language. TaxMate works best when the user describes the income year, the return sections involved, the facts they have, and what they want prepared. The agent can use a specific guidance skill when the topic is clear, or use the installed plugin when you want a rendered HTML handoff.
 
 Broad prep examples:
 
@@ -85,7 +94,7 @@ Help me prepare my 2025-26 Australian individual tax return. Ask for the facts y
 ```
 
 ```text
-I have PAYG income statements, some bank interest and dividends, and a small ABN side business. Help me turn those records into a prep-only review checklist for myTax or my accountant.
+I have PAYG income statements, some bank interest and dividends, and a small ABN side business. Help me prepare a prep-only individual tax return review checklist for myTax or my accountant.
 ```
 
 ```text
@@ -125,34 +134,41 @@ Use the taxmate-australia-work-from-home skill for the 2025-26 income year and v
 HTML handoff examples:
 
 ```text
-Use the installed TaxMate Australia plugin to turn my reviewed answers into the print-first individual return HTML guide, then tell me where the file is so I can open it and save it as PDF from my browser.
+Use the installed TaxMate Australia plugin to prepare the print-first individual return HTML guide from my reviewed answers, then tell me where the file is so I can open it and save it as PDF from my browser.
 ```
 
 ```text
 I have a reviewed answers file. Use TaxMate to create the prep-only HTML handoff with the AI confirmation table, PAYG rows, investment rows, CGT schedule and item rows, detailed ABN prep, BAS worksheet, review queues, and source/provenance appendix.
 ```
 
-If you are using `npx skills` guidance only, the agent can build the checklist, review prompts, manual-copy guidance, and source-backed review flags in chat. Rendering the HTML file needs the Codex plugin runtime.
+If you are using `npx skills` guidance only, the agent can build the checklist, review prompts, manual-copy guidance, and source-backed review flags in chat. Rendering the HTML file needs the plugin runtime.
 
-## Codex Plugin Runtime Quickstart
+## Plugin Runtime Quickstart
 
-Codex plugin install is the real TaxMate install. Use it when you need generated guides, taxpack output, source refresh, finance review, or calculators.
+Plugin install is the real TaxMate install. Use it when you need generated guides, taxpack output, source refresh, finance review, or calculators.
 
 Prerequisites:
 
-- Codex.
+- Codex or Claude Code.
 - Bash and Python 3.9+ for the plugin runtime.
 
-Install:
+Install for Codex:
 
 ```bash
 codex plugin marketplace add nijanthan-dev/taxmate-australia
 codex plugin add taxmate-australia@taxmate-local-marketplace
 ```
 
+Install for Claude Code:
+
+```bash
+claude plugin marketplace add nijanthan-dev/taxmate-australia
+claude plugin install taxmate-australia@taxmate-australia
+```
+
 Setup details: [docs/INSTALLATION.md](docs/INSTALLATION.md).
 
-Ask Codex to use the TaxMate Australia tools:
+Ask your agent to use the TaxMate Australia tools:
 
 ```text
 Use TaxMate Australia to validate the runtime.
@@ -195,7 +211,7 @@ Contributor flow, release checks, screenshot maintenance, and repository guardra
 
 ## Troubleshooting
 
-- Plugin install fails: verify the Codex CLI is installed, then re-run the `codex plugin marketplace add` and `codex plugin add` commands in [docs/INSTALLATION.md](docs/INSTALLATION.md).
+- Plugin install fails: verify Codex or Claude Code is installed, then re-run the matching plugin install commands in [docs/INSTALLATION.md](docs/INSTALLATION.md).
 - HTML guide command fails: ask Codex to run TaxMate runtime validation and verify `python3` + `bash` are available.
 - `npx: command not found`: install Node.js only if you want optional `npx skills` guidance-only install.
 - Need guidance only: use the optional `npx skills` commands in [docs/INSTALLATION.md](docs/INSTALLATION.md).

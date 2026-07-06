@@ -1,27 +1,34 @@
 # Install TaxMate Australia
 
-Use the Codex plugin install when you want TaxMate to generate files such as the print-first HTML guide, taxpack output, source refresh results, finance review output, or calculator output.
+Use the plugin install when you want TaxMate to generate files such as the print-first HTML guide, taxpack output, source refresh results, finance review output, or calculator output.
 
 Use `npx skills` only when you want guidance in chat. That install does not include the renderer, root runtime scripts, `runtime/`, or `wrappers/`.
 
 TaxMate outputs are preparation aids only. The HTML guide is a custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable. Users manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff after resolving missing facts, evidence gaps, and `Accountant review` queues.
 
-## Codex Plugin Install
+## Plugin Install
 
 Prerequisites:
 
-- Codex CLI.
+- Codex CLI or Claude Code CLI.
 - Bash.
 - Python 3.9+.
 
-Install the plugin:
+Install for Codex:
 
 ```bash
 codex plugin marketplace add nijanthan-dev/taxmate-australia
 codex plugin add taxmate-australia@taxmate-local-marketplace
 ```
 
-Then ask Codex to use TaxMate Australia:
+Install for Claude Code:
+
+```bash
+claude plugin marketplace add nijanthan-dev/taxmate-australia
+claude plugin install taxmate-australia@taxmate-australia
+```
+
+Then ask your agent to use TaxMate Australia:
 
 ```text
 Use TaxMate Australia to validate the runtime.
@@ -74,6 +81,8 @@ npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
   --yes
 ```
 
+Use `--agent claude-code` instead of `--agent codex` for Claude Code guidance-only skill installs. For generated files in Claude Code, use the Claude Code plugin install above.
+
 Verify:
 
 ```bash
@@ -93,13 +102,15 @@ Guidance-only install locations:
 - Project install: `.agents/skills/`
 - Global install with `skills@1.5.13`: `~/.agents/skills/`
 
-## Claude Code and Cowork
+## Claude Code Runtime vs Cowork Guidance
 
-For Claude Code or Cowork, use the public TaxMate skill folders. Each folder is self-contained, has `SKILL.md` with YAML frontmatter, and avoids plugin-runtime commands.
+Claude Code users who need generated files should use the plugin install above. That is the Claude Code runtime path and includes the bash and Python runtime, MCP server, `scripts/`, `runtime/`, and `wrappers/`.
+
+Cowork currently uses guidance-only public skills. Each folder is self-contained, has `SKILL.md` with YAML frontmatter, and avoids plugin-runtime commands.
 
 Install through `skills@1.5.13` when possible so the installed folder matches the public `taxmate-australia-*` name. If you manually package a skill from this repository, use `config/public-skills.json` to map the public name to its source folder, and zip that folder with the public name. Do not zip the whole repository when you only want guidance-only skill access.
 
-Use the Codex plugin install when you need the print-first HTML handoff, taxpack output, ATO refresh, finance review scripts, calculators, or repository validation.
+Use the plugin install when you need the print-first HTML handoff, taxpack output, ATO refresh, finance review scripts, calculators, or repository validation.
 
 ## Public Guidance Skills
 

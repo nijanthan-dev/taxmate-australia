@@ -1,7 +1,7 @@
 {
   "name": "TaxMate Australia",
   "slug": "taxmate-australia",
-  "description": "Australian tax prep skill pack and Codex plugin linked to official ATO sources. The Codex plugin ships the bash and Python runtime for conservative record review, GST/BAS, CGT, evidence gaps, accountant handoff, print-first HTML guide handoffs, and treatment flags. The npx skills install is guidance only.",
+  "description": "Australian individual tax return prep skill pack and agent plugin linked to official ATO sources. The Codex and Claude Code plugins ship the bash and Python runtime for conservative section prep, GST/BAS, CGT, evidence gaps, accountant handoff, print-first HTML guide handoffs, and treatment flags. The npx skills install is guidance only.",
   "tagline": "Australian tax prep with ATO source links",
   "category": "business",
   "tags": [
@@ -42,6 +42,12 @@
       "label": "Codex plugin runtime",
       "kind": "command",
       "value": "codex plugin marketplace add nijanthan-dev/taxmate-australia && codex plugin add taxmate-australia@taxmate-local-marketplace"
+    },
+    {
+      "id": "claude-code",
+      "label": "Claude Code plugin runtime",
+      "kind": "command",
+      "value": "claude plugin marketplace add nijanthan-dev/taxmate-australia && claude plugin install taxmate-australia@taxmate-australia"
     }
   ],
   "agent_compatibility": [
@@ -50,10 +56,10 @@
     "Cowork"
   ],
   "suited_tasks": [
-    "Review Australian tax records conservatively",
+    "Prepare Australian individual tax return materials conservatively",
     "Identify evidence gaps and Accountant review items",
-    "Draft accountant-facing taxpack and print-first HTML guide handoffs with the Codex plugin runtime",
-    "Refresh and cite official ATO source pages with the Codex plugin runtime"
+    "Draft accountant-facing taxpack and print-first HTML guide handoffs with the plugin runtime",
+    "Refresh and cite official ATO source pages with the plugin runtime"
   ],
   "do_not_use_for": [
     "ATO lodgment, filing, submission, transmission, or finalisation",

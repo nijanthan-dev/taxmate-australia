@@ -198,7 +198,7 @@ Do not commit private user tax records.
 
 ## Local Plugin Testing
 
-This repo includes `.codex-plugin/plugin.json` and `.agents/plugins/marketplace.json` for advanced local Codex plugin testing. Local marketplace configuration is development-only.
+This repo includes `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, and `.claude-plugin/` metadata for local plugin testing. Local marketplace configuration is development-only.
 
 From the repo root:
 
@@ -207,12 +207,31 @@ codex plugin marketplace add .
 codex plugin add taxmate-australia@taxmate-local-marketplace
 ```
 
+Claude Code local install:
+
+```bash
+claude plugin marketplace add .
+claude plugin install taxmate-australia@taxmate-australia
+```
+
 Verify available plugins:
 
 ```bash
 codex plugin marketplace list
 codex plugin list
+claude plugin marketplace list
+claude plugin list
 ```
+
+Validation smoke tests:
+
+```bash
+bash scripts/test-codex-plugin-install.sh
+bash scripts/test-claude-plugin-validate.sh
+bash scripts/test-claude-plugin-install.sh
+```
+
+Pre-commit runs review guardrails, repository validation, MCP smoke, and Claude plugin validation/install smoke when the required local CLIs are available.
 
 Do not claim official plugin discovery unless a published listing has been verified.
 

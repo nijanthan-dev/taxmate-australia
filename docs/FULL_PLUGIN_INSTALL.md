@@ -1,19 +1,28 @@
-# Codex Plugin Runtime Setup
+# Plugin Runtime Setup
 
-Normal users should install TaxMate Australia as a Codex plugin:
+Normal users should install TaxMate Australia as a Codex or Claude Code plugin.
+
+Codex:
 
 ```bash
 codex plugin marketplace add nijanthan-dev/taxmate-australia
 codex plugin add taxmate-australia@taxmate-local-marketplace
 ```
 
-The plugin install is the runtime install. It places TaxMate in Codex plugin cache with the bash and Python runtime, `scripts/`, `runtime/`, `wrappers/`, skills, `.mcp.json`, and the MCP server.
+Claude Code:
+
+```bash
+claude plugin marketplace add nijanthan-dev/taxmate-australia
+claude plugin install taxmate-australia@taxmate-australia
+```
+
+The plugin install is the runtime install. It places TaxMate in the agent plugin cache with the bash and Python runtime, `scripts/`, `runtime/`, `wrappers/`, skills, `.mcp.json`, and the MCP server.
 
 Use [INSTALLATION.md](INSTALLATION.md) for the beginner install path.
 
-## Codex Tools
+## Plugin Tools
 
-After plugin install, ask Codex to use TaxMate Australia. The plugin exposes tools for:
+After plugin install, ask your agent to use TaxMate Australia. The plugin exposes tools for:
 
 - `calc`
 - `finance`

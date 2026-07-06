@@ -11,6 +11,8 @@ fail() {
 }
 
 [[ -f .codex-plugin/plugin.json ]] || fail "missing plugin manifest"
+[[ -f .claude-plugin/plugin.json ]] || fail "missing Claude plugin manifest"
+[[ -f .claude-plugin/marketplace.json ]] || fail "missing Claude plugin marketplace"
 [[ -f .mcp.json ]] || fail "missing MCP manifest"
 [[ -f mcp/server.cjs ]] || fail "missing MCP server"
 [[ -f README.md ]] || fail "missing README"
@@ -43,6 +45,8 @@ fail() {
 [[ -f scripts/test-skills-install.sh ]] || fail "missing skills install smoke test"
 [[ -f scripts/test-mcp-server.sh ]] || fail "missing MCP server smoke test"
 [[ -f scripts/test-codex-plugin-install.sh ]] || fail "missing Codex plugin install smoke test"
+[[ -f scripts/test-claude-plugin-validate.sh ]] || fail "missing Claude plugin validation smoke test"
+[[ -f scripts/test-claude-plugin-install.sh ]] || fail "missing Claude plugin install smoke test"
 if [[ -d migration ]] || [[ -f data/ato_knowledge_base/source_index.json ]] || [[ -f data/ato_knowledge_base/source_manifest.json ]] || [[ -f data/ato_knowledge_base/migration_report.json ]]; then
   fail "legacy migration artifacts present"
 fi
@@ -67,11 +71,11 @@ if [[ -n "$PRIVATE_SCAN_FILES" ]] && git grep -nE '/Users/[[:alnum:]_.-]+|custom
   fail "private machine path leaked into tracked text files"
 fi
 
-if git grep -nE 'taxmate-au($|[^s])|TaxMate AU($|[^s])|TAXMATE_AU_ROOT' -- README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md skill.json .gitleaks.toml docs .github .codex-plugin .agents agents skills wrappers plugin.lock.json; then
+if git grep -nE 'taxmate-au($|[^s])|TaxMate AU($|[^s])|TAXMATE_AU_ROOT' -- README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md skill.json .gitleaks.toml docs .github .codex-plugin .claude-plugin .agents agents skills wrappers plugin.lock.json; then
   fail "legacy public identity leaked"
 fi
 
-if git grep -nE 'taxmate-australiastralia|TaxMate Australiastralia|TAXMATE_AUSTRALIASTRALIA' -- README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md skill.json .gitleaks.toml docs .github .codex-plugin .agents agents skills wrappers plugin.lock.json config; then
+if git grep -nE 'taxmate-australiastralia|TaxMate Australiastralia|TAXMATE_AUSTRALIASTRALIA' -- README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md skill.json .gitleaks.toml docs .github .codex-plugin .claude-plugin .agents agents skills wrappers plugin.lock.json config; then
   fail "malformed TaxMate Australia rename artifact leaked"
 fi
 
@@ -92,6 +96,8 @@ const path = require("path");
 
 const root = process.cwd();
 const plugin = JSON.parse(fs.readFileSync(".codex-plugin/plugin.json", "utf8"));
+const claudePlugin = JSON.parse(fs.readFileSync(".claude-plugin/plugin.json", "utf8"));
+const claudeMarketplace = JSON.parse(fs.readFileSync(".claude-plugin/marketplace.json", "utf8"));
 const mcp = JSON.parse(fs.readFileSync(".mcp.json", "utf8"));
 const openAgentSkill = JSON.parse(fs.readFileSync("skill.json", "utf8"));
 const publicManifest = JSON.parse(fs.readFileSync("config/public-skills.json", "utf8"));
@@ -173,6 +179,36 @@ function assertClaudeSkillFrontmatter(skillPath) {
   return body;
 }
 
+function pluginEntry(entries, name) {
+  if (!Array.isArray(entries)) return undefined;
+  return entries.find((entry) => entry && entry.name === name);
+}
+
+function claudePluginReady() {
+  return claudePlugin.name === "taxmate-australia"
+    && claudePlugin.version === plugin.version
+    && claudePlugin.skills === "./skills";
+}
+
+function claudeMcpReady() {
+  const claudeMcp = claudePlugin.mcpServers && claudePlugin.mcpServers.taxmateAustralia;
+  return Boolean(claudeMcp)
+    && claudeMcp.command === "node"
+    && JSON.stringify(claudeMcp.args) === JSON.stringify(["${CLAUDE_PLUGIN_ROOT}/mcp/server.cjs", "--stdio"])
+    && claudeMcp.env
+    && claudeMcp.env.TAXMATE_AUSTRALIA_ROOT === "${CLAUDE_PLUGIN_ROOT}"
+    && claudeMcp.env.PYTHONDONTWRITEBYTECODE === "1";
+}
+
+function claudeMarketplaceReady() {
+  const marketplacePlugin = pluginEntry(claudeMarketplace.plugins, "taxmate-australia");
+  return claudeMarketplace.name === "taxmate-australia"
+    && claudeMarketplace.owner
+    && claudeMarketplace.owner.name === "TaxMate Australia Maintainers"
+    && marketplacePlugin
+    && marketplacePlugin.source === "./";
+}
+
 if (publicManifest.skillsCliVersion !== "1.5.13") fail("skills CLI version must be pinned to 1.5.13");
 if (JSON.stringify(publicSkills) !== JSON.stringify(packaging.publicPortable)) fail("public skill manifests differ");
 if (JSON.stringify(publicSkillPaths) !== JSON.stringify(packaging.publicPortablePaths || {})) fail("public skill path manifests differ");
@@ -186,13 +222,16 @@ const taxmateMcp = mcp.mcpServers && mcp.mcpServers.taxmateAustralia;
 if (!taxmateMcp || taxmateMcp.command !== "node" || JSON.stringify(taxmateMcp.args) !== JSON.stringify(["./mcp/server.cjs", "--stdio"]) || taxmateMcp.cwd !== ".") {
   fail("TaxMate MCP server must run mcp/server.cjs from plugin root");
 }
+if (!claudePluginReady()) fail("Claude plugin manifest mismatch");
+if (!claudeMcpReady()) fail("Claude plugin must expose TaxMate MCP server from CLAUDE_PLUGIN_ROOT");
+if (!claudeMarketplaceReady()) fail("Claude plugin marketplace must expose taxmate-australia from repo root");
 if (!plugin.safety || plugin.safety.humanReviewRequired !== true || plugin.safety.noLodgment !== true || plugin.safety.preserveReviewFlags !== true || !/Never lodge.*ATO/.test(plugin.safety.noLodgmentBoundary || "")) fail("plugin safety boundary metadata missing");
 const expectedInstall = "npx skills@1.5.13 add nijanthan-dev/taxmate-australia --agent codex --global --skill '*' --yes";
 if (openAgentSkill.slug !== "taxmate-australia") fail("OpenAgentSkill slug mismatch");
 if (openAgentSkill.repository !== plugin.repository) fail("OpenAgentSkill repository mismatch");
 if (openAgentSkill.homepage !== plugin.homepage) fail("OpenAgentSkill homepage mismatch");
 if (openAgentSkill.license !== "Apache-2.0") fail("OpenAgentSkill license mismatch");
-if (!/bash/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`) || !/python/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`)) fail("OpenAgentSkill metadata must describe bash and Python runtime");
+if (!/bash/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`) || !/python/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`) || !/Claude Code/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`)) fail("OpenAgentSkill metadata must describe bash and Python runtime for Claude Code");
 if (openAgentSkill.category !== "business") fail("OpenAgentSkill category mismatch");
 if (!Array.isArray(openAgentSkill.tags) || openAgentSkill.tags.length === 0 || openAgentSkill.tags.length > 10) fail("OpenAgentSkill tags must be 1-10 entries");
 const requiredDiscoveryTags = ["australian-tax", "tax-prep", "ato", "gst", "bas", "cgt", "payg", "superannuation", "accountant", "agent-skills"];
@@ -202,6 +241,7 @@ if (!Array.isArray(openAgentSkill.platforms) || !openAgentSkill.platforms.includ
 if (!Array.isArray(openAgentSkill.agent_compatibility) || !openAgentSkill.agent_compatibility.includes("Codex") || !openAgentSkill.agent_compatibility.includes("Claude Code") || !openAgentSkill.agent_compatibility.includes("Cowork")) fail("OpenAgentSkill agent compatibility missing Codex/Claude Code/Cowork");
 if (openAgentSkill.install !== expectedInstall) fail("OpenAgentSkill install command mismatch");
 if (!Array.isArray(openAgentSkill.install_targets) || !openAgentSkill.install_targets.some((target) => target.value === expectedInstall)) fail("OpenAgentSkill install target missing CLI command");
+if (!Array.isArray(openAgentSkill.install_targets) || !openAgentSkill.install_targets.some((target) => target.id === "claude-code" && /claude plugin marketplace add nijanthan-dev\/taxmate-australia/.test(target.value || "") && /claude plugin install taxmate-australia@taxmate-australia/.test(target.value || ""))) fail("OpenAgentSkill install target missing Claude plugin command");
 if (!Array.isArray(openAgentSkill.do_not_use_for) || !openAgentSkill.do_not_use_for.some((item) => /lodgment|filing|submission/i.test(item))) fail("OpenAgentSkill safety boundaries missing lodgment refusal");
 if (!openAgentSkill.safety || openAgentSkill.safety.human_review_required !== true) fail("OpenAgentSkill human-review safety missing");
 
@@ -280,12 +320,18 @@ const readme = fs.readFileSync("README.md", "utf8");
 const discovery = fs.readFileSync("docs/DISCOVERY.md", "utf8");
 const docs = ["docs/INSTALLATION.md", "docs/FULL_PLUGIN_INSTALL.md", "docs/DEVELOPMENT.md", "docs/SKILL_GENERATION.md", "docs/DISCOVERY.md"];
 for (const doc of docs) if (!fs.existsSync(doc)) fail(`missing ${doc}`);
-for (const term of ["linked to official ATO sources", "GST/BAS", "CGT", "accountant-ready", "Codex", "Claude Code", "Cowork"]) {
+for (const term of ["linked to official ATO sources", "individual tax return", "GST/BAS", "CGT", "accountant handoff", "Codex", "Claude Code", "Cowork"]) {
   if (!readme.includes(term)) fail(`README missing discovery term ${term}`);
 }
-for (const term of ["GitHub About", "claude-code", "cowork", "openagentskill", "tax-records", "Leave blank until there is a dedicated external landing page."]) {
+for (const term of ["GitHub About", "claude-code", "cowork", "openagentskill", "individual tax return prep", "Leave blank until there is a dedicated external landing page."]) {
   if (!discovery.includes(term)) fail(`DISCOVERY missing term ${term}`);
 }
+for (const staleClaim of ["turn Australian tax records into", "messy tax records", "move from tax records", "tax records into"]) {
+  if (readme.includes(staleClaim) || discovery.includes(staleClaim) || JSON.stringify(plugin).includes(staleClaim) || JSON.stringify(openAgentSkill).includes(staleClaim)) {
+    fail(`stale positioning claim found: ${staleClaim}`);
+  }
+}
+if (discovery.includes("tax-records")) fail("DISCOVERY must not use tax-records topic");
 if (!plugin.interface.shortDescription.includes("Australian tax prep with ATO source links")) fail("plugin short description missing discovery copy");
 const atoBackingPattern = new RegExp("ATO[- ]" + "backed|backed by " + "ATO|supported by " + "ATO", "i");
 for (const file of ["README.md", "docs/DISCOVERY.md", ".codex-plugin/plugin.json", "skill.json", "agents/openai.yaml", "skills/taxmate-australia/SKILL.md", "wrappers/taxmate-australia/SKILL.md"]) {
@@ -294,6 +340,7 @@ for (const file of ["README.md", "docs/DISCOVERY.md", ".codex-plugin/plugin.json
 }
 if (plugin.keywords.includes("assistant") || plugin.keywords.includes("super")) fail("plugin keywords contain stale generic terms");
 if (!readme.includes("Codex plugin install")) fail("README missing Codex plugin install path");
+if (!readme.includes("Claude Code plugin install")) fail("README missing Claude Code plugin install path");
 if (!readme.includes("npx skills") || !readme.includes("guidance only")) fail("README must describe npx skills as guidance only");
 if (!readme.includes("Use the taxmate-australia-capital-gains-tax skill") || !readme.includes("Use the taxmate-australia-gst-bas skill")) fail("README missing usage examples");
 if (readme.includes("official plugin discovery") || readme.includes("marketplace entry")) fail("README contains unverified marketplace claim");
@@ -313,6 +360,8 @@ fi
 bash scripts/test-skills-install.sh
 bash scripts/test-mcp-server.sh
 bash scripts/test-codex-plugin-install.sh
+bash scripts/test-claude-plugin-validate.sh
+bash scripts/test-claude-plugin-install.sh
 bash scripts/test-install-local-skills.sh
 bash -n scripts/codex-env-setup.sh
 bash -n scripts/codex-env-cleanup.sh

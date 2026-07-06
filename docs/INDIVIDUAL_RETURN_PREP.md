@@ -33,16 +33,25 @@ For BAS worksheet prep, collect BAS period and coverage, 1A GST collected, 1B GS
 
 For general non-crypto/non-rental CGT event prep, collect top-level facts or itemized event rows with event type, asset description, owner or ownership share, acquisition date, disposal date, proceeds, cost base, incidental costs, losses, current-year and carried-forward capital loss facts, records, discount claim, discount timing or review signals, foreign-resident discount signals, main residence claim facts, ownership and occupancy periods, rental/business use, absence-period signals, spouse/partner main-residence conflict signals, property record evidence, rental-property overlap signals, small-business CGT concession claim status, concession type, business asset and active asset signals, entity/affiliate/connected entity facts, retirement exemption, rollover, 15-year exemption, 50% active asset reduction, business/private use, and concession evidence. Explicit no-CGT answers skip only when no CGT facts exist. No-CGT plus facts, missing loss records, unknown carried-forward losses, discount uncertainty, foreign-resident discount signals, missing records, unknown or malformed dates or amounts, ownership uncertainty, active asset uncertainty, concession type uncertainty, entity/affiliate/connected entity facts, item/top-level conflicts, partial item totals, and review flags stay visible in Evidence or `Accountant review`. TaxMate may reconcile supplied event totals to item totals as prep evidence only; it does not work out capital gain/loss amounts, apply discount treatment, determine main residence treatment, or work out small-business concession amounts.
 
-## Codex Plugin Runtime Path
+## Plugin Runtime Path
 
-Install the Codex plugin first:
+Install the plugin first.
+
+Codex:
 
 ```bash
 codex plugin marketplace add nijanthan-dev/taxmate-australia
 codex plugin add taxmate-australia@taxmate-local-marketplace
 ```
 
-Then ask Codex:
+Claude Code:
+
+```bash
+claude plugin marketplace add nijanthan-dev/taxmate-australia
+claude plugin install taxmate-australia@taxmate-australia
+```
+
+Then ask your agent:
 
 ```text
 Use TaxMate Australia to write sample individual answers and render the individual-return HTML guide.

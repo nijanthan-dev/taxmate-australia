@@ -49,7 +49,7 @@ function toolDefinitions() {
       TOOL_NAMES.run,
       "Run TaxMate Command",
       [
-        "Run an allowlisted TaxMate Australia runtime command from the installed plugin cache.",
+      "Run an allowlisted TaxMate Australia runtime command from the installed plugin cache.",
         "Use existing scripts/taxmate command families only. This is a preparation workflow and never lodges or files with the ATO.",
       ].join(" "),
       objectSchema(
@@ -207,7 +207,7 @@ async function handleRpc(message) {
           name: SERVER_NAME,
           title: "TaxMate Australia",
           version: SERVER_VERSION,
-          description: "Run TaxMate Australia plugin runtime commands from the installed Codex plugin cache.",
+          description: "Run TaxMate Australia plugin runtime commands from the installed plugin cache.",
         },
         instructions:
           "TaxMate Australia is a preparation aid only. It never lodges, files, submits, or finalises tax material.",

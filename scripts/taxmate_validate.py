@@ -109,6 +109,7 @@ def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifes
     add("codex_plugin_manifest_exists", manifest_err is None, str(manifest_err) if manifest_err else "")
     plugin_safety = False
     plugin_mcp_ready = False
+    claude_plugin_ready = False
     try:
         raw_manifest = json.loads(manifest_text)
         safety = raw_manifest.get("safety", {})
@@ -122,9 +123,11 @@ def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifes
                 and "ATO" in boundary
             )
         plugin_mcp_ready = raw_manifest.get("mcpServers") == "./.mcp.json" and codex_plugin_mcp_files_ready(root)
+        claude_plugin_ready = claude_plugin_files_ready(root, str(raw_manifest.get("version", "")))
     except Exception:
         plugin_safety = False
         plugin_mcp_ready = False
+        claude_plugin_ready = False
     add(
         "public_manifest_polished",
         "TaxMate Australia Maintainers" in manifest_text and '"Local"' not in manifest_text and '"Private"' not in manifest_text and '"repository": "local"' not in manifest_text,
@@ -146,6 +149,7 @@ def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifes
     add("plugin_website_is_repository", website_url == manifest.get("repository"), website_url)
     add("plugin_safety_boundary_metadata", plugin_safety, "")
     add("codex_plugin_mcp_runtime_wired", plugin_mcp_ready, "")
+    add("claude_plugin_runtime_wired", claude_plugin_ready, "")
     add("codex_plugin_no_root_monolith", not file_exists(os.path.join(root, "SKILL.md")), "")
     add(
         "open_plugin_backend_dirs",
@@ -189,7 +193,7 @@ def add_openagentskill_checks(root: str, add, manifest: Dict[str, str], readme_t
     openagentskill_public_text = f"{payload.get('description', '')} {payload.get('tagline', '')}".lower()
     add(
         "openagentskill_runtime_documented",
-        "bash" in openagentskill_public_text and "python" in openagentskill_public_text,
+        "bash" in openagentskill_public_text and "python" in openagentskill_public_text and "claude code" in openagentskill_public_text,
         "",
     )
     add(
@@ -224,6 +228,19 @@ def add_openagentskill_checks(root: str, add, manifest: Dict[str, str], readme_t
             for target in install_targets
         )
         and "guidance only" in openagentskill_public_text,
+        "",
+    )
+    add(
+        "openagentskill_claude_plugin_install_documented",
+        isinstance(install_targets, list)
+        and any(
+            isinstance(target, dict)
+            and target.get("id") == "claude-code"
+            and "claude plugin marketplace add nijanthan-dev/taxmate-australia" in str(target.get("value", ""))
+            and "claude plugin install taxmate-australia@taxmate-australia" in str(target.get("value", ""))
+            for target in install_targets
+        )
+        and claude_plugin_files_ready(root, str(manifest.get("version", ""))),
         "",
     )
     agent_compatibility = payload.get("agent_compatibility")
@@ -569,9 +586,10 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
     agent = read_text(os.path.join(root, "agents", "openai.yaml"))
     required_readme_terms = [
         "linked to official ATO sources",
+        "individual tax return",
         "GST/BAS",
         "CGT",
-        "accountant-ready",
+        "accountant handoff",
         "Codex",
         "Claude Code",
         "Cowork",
@@ -581,7 +599,7 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
         "claude-code",
         "cowork",
         "openagentskill",
-        "tax-records",
+        "individual tax return prep",
         "Leave blank until there is a dedicated external landing page.",
     ]
     return (
@@ -593,6 +611,9 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
         and ("ATO-" + "backed") not in discovery
         and ("ATO-" + "backed") not in plugin
         and ("ATO-" + "backed") not in agent
+        and "turn Australian tax records into" not in readme_text
+        and "messy tax records" not in plugin
+        and "tax records" not in discovery
         and '"assistant"' not in plugin
         and '"super"' not in plugin
     )
@@ -619,6 +640,55 @@ def codex_plugin_mcp_files_ready(root: str) -> bool:
     )
 
 
+def claude_plugin_files_ready(root: str, plugin_version: str) -> bool:
+    plugin, plugin_err = read_json_file(os.path.join(root, ".claude-plugin", "plugin.json"))
+    marketplace, marketplace_err = read_json_file(os.path.join(root, ".claude-plugin", "marketplace.json"))
+    if plugin_err is not None or marketplace_err is not None:
+        return False
+
+    servers = plugin.get("mcpServers")
+    taxmate = servers.get("taxmateAustralia") if isinstance(servers, dict) else None
+    taxmate_env = taxmate.get("env") if isinstance(taxmate, dict) else None
+    marketplace_plugins = marketplace.get("plugins")
+    marketplace_entry = plugin_entry(marketplace_plugins, "taxmate-australia")
+    author = plugin.get("author")
+    owner = marketplace.get("owner")
+
+    plugin_ready = (
+        plugin.get("name") == "taxmate-australia"
+        and plugin.get("version") == plugin_version
+        and plugin.get("skills") == "./skills"
+        and isinstance(author, dict)
+        and author.get("name") == "TaxMate Australia Maintainers"
+    )
+    mcp_ready = (
+        isinstance(taxmate, dict)
+        and taxmate.get("command") == "node"
+        and taxmate.get("args") == ["${CLAUDE_PLUGIN_ROOT}/mcp/server.cjs", "--stdio"]
+        and isinstance(taxmate_env, dict)
+        and taxmate_env.get("TAXMATE_AUSTRALIA_ROOT") == "${CLAUDE_PLUGIN_ROOT}"
+        and taxmate_env.get("PYTHONDONTWRITEBYTECODE") == "1"
+        and file_exists(os.path.join(root, "mcp", "server.cjs"))
+    )
+    marketplace_ready = (
+        marketplace.get("name") == "taxmate-australia"
+        and isinstance(owner, dict)
+        and owner.get("name") == "TaxMate Australia Maintainers"
+        and isinstance(marketplace_entry, dict)
+        and marketplace_entry.get("source") == "./"
+    )
+    return plugin_ready and mcp_ready and marketplace_ready
+
+
+def plugin_entry(entries: Any, name: str) -> Optional[Dict[str, Any]]:
+    if not isinstance(entries, list):
+        return None
+    for entry in entries:
+        if isinstance(entry, dict) and entry.get("name") == name:
+            return entry
+    return None
+
+
 def individual_return_prep_docs_ready(root: str, readme_text: str) -> bool:
     doc = read_text(os.path.join(root, "docs", "INDIVIDUAL_RETURN_PREP.md"))
     full_install = read_text(os.path.join(root, "docs", "FULL_PLUGIN_INSTALL.md"))
@@ -630,8 +700,9 @@ def individual_return_prep_docs_ready(root: str, readme_text: str) -> bool:
     required_doc_terms = [
         "TaxMate is prep-only",
         "individual-return",
-        "Codex Plugin Runtime Path",
+        "Plugin Runtime Path",
         "codex plugin marketplace add nijanthan-dev/taxmate-australia",
+        "claude plugin marketplace add nijanthan-dev/taxmate-australia",
         "./scripts/taxmate intake individual --help",
         "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json",
         "./scripts/taxmate intake individual",
