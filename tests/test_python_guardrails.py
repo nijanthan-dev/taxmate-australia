@@ -68,8 +68,9 @@ def local_marketplace_docs(marketplace_command: str) -> str:
 
 def output_docs_readme_fixture(extra: str = "") -> str:
     return (
-        "Portable skills produce source-backed guidance\n"
-        "full runtime produces a print-first HTML handoff\n"
+        "Codex plugin install\n"
+        "`npx skills` guidance only\n"
+        "The Codex plugin runtime produces a print-first HTML handoff\n"
         "custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable\n"
         "manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff\n"
         "AI extraction confirmation table\n"
@@ -94,6 +95,40 @@ def output_docs_development_fixture(extra: str = "") -> str:
         "python3 scripts/png_crop.py /tmp/taxmate-guide-full.png\n"
         "Any PR that changes user-facing output\n"
         "must update README/docs in the same PR, or state why no docs update is needed\n"
+        + extra
+    )
+
+
+def output_docs_surface_fixture(extra: str = "") -> str:
+    return (
+        "Codex Plugin Install\n"
+        "Use `npx skills` only when you want guidance in chat\n"
+        "does not include the renderer\n"
+        "Codex Plugin Runtime Setup\n"
+        "The plugin install is the runtime install\n"
+        "Codex Plugin Runtime Path\n"
+        "prep-only\n"
+        "manual-copy handoff\n"
+        "does not lodge\n"
+        "Open the HTML\n"
+        "HTML guide\n"
+        "print-first HTML handoff\n"
+        "print-first HTML guide\n"
+        "custom preparation aid\n"
+        "not an ATO form\n"
+        "not lodgment software\n"
+        "not final tax advice\n"
+        "not fileable\n"
+        "manually copy reviewed values\n"
+        "AI extraction confirmation table\n"
+        "missing facts queue\n"
+        "evidence queue\n"
+        "evidence gaps\n"
+        "Accountant review\n"
+        "accountant-review queue\n"
+        "prep-only boundary\n"
+        "manual-copy warning\n"
+        "source/provenance appendix\n"
         + extra
     )
 
@@ -409,7 +444,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             docs.mkdir(parents=True)
             assets.mkdir(parents=True)
             plugin.mkdir(parents=True)
-            (root / "README.md").write_text("Portable skills produce source-backed guidance\n", encoding="utf-8")
+            (root / "README.md").write_text("Codex plugin install\n", encoding="utf-8")
             (docs / "INSTALLATION.md").write_text("", encoding="utf-8")
             (docs / "FULL_PLUGIN_INSTALL.md").write_text("", encoding="utf-8")
             (docs / "INDIVIDUAL_RETURN_PREP.md").write_text("", encoding="utf-8")
@@ -440,24 +475,26 @@ class ReviewGuardrailTests(unittest.TestCase):
             root_skill.mkdir(parents=True)
             readme = output_docs_readme_fixture()
             good_install = (
-                "Portable skills produce source-backed guidance\n"
-                "do not render the full runtime handoff\n"
-                "full runtime handoff is a custom preparation aid\n"
+                "Codex Plugin Install\n"
+                "Use `npx skills` only when you want guidance in chat\n"
+                "does not include the renderer\n"
+                "HTML guide\ncustom preparation aid\n"
                 "not an ATO form\nnot lodgment software\nnot final tax advice\nnot fileable\n"
                 "manually copy reviewed values\n"
             )
             good_full_install = (
+                "Codex Plugin Runtime Setup\nThe plugin install is the runtime install\n"
                 "print-first HTML handoff\ncustom preparation aid\nnot an ATO form\n"
                 "not lodgment software\nnot final tax advice\nnot fileable\n"
                 "manually copy reviewed values\nmissing facts\nevidence gaps\nAccountant review\n"
                 "source/provenance appendix\n"
             )
             good_prep = (
-                "prep-only\nmanual-copy handoff\ndoes not lodge\nRuntime Path\nOpen the HTML\n"
+                "prep-only\nmanual-copy handoff\ndoes not lodge\nCodex Plugin Runtime Path\nOpen the HTML\n"
                 "prep-only boundary\nmanual-copy warning\nAI extraction confirmation table\nsource/provenance appendix\n"
             )
             (root / "README.md").write_text(readme, encoding="utf-8")
-            (docs / "INSTALLATION.md").write_text("Portable skills produce source-backed guidance\n", encoding="utf-8")
+            (docs / "INSTALLATION.md").write_text("Codex Plugin Install\n", encoding="utf-8")
             (docs / "FULL_PLUGIN_INSTALL.md").write_text(good_full_install, encoding="utf-8")
             (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(good_prep, encoding="utf-8")
             (docs / "DEVELOPMENT.md").write_text(output_docs_development_fixture(), encoding="utf-8")
@@ -506,22 +543,7 @@ class ReviewGuardrailTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            docs_text = (
-                "Portable skills produce source-backed guidance\n"
-                "print-first HTML handoff\n"
-                "print-first HTML guide\n"
-                "not an ATO form\n"
-                "not lodgment software\n"
-                "not final tax advice\n"
-                "not fileable\n"
-                "manually copy reviewed values\n"
-                "AI extraction confirmation table\n"
-                "missing facts queue\n"
-                "evidence queue\n"
-                "accountant-review queue\n"
-                "source/provenance appendix\n"
-                "manual-copy guidance\n"
-            )
+            docs_text = output_docs_surface_fixture()
             (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
             (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
             (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(docs_text, encoding="utf-8")
@@ -545,22 +567,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             docs.mkdir(parents=True)
             assets.mkdir(parents=True)
             plugin.mkdir(parents=True)
-            docs_text = (
-                "Portable skills produce source-backed guidance\n"
-                "print-first HTML handoff\n"
-                "print-first HTML guide\n"
-                "not an ATO form\n"
-                "not lodgment software\n"
-                "not final tax advice\n"
-                "not fileable\n"
-                "manually copy reviewed values\n"
-                "AI extraction confirmation table\n"
-                "missing facts queue\n"
-                "evidence queue\n"
-                "accountant-review queue\n"
-                "source/provenance appendix\n"
-                "manual-copy guidance\n"
-            )
+            docs_text = output_docs_surface_fixture()
             (root / "README.md").write_text(output_docs_readme_fixture(), encoding="utf-8")
             (docs / "INSTALLATION.md").write_text(
                 docs_text
@@ -596,7 +603,6 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(
             any("docs/INDIVIDUAL_RETURN_PREP.md contains developer-only maintenance detail" in finding.detail for finding in findings)
         )
-        self.assertTrue(any("codex plugin add <target>" in finding.detail for finding in findings))
 
     def test_output_docs_contract_rejects_stale_renderer_commands(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -608,22 +614,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             assets.mkdir(parents=True)
             plugin.mkdir(parents=True)
             readme = output_docs_readme_fixture("from PIL import Image\n")
-            docs_text = (
-                "Portable skills produce source-backed guidance\n"
-                "print-first HTML handoff\n"
-                "print-first HTML guide\n"
-                "not an ATO form\n"
-                "not lodgment software\n"
-                "not final tax advice\n"
-                "not fileable\n"
-                "manually copy reviewed values\n"
-                "AI extraction confirmation table\n"
-                "missing facts queue\n"
-                "evidence queue\n"
-                "accountant-review queue\n"
-                "source/provenance appendix\n"
-                "manual-copy guidance\n"
-            )
+            docs_text = output_docs_surface_fixture()
             (root / "README.md").write_text(readme, encoding="utf-8")
             (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
             (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
@@ -661,22 +652,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             taxpack_refs.mkdir(parents=True)
             wrapper.mkdir(parents=True)
             readme = output_docs_readme_fixture()
-            docs_text = (
-                "Portable skills produce source-backed guidance\n"
-                "print-first HTML handoff\n"
-                "print-first HTML guide\n"
-                "not an ATO form\n"
-                "not lodgment software\n"
-                "not final tax advice\n"
-                "not fileable\n"
-                "manually copy reviewed values\n"
-                "AI extraction confirmation table\n"
-                "missing facts queue\n"
-                "evidence queue\n"
-                "accountant-review queue\n"
-                "source/provenance appendix\n"
-                "manual-copy guidance\n"
-            )
+            docs_text = output_docs_surface_fixture()
             (root / "README.md").write_text(readme, encoding="utf-8")
             (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
             (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
@@ -715,25 +691,10 @@ class ReviewGuardrailTests(unittest.TestCase):
             root_skill.mkdir(parents=True)
             individual.mkdir(parents=True)
             readme = output_docs_readme_fixture()
-            docs_text = (
-                "Portable skills produce source-backed guidance\n"
-                "print-first HTML handoff\n"
-                "print-first HTML guide\n"
-                "not an ATO form\n"
-                "not lodgment software\n"
-                "not final tax advice\n"
-                "not fileable\n"
-                "manually copy reviewed values\n"
-                "AI extraction confirmation table\n"
-                "missing facts queue\n"
-                "evidence queue\n"
-                "accountant-review queue\n"
-                "source/provenance appendix\n"
-                "manual-copy guidance\n"
-            )
+            docs_text = output_docs_surface_fixture()
             (root / "README.md").write_text(readme, encoding="utf-8")
             (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
-            (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
+            (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text + "npx skills installs the renderer\n", encoding="utf-8")
             (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(docs_text, encoding="utf-8")
             (docs / "DEVELOPMENT.md").write_text(output_docs_development_fixture(), encoding="utf-8")
             (root / "DISCLAIMER.md").write_text("custom print-first HTML handoffs\n", encoding="utf-8")
@@ -756,6 +717,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             findings = taxmate_review_guardrails.check_output_docs_contract(root)
 
         self.assertTrue(any("HTML tax pack" in finding.detail for finding in findings))
+        self.assertTrue(any("npx skills installs the renderer" in finding.detail for finding in findings))
 
     def test_output_docs_contract_scans_public_disclaimer(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -769,22 +731,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             plugin.mkdir(parents=True)
             taxpack.mkdir(parents=True)
             readme = output_docs_readme_fixture()
-            docs_text = (
-                "Portable skills produce source-backed guidance\n"
-                "print-first HTML handoff\n"
-                "print-first HTML guide\n"
-                "not an ATO form\n"
-                "not lodgment software\n"
-                "not final tax advice\n"
-                "not fileable\n"
-                "manually copy reviewed values\n"
-                "AI extraction confirmation table\n"
-                "missing facts queue\n"
-                "evidence queue\n"
-                "accountant-review queue\n"
-                "source/provenance appendix\n"
-                "manual-copy guidance\n"
-            )
+            docs_text = output_docs_surface_fixture()
             (root / "README.md").write_text(readme, encoding="utf-8")
             (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
             (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
@@ -11732,6 +11679,31 @@ class ValidatorAndCliTests(unittest.TestCase):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
         self.assertTrue(taxmate_validate.individual_return_prep_docs_ready(str(ROOT), readme))
+
+    def test_codex_plugin_mcp_files_are_validated(self) -> None:
+        self.assertTrue(taxmate_validate.codex_plugin_mcp_files_ready(str(ROOT)))
+
+    def test_codex_plugin_mcp_files_require_taxmate_server(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "mcp").mkdir()
+            (root / ".mcp.json").write_text(
+                json.dumps(
+                    {
+                        "mcpServers": {
+                            "taxmateAustralia": {
+                                "cwd": ".",
+                                "command": "node",
+                                "args": ["./mcp/server.cjs", "--stdio"],
+                            }
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (root / "mcp" / "server.cjs").write_text("module.exports = {};\n", encoding="utf-8")
+
+            self.assertFalse(taxmate_validate.codex_plugin_mcp_files_ready(tmp))
 
     def test_individual_return_prep_docs_require_no_answer_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

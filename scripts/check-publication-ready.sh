@@ -11,6 +11,8 @@ fail() {
 }
 
 [[ -f .codex-plugin/plugin.json ]] || fail "missing plugin manifest"
+[[ -f .mcp.json ]] || fail "missing MCP manifest"
+[[ -f mcp/server.cjs ]] || fail "missing MCP server"
 [[ -f README.md ]] || fail "missing README"
 [[ -f DISCLAIMER.md ]] || fail "missing DISCLAIMER.md"
 [[ -f LICENSE ]] || fail "missing LICENSE"
@@ -39,6 +41,8 @@ fail() {
 [[ -f config/skill-packaging.json ]] || fail "missing skill packaging manifest"
 [[ -f skills/taxmate-australia/SKILL.md ]] || fail "missing portable entry-point skill"
 [[ -f scripts/test-skills-install.sh ]] || fail "missing skills install smoke test"
+[[ -f scripts/test-mcp-server.sh ]] || fail "missing MCP server smoke test"
+[[ -f scripts/test-codex-plugin-install.sh ]] || fail "missing Codex plugin install smoke test"
 if [[ -d migration ]] || [[ -f data/ato_knowledge_base/source_index.json ]] || [[ -f data/ato_knowledge_base/source_manifest.json ]] || [[ -f data/ato_knowledge_base/migration_report.json ]]; then
   fail "legacy migration artifacts present"
 fi
@@ -88,6 +92,7 @@ const path = require("path");
 
 const root = process.cwd();
 const plugin = JSON.parse(fs.readFileSync(".codex-plugin/plugin.json", "utf8"));
+const mcp = JSON.parse(fs.readFileSync(".mcp.json", "utf8"));
 const openAgentSkill = JSON.parse(fs.readFileSync("skill.json", "utf8"));
 const publicManifest = JSON.parse(fs.readFileSync("config/public-skills.json", "utf8"));
 const packaging = JSON.parse(fs.readFileSync("config/skill-packaging.json", "utf8"));
@@ -176,6 +181,11 @@ for (const name of publicSkills) {
   if (!publicSkillPaths[name]) fail(`public skill missing source path: ${name}`);
 }
 if (plugin.interface.websiteURL !== plugin.repository) fail("plugin website must point to repository");
+if (plugin.mcpServers !== "./.mcp.json") fail("plugin must declare MCP runtime manifest");
+const taxmateMcp = mcp.mcpServers && mcp.mcpServers.taxmateAustralia;
+if (!taxmateMcp || taxmateMcp.command !== "node" || JSON.stringify(taxmateMcp.args) !== JSON.stringify(["./mcp/server.cjs", "--stdio"]) || taxmateMcp.cwd !== ".") {
+  fail("TaxMate MCP server must run mcp/server.cjs from plugin root");
+}
 if (!plugin.safety || plugin.safety.humanReviewRequired !== true || plugin.safety.noLodgment !== true || plugin.safety.preserveReviewFlags !== true || !/Never lodge.*ATO/.test(plugin.safety.noLodgmentBoundary || "")) fail("plugin safety boundary metadata missing");
 const expectedInstall = "npx skills@1.5.13 add nijanthan-dev/taxmate-australia --agent codex --global --skill '*' --yes";
 if (openAgentSkill.slug !== "taxmate-australia") fail("OpenAgentSkill slug mismatch");
@@ -283,8 +293,8 @@ for (const file of ["README.md", "docs/DISCOVERY.md", ".codex-plugin/plugin.json
   if (atoBackingPattern.test(text)) fail(`${file} implies ATO backing`);
 }
 if (plugin.keywords.includes("assistant") || plugin.keywords.includes("super")) fail("plugin keywords contain stale generic terms");
-if (!readme.includes("npx skills@1.5.13 add nijanthan-dev/taxmate-australia --list")) fail("README missing primary npx skills list command");
-if (!readme.includes("npx skills@1.5.13 add nijanthan-dev/taxmate-australia \\")) fail("README missing primary npx skills install command");
+if (!readme.includes("Codex plugin install")) fail("README missing Codex plugin install path");
+if (!readme.includes("npx skills") || !readme.includes("guidance only")) fail("README must describe npx skills as guidance only");
 if (!readme.includes("Use the taxmate-australia-capital-gains-tax skill") || !readme.includes("Use the taxmate-australia-gst-bas skill")) fail("README missing usage examples");
 if (readme.includes("official plugin discovery") || readme.includes("marketplace entry")) fail("README contains unverified marketplace claim");
 if (/openagentskill\.com\/badge|OpenAgentSkill badge/i.test(readme)) fail("README should not claim OpenAgentSkill approval before listing");
@@ -301,6 +311,8 @@ fi
 ./scripts/taxmate skills audit --format markdown --output /tmp/source-coverage.md
 ./scripts/taxmate validate >/tmp/taxmate-australia-validate.json
 bash scripts/test-skills-install.sh
+bash scripts/test-mcp-server.sh
+bash scripts/test-codex-plugin-install.sh
 bash scripts/test-install-local-skills.sh
 bash -n scripts/codex-env-setup.sh
 bash -n scripts/codex-env-cleanup.sh

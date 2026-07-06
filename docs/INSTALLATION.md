@@ -1,26 +1,60 @@
-# Portable Skills Install
+# Install TaxMate Australia
 
-This is the fastest path for most users who want TaxMate inside an agent.
-Use portable skills when you need quick ad-hoc guidance without the full plugin checkout.
-Portable install needs Node.js 18 or newer and does not need a repository checkout, runtime binaries, marketplace JSON, plugin manifests, or environment variables.
+Use the Codex plugin install when you want TaxMate to generate files such as the print-first HTML guide, taxpack output, source refresh results, finance review output, or calculator output.
 
-Use the full runtime checkout only when you need the print-first HTML handoff, workbook/taxpack output, ATO source refresh, finance review scripts, calculators, or repository validation.
+Use `npx skills` only when you want guidance in chat. That install does not include the renderer, root runtime scripts, `runtime/`, or `wrappers/`.
 
-Portable skills produce source-backed guidance, evidence prompts, and `Accountant review` routing. They do not render the full runtime handoff.
+TaxMate outputs are preparation aids only. The HTML guide is a custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable. Users manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff after resolving missing facts, evidence gaps, and `Accountant review` queues.
 
-The full runtime handoff is a custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable. Users manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff after resolving missing facts, evidence gaps, and review queues.
+## Codex Plugin Install
+
+Prerequisites:
+
+- Codex CLI.
+- Bash.
+- Python 3.9+.
+
+Install the plugin:
+
+```bash
+codex plugin marketplace add nijanthan-dev/taxmate-australia
+codex plugin add taxmate-australia@taxmate-local-marketplace
+```
+
+Then ask Codex to use TaxMate Australia:
+
+```text
+Use TaxMate Australia to validate the runtime.
+```
+
+```text
+Use TaxMate Australia to write sample individual answers and render the individual-return HTML guide.
+```
+
+The installed plugin exposes TaxMate runtime tools for:
+
+- `calc`
+- `finance`
+- `intake`
+- `refresh`
+- `review-guardrails`
+- `skills`
+- `taxpack`
+- `validate`
+
+The individual-return HTML guide includes the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, PAYG rows, investment rows, CGT schedule and item rows, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, source URLs, checked-at dates, and source/provenance appendix.
+
+## Optional Guidance-Only Skills
 
 Pinned CLI version: `skills@1.5.13`.
 
-## Commands
-
-Preview available install methods:
+Preview available skills:
 
 ```bash
 npx skills@1.5.13 add nijanthan-dev/taxmate-australia --list
 ```
 
-Global Codex install:
+Install all public skills for Codex:
 
 ```bash
 npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
@@ -30,16 +64,7 @@ npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
   --yes
 ```
 
-Project Codex install:
-
-```bash
-npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
-  --skill '*' \
-  --agent codex \
-  --yes
-```
-
-One-skill install:
+Install one skill:
 
 ```bash
 npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
@@ -63,28 +88,20 @@ npx skills@1.5.13 use nijanthan-dev/taxmate-australia \
   --agent codex
 ```
 
-## Locations
+Guidance-only install locations:
 
 - Project install: `.agents/skills/`
 - Global install with `skills@1.5.13`: `~/.agents/skills/`
 
 ## Claude Code and Cowork
 
-TaxMate portable skills use TaxMate Australia public names and the standard skill folder shape from the Claude guide:
+For Claude Code or Cowork, use the public TaxMate skill folders. Each folder is self-contained, has `SKILL.md` with YAML frontmatter, and avoids plugin-runtime commands.
 
-```text
-taxmate-australia-skill-name/
-  SKILL.md
-  references/
-```
+Install through `skills@1.5.13` when possible so the installed folder matches the public `taxmate-australia-*` name. If you manually package a skill from this repository, use `config/public-skills.json` to map the public name to its source folder, and zip that folder with the public name. Do not zip the whole repository when you only want guidance-only skill access.
 
-For Claude Code or Cowork, use the same public portable skill folders listed below. Each folder is self-contained, has `SKILL.md` with YAML frontmatter, and avoids checkout-only runtime commands.
+Use the Codex plugin install when you need the print-first HTML handoff, taxpack output, ATO refresh, finance review scripts, calculators, or repository validation.
 
-Install through `skills@1.5.13` when possible so the installed folder matches the public `taxmate-australia-*` name. If you manually package a skill from this repository, use `config/public-skills.json` to map the public name to its source folder, and zip that folder with the public name. Do not zip the whole repository when you only want portable skill access.
-
-Use the full plugin runtime only when you need the print-first HTML handoff, workbook/taxpack output, ATO refresh, finance review scripts, calculators, or repository validation.
-
-## Public portable skills
+## Public Guidance Skills
 
 The source of truth is `config/public-skills.json`.
 
@@ -105,27 +122,27 @@ The source of truth is `config/public-skills.json`.
 - `taxmate-australia-workbook`
 - `taxmate-australia-taxpack`
 
-## Update and removal
+## Update and Removal
 
-Update all global skills:
+Update all global guidance skills:
 
 ```bash
 npx skills@1.5.13 update --global --yes
 ```
 
-Update one skill:
+Update one guidance skill:
 
 ```bash
 npx skills@1.5.13 update taxmate-australia-capital-gains-tax --global --yes
 ```
 
-Remove one skill:
+Remove one guidance skill:
 
 ```bash
 npx skills@1.5.13 remove --skill taxmate-australia-capital-gains-tax --agent codex --global --yes
 ```
 
-Remove all TaxMate skills:
+Remove all TaxMate guidance skills:
 
 ```bash
 npx skills@1.5.13 remove --skill '*' --agent codex --global --yes

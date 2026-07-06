@@ -45,13 +45,10 @@ DEVELOPER_ONLY_PUBLIC_DOC_TERMS = [
     "python3 scripts/png_crop.py",
     "taxmate-guide-full.png",
     "Any PR that changes user-facing output",
-    "codex plugin marketplace add",
     "codex plugin marketplace list",
     "codex plugin list",
 ]
-DEVELOPER_ONLY_PUBLIC_DOC_PATTERNS = [
-    (re.compile(r"\bcodex\s+plugin\s+add\s+\S+"), "codex plugin add <target>"),
-]
+DEVELOPER_ONLY_PUBLIC_DOC_PATTERNS = []
 
 
 @dataclass
@@ -2296,8 +2293,9 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
             OUTPUT_DOCS_CONTRACT,
             readme,
             [
-                "Portable skills produce source-backed guidance",
-                "full runtime produces a print-first HTML handoff",
+                "Codex plugin install",
+                "`npx skills` guidance only",
+                "The Codex plugin runtime produces a print-first HTML handoff",
                 "custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable",
                 "manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff",
                 "AI extraction confirmation table",
@@ -2325,9 +2323,11 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
             "docs/INSTALLATION.md",
             install,
             [
-                "Portable skills produce source-backed guidance",
-                "do not render the full runtime handoff",
-                "full runtime handoff is a custom preparation aid",
+                "Codex Plugin Install",
+                "Use `npx skills` only when you want guidance in chat",
+                "does not include the renderer",
+                "HTML guide",
+                "custom preparation aid",
                 "not an ATO form",
                 "not lodgment software",
                 "not final tax advice",
@@ -2339,6 +2339,8 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
             "docs/FULL_PLUGIN_INSTALL.md",
             full_install,
             [
+                "Codex Plugin Runtime Setup",
+                "The plugin install is the runtime install",
                 "print-first HTML handoff",
                 "custom preparation aid",
                 "not an ATO form",
@@ -2359,7 +2361,7 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
                 "prep-only",
                 "manual-copy handoff",
                 "does not lodge",
-                "Runtime Path",
+                "Codex Plugin Runtime Path",
                 "Open the HTML",
                 "prep-only boundary",
                 "manual-copy warning",
@@ -2434,6 +2436,14 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
         "dependants, and HTML handoff",
         "HTML tax pack",
         "The final handoff is HTML only. It must include",
+        "full runtime checkout",
+        "full checkout",
+        "TaxMate checkout available",
+        "Rendering the HTML file needs a full runtime checkout",
+        "npx skills installs the renderer",
+        "npx skills installs the runtime",
+        "npx skills provides runtime HTML output",
+        "npx skills can render the HTML guide",
         "./scripts/taxmate taxpack guide-html --output /tmp/taxmate-guide.html",
         "from PIL import Image",
         "Image.open(",

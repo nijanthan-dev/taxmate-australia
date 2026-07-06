@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "taxmateAustralia": {
+      "title": "TaxMate Australia",
+      "description": "Run TaxMate Australia plugin runtime commands from the installed Codex plugin cache.",
+      "icons": [
+        {
+          "src": "./assets/icon.png",
+          "mimeType": "image/png",
+          "sizes": [
+            "360x360"
+          ]
+        }
+      ],
+      "cwd": ".",
+      "command": "node",
+      "args": [
+        "./mcp/server.cjs",
+        "--stdio"
+      ]
+    }
+  }
+}
