@@ -1,7 +1,7 @@
 {
   "name": "TaxMate Australia",
   "slug": "taxmate-australia",
-  "description": "Australian individual tax return prep skill pack and agent plugin linked to official ATO sources. The Codex and Claude Code plugins ship the bash and Python runtime for conservative section prep, GST/BAS, CGT, evidence gaps, accountant handoff, print-first HTML guide handoffs, and treatment flags. The npx skills install is guidance only.",
+  "description": "Australian individual tax return prep skill pack and agent plugin linked to official ATO sources. The Codex and Claude Code plugins ship a Node.js MCP launcher plus the bash and Python runtime for conservative section prep, GST/BAS, CGT, evidence gaps, accountant handoff, print-first HTML guide handoffs, and treatment flags. The npx skills install is guidance only.",
   "tagline": "Australian tax prep with ATO source links",
   "category": "business",
   "tags": [

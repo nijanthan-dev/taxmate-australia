@@ -69,6 +69,7 @@ def local_marketplace_docs(marketplace_command: str) -> str:
 def output_docs_readme_fixture(extra: str = "") -> str:
     return (
         "Plugin install\n"
+        "Node.js 20+ for the MCP launcher\n"
         "`npx skills` guidance only\n"
         "The plugin runtime produces a print-first HTML handoff\n"
         "custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable\n"
@@ -105,6 +106,7 @@ def output_docs_surface_fixture(extra: str = "") -> str:
         "codex plugin marketplace add nijanthan-dev/taxmate-australia\n"
         "claude plugin marketplace add nijanthan-dev/taxmate-australia\n"
         "claude plugin install taxmate-australia@taxmate-australia\n"
+        "Node.js 20+ for the MCP launcher\n"
         "Use `npx skills` only when you want guidance in chat\n"
         "does not include the renderer\n"
         "Use `--agent claude-code` instead of `--agent codex`\n"
@@ -530,6 +532,7 @@ class ReviewGuardrailTests(unittest.TestCase):
                 "codex plugin marketplace add nijanthan-dev/taxmate-australia\n"
                 "claude plugin marketplace add nijanthan-dev/taxmate-australia\n"
                 "claude plugin install taxmate-australia@taxmate-australia\n"
+                "Node.js 20+ for the MCP launcher\n"
                 "Use `npx skills` only when you want guidance in chat\n"
                 "does not include the renderer\n"
                 "Use `--agent claude-code` instead of `--agent codex`\n"
@@ -544,13 +547,15 @@ class ReviewGuardrailTests(unittest.TestCase):
                 "codex plugin marketplace add nijanthan-dev/taxmate-australia\n"
                 "claude plugin marketplace add nijanthan-dev/taxmate-australia\n"
                 "claude plugin install taxmate-australia@taxmate-australia\n"
+                "Node.js 20+ for the MCP launcher\n"
                 "print-first HTML handoff\ncustom preparation aid\nnot an ATO form\n"
                 "not lodgment software\nnot final tax advice\nnot fileable\n"
                 "manually copy reviewed values\nmissing facts\nevidence gaps\nAccountant review\n"
                 "source/provenance appendix\n"
             )
             good_prep = (
-                "prep-only\nmanual-copy handoff\ndoes not lodge\nPlugin Runtime Path\nOpen the HTML\n"
+                "prep-only\nmanual-copy handoff\ndoes not lodge\nPlugin Runtime Path\n"
+                "Node.js 20+ for the MCP launcher\nOpen the HTML\n"
                 "prep-only boundary\nmanual-copy warning\nAI extraction confirmation table\nsource/provenance appendix\n"
             )
             (root / "README.md").write_text(readme, encoding="utf-8")
@@ -755,7 +760,10 @@ class ReviewGuardrailTests(unittest.TestCase):
             (root / "README.md").write_text(readme, encoding="utf-8")
             (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
             (docs / "FULL_PLUGIN_INSTALL.md").write_text(
-                docs_text + "npx skills installs the renderer\nmessy tax records\n",
+                docs_text
+                + "npx skills installs the renderer\n"
+                + "install Node.js only if you want optional\n"
+                + "messy tax records\n",
                 encoding="utf-8",
             )
             (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(docs_text, encoding="utf-8")
@@ -781,6 +789,7 @@ class ReviewGuardrailTests(unittest.TestCase):
 
         self.assertTrue(any("HTML tax pack" in finding.detail for finding in findings))
         self.assertTrue(any("npx skills installs the renderer" in finding.detail for finding in findings))
+        self.assertTrue(any("install Node.js only if you want optional" in finding.detail for finding in findings))
         self.assertTrue(any("turn Australian tax records into" in finding.detail for finding in findings))
         self.assertTrue(any("messy tax records" in finding.detail for finding in findings))
 

@@ -231,7 +231,7 @@ if (openAgentSkill.slug !== "taxmate-australia") fail("OpenAgentSkill slug misma
 if (openAgentSkill.repository !== plugin.repository) fail("OpenAgentSkill repository mismatch");
 if (openAgentSkill.homepage !== plugin.homepage) fail("OpenAgentSkill homepage mismatch");
 if (openAgentSkill.license !== "Apache-2.0") fail("OpenAgentSkill license mismatch");
-if (!/bash/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`) || !/python/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`) || !/Claude Code/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`)) fail("OpenAgentSkill metadata must describe bash and Python runtime for Claude Code");
+if (!/bash/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`) || !/python/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`) || !/Node\.js/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`) || !/Claude Code/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`)) fail("OpenAgentSkill metadata must describe Node.js MCP launcher and bash/Python runtime for Claude Code");
 if (openAgentSkill.category !== "business") fail("OpenAgentSkill category mismatch");
 if (!Array.isArray(openAgentSkill.tags) || openAgentSkill.tags.length === 0 || openAgentSkill.tags.length > 10) fail("OpenAgentSkill tags must be 1-10 entries");
 const requiredDiscoveryTags = ["australian-tax", "tax-prep", "ato", "gst", "bas", "cgt", "payg", "superannuation", "accountant", "agent-skills"];
@@ -341,6 +341,7 @@ for (const file of ["README.md", "docs/DISCOVERY.md", ".codex-plugin/plugin.json
 if (plugin.keywords.includes("assistant") || plugin.keywords.includes("super")) fail("plugin keywords contain stale generic terms");
 if (!readme.includes("Codex plugin install")) fail("README missing Codex plugin install path");
 if (!readme.includes("Claude Code plugin install")) fail("README missing Claude Code plugin install path");
+if (!readme.includes("Node.js 20+ for the MCP launcher")) fail("README missing Node.js MCP launcher prerequisite");
 if (!readme.includes("npx skills") || !readme.includes("guidance only")) fail("README must describe npx skills as guidance only");
 if (!readme.includes("Use the taxmate-australia-capital-gains-tax skill") || !readme.includes("Use the taxmate-australia-gst-bas skill")) fail("README missing usage examples");
 if (readme.includes("official plugin discovery") || readme.includes("marketplace entry")) fail("README contains unverified marketplace claim");

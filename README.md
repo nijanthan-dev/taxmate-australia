@@ -11,7 +11,7 @@ Pick the smallest path that matches what you need:
 
 | Need | Install | What you get |
 | --- | --- | --- |
-| HTML guide, taxpack output, source refresh, finance review, or calculators in Codex or Claude Code | Plugin install | Bash + Python runtime, MCP tools, source pipeline, guide generation, and audit tooling. |
+| HTML guide, taxpack output, source refresh, finance review, or calculators in Codex or Claude Code | Plugin install | Bash + Python runtime, Node.js MCP launcher, source pipeline, guide generation, and audit tooling. |
 | Quick use in Codex, Claude Code, Cowork, or OpenAgentSkill CLI | `npx skills` guidance only | Topic guidance, source-backed review prompts, and `Accountant review` flags. No renderer or runtime scripts. |
 
 Codex plugin install:
@@ -150,6 +150,7 @@ Plugin install is the real TaxMate install. Use it when you need generated guide
 Prerequisites:
 
 - Codex or Claude Code.
+- Node.js 20+ for the MCP launcher.
 - Bash and Python 3.9+ for the plugin runtime.
 
 Install for Codex:
@@ -211,9 +212,10 @@ Contributor flow, release checks, screenshot maintenance, and repository guardra
 
 ## Troubleshooting
 
-- Plugin install fails: verify Codex or Claude Code is installed, then re-run the matching plugin install commands in [docs/INSTALLATION.md](docs/INSTALLATION.md).
+- Plugin install fails: verify Codex or Claude Code is installed with Node.js 20+, then re-run the matching plugin install commands in [docs/INSTALLATION.md](docs/INSTALLATION.md).
+- `node: command not found`: install Node.js 20+ so the plugin MCP launcher can start.
 - HTML guide command fails: ask Codex to run TaxMate runtime validation and verify `python3` + `bash` are available.
-- `npx: command not found`: install Node.js only if you want optional `npx skills` guidance-only install.
+- `npx: command not found`: install Node.js 20+. The plugin needs Node.js for MCP startup; `npx` is only for optional guidance-only skill installs.
 - Need guidance only: use the optional `npx skills` commands in [docs/INSTALLATION.md](docs/INSTALLATION.md).
 
 ## More Docs

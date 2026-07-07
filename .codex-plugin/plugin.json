@@ -19,7 +19,7 @@
     "displayName": "TaxMate Australia",
     "composerIcon": "./assets/icon.png",
     "logo": "./assets/icon.png",
-    "longDescription": "TaxMate Australia prepares Australian individual tax return materials for review before myTax, paper ATO form, or accountant handoff. It combines ATO source-page refresh, GST/BAS and CGT review support, calculator scaffolds, missing-evidence queues, and output-focused skills on a bash and Python runtime. It supports Codex and Claude Code plugin workflows plus portable skill use in Cowork and OpenAgentSkill CLI. It is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and is not affiliated with or endorsed by the Australian Taxation Office.",
+    "longDescription": "TaxMate Australia prepares Australian individual tax return materials for review before myTax, paper ATO form, or accountant handoff. It combines ATO source-page refresh, GST/BAS and CGT review support, calculator scaffolds, missing-evidence queues, and output-focused skills on a Node.js MCP launcher with a bash and Python runtime. It supports Codex and Claude Code plugin workflows plus portable skill use in Cowork and OpenAgentSkill CLI. It is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and is not affiliated with or endorsed by the Australian Taxation Office.",
     "privacyPolicyURL": "https://github.com/nijanthan-dev/taxmate-australia/blob/main/SECURITY.md",
     "screenshots": [
       "./assets/icon.png"

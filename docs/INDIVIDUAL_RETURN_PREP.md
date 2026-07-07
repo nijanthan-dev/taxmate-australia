@@ -37,6 +37,8 @@ For general non-crypto/non-rental CGT event prep, collect top-level facts or ite
 
 Install the plugin first.
 
+Plugin prerequisites are Codex or Claude Code, Node.js 20+ for the MCP launcher, Bash, and Python 3.9+.
+
 Codex:
 
 ```bash

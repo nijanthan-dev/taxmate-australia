@@ -2,6 +2,13 @@
 
 Normal users should install TaxMate Australia as a Codex or Claude Code plugin.
 
+Plugin prerequisites:
+
+- Codex CLI or Claude Code CLI.
+- Node.js 20+ for the MCP launcher.
+- Bash.
+- Python 3.9+.
+
 Codex:
 
 ```bash
@@ -16,7 +23,7 @@ claude plugin marketplace add nijanthan-dev/taxmate-australia
 claude plugin install taxmate-australia@taxmate-australia
 ```
 
-The plugin install is the runtime install. It places TaxMate in the agent plugin cache with the bash and Python runtime, `scripts/`, `runtime/`, `wrappers/`, skills, `.mcp.json`, and the MCP server.
+The plugin install is the runtime install. It places TaxMate in the agent plugin cache with the Node.js MCP launcher, bash and Python runtime, `scripts/`, `runtime/`, `wrappers/`, skills, `.mcp.json`, and the MCP server.
 
 Use [INSTALLATION.md](INSTALLATION.md) for the beginner install path.
 

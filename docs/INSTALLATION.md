@@ -11,6 +11,7 @@ TaxMate outputs are preparation aids only. The HTML guide is a custom preparatio
 Prerequisites:
 
 - Codex CLI or Claude Code CLI.
+- Node.js 20+ for the MCP launcher.
 - Bash.
 - Python 3.9+.
 
@@ -104,7 +105,7 @@ Guidance-only install locations:
 
 ## Claude Code Runtime vs Cowork Guidance
 
-Claude Code users who need generated files should use the plugin install above. That is the Claude Code runtime path and includes the bash and Python runtime, MCP server, `scripts/`, `runtime/`, and `wrappers/`.
+Claude Code users who need generated files should use the plugin install above. That is the Claude Code runtime path and includes the Node.js MCP launcher, bash and Python runtime, MCP server, `scripts/`, `runtime/`, and `wrappers/`.
 
 Cowork currently uses guidance-only public skills. Each folder is self-contained, has `SKILL.md` with YAML frontmatter, and avoids plugin-runtime commands.
 

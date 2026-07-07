@@ -193,7 +193,10 @@ def add_openagentskill_checks(root: str, add, manifest: Dict[str, str], readme_t
     openagentskill_public_text = f"{payload.get('description', '')} {payload.get('tagline', '')}".lower()
     add(
         "openagentskill_runtime_documented",
-        "bash" in openagentskill_public_text and "python" in openagentskill_public_text and "claude code" in openagentskill_public_text,
+        "bash" in openagentskill_public_text
+        and "python" in openagentskill_public_text
+        and "node.js" in openagentskill_public_text
+        and "claude code" in openagentskill_public_text,
         "",
     )
     add(
@@ -311,6 +314,17 @@ def add_skill_and_documentation_checks(
         "python runtime under the hood" in full_runtime_text
         and "./scripts/taxmate" in full_runtime_text
         and "./scripts/taxmate refresh --help" in full_runtime_text,
+        "",
+    )
+    install_text = read_text(os.path.join(root, "docs", "INSTALLATION.md"))
+    full_install_text = read_text(os.path.join(root, "docs", "FULL_PLUGIN_INSTALL.md"))
+    prep_text = read_text(os.path.join(root, "docs", "INDIVIDUAL_RETURN_PREP.md"))
+    add(
+        "plugin_mcp_node_prerequisite_documented",
+        all(
+            "Node.js 20+ for the MCP launcher" in text
+            for text in [readme_text, install_text, full_install_text, prep_text]
+        ),
         "",
     )
 
@@ -703,6 +717,7 @@ def individual_return_prep_docs_ready(root: str, readme_text: str) -> bool:
         "Plugin Runtime Path",
         "codex plugin marketplace add nijanthan-dev/taxmate-australia",
         "claude plugin marketplace add nijanthan-dev/taxmate-australia",
+        "Node.js 20+ for the MCP launcher",
         "./scripts/taxmate intake individual --help",
         "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json",
         "./scripts/taxmate intake individual",
