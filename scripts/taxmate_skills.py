@@ -17,9 +17,6 @@ import skillgen
 
 
 def command_root() -> str:
-    cwd = os.getcwd()
-    if Path(cwd).joinpath(".codex-plugin", "plugin.json").exists():
-        return cwd
     return atodata.SkillRoot()
 
 

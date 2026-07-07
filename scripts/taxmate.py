@@ -22,6 +22,9 @@ COMMANDS = {
     "validate": "taxmate_validate.py",
 }
 
+CALLER_CWD_COMMANDS = {"calc", "finance", "intake", "taxpack"}
+ROOT_CWD_COMMANDS = {"refresh", "review-guardrails", "skills", "validate"}
+
 
 def _find_repo_root(start: Path) -> Path:
     explicit_root = os.environ.get("TAXMATE_AUSTRALIA_ROOT")
@@ -53,7 +56,8 @@ def _run_python_command(script: str, args: List[str], root: Path, caller_cwd: Pa
 def _dispatch(command: str, args: List[str]) -> int:
     caller_cwd = Path.cwd()
     root = _find_repo_root(caller_cwd)
-    return _run_python_command(COMMANDS[command], args, root, caller_cwd)
+    command_cwd = caller_cwd if command in CALLER_CWD_COMMANDS else root
+    return _run_python_command(COMMANDS[command], args, root, command_cwd)
 
 
 def _build_parser() -> argparse.ArgumentParser:

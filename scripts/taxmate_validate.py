@@ -667,6 +667,9 @@ def taxmate_launcher_preserves_caller_cwd(root: str) -> bool:
     launcher = read_text(os.path.join(root, "scripts", "taxmate.py"))
     return (
         "caller_cwd = Path.cwd()" in launcher
+        and "CALLER_CWD_COMMANDS" in launcher
+        and "ROOT_CWD_COMMANDS" in launcher
+        and "command_cwd = caller_cwd if command in CALLER_CWD_COMMANDS else root" in launcher
         and 'cwd=str(caller_cwd)' in launcher
         and '"TAXMATE_AUSTRALIA_ROOT": str(root)' in launcher
     )
@@ -1786,6 +1789,8 @@ def go_tooling_scan_files() -> List[str]:
 def public_runtime_claim_scan_files() -> List[str]:
     return [
         os.path.join(".codex-plugin", "plugin.json"),
+        os.path.join(".claude-plugin", "plugin.json"),
+        os.path.join(".claude-plugin", "marketplace.json"),
         os.path.join(".agents", "plugins", "marketplace.json"),
         os.path.join("agents", "openai.yaml"),
         "plugin.lock.json",

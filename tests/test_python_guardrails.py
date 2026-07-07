@@ -38,7 +38,9 @@ import taxmate  # noqa: E402
 import taxmate_calc  # noqa: E402
 import taxmate_finance  # noqa: E402
 import taxmate_intake  # noqa: E402
+import taxmate_refresh  # noqa: E402
 import taxmate_review_guardrails  # noqa: E402
+import taxmate_skills  # noqa: E402
 import taxmate_taxpack  # noqa: E402
 import taxmate_validate  # noqa: E402
 
@@ -11635,6 +11637,65 @@ class ValidatorAndCliTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("OpenAI Codex subscription", result.stdout)
 
+    def test_launcher_keeps_repo_scoped_commands_on_plugin_root(self) -> None:
+        calls: list[tuple[str, list[str], Path, Path]] = []
+        original_runner = taxmate._run_python_command
+        original_cwd = Path.cwd()
+        original_env = os.environ.get("TAXMATE_AUSTRALIA_ROOT")
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                caller_root = Path(tmp)
+                (caller_root / ".codex-plugin").mkdir()
+                (caller_root / ".codex-plugin" / "plugin.json").write_text("{}", encoding="utf-8")
+                os.environ["TAXMATE_AUSTRALIA_ROOT"] = str(ROOT)
+                os.chdir(caller_root)
+
+                def fake_runner(script: str, args: list[str], root: Path, caller_cwd: Path) -> int:
+                    calls.append((script, args, root, caller_cwd))
+                    return 0
+
+                taxmate._run_python_command = fake_runner
+
+                self.assertEqual(taxmate._dispatch("skills", ["validate"]), 0)
+                self.assertEqual(taxmate._dispatch("refresh", ["--query", "work"]), 0)
+                self.assertEqual(taxmate._dispatch("finance", ["--input", "sample.csv"]), 0)
+        finally:
+            taxmate._run_python_command = original_runner
+            os.chdir(original_cwd)
+            if original_env is None:
+                os.environ.pop("TAXMATE_AUSTRALIA_ROOT", None)
+            else:
+                os.environ["TAXMATE_AUSTRALIA_ROOT"] = original_env
+
+        self.assertEqual(calls[0][0], "taxmate_skills.py")
+        self.assertEqual(calls[0][2], ROOT)
+        self.assertEqual(calls[0][3], ROOT)
+        self.assertEqual(calls[1][0], "taxmate_refresh.py")
+        self.assertEqual(calls[1][3], ROOT)
+        self.assertEqual(calls[2][0], "taxmate_finance.py")
+        self.assertNotEqual(calls[2][3], ROOT)
+
+    def test_repo_command_roots_ignore_caller_plugin_cwd(self) -> None:
+        original_cwd = Path.cwd()
+        original_env = os.environ.get("TAXMATE_AUSTRALIA_ROOT")
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                caller_root = Path(tmp)
+                (caller_root / ".codex-plugin").mkdir()
+                (caller_root / ".codex-plugin" / "plugin.json").write_text("{}", encoding="utf-8")
+                os.environ["TAXMATE_AUSTRALIA_ROOT"] = str(ROOT)
+                os.chdir(caller_root)
+
+                self.assertEqual(atodata.SkillRoot(), str(ROOT))
+                self.assertEqual(taxmate_skills.command_root(), str(ROOT))
+                self.assertEqual(taxmate_refresh.command_root(), str(ROOT))
+        finally:
+            os.chdir(original_cwd)
+            if original_env is None:
+                os.environ.pop("TAXMATE_AUSTRALIA_ROOT", None)
+            else:
+                os.environ["TAXMATE_AUSTRALIA_ROOT"] = original_env
+
     def test_finish_report_has_check_names(self) -> None:
         checks = [{"check": "sample", "passed": True, "detail": ""}]
 
@@ -11800,6 +11861,32 @@ class ValidatorAndCliTests(unittest.TestCase):
             config_path.write_text(json.dumps(config), encoding="utf-8")
 
             self.assertFalse(taxmate_validate.release_config_tracks_manifest_versions(str(tmp_root)))
+
+    def test_stale_go_runtime_scan_includes_claude_plugin_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".claude-plugin").mkdir(parents=True)
+            (root / ".claude-plugin" / "plugin.json").write_text(
+                '{"description":"TaxMate uses a Go backend"}\n',
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.stale_go_runtime_claim_hits(tmp)
+
+        self.assertEqual(hits, [".claude-plugin/plugin.json:go backend"])
+
+    def test_stale_go_runtime_scan_includes_claude_marketplace_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".claude-plugin").mkdir(parents=True)
+            (root / ".claude-plugin" / "marketplace.json").write_text(
+                '{"description":"TaxMate uses a Go runtime"}\n',
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.stale_go_runtime_claim_hits(tmp)
+
+        self.assertEqual(hits, [".claude-plugin/marketplace.json:go runtime"])
 
     def test_ato_endorsement_scan_is_case_insensitive(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

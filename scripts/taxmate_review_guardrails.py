@@ -2311,6 +2311,9 @@ def check_plugin_mcp_contract(root: Path) -> List[Finding]:
                 "caller_cwd: CALLER_CWD",
                 "caller_cwd = Path.cwd()",
                 "cwd=str(caller_cwd)",
+                "CALLER_CWD_COMMANDS",
+                "ROOT_CWD_COMMANDS",
+                "command_cwd = caller_cwd if command in CALLER_CWD_COMMANDS else root",
                 '"TAXMATE_AUSTRALIA_ROOT": str(root)',
             ],
         )

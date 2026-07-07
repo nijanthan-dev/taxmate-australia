@@ -108,6 +108,7 @@ const claudePlugin = JSON.parse(fs.readFileSync(".claude-plugin/plugin.json", "u
 const claudeMarketplace = JSON.parse(fs.readFileSync(".claude-plugin/marketplace.json", "utf8"));
 const mcp = JSON.parse(fs.readFileSync(".codex-plugin/mcp.json", "utf8"));
 const mcpServerText = fs.readFileSync("mcp/server.cjs", "utf8");
+const taxmateLauncherText = fs.readFileSync("scripts/taxmate.py", "utf8");
 const openAgentSkill = JSON.parse(fs.readFileSync("skill.json", "utf8"));
 const publicManifest = JSON.parse(fs.readFileSync("config/public-skills.json", "utf8"));
 const packaging = JSON.parse(fs.readFileSync("config/skill-packaging.json", "utf8"));
@@ -243,6 +244,15 @@ for (const required of [
 ]) {
   if (!mcpServerText.includes(required)) fail(`MCP server missing caller-cwd contract: ${required}`);
 }
+for (const required of [
+  "caller_cwd = Path.cwd()",
+  "CALLER_CWD_COMMANDS",
+  "ROOT_CWD_COMMANDS",
+  "command_cwd = caller_cwd if command in CALLER_CWD_COMMANDS else root",
+  "\"TAXMATE_AUSTRALIA_ROOT\": str(root)",
+]) {
+  if (!taxmateLauncherText.includes(required)) fail(`TaxMate launcher missing cwd/root contract: ${required}`);
+}
 if (!claudePluginReady()) fail("Claude plugin manifest mismatch");
 if (!claudeMcpReady()) fail("Claude plugin must expose TaxMate MCP server from CLAUDE_PLUGIN_ROOT");
 if (!claudeMarketplaceReady()) fail("Claude plugin marketplace must expose taxmate-australia from repo root");
@@ -348,14 +358,14 @@ for (const term of ["GitHub About", "claude-code", "cowork", "openagentskill", "
   if (!discovery.includes(term)) fail(`DISCOVERY missing term ${term}`);
 }
 for (const staleClaim of ["turn Australian tax records into", "messy tax records", "move from tax records", "tax records into"]) {
-  if (readme.includes(staleClaim) || discovery.includes(staleClaim) || JSON.stringify(plugin).includes(staleClaim) || JSON.stringify(openAgentSkill).includes(staleClaim)) {
+  if (readme.includes(staleClaim) || discovery.includes(staleClaim) || JSON.stringify(plugin).includes(staleClaim) || JSON.stringify(claudePlugin).includes(staleClaim) || JSON.stringify(claudeMarketplace).includes(staleClaim) || JSON.stringify(openAgentSkill).includes(staleClaim)) {
     fail(`stale positioning claim found: ${staleClaim}`);
   }
 }
 if (discovery.includes("tax-records")) fail("DISCOVERY must not use tax-records topic");
 if (!plugin.interface.shortDescription.includes("Australian tax prep with ATO source links")) fail("plugin short description missing discovery copy");
 const atoBackingPattern = new RegExp("ATO[- ]" + "backed|backed by " + "ATO|supported by " + "ATO", "i");
-for (const file of ["README.md", "docs/DISCOVERY.md", ".codex-plugin/plugin.json", "skill.json", "agents/openai.yaml", "skills/taxmate-australia/SKILL.md", "wrappers/taxmate-australia/SKILL.md"]) {
+for (const file of ["README.md", "docs/DISCOVERY.md", ".codex-plugin/plugin.json", ".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "skill.json", "agents/openai.yaml", "skills/taxmate-australia/SKILL.md", "wrappers/taxmate-australia/SKILL.md"]) {
   const text = fs.readFileSync(file, "utf8");
   if (atoBackingPattern.test(text)) fail(`${file} implies ATO backing`);
 }
