@@ -337,6 +337,96 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("small business CGT concession review" in finding.detail for finding in findings))
         self.assertTrue(any("entity/affiliate/connected entity" in finding.detail for finding in findings))
 
+    def test_plugin_mcp_contract_rejects_root_mcp_and_claude_relative_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".codex-plugin").mkdir()
+            (root / ".claude-plugin").mkdir()
+            (root / ".codex-plugin" / "plugin.json").write_text(
+                json.dumps({"mcpServers": "./.codex-plugin/mcp.json"}),
+                encoding="utf-8",
+            )
+            mcp_payload = {
+                "mcpServers": {
+                    "taxmateAustralia": {
+                        "cwd": ".",
+                        "command": "node",
+                        "args": ["./mcp/server.cjs", "--stdio"],
+                    }
+                }
+            }
+            (root / ".codex-plugin" / "mcp.json").write_text(json.dumps(mcp_payload), encoding="utf-8")
+            (root / ".mcp.json").write_text(json.dumps(mcp_payload), encoding="utf-8")
+            (root / ".claude-plugin" / "plugin.json").write_text(
+                json.dumps(
+                    {
+                        "mcpServers": {
+                            "taxmateAustralia": {
+                                "command": "node",
+                                "args": ["./mcp/server.cjs", "--stdio"],
+                                "env": {"TAXMATE_AUSTRALIA_ROOT": "${CLAUDE_PLUGIN_ROOT}"},
+                            }
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_plugin_mcp_contract(root)
+
+        self.assertTrue(any("root .mcp.json" in finding.detail for finding in findings))
+        self.assertTrue(any("CLAUDE_PLUGIN_ROOT path" in finding.detail for finding in findings))
+
+    def test_local_ci_contract_rejects_auto_ci_triggers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".github" / "workflows").mkdir(parents=True)
+            (root / "scripts").mkdir()
+            (root / ".github" / "workflows" / "ci.yml").write_text(
+                "on:\n  pull_request:\n  workflow_dispatch:\n",
+                encoding="utf-8",
+            )
+            (root / ".github" / "workflows" / "hol-plugin-scanner.yml").write_text(
+                "on:\n  push:\n  workflow_dispatch:\n",
+                encoding="utf-8",
+            )
+            (root / ".github" / "workflows" / "local-ci.yml").write_text(
+                "bash scripts/check-publication-ready.sh\n"
+                "./scripts/taxmate review-guardrails\n"
+                "./scripts/taxmate validate\n"
+                "bash scripts/test-mcp-server.sh\n",
+                encoding="utf-8",
+            )
+            (root / ".actrc").write_text("catthehacker/ubuntu:act-22.04\n", encoding="utf-8")
+            (root / "scripts" / "run-local-ci-act.sh").write_text(
+                "docker info\n"
+                "act workflow_dispatch -W .github/workflows/local-ci.yml\n"
+                "gitleaks dir . --redact --no-banner\n"
+                "gitleaks detect --source . --redact --no-banner\n",
+                encoding="utf-8",
+            )
+            (root / "scripts" / "check-local-ci-ready.sh").write_text(
+                "pull_request|push\n",
+                encoding="utf-8",
+            )
+            (root / ".pre-commit-config.yaml").write_text(
+                "taxmate-local-ci-ready\nbash scripts/check-local-ci-ready.sh\n",
+                encoding="utf-8",
+            )
+            (root / "scripts" / "check-publication-ready.sh").write_text(
+                "bash scripts/check-local-ci-ready.sh\n",
+                encoding="utf-8",
+            )
+            (root / "docs").mkdir()
+            (root / "docs" / "DEVELOPMENT.md").write_text(
+                "Automatic GitHub CI is paused\n",
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_local_ci_contract(root)
+
+        self.assertTrue(any("automatic PR/push triggers" in finding.detail for finding in findings))
+
     def test_review_guardrails_detect_wfh_parser_fallbacks(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -11594,6 +11684,28 @@ class ValidatorAndCliTests(unittest.TestCase):
 
             self.assertFalse(taxmate_validate.release_workflow_auto_after_ci(tmp))
 
+    def test_local_act_ci_ready(self) -> None:
+        self.assertTrue(taxmate_validate.local_act_ci_ready(str(ROOT)))
+
+    def test_local_act_ci_rejects_auto_trigger(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            for rel in [
+                ".actrc",
+                ".github/workflows/local-ci.yml",
+                ".github/workflows/ci.yml",
+                ".github/workflows/hol-plugin-scanner.yml",
+                "scripts/check-local-ci-ready.sh",
+                "scripts/run-local-ci-act.sh",
+            ]:
+                dest = tmp_root / rel
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_text((ROOT / rel).read_text(encoding="utf-8"), encoding="utf-8")
+            ci = tmp_root / ".github" / "workflows" / "ci.yml"
+            ci.write_text(ci.read_text(encoding="utf-8").replace("  workflow_dispatch:", "  pull_request:\n  workflow_dispatch:"), encoding="utf-8")
+
+            self.assertFalse(taxmate_validate.local_act_ci_ready(tmp))
+
     def test_release_config_tracks_manifest_versions(self) -> None:
         self.assertTrue(taxmate_validate.release_config_tracks_manifest_versions(str(ROOT)))
 
@@ -11846,7 +11958,8 @@ class ValidatorAndCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "mcp").mkdir()
-            (root / ".mcp.json").write_text(
+            (root / ".codex-plugin").mkdir()
+            (root / ".codex-plugin" / "mcp.json").write_text(
                 json.dumps(
                     {
                         "mcpServers": {
@@ -11861,6 +11974,26 @@ class ValidatorAndCliTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (root / "mcp" / "server.cjs").write_text("module.exports = {};\n", encoding="utf-8")
+
+            self.assertFalse(taxmate_validate.codex_plugin_mcp_files_ready(tmp))
+
+    def test_codex_plugin_mcp_files_reject_root_mcp_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "mcp").mkdir()
+            (root / ".codex-plugin").mkdir()
+            payload = {
+                "mcpServers": {
+                    "taxmateAustralia": {
+                        "cwd": ".",
+                        "command": "node",
+                        "args": ["./mcp/server.cjs", "--stdio"],
+                    }
+                }
+            }
+            (root / ".codex-plugin" / "mcp.json").write_text(json.dumps(payload), encoding="utf-8")
+            (root / ".mcp.json").write_text(json.dumps(payload), encoding="utf-8")
+            (root / "mcp" / "server.cjs").write_text("taxmate_run\nrender_individual_html\n", encoding="utf-8")
 
             self.assertFalse(taxmate_validate.codex_plugin_mcp_files_ready(tmp))
 

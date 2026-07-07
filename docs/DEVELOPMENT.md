@@ -235,13 +235,19 @@ Pre-commit runs review guardrails, repository validation, MCP smoke, and Claude 
 
 Do not claim official plugin discovery unless a published listing has been verified.
 
-## CI
+## Local CI
 
-CI runs bash+python runtime checks, generated-source checks, environment guardrails, macOS smoke, publication validation, and Gitleaks.
+Automatic GitHub CI is paused to avoid hosted-runner spend. Run the local act workflow before pushing:
+
+```bash
+scripts/run-local-ci-act.sh
+```
+
+The local workflow runs bash+python runtime checks, generated-source checks, environment guardrails, plugin smokes, publication validation, and local Gitleaks when installed. The GitHub CI and HOL scanner workflows remain manual-only through `workflow_dispatch`.
 
 ## Release
 
-- After a successful merge to `main`, the Release workflow runs after main CI passes. It can also be run manually from `main`.
+- After a successful merge to `main`, run the Release workflow manually from `main` after local checks pass. It can also follow an explicitly dispatched main CI run.
 - The workflow requires `RELEASE_PLEASE_TOKEN`, a repo secret whose token can create release pull requests and write contents/issues.
 - Versions are calculated from Conventional Commits:
   - `feat:` -> minor

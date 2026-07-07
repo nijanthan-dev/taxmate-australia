@@ -39,7 +39,7 @@ for rel in \
   ".claude-plugin/plugin.json" \
   ".claude-plugin/marketplace.json" \
   ".codex-plugin/plugin.json" \
-  ".mcp.json" \
+  ".codex-plugin/mcp.json" \
   "mcp/server.cjs" \
   "scripts/taxmate" \
   "scripts/taxmate.py" \
@@ -56,6 +56,13 @@ for rel in \
     exit 1
   fi
 done
+
+if [[ -e "$INSTALLED_PATH/.mcp.json" ]]; then
+  echo "error: installed Claude plugin must not include root .mcp.json" >&2
+  exit 1
+fi
+
+bash "$ROOT/scripts/test-mcp-server.sh" "$INSTALLED_PATH"
 
 ANSWERS_JSON="$TMP_OUT/answers.json"
 GUIDE_HTML="$TMP_OUT/guide.html"

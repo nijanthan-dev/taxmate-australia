@@ -25,6 +25,8 @@ PUBLIC_CLAIM_SURFACE_CONTRACT = "public_claim_surface_contract"
 RELEASE_GUARDRAIL_CONTRACT = "release_guardrail_contract"
 ENVIRONMENT_WORKTREE_CONTRACT = "environment_worktree_contract"
 LOCAL_PLUGIN_MARKETPLACE_CONTRACT = "local_plugin_marketplace_contract"
+PLUGIN_MCP_CONTRACT = "plugin_mcp_contract"
+LOCAL_CI_CONTRACT = "local_ci_contract"
 PRE_COMMIT_CONTRACT = "pre_commit_contract"
 REVIEW_GUARDRAIL_DOCS = "review_guardrail_docs"
 OUTPUT_DOCS_CONTRACT = "output_docs_contract"
@@ -86,6 +88,16 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
         "PR #107",
         OUTPUT_DOCS_CONTRACT,
         "Plugin install docs and public metadata must disclose that the MCP launcher requires Node.js while TaxMate commands run on the bash and Python runtime.",
+    ),
+    ReviewPattern(
+        "PR #107 MCP",
+        OUTPUT_DOCS_CONTRACT,
+        "Keep host-specific MCP manifests separate: Codex uses .codex-plugin/mcp.json and Claude uses .claude-plugin/plugin.json with CLAUDE_PLUGIN_ROOT; do not restore a root .mcp.json that Claude can auto-discover from a user project cwd.",
+    ),
+    ReviewPattern(
+        "PR #107 CI",
+        LOCAL_CI_CONTRACT,
+        "Keep expensive GitHub CI and scanner workflows manual-only, run the local act workflow before push, and keep review/package invariants enforced by pre-commit and publication checks.",
     ),
     ReviewPattern(
         "PR #22",
@@ -2248,6 +2260,89 @@ def check_local_plugin_marketplace_contract(root: Path) -> List[Finding]:
     return findings
 
 
+def check_plugin_mcp_contract(root: Path) -> List[Finding]:
+    findings: List[Finding] = []
+    if root.joinpath(".mcp.json").exists():
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "root .mcp.json must not be packaged with Claude plugin auto-discovery"))
+
+    try:
+        codex_plugin = json.loads(read(root, ".codex-plugin/plugin.json"))
+    except json.JSONDecodeError as exc:
+        return [Finding(PLUGIN_MCP_CONTRACT, f"invalid .codex-plugin/plugin.json: {exc}")]
+    if codex_plugin.get("mcpServers") != "./.codex-plugin/mcp.json":
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Codex plugin must point at .codex-plugin/mcp.json"))
+
+    try:
+        codex_mcp = json.loads(read(root, ".codex-plugin/mcp.json"))
+    except json.JSONDecodeError as exc:
+        return [Finding(PLUGIN_MCP_CONTRACT, f"invalid .codex-plugin/mcp.json: {exc}")]
+    codex_server = codex_mcp.get("mcpServers", {}).get("taxmateAustralia")
+    if not isinstance(codex_server, dict):
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Codex MCP manifest missing taxmateAustralia server"))
+    elif codex_server.get("cwd") != "." or codex_server.get("args") != ["./mcp/server.cjs", "--stdio"]:
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Codex MCP manifest must stay plugin-root relative"))
+
+    try:
+        claude_plugin = json.loads(read(root, ".claude-plugin/plugin.json"))
+    except json.JSONDecodeError as exc:
+        return [Finding(PLUGIN_MCP_CONTRACT, f"invalid .claude-plugin/plugin.json: {exc}")]
+    claude_server = claude_plugin.get("mcpServers", {}).get("taxmateAustralia")
+    claude_env = claude_server.get("env") if isinstance(claude_server, dict) else None
+    if not isinstance(claude_server, dict):
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Claude plugin missing taxmateAustralia MCP server"))
+    elif claude_server.get("args") != ["${CLAUDE_PLUGIN_ROOT}/mcp/server.cjs", "--stdio"]:
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Claude MCP server must use CLAUDE_PLUGIN_ROOT path"))
+    elif not isinstance(claude_env, dict) or claude_env.get("TAXMATE_AUSTRALIA_ROOT") != "${CLAUDE_PLUGIN_ROOT}":
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Claude MCP server must set TAXMATE_AUSTRALIA_ROOT from CLAUDE_PLUGIN_ROOT"))
+    return findings
+
+
+def workflow_has_auto_ci_trigger(text: str) -> bool:
+    return any(re.match(r"^\s*(pull_request|push):\s*$", line) for line in text.splitlines())
+
+
+def check_local_ci_contract(root: Path) -> List[Finding]:
+    ci = read(root, ".github/workflows/ci.yml")
+    scanner = read(root, ".github/workflows/hol-plugin-scanner.yml")
+    local_ci = read(root, ".github/workflows/local-ci.yml")
+    actrc = read(root, ".actrc")
+    run_script = read(root, "scripts/run-local-ci-act.sh")
+    check_script = read(root, "scripts/check-local-ci-ready.sh")
+    precommit = read(root, ".pre-commit-config.yaml")
+    publication = read(root, "scripts/check-publication-ready.sh")
+    development = read(root, "docs/DEVELOPMENT.md")
+    findings: List[Finding] = []
+    if workflow_has_auto_ci_trigger(ci):
+        findings.append(Finding(LOCAL_CI_CONTRACT, "GitHub CI automatic PR/push triggers must stay paused"))
+    if workflow_has_auto_ci_trigger(scanner):
+        findings.append(Finding(LOCAL_CI_CONTRACT, "HOL scanner automatic PR/push triggers must stay paused"))
+    findings.extend(
+        fail_if_missing(
+            LOCAL_CI_CONTRACT,
+            "\n".join([ci, scanner, local_ci, actrc, run_script, check_script, precommit, publication, development]),
+            [
+                "workflow_dispatch:",
+                "catthehacker/ubuntu:act-22.04",
+                "act workflow_dispatch -W .github/workflows/local-ci.yml",
+                "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+                "rm -rf .git",
+                "git commit -m act-baseline",
+                "docker info",
+                "gitleaks dir . --redact --no-banner",
+                "gitleaks detect --source . --redact --no-banner",
+                "bash scripts/check-publication-ready.sh",
+                "./scripts/taxmate review-guardrails",
+                "./scripts/taxmate validate",
+                "bash scripts/test-mcp-server.sh",
+                "bash scripts/check-local-ci-ready.sh",
+                "taxmate-local-ci-ready",
+                "Automatic GitHub CI is paused",
+            ],
+        )
+    )
+    return findings
+
+
 def check_precommit_contract(root: Path) -> List[Finding]:
     findings: List[Finding] = []
     for rel in [".pre-commit-config.yaml", ".githooks/pre-commit"]:
@@ -2532,6 +2627,8 @@ CHECKS: List[Callable[[Path], List[Finding]]] = [
     check_release_contract,
     check_environment_contract,
     check_local_plugin_marketplace_contract,
+    check_plugin_mcp_contract,
+    check_local_ci_contract,
     check_precommit_contract,
     check_review_guardrail_docs,
     check_output_docs_contract,

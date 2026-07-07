@@ -42,7 +42,7 @@ fi
 
 for rel in \
   ".codex-plugin/plugin.json" \
-  ".mcp.json" \
+  ".codex-plugin/mcp.json" \
   "mcp/server.cjs" \
   "scripts/taxmate" \
   "scripts/taxmate.py" \
@@ -54,6 +54,13 @@ for rel in \
     exit 1
   fi
 done
+
+if [[ -e "$INSTALLED_PATH/.mcp.json" ]]; then
+  echo "error: installed plugin must not include root .mcp.json" >&2
+  exit 1
+fi
+
+bash "$ROOT/scripts/test-mcp-server.sh" "$INSTALLED_PATH"
 
 "$INSTALLED_PATH/scripts/taxmate" intake sample-json --output "$ANSWERS_JSON"
 "$INSTALLED_PATH/scripts/taxmate" intake individual --answers "$ANSWERS_JSON" --output "$GUIDE_HTML"

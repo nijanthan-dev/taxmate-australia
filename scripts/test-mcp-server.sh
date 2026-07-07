@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="${1:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+ROOT="$(cd "$ROOT" && pwd)"
 cd "$ROOT"
 
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/taxmate-mcp.XXXXXX")"
@@ -10,15 +11,17 @@ cleanup() {
 }
 trap cleanup EXIT
 
-node - "$TMP_DIR" <<'NODE'
+node - "$TMP_DIR" "$ROOT" <<'NODE'
 const childProcess = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
 const tmpDir = process.argv[2];
+const root = process.argv[3];
 const answersPath = path.join(tmpDir, "answers.json");
 const guidePath = path.join(tmpDir, "guide.html");
 const genericPath = path.join(tmpDir, "generic.json");
+const serverPath = path.join(root, "mcp", "server.cjs");
 
 function fail(message) {
   console.error(`error: ${message}`);
@@ -62,8 +65,8 @@ const requests = [
   },
 ];
 
-const result = childProcess.spawnSync("node", ["./mcp/server.cjs", "--stdio"], {
-  cwd: process.cwd(),
+const result = childProcess.spawnSync("node", [serverPath, "--stdio"], {
+  cwd: tmpDir,
   input: `${JSON.stringify(requests)}\n`,
   encoding: "utf8",
   maxBuffer: 10 * 1024 * 1024,

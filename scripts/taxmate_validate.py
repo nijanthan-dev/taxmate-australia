@@ -122,7 +122,7 @@ def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifes
                 and "Never lodge" in boundary
                 and "ATO" in boundary
             )
-        plugin_mcp_ready = raw_manifest.get("mcpServers") == "./.mcp.json" and codex_plugin_mcp_files_ready(root)
+        plugin_mcp_ready = raw_manifest.get("mcpServers") == "./.codex-plugin/mcp.json" and codex_plugin_mcp_files_ready(root)
         claude_plugin_ready = claude_plugin_files_ready(root, str(raw_manifest.get("version", "")))
     except Exception:
         plugin_safety = False
@@ -439,6 +439,7 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("wrapper_help_uses_public_commands", wrapper_help_uses_public_commands(root), "")
     add("codex_environment_toml_valid", codex_environment_toml_valid(root), "")
     add("release_workflow_auto_after_ci", release_workflow_auto_after_ci(root), "")
+    add("local_act_ci_ready", local_act_ci_ready(root), "")
     add("release_config_tracks_manifest_versions", release_config_tracks_manifest_versions(root), "")
     private_hits = tracked_private_path_hits(root)
     add("tracked_text_no_private_paths", len(private_hits) == 0, "; ".join(first_n(private_hits, 5)))
@@ -634,7 +635,9 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
 
 
 def codex_plugin_mcp_files_ready(root: str) -> bool:
-    payload, err = read_json_file(os.path.join(root, ".mcp.json"))
+    if os.path.exists(os.path.join(root, ".mcp.json")):
+        return False
+    payload, err = read_json_file(os.path.join(root, ".codex-plugin", "mcp.json"))
     if err is not None:
         return False
     servers = payload.get("mcpServers")
@@ -2317,6 +2320,46 @@ def release_workflow_auto_after_ci(root: str) -> bool:
         and release_workflow_has_auto_trigger(text)
         and release_workflow_has_manual_trigger(text)
         and release_workflow_avoids_privileged_checkout(text)
+    )
+
+
+def github_workflow_has_no_auto_ci_triggers(text: str) -> bool:
+    for line in text.splitlines():
+        if re.match(r"^\s*(pull_request|push):\s*$", line):
+            return False
+    return "workflow_dispatch:" in text
+
+
+def local_act_ci_ready(root: str) -> bool:
+    actrc = read_text(os.path.join(root, ".actrc"))
+    local_ci = read_text(os.path.join(root, ".github", "workflows", "local-ci.yml"))
+    ci = read_text(os.path.join(root, ".github", "workflows", "ci.yml"))
+    scanner = read_text(os.path.join(root, ".github", "workflows", "hol-plugin-scanner.yml"))
+    check_script = read_text(os.path.join(root, "scripts", "check-local-ci-ready.sh"))
+    run_script = read_text(os.path.join(root, "scripts", "run-local-ci-act.sh"))
+    required_local_steps = [
+        "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+        "rm -rf .git",
+        "git commit -m act-baseline",
+        "python3 -m py_compile scripts/*.py tests/*.py",
+        "python3 -m unittest discover -s tests -p 'test_*.py'",
+        "./scripts/taxmate review-guardrails",
+        "./scripts/taxmate validate",
+        "./scripts/taxmate skills generate --check",
+        "./scripts/taxmate skills audit --check",
+        "bash scripts/test-mcp-server.sh",
+        "bash scripts/check-publication-ready.sh",
+    ]
+    return (
+        "catthehacker/ubuntu:act-22.04" in actrc
+        and "act workflow_dispatch -W .github/workflows/local-ci.yml" in run_script
+        and "docker info" in run_script
+        and "gitleaks dir . --redact --no-banner" in run_script
+        and "gitleaks detect --source . --redact --no-banner" in run_script
+        and "pull_request|push" in check_script
+        and github_workflow_has_no_auto_ci_triggers(ci)
+        and github_workflow_has_no_auto_ci_triggers(scanner)
+        and all(step in local_ci for step in required_local_steps)
     )
 
 

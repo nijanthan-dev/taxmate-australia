@@ -1,9 +1,6 @@
 name: CI
 
 on:
-  pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -140,9 +137,10 @@ jobs:
         with:
           python-version: "3.11"
       - run: test -f .codex-plugin/plugin.json
+      - run: test -f .codex-plugin/mcp.json
       - run: test -f .claude-plugin/plugin.json
       - run: test -f .claude-plugin/marketplace.json
-      - run: test -f .mcp.json
+      - run: test ! -f .mcp.json
       - run: test -f mcp/server.cjs
       - run: test -f scripts/test-codex-plugin-install.sh
       - run: test -f scripts/test-claude-plugin-validate.sh

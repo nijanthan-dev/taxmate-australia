@@ -13,7 +13,8 @@ fail() {
 [[ -f .codex-plugin/plugin.json ]] || fail "missing plugin manifest"
 [[ -f .claude-plugin/plugin.json ]] || fail "missing Claude plugin manifest"
 [[ -f .claude-plugin/marketplace.json ]] || fail "missing Claude plugin marketplace"
-[[ -f .mcp.json ]] || fail "missing MCP manifest"
+[[ -f .codex-plugin/mcp.json ]] || fail "missing Codex MCP manifest"
+[[ ! -f .mcp.json ]] || fail "root .mcp.json conflicts with Claude plugin auto-discovery; use .codex-plugin/mcp.json"
 [[ -f mcp/server.cjs ]] || fail "missing MCP server"
 [[ -f README.md ]] || fail "missing README"
 [[ -f DISCLAIMER.md ]] || fail "missing DISCLAIMER.md"
@@ -23,9 +24,13 @@ fail() {
 [[ -f CONTRIBUTING.md ]] || fail "missing CONTRIBUTING.md"
 [[ -f .github/CODEOWNERS ]] || fail "missing CODEOWNERS"
 [[ -f .github/pull_request_template.md ]] || fail "missing PR template"
+[[ -f .github/workflows/ci.yml ]] || fail "missing CI workflow"
+[[ -f .github/workflows/hol-plugin-scanner.yml ]] || fail "missing HOL plugin scanner workflow"
+[[ -f .github/workflows/local-ci.yml ]] || fail "missing local act CI workflow"
 [[ -f .github/ISSUE_TEMPLATE/bug_report.yml ]] || fail "missing bug issue template"
 [[ -f .github/ISSUE_TEMPLATE/feature_request.yml ]] || fail "missing feature issue template"
 [[ -f .github/ISSUE_TEMPLATE/config.yml ]] || fail "missing issue template config"
+[[ -f .actrc ]] || fail "missing local act config"
 [[ -f docs/PUBLICATION_CHECKLIST.md ]] || fail "missing publication checklist"
 [[ -f docs/DISCOVERY.md ]] || fail "missing discovery metadata guide"
 [[ -f hooks.json ]] || fail "missing hooks.json"
@@ -47,6 +52,9 @@ fail() {
 [[ -f scripts/test-codex-plugin-install.sh ]] || fail "missing Codex plugin install smoke test"
 [[ -f scripts/test-claude-plugin-validate.sh ]] || fail "missing Claude plugin validation smoke test"
 [[ -f scripts/test-claude-plugin-install.sh ]] || fail "missing Claude plugin install smoke test"
+[[ -f scripts/check-local-ci-ready.sh ]] || fail "missing local CI readiness check"
+[[ -f scripts/run-local-ci-act.sh ]] || fail "missing local act runner"
+bash scripts/check-local-ci-ready.sh
 if [[ -d migration ]] || [[ -f data/ato_knowledge_base/source_index.json ]] || [[ -f data/ato_knowledge_base/source_manifest.json ]] || [[ -f data/ato_knowledge_base/migration_report.json ]]; then
   fail "legacy migration artifacts present"
 fi
@@ -98,7 +106,7 @@ const root = process.cwd();
 const plugin = JSON.parse(fs.readFileSync(".codex-plugin/plugin.json", "utf8"));
 const claudePlugin = JSON.parse(fs.readFileSync(".claude-plugin/plugin.json", "utf8"));
 const claudeMarketplace = JSON.parse(fs.readFileSync(".claude-plugin/marketplace.json", "utf8"));
-const mcp = JSON.parse(fs.readFileSync(".mcp.json", "utf8"));
+const mcp = JSON.parse(fs.readFileSync(".codex-plugin/mcp.json", "utf8"));
 const openAgentSkill = JSON.parse(fs.readFileSync("skill.json", "utf8"));
 const publicManifest = JSON.parse(fs.readFileSync("config/public-skills.json", "utf8"));
 const packaging = JSON.parse(fs.readFileSync("config/skill-packaging.json", "utf8"));
@@ -217,7 +225,7 @@ for (const name of publicSkills) {
   if (!publicSkillPaths[name]) fail(`public skill missing source path: ${name}`);
 }
 if (plugin.interface.websiteURL !== plugin.repository) fail("plugin website must point to repository");
-if (plugin.mcpServers !== "./.mcp.json") fail("plugin must declare MCP runtime manifest");
+if (plugin.mcpServers !== "./.codex-plugin/mcp.json") fail("plugin must declare Codex MCP runtime manifest");
 const taxmateMcp = mcp.mcpServers && mcp.mcpServers.taxmateAustralia;
 if (!taxmateMcp || taxmateMcp.command !== "node" || JSON.stringify(taxmateMcp.args) !== JSON.stringify(["./mcp/server.cjs", "--stdio"]) || taxmateMcp.cwd !== ".") {
   fail("TaxMate MCP server must run mcp/server.cjs from plugin root");
