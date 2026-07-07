@@ -6,3 +6,28 @@ repos:
         entry: ./scripts/taxmate review-guardrails
         language: system
         pass_filenames: false
+      - id: taxmate-validate
+        name: TaxMate validate
+        entry: ./scripts/taxmate validate
+        language: system
+        pass_filenames: false
+      - id: taxmate-mcp-smoke
+        name: TaxMate MCP smoke
+        entry: bash scripts/test-mcp-server.sh
+        language: system
+        pass_filenames: false
+      - id: taxmate-local-ci-ready
+        name: TaxMate local CI config
+        entry: bash scripts/check-local-ci-ready.sh
+        language: system
+        pass_filenames: false
+      - id: taxmate-claude-plugin-validate
+        name: TaxMate Claude plugin validate
+        entry: bash scripts/test-claude-plugin-validate.sh
+        language: system
+        pass_filenames: false
+      - id: taxmate-claude-plugin-install
+        name: TaxMate Claude plugin install
+        entry: bash scripts/test-claude-plugin-install.sh
+        language: system
+        pass_filenames: false

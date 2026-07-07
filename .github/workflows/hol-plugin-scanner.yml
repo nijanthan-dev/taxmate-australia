@@ -1,10 +1,6 @@
 name: HOL Plugin Scanner
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
   workflow_dispatch:
 
 permissions:

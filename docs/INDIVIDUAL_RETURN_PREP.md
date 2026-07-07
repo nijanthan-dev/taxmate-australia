@@ -6,7 +6,7 @@ Use this path when someone asks how to prepare an Australian individual tax retu
 
 TaxMate is prep-only. It helps collect facts, preserve source links, show missing evidence, and build a manual-copy handoff for myTax, paper ATO form, or accountant handoff. It does not lodge, submit, finalise, fill official ATO PDFs, or give final tax advice.
 
-## Portable Skill Path
+## Guidance Skill Path
 
 Use `taxmate-australia-individual-return` first for a broad checklist. Route specialist sections to installed TaxMate Australia topic skills when facts appear:
 
@@ -17,7 +17,7 @@ Use `taxmate-australia-individual-return` first for a broad checklist. Route spe
 - `taxmate-australia-gst-bas` for BAS worksheets only.
 - `taxmate-australia-shares-etfs-managed-funds`, `taxmate-australia-capital-gains-tax`, `taxmate-australia-crypto-assets`, and `taxmate-australia-property-rental-cgt` for investment, crypto, rental property worksheet, and CGT review.
 - `taxmate-australia-records-evidence` for missing records and substantiation gaps.
-- `taxmate-australia-workbook` or `taxmate-australia-taxpack` only for output rendering, not tax logic.
+- `taxmate-australia-workbook` or `taxmate-australia-taxpack` only for output-layer guidance, not tax logic.
 
 Ask a full intake, not a short interview. Keep unknown, ambiguous, mixed-use, GST/BAS, CGT, PSI, foreign, ESS, ETP/lump sum, rental, company, trust, partnership, and entity-return items in Evidence or `Accountant review` unless official sources clearly resolve the prep step.
 
@@ -33,9 +33,33 @@ For BAS worksheet prep, collect BAS period and coverage, 1A GST collected, 1B GS
 
 For general non-crypto/non-rental CGT event prep, collect top-level facts or itemized event rows with event type, asset description, owner or ownership share, acquisition date, disposal date, proceeds, cost base, incidental costs, losses, current-year and carried-forward capital loss facts, records, discount claim, discount timing or review signals, foreign-resident discount signals, main residence claim facts, ownership and occupancy periods, rental/business use, absence-period signals, spouse/partner main-residence conflict signals, property record evidence, rental-property overlap signals, small-business CGT concession claim status, concession type, business asset and active asset signals, entity/affiliate/connected entity facts, retirement exemption, rollover, 15-year exemption, 50% active asset reduction, business/private use, and concession evidence. Explicit no-CGT answers skip only when no CGT facts exist. No-CGT plus facts, missing loss records, unknown carried-forward losses, discount uncertainty, foreign-resident discount signals, missing records, unknown or malformed dates or amounts, ownership uncertainty, active asset uncertainty, concession type uncertainty, entity/affiliate/connected entity facts, item/top-level conflicts, partial item totals, and review flags stay visible in Evidence or `Accountant review`. TaxMate may reconcile supplied event totals to item totals as prep evidence only; it does not work out capital gain/loss amounts, apply discount treatment, determine main residence treatment, or work out small-business concession amounts.
 
-## Runtime Path
+## Plugin Runtime Path
 
-From a full checkout:
+Install the plugin first.
+
+Plugin prerequisites are Codex or Claude Code, Node.js 20+ for the MCP launcher, Bash, and Python 3.9+.
+
+Codex:
+
+```bash
+codex plugin marketplace add nijanthan-dev/taxmate-australia
+codex plugin add taxmate-australia@taxmate-local-marketplace
+```
+
+Claude Code:
+
+```bash
+claude plugin marketplace add nijanthan-dev/taxmate-australia
+claude plugin install taxmate-australia@taxmate-australia
+```
+
+Then ask your agent:
+
+```text
+Use TaxMate Australia to write sample individual answers and render the individual-return HTML guide.
+```
+
+The plugin runtime can also run the underlying `intake` command family through TaxMate tools. Developer fallback from a cloned repository:
 
 ```bash
 ./scripts/taxmate intake individual --help

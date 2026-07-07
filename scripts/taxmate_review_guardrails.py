@@ -25,6 +25,8 @@ PUBLIC_CLAIM_SURFACE_CONTRACT = "public_claim_surface_contract"
 RELEASE_GUARDRAIL_CONTRACT = "release_guardrail_contract"
 ENVIRONMENT_WORKTREE_CONTRACT = "environment_worktree_contract"
 LOCAL_PLUGIN_MARKETPLACE_CONTRACT = "local_plugin_marketplace_contract"
+PLUGIN_MCP_CONTRACT = "plugin_mcp_contract"
+LOCAL_CI_CONTRACT = "local_ci_contract"
 PRE_COMMIT_CONTRACT = "pre_commit_contract"
 REVIEW_GUARDRAIL_DOCS = "review_guardrail_docs"
 OUTPUT_DOCS_CONTRACT = "output_docs_contract"
@@ -45,13 +47,12 @@ DEVELOPER_ONLY_PUBLIC_DOC_TERMS = [
     "python3 scripts/png_crop.py",
     "taxmate-guide-full.png",
     "Any PR that changes user-facing output",
-    "codex plugin marketplace add",
     "codex plugin marketplace list",
     "codex plugin list",
+    "claude plugin marketplace list",
+    "claude plugin list",
 ]
-DEVELOPER_ONLY_PUBLIC_DOC_PATTERNS = [
-    (re.compile(r"\bcodex\s+plugin\s+add\s+\S+"), "codex plugin add <target>"),
-]
+DEVELOPER_ONLY_PUBLIC_DOC_PATTERNS = []
 
 
 @dataclass
@@ -82,6 +83,21 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
         "PR #10",
         PUBLIC_CLAIM_SURFACE_CONTRACT,
         "Public metadata must describe the real bash and Python runtime.",
+    ),
+    ReviewPattern(
+        "PR #107",
+        OUTPUT_DOCS_CONTRACT,
+        "Plugin install docs and public metadata must disclose that the MCP launcher requires Node.js while TaxMate commands run on the bash and Python runtime; tests must derive plugin versions from release-managed manifests.",
+    ),
+    ReviewPattern(
+        "PR #107 MCP",
+        OUTPUT_DOCS_CONTRACT,
+        "Keep host-specific MCP manifests separate, keep Codex bundled .mcp.json files on the documented mcp_servers schema, require explicit workspace cwd for user relative paths, keep plugin root only as TAXMATE_AUSTRALIA_ROOT, and do not restore root .mcp.json that Claude can auto-discover from a user project cwd.",
+    ),
+    ReviewPattern(
+        "PR #107 CI",
+        LOCAL_CI_CONTRACT,
+        "Keep CI automatic triggers in workflow YAML, pause hosted-runner spend by disabling GitHub workflows when needed, run the local act workflow before push, and keep review/package invariants enforced by pre-commit and publication checks.",
     ),
     ReviewPattern(
         "PR #22",
@@ -2111,6 +2127,8 @@ def check_release_contract(root: Path) -> List[Finding]:
     release = read(root, ".github/workflows/release.yml")
     development = read(root, "docs/DEVELOPMENT.md")
     config = json.loads(read(root, "release-please-config.json"))
+    plugin = json.loads(read(root, ".codex-plugin/plugin.json"))
+    tests = read(root, "tests/test_python_guardrails.py")
     findings: List[Finding] = []
     required = [
         "workflow_dispatch:",
@@ -2134,6 +2152,30 @@ def check_release_contract(root: Path) -> List[Finding]:
     bootstrap_sha = config.get("bootstrap-sha")
     if not isinstance(bootstrap_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", bootstrap_sha):
         findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "release-please-config.json missing 40-char bootstrap-sha"))
+    root_package = config.get("packages", {}).get(".")
+    extra_files = root_package.get("extra-files") if isinstance(root_package, dict) else None
+    seen = {
+        (item.get("path"), item.get("jsonpath"))
+        for item in extra_files or []
+        if isinstance(item, dict) and item.get("type") == "json"
+    }
+    required_extra_files = {
+        (".codex-plugin/plugin.json", "$.version"),
+        (".claude-plugin/plugin.json", "$.version"),
+        ("skill.json", "$.version"),
+        ("plugin.lock.json", "$.pluginVersion"),
+    }
+    missing_extra_files = sorted(f"{path}:{jsonpath}" for path, jsonpath in required_extra_files - seen)
+    if missing_extra_files:
+        findings.append(
+            Finding(
+                RELEASE_GUARDRAIL_CONTRACT,
+                "release-please-config.json missing version bump files: " + ", ".join(missing_extra_files),
+            )
+        )
+    version = plugin.get("version")
+    if isinstance(version, str) and version and version in tests:
+        findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "tests must derive plugin version from manifests, not hard-code current version"))
     if "workflow_run:" not in release and "automatically" in development.lower():
         findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "manual release workflow must not be documented as automatic"))
     return findings
@@ -2223,6 +2265,122 @@ def check_local_plugin_marketplace_contract(root: Path) -> List[Finding]:
     return findings
 
 
+def check_plugin_mcp_contract(root: Path) -> List[Finding]:
+    findings: List[Finding] = []
+    if root.joinpath(".mcp.json").exists():
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "root .mcp.json must not be packaged with Claude plugin auto-discovery"))
+
+    try:
+        codex_plugin = json.loads(read(root, ".codex-plugin/plugin.json"))
+    except json.JSONDecodeError as exc:
+        return [Finding(PLUGIN_MCP_CONTRACT, f"invalid .codex-plugin/plugin.json: {exc}")]
+    if codex_plugin.get("mcpServers") != "./.codex-plugin/mcp.json":
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Codex plugin must point at .codex-plugin/mcp.json"))
+
+    try:
+        codex_mcp = json.loads(read(root, ".codex-plugin/mcp.json"))
+    except json.JSONDecodeError as exc:
+        return [Finding(PLUGIN_MCP_CONTRACT, f"invalid .codex-plugin/mcp.json: {exc}")]
+    if "mcpServers" in codex_mcp:
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Codex MCP file must use documented mcp_servers wrapper, not mcpServers"))
+    codex_servers = codex_mcp.get("mcp_servers")
+    codex_server = codex_servers.get("taxmateAustralia") if isinstance(codex_servers, dict) else None
+    if not isinstance(codex_server, dict):
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Codex MCP manifest missing taxmateAustralia server"))
+    elif codex_server.get("cwd") != "." or codex_server.get("args") != ["./mcp/server.cjs", "--stdio"]:
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Codex MCP manifest must stay plugin-root relative"))
+
+    try:
+        claude_plugin = json.loads(read(root, ".claude-plugin/plugin.json"))
+    except json.JSONDecodeError as exc:
+        return [Finding(PLUGIN_MCP_CONTRACT, f"invalid .claude-plugin/plugin.json: {exc}")]
+    claude_server = claude_plugin.get("mcpServers", {}).get("taxmateAustralia")
+    claude_env = claude_server.get("env") if isinstance(claude_server, dict) else None
+    if not isinstance(claude_server, dict):
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Claude plugin missing taxmateAustralia MCP server"))
+    elif claude_server.get("args") != ["${CLAUDE_PLUGIN_ROOT}/mcp/server.cjs", "--stdio"]:
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Claude MCP server must use CLAUDE_PLUGIN_ROOT path"))
+    elif not isinstance(claude_env, dict) or claude_env.get("TAXMATE_AUSTRALIA_ROOT") != "${CLAUDE_PLUGIN_ROOT}":
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Claude MCP server must set TAXMATE_AUSTRALIA_ROOT from CLAUDE_PLUGIN_ROOT"))
+    server = read(root, "mcp/server.cjs")
+    launcher = read(root, "scripts/taxmate.py")
+    findings.extend(
+        fail_if_missing(
+            PLUGIN_MCP_CONTRACT,
+            server + "\n" + launcher,
+            [
+                '["command", "cwd"]',
+                '["output_path", "cwd"]',
+                '["answers_path", "output_path", "cwd"]',
+                "function resolveCallerCwd(",
+                "function resolveUserPath(value, callerCwd)",
+                "cwd: callerCwd",
+                "TAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT",
+                "path.resolve(callerCwd, userPath)",
+                "caller_cwd: callerCwd",
+                'return runTaxmate("validate", [], PLUGIN_ROOT)',
+                "caller_cwd = Path.cwd()",
+                "cwd=str(caller_cwd)",
+                "CALLER_CWD_COMMANDS",
+                "ROOT_CWD_COMMANDS",
+                "command_cwd = caller_cwd if command in CALLER_CWD_COMMANDS else root",
+                '"TAXMATE_AUSTRALIA_ROOT": str(root)',
+            ],
+        )
+    )
+    return findings
+
+
+def workflow_has_required_ci_triggers(text: str) -> bool:
+    return (
+        "workflow_dispatch:" in text
+        and any(re.match(r"^\s*pull_request:\s*$", line) for line in text.splitlines())
+        and any(re.match(r"^\s*push:\s*$", line) for line in text.splitlines())
+        and "branches: [main]" in text
+    )
+
+
+def check_local_ci_contract(root: Path) -> List[Finding]:
+    ci = read(root, ".github/workflows/ci.yml")
+    scanner = read(root, ".github/workflows/hol-plugin-scanner.yml")
+    local_ci = read(root, ".github/workflows/local-ci.yml")
+    actrc = read(root, ".actrc")
+    run_script = read(root, "scripts/run-local-ci-act.sh")
+    check_script = read(root, "scripts/check-local-ci-ready.sh")
+    precommit = read(root, ".pre-commit-config.yaml")
+    publication = read(root, "scripts/check-publication-ready.sh")
+    development = read(root, "docs/DEVELOPMENT.md")
+    findings: List[Finding] = []
+    if not workflow_has_required_ci_triggers(ci):
+        findings.append(Finding(LOCAL_CI_CONTRACT, "GitHub CI must keep automatic pull_request and main push triggers"))
+    findings.extend(
+        fail_if_missing(
+            LOCAL_CI_CONTRACT,
+            "\n".join([ci, scanner, local_ci, actrc, run_script, check_script, precommit, publication, development]),
+            [
+                "workflow_dispatch:",
+                "catthehacker/ubuntu:act-22.04",
+                "act workflow_dispatch -W .github/workflows/local-ci.yml",
+                "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+                "rm -rf .git",
+                "git commit -m act-baseline",
+                "docker info",
+                "gitleaks dir . --redact --no-banner",
+                "gitleaks detect --source . --redact --no-banner",
+                "bash scripts/check-publication-ready.sh",
+                "./scripts/taxmate review-guardrails",
+                "./scripts/taxmate validate",
+                "bash scripts/test-mcp-server.sh",
+                "bash scripts/check-local-ci-ready.sh",
+                "taxmate-local-ci-ready",
+                "Automatic CI triggers stay in workflow YAML",
+                "disabled_manually",
+            ],
+        )
+    )
+    return findings
+
+
 def check_precommit_contract(root: Path) -> List[Finding]:
     findings: List[Finding] = []
     for rel in [".pre-commit-config.yaml", ".githooks/pre-commit"]:
@@ -2296,8 +2454,10 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
             OUTPUT_DOCS_CONTRACT,
             readme,
             [
-                "Portable skills produce source-backed guidance",
-                "full runtime produces a print-first HTML handoff",
+                "Plugin install",
+                "Node.js 20+ for the MCP launcher",
+                "`npx skills` guidance only",
+                "The plugin runtime produces a print-first HTML handoff",
                 "custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable",
                 "manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff",
                 "AI extraction confirmation table",
@@ -2325,9 +2485,18 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
             "docs/INSTALLATION.md",
             install,
             [
-                "Portable skills produce source-backed guidance",
-                "do not render the full runtime handoff",
-                "full runtime handoff is a custom preparation aid",
+                "Plugin Install",
+                "codex plugin marketplace add nijanthan-dev/taxmate-australia",
+                "claude plugin marketplace add nijanthan-dev/taxmate-australia",
+                "claude plugin install taxmate-australia@taxmate-australia",
+                "Node.js 20+ for the MCP launcher",
+                "Use `npx skills` only when you want guidance in chat",
+                "does not include the renderer",
+                "Use `--agent claude-code` instead of `--agent codex`",
+                "Claude Code users who need generated files should use the plugin install",
+                "Cowork currently uses guidance-only public skills",
+                "HTML guide",
+                "custom preparation aid",
                 "not an ATO form",
                 "not lodgment software",
                 "not final tax advice",
@@ -2339,6 +2508,12 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
             "docs/FULL_PLUGIN_INSTALL.md",
             full_install,
             [
+                "Plugin Runtime Setup",
+                "The plugin install is the runtime install",
+                "codex plugin marketplace add nijanthan-dev/taxmate-australia",
+                "claude plugin marketplace add nijanthan-dev/taxmate-australia",
+                "claude plugin install taxmate-australia@taxmate-australia",
+                "Node.js 20+ for the MCP launcher",
                 "print-first HTML handoff",
                 "custom preparation aid",
                 "not an ATO form",
@@ -2359,7 +2534,8 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
                 "prep-only",
                 "manual-copy handoff",
                 "does not lodge",
-                "Runtime Path",
+                "Plugin Runtime Path",
+                "Node.js 20+ for the MCP launcher",
                 "Open the HTML",
                 "prep-only boundary",
                 "manual-copy warning",
@@ -2434,6 +2610,21 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
         "dependants, and HTML handoff",
         "HTML tax pack",
         "The final handoff is HTML only. It must include",
+        "full runtime checkout",
+        "full checkout",
+        "TaxMate checkout available",
+        "Rendering the HTML file needs a full runtime checkout",
+        "npx skills installs the renderer",
+        "npx skills installs the runtime",
+        "npx skills provides runtime HTML output",
+        "npx skills can render the HTML guide",
+        "install Node.js only if you want optional",
+        "turn Australian tax records into",
+        "turn those records into",
+        "move from tax records",
+        "tax records into",
+        "messy tax records",
+        "accountant-ready prep outputs",
         "./scripts/taxmate taxpack guide-html --output /tmp/taxmate-guide.html",
         "from PIL import Image",
         "Image.open(",
@@ -2474,6 +2665,8 @@ CHECKS: List[Callable[[Path], List[Finding]]] = [
     check_release_contract,
     check_environment_contract,
     check_local_plugin_marketplace_contract,
+    check_plugin_mcp_contract,
+    check_local_ci_contract,
     check_precommit_contract,
     check_review_guardrail_docs,
     check_output_docs_contract,

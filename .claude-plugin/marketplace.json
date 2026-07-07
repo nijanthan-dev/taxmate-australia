@@ -1,0 +1,14 @@
+{
+  "name": "taxmate-australia",
+  "description": "TaxMate Australia Claude Code plugin marketplace.",
+  "owner": {
+    "name": "TaxMate Australia Maintainers"
+  },
+  "plugins": [
+    {
+      "name": "taxmate-australia",
+      "source": "./",
+      "description": "Australian tax prep skills and prep-only runtime tools for Claude Code."
+    }
+  ]
+}

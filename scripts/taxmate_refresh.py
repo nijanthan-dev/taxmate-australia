@@ -4,17 +4,12 @@
 from __future__ import annotations
 
 import argparse
-import os
-from pathlib import Path
 from typing import List, Optional
 
 import atodata
 
 
 def command_root() -> str:
-    cwd = os.getcwd()
-    if Path(cwd).joinpath(".codex-plugin", "plugin.json").exists():
-        return cwd
     return atodata.SkillRoot()
 
 

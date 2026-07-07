@@ -2,7 +2,7 @@
   "author": {
     "name": "TaxMate Australia Maintainers"
   },
-  "description": "TaxMate Australia helps Australian users move from tax records to accountant-ready prep outputs with links to official ATO sources, GST/BAS and CGT triage, conservative treatment rules, and clear review flags.",
+  "description": "TaxMate Australia helps prepare Australian individual tax return materials with official ATO source links, GST/BAS and CGT review support, conservative boundaries, and clear review flags.",
   "homepage": "https://github.com/nijanthan-dev/taxmate-australia",
   "interface": {
     "brandColor": "#1B5E20",
@@ -13,13 +13,13 @@
     ],
     "category": "Productivity",
     "defaultPrompt": [
-      "Review these tax expenses conservatively for my accountant."
+      "Help me prepare my Australian individual tax return materials for accountant review."
     ],
     "developerName": "TaxMate Australia Maintainers",
     "displayName": "TaxMate Australia",
     "composerIcon": "./assets/icon.png",
     "logo": "./assets/icon.png",
-    "longDescription": "TaxMate Australia turns messy tax records into clear, conservative preparation workflows for Australian taxpayers, ABN operators, and accountant handoff. It combines ATO source-page refresh, GST/BAS and CGT triage, transaction review, calculator scaffolds, and output-focused skills (workbook and taxpack) on a bash and Python runtime. It supports Codex full-plugin workflows and portable skill use in Claude Code, Cowork, and OpenAgentSkill CLI. It is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and is not affiliated with or endorsed by the Australian Taxation Office.",
+    "longDescription": "TaxMate Australia prepares Australian individual tax return materials for review before myTax, paper ATO form, or accountant handoff. It combines ATO source-page refresh, GST/BAS and CGT review support, calculator scaffolds, missing-evidence queues, and output-focused skills on a Node.js MCP launcher with a bash and Python runtime. It supports Codex and Claude Code plugin workflows plus portable skill use in Cowork and OpenAgentSkill CLI. It is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and is not affiliated with or endorsed by the Australian Taxation Office.",
     "privacyPolicyURL": "https://github.com/nijanthan-dev/taxmate-australia/blob/main/SECURITY.md",
     "screenshots": [
       "./assets/icon.png"
@@ -45,10 +45,11 @@
     "abn",
     "sole trader",
     "accountant",
-    "tax records",
+    "individual tax return",
     "workbook"
   ],
   "license": "Apache-2.0",
+  "mcpServers": "./.codex-plugin/mcp.json",
   "name": "taxmate-australia",
   "repository": "https://github.com/nijanthan-dev/taxmate-australia",
   "safety": {

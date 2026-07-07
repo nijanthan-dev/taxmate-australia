@@ -1,0 +1,54 @@
+name: Local CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  local-ci:
+    name: Local CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Prepare local git baseline
+        run: |
+          rm -rf .git
+          git init
+          git config user.email "local-ci@example.invalid"
+          git config user.name "Local CI"
+          git add -A
+          git commit -m act-baseline
+      - name: Shell syntax
+        run: bash -n scripts/*.sh scripts/taxmate
+      - name: Python syntax
+        run: PYTHONPYCACHEPREFIX="$RUNNER_TEMP/pycache" python3 -m py_compile scripts/*.py tests/*.py
+      - name: Python tests
+        run: PYTHONPYCACHEPREFIX="$RUNNER_TEMP/pycache" python3 -m unittest discover -s tests -p 'test_*.py'
+      - name: Review guardrails
+        run: ./scripts/taxmate review-guardrails
+      - name: Repo validation
+        run: ./scripts/taxmate validate
+      - name: Generated skills
+        run: ./scripts/taxmate skills generate --check
+      - name: Skill audit
+        run: ./scripts/taxmate skills audit --check
+      - name: Environment guardrails
+        run: |
+          bash scripts/test-install-local-skills.sh
+          bash scripts/test-codex-env-cleanup.sh
+          bash scripts/test-codex-env-setup-clean.sh
+      - name: Plugin smokes
+        run: |
+          bash scripts/test-mcp-server.sh
+          bash scripts/test-codex-plugin-install.sh
+          bash scripts/test-claude-plugin-validate.sh
+          bash scripts/test-claude-plugin-install.sh
+      - name: Publication guardrails
+        run: bash scripts/check-publication-ready.sh

@@ -421,6 +421,11 @@ class FetchResult:
 
 
 def skill_root() -> str:
+    explicit_root = os.environ.get("TAXMATE_AUSTRALIA_ROOT")
+    if explicit_root:
+        candidate = Path(explicit_root).expanduser().resolve()
+        if candidate.joinpath(".codex-plugin", "plugin.json").exists():
+            return str(candidate)
     exe = Path(__file__).resolve()
     dir_path = exe.parent
     if dir_path.name == "bin":

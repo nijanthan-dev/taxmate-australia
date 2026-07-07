@@ -11,6 +11,7 @@ Use this before publishing TaxMate Australia outside a local install.
 - Confirm no wording implies ATO, Commonwealth, state revenue office, insurer, super fund, or financial-institution endorsement.
 - Confirm plugin manifest matches marketplace schema:
   - required metadata present in `.codex-plugin/plugin.json`.
+  - required Claude Code metadata present in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`.
   - all path fields are relative (`./...`).
   - optional app/MCP files are present only if actually used.
   - plugin entry in marketplace is explicit (`name`, `source`, `policy`, `category`).

@@ -198,7 +198,7 @@ Do not commit private user tax records.
 
 ## Local Plugin Testing
 
-This repo includes `.codex-plugin/plugin.json` and `.agents/plugins/marketplace.json` for advanced local Codex plugin testing. Local marketplace configuration is development-only.
+This repo includes `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, and `.claude-plugin/` metadata for local plugin testing. Local marketplace configuration is development-only.
 
 From the repo root:
 
@@ -207,22 +207,47 @@ codex plugin marketplace add .
 codex plugin add taxmate-australia@taxmate-local-marketplace
 ```
 
+Claude Code local install:
+
+```bash
+claude plugin marketplace add .
+claude plugin install taxmate-australia@taxmate-australia
+```
+
 Verify available plugins:
 
 ```bash
 codex plugin marketplace list
 codex plugin list
+claude plugin marketplace list
+claude plugin list
 ```
+
+Validation smoke tests:
+
+```bash
+bash scripts/test-codex-plugin-install.sh
+bash scripts/test-claude-plugin-validate.sh
+bash scripts/test-claude-plugin-install.sh
+```
+
+Pre-commit runs review guardrails, repository validation, MCP smoke, and Claude plugin validation/install smoke when the required local CLIs are available.
 
 Do not claim official plugin discovery unless a published listing has been verified.
 
-## CI
+## Local CI
 
-CI runs bash+python runtime checks, generated-source checks, environment guardrails, macOS smoke, publication validation, and Gitleaks.
+Automatic CI triggers stay in workflow YAML so PR checks and the main release `workflow_run` path still work. To pause hosted-runner spend, disable the CI workflow in GitHub, then run the local act workflow before pushing:
+
+```bash
+scripts/run-local-ci-act.sh
+```
+
+The local workflow runs bash+python runtime checks, generated-source checks, environment guardrails, plugin smokes, publication validation, and local Gitleaks when installed. When GitHub CI is `disabled_manually`, temporarily enable it only when branch protection needs fresh required statuses.
 
 ## Release
 
-- After a successful merge to `main`, the Release workflow runs after main CI passes. It can also be run manually from `main`.
+- After a successful merge to `main`, Release can follow a successful main CI `workflow_run`. If CI is disabled to avoid hosted-runner spend, temporarily enable and run CI for the merge commit, or run the Release workflow manually from `main` after local checks pass.
 - The workflow requires `RELEASE_PLEASE_TOKEN`, a repo secret whose token can create release pull requests and write contents/issues.
 - Versions are calculated from Conventional Commits:
   - `feat:` -> minor

@@ -135,11 +135,19 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: "20"
+          node-version: "22"
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.11"
       - run: test -f .codex-plugin/plugin.json
+      - run: test -f .codex-plugin/mcp.json
+      - run: test -f .claude-plugin/plugin.json
+      - run: test -f .claude-plugin/marketplace.json
+      - run: test ! -f .mcp.json
+      - run: test -f mcp/server.cjs
+      - run: test -f scripts/test-codex-plugin-install.sh
+      - run: test -f scripts/test-claude-plugin-validate.sh
+      - run: test -f scripts/test-claude-plugin-install.sh
       - run: test -f data/ato_knowledge_base/source_registry.json
       - run: test -f data/ato_knowledge_base/source_coverage.json
       - run: test -f config/public-skills.json
@@ -153,6 +161,10 @@ jobs:
       - run: test -f skills/gst-bas/SKILL.md
       - run: test -f skills/workbook/SKILL.md
       - run: test -f skills/taxpack/SKILL.md
+      - run: bash scripts/test-mcp-server.sh
+      - run: npm install -g @anthropic-ai/claude-code
+      - run: TAXMATE_REQUIRE_CLAUDE_PLUGIN_VALIDATE=1 bash scripts/test-claude-plugin-validate.sh
+      - run: TAXMATE_REQUIRE_CLAUDE_PLUGIN_SMOKE=1 bash scripts/test-claude-plugin-install.sh
       - run: test ! -d data/ato_knowledge_base/raw
       - run: test ! -d data/ato_knowledge_base/text
       - run: "! git grep -nE 'public[-]work|taxmate-australia-public[-]work' -- . ':!data/ato_knowledge_base/raw/**' ':!data/ato_knowledge_base/text/**'"
@@ -167,10 +179,11 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: "20"
+          node-version: "22"
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.11"
+      - run: npm install -g @anthropic-ai/claude-code
       - run: bash scripts/check-publication-ready.sh
 
   gitleaks:

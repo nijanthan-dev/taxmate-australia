@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import os
 import re
 import shutil
 import struct
@@ -18,7 +19,23 @@ from typing import Any, Optional
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
+CURRENT_PLUGIN_VERSION = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
+MISMATCH_PLUGIN_VERSION = "0.0.0-test-mismatch"
 sys.path.insert(0, str(SCRIPTS))
+VALID_MCP_SERVER_TEXT = (
+    "taxmate_run\n"
+    "render_individual_html\n"
+    "[\"command\", \"cwd\"]\n"
+    "[\"output_path\", \"cwd\"]\n"
+    "[\"answers_path\", \"output_path\", \"cwd\"]\n"
+    "function resolveCallerCwd(value) { return path.resolve(requireString(value, \"cwd\")); }\n"
+    "function resolveUserPath(value, callerCwd) { return path.resolve(callerCwd, userPath); }\n"
+    "cwd: callerCwd\n"
+    "TAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT\n"
+    "path.resolve(callerCwd, userPath)\n"
+    "caller_cwd: callerCwd\n"
+    "return runTaxmate(\"validate\", [], PLUGIN_ROOT)\n"
+)
 
 import atodata  # noqa: E402
 import png_crop  # noqa: E402
@@ -27,7 +44,9 @@ import taxmate  # noqa: E402
 import taxmate_calc  # noqa: E402
 import taxmate_finance  # noqa: E402
 import taxmate_intake  # noqa: E402
+import taxmate_refresh  # noqa: E402
 import taxmate_review_guardrails  # noqa: E402
+import taxmate_skills  # noqa: E402
 import taxmate_taxpack  # noqa: E402
 import taxmate_validate  # noqa: E402
 
@@ -68,8 +87,10 @@ def local_marketplace_docs(marketplace_command: str) -> str:
 
 def output_docs_readme_fixture(extra: str = "") -> str:
     return (
-        "Portable skills produce source-backed guidance\n"
-        "full runtime produces a print-first HTML handoff\n"
+        "Plugin install\n"
+        "Node.js 20+ for the MCP launcher\n"
+        "`npx skills` guidance only\n"
+        "The plugin runtime produces a print-first HTML handoff\n"
         "custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable\n"
         "manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff\n"
         "AI extraction confirmation table\n"
@@ -96,6 +117,92 @@ def output_docs_development_fixture(extra: str = "") -> str:
         "must update README/docs in the same PR, or state why no docs update is needed\n"
         + extra
     )
+
+
+def output_docs_surface_fixture(extra: str = "") -> str:
+    return (
+        "Plugin Install\n"
+        "codex plugin marketplace add nijanthan-dev/taxmate-australia\n"
+        "claude plugin marketplace add nijanthan-dev/taxmate-australia\n"
+        "claude plugin install taxmate-australia@taxmate-australia\n"
+        "Node.js 20+ for the MCP launcher\n"
+        "Use `npx skills` only when you want guidance in chat\n"
+        "does not include the renderer\n"
+        "Use `--agent claude-code` instead of `--agent codex`\n"
+        "Claude Code users who need generated files should use the plugin install\n"
+        "Cowork currently uses guidance-only public skills\n"
+        "Plugin Runtime Setup\n"
+        "The plugin install is the runtime install\n"
+        "Plugin Runtime Path\n"
+        "prep-only\n"
+        "manual-copy handoff\n"
+        "does not lodge\n"
+        "Open the HTML\n"
+        "HTML guide\n"
+        "print-first HTML handoff\n"
+        "print-first HTML guide\n"
+        "custom preparation aid\n"
+        "not an ATO form\n"
+        "not lodgment software\n"
+        "not final tax advice\n"
+        "not fileable\n"
+        "manually copy reviewed values\n"
+        "AI extraction confirmation table\n"
+        "missing facts queue\n"
+        "evidence queue\n"
+        "evidence gaps\n"
+        "Accountant review\n"
+        "accountant-review queue\n"
+        "prep-only boundary\n"
+        "manual-copy warning\n"
+        "source/provenance appendix\n"
+        + extra
+    )
+
+
+def write_claude_plugin_fixture(
+    root: Path,
+    *,
+    version: str = CURRENT_PLUGIN_VERSION,
+    mcp_args: Optional[list[str]] = None,
+    marketplace_source: str = "./",
+    include_server: bool = True,
+) -> None:
+    (root / ".claude-plugin").mkdir(parents=True)
+    (root / "mcp").mkdir(parents=True)
+    (root / ".claude-plugin" / "plugin.json").write_text(
+        json.dumps(
+            {
+                "name": "taxmate-australia",
+                "version": version,
+                "author": {"name": "TaxMate Australia Maintainers"},
+                "skills": "./skills",
+                "mcpServers": {
+                    "taxmateAustralia": {
+                        "command": "node",
+                        "args": mcp_args or ["${CLAUDE_PLUGIN_ROOT}/mcp/server.cjs", "--stdio"],
+                        "env": {
+                            "TAXMATE_AUSTRALIA_ROOT": "${CLAUDE_PLUGIN_ROOT}",
+                            "PYTHONDONTWRITEBYTECODE": "1",
+                        },
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (root / ".claude-plugin" / "marketplace.json").write_text(
+        json.dumps(
+            {
+                "name": "taxmate-australia",
+                "owner": {"name": "TaxMate Australia Maintainers"},
+                "plugins": [{"name": "taxmate-australia", "source": marketplace_source}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    if include_server:
+        (root / "mcp" / "server.cjs").write_text(VALID_MCP_SERVER_TEXT, encoding="utf-8")
 
 
 def date_weekday(value: str) -> int:
@@ -248,6 +355,222 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("cgt_small_business_concession_evidence_gaps" in finding.detail for finding in findings))
         self.assertTrue(any("small business CGT concession review" in finding.detail for finding in findings))
         self.assertTrue(any("entity/affiliate/connected entity" in finding.detail for finding in findings))
+
+    def test_plugin_mcp_contract_rejects_root_mcp_and_claude_relative_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".codex-plugin").mkdir()
+            (root / ".claude-plugin").mkdir()
+            (root / "mcp").mkdir()
+            (root / "scripts").mkdir()
+            (root / ".codex-plugin" / "plugin.json").write_text(
+                json.dumps({"mcpServers": "./.codex-plugin/mcp.json"}),
+                encoding="utf-8",
+            )
+            mcp_payload = {
+                "mcp_servers": {
+                    "taxmateAustralia": {
+                        "cwd": ".",
+                        "command": "node",
+                        "args": ["./mcp/server.cjs", "--stdio"],
+                    }
+                }
+            }
+            (root / ".codex-plugin" / "mcp.json").write_text(json.dumps(mcp_payload), encoding="utf-8")
+            (root / ".mcp.json").write_text(json.dumps(mcp_payload), encoding="utf-8")
+            (root / ".claude-plugin" / "plugin.json").write_text(
+                json.dumps(
+                    {
+                        "mcpServers": {
+                            "taxmateAustralia": {
+                                "command": "node",
+                                "args": ["./mcp/server.cjs", "--stdio"],
+                                "env": {"TAXMATE_AUSTRALIA_ROOT": "${CLAUDE_PLUGIN_ROOT}"},
+                            }
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (root / "mcp" / "server.cjs").write_text(
+                "taxmate_run\nrender_individual_html\ncwd: PLUGIN_ROOT\nTAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT\n",
+                encoding="utf-8",
+            )
+            (root / "scripts" / "taxmate.py").write_text(
+                "root = Path.cwd()\nsubprocess.run([], cwd=str(root))\n",
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_plugin_mcp_contract(root)
+
+        self.assertTrue(any("root .mcp.json" in finding.detail for finding in findings))
+        self.assertTrue(any("CLAUDE_PLUGIN_ROOT path" in finding.detail for finding in findings))
+        self.assertTrue(any("[\"command\", \"cwd\"]" in finding.detail for finding in findings))
+
+    def test_plugin_mcp_contract_rejects_camelcase_codex_mcp_wrapper(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".codex-plugin").mkdir()
+            (root / ".claude-plugin").mkdir()
+            (root / "mcp").mkdir()
+            (root / "scripts").mkdir()
+            (root / ".codex-plugin" / "plugin.json").write_text(
+                json.dumps({"mcpServers": "./.codex-plugin/mcp.json"}),
+                encoding="utf-8",
+            )
+            (root / ".codex-plugin" / "mcp.json").write_text(
+                json.dumps(
+                    {
+                        "mcpServers": {
+                            "taxmateAustralia": {
+                                "cwd": ".",
+                                "command": "node",
+                                "args": ["./mcp/server.cjs", "--stdio"],
+                            }
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (root / ".claude-plugin" / "plugin.json").write_text(
+                json.dumps(
+                    {
+                        "mcpServers": {
+                            "taxmateAustralia": {
+                                "command": "node",
+                                "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/server.cjs", "--stdio"],
+                                "env": {"TAXMATE_AUSTRALIA_ROOT": "${CLAUDE_PLUGIN_ROOT}"},
+                            }
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (root / "mcp" / "server.cjs").write_text(VALID_MCP_SERVER_TEXT, encoding="utf-8")
+            (root / "scripts" / "taxmate.py").write_text(
+                "caller_cwd = Path.cwd()\n"
+                "CALLER_CWD_COMMANDS\n"
+                "ROOT_CWD_COMMANDS\n"
+                "command_cwd = caller_cwd if command in CALLER_CWD_COMMANDS else root\n"
+                "subprocess.run([], cwd=str(caller_cwd), env={\"TAXMATE_AUSTRALIA_ROOT\": str(root)})\n",
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_plugin_mcp_contract(root)
+
+        self.assertTrue(any("mcp_servers wrapper" in finding.detail for finding in findings))
+
+    def test_local_ci_contract_requires_auto_ci_triggers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".github" / "workflows").mkdir(parents=True)
+            (root / "scripts").mkdir()
+            (root / ".github" / "workflows" / "ci.yml").write_text(
+                "on:\n  workflow_dispatch:\n",
+                encoding="utf-8",
+            )
+            (root / ".github" / "workflows" / "hol-plugin-scanner.yml").write_text(
+                "on:\n  workflow_dispatch:\n",
+                encoding="utf-8",
+            )
+            (root / ".github" / "workflows" / "local-ci.yml").write_text(
+                "bash scripts/check-publication-ready.sh\n"
+                "./scripts/taxmate review-guardrails\n"
+                "./scripts/taxmate validate\n"
+                "bash scripts/test-mcp-server.sh\n",
+                encoding="utf-8",
+            )
+            (root / ".actrc").write_text("catthehacker/ubuntu:act-22.04\n", encoding="utf-8")
+            (root / "scripts" / "run-local-ci-act.sh").write_text(
+                "docker info\n"
+                "act workflow_dispatch -W .github/workflows/local-ci.yml\n"
+                "gitleaks dir . --redact --no-banner\n"
+                "gitleaks detect --source . --redact --no-banner\n",
+                encoding="utf-8",
+            )
+            (root / "scripts" / "check-local-ci-ready.sh").write_text(
+                "CI must retain pull_request trigger\n"
+                "CI must retain main push trigger\n"
+                "disable the workflow in GitHub when pausing hosted spend\n",
+                encoding="utf-8",
+            )
+            (root / ".pre-commit-config.yaml").write_text(
+                "taxmate-local-ci-ready\nbash scripts/check-local-ci-ready.sh\n",
+                encoding="utf-8",
+            )
+            (root / "scripts" / "check-publication-ready.sh").write_text(
+                "bash scripts/check-local-ci-ready.sh\n",
+                encoding="utf-8",
+            )
+            (root / "docs").mkdir()
+            (root / "docs" / "DEVELOPMENT.md").write_text(
+                "Automatic CI triggers stay in workflow YAML\ndisabled_manually\n",
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_local_ci_contract(root)
+
+        self.assertTrue(any("automatic pull_request and main push triggers" in finding.detail for finding in findings))
+
+    def test_release_contract_rejects_test_version_literals(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".github" / "workflows").mkdir(parents=True)
+            (root / ".codex-plugin").mkdir()
+            (root / "docs").mkdir()
+            (root / "tests").mkdir()
+            (root / ".github" / "workflows" / "release.yml").write_text(
+                "\n".join(
+                    [
+                        "workflow_dispatch:",
+                        "workflow_run:",
+                        'workflows: ["CI"]',
+                        "types: [completed]",
+                        "branches: [main]",
+                        "Require green CI",
+                        "GH_REPO: nijanthan-dev/taxmate-australia",
+                        "--workflow CI --branch main --commit",
+                        "Require main unchanged",
+                        "git ls-remote https://github.com/nijanthan-dev/taxmate-australia.git refs/heads/main",
+                        "RELEASE_PLEASE_TOKEN",
+                        "release-please-action@",
+                        "target-branch: main",
+                        "manifest-file: .release-please-manifest.json",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (root / "docs" / "DEVELOPMENT.md").write_text("Manual release notes.\n", encoding="utf-8")
+            (root / ".codex-plugin" / "plugin.json").write_text(
+                json.dumps({"version": CURRENT_PLUGIN_VERSION}),
+                encoding="utf-8",
+            )
+            (root / "release-please-config.json").write_text(
+                json.dumps(
+                    {
+                        "bootstrap-sha": "a" * 40,
+                        "packages": {
+                            ".": {
+                                "extra-files": [
+                                    {"type": "json", "path": ".codex-plugin/plugin.json", "jsonpath": "$.version"},
+                                    {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"},
+                                    {"type": "json", "path": "skill.json", "jsonpath": "$.version"},
+                                    {"type": "json", "path": "plugin.lock.json", "jsonpath": "$.pluginVersion"},
+                                ]
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (root / "tests" / "test_python_guardrails.py").write_text(
+                f"expected = {CURRENT_PLUGIN_VERSION!r}\n",
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_release_contract(root)
+
+        self.assertTrue(any("must derive plugin version" in finding.detail for finding in findings))
 
     def test_review_guardrails_detect_wfh_parser_fallbacks(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -409,7 +732,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             docs.mkdir(parents=True)
             assets.mkdir(parents=True)
             plugin.mkdir(parents=True)
-            (root / "README.md").write_text("Portable skills produce source-backed guidance\n", encoding="utf-8")
+            (root / "README.md").write_text("Plugin install\n", encoding="utf-8")
             (docs / "INSTALLATION.md").write_text("", encoding="utf-8")
             (docs / "FULL_PLUGIN_INSTALL.md").write_text("", encoding="utf-8")
             (docs / "INDIVIDUAL_RETURN_PREP.md").write_text("", encoding="utf-8")
@@ -440,24 +763,38 @@ class ReviewGuardrailTests(unittest.TestCase):
             root_skill.mkdir(parents=True)
             readme = output_docs_readme_fixture()
             good_install = (
-                "Portable skills produce source-backed guidance\n"
-                "do not render the full runtime handoff\n"
-                "full runtime handoff is a custom preparation aid\n"
+                "Plugin Install\n"
+                "codex plugin marketplace add nijanthan-dev/taxmate-australia\n"
+                "claude plugin marketplace add nijanthan-dev/taxmate-australia\n"
+                "claude plugin install taxmate-australia@taxmate-australia\n"
+                "Node.js 20+ for the MCP launcher\n"
+                "Use `npx skills` only when you want guidance in chat\n"
+                "does not include the renderer\n"
+                "Use `--agent claude-code` instead of `--agent codex`\n"
+                "Claude Code users who need generated files should use the plugin install\n"
+                "Cowork currently uses guidance-only public skills\n"
+                "HTML guide\ncustom preparation aid\n"
                 "not an ATO form\nnot lodgment software\nnot final tax advice\nnot fileable\n"
                 "manually copy reviewed values\n"
             )
             good_full_install = (
+                "Plugin Runtime Setup\nThe plugin install is the runtime install\n"
+                "codex plugin marketplace add nijanthan-dev/taxmate-australia\n"
+                "claude plugin marketplace add nijanthan-dev/taxmate-australia\n"
+                "claude plugin install taxmate-australia@taxmate-australia\n"
+                "Node.js 20+ for the MCP launcher\n"
                 "print-first HTML handoff\ncustom preparation aid\nnot an ATO form\n"
                 "not lodgment software\nnot final tax advice\nnot fileable\n"
                 "manually copy reviewed values\nmissing facts\nevidence gaps\nAccountant review\n"
                 "source/provenance appendix\n"
             )
             good_prep = (
-                "prep-only\nmanual-copy handoff\ndoes not lodge\nRuntime Path\nOpen the HTML\n"
+                "prep-only\nmanual-copy handoff\ndoes not lodge\nPlugin Runtime Path\n"
+                "Node.js 20+ for the MCP launcher\nOpen the HTML\n"
                 "prep-only boundary\nmanual-copy warning\nAI extraction confirmation table\nsource/provenance appendix\n"
             )
             (root / "README.md").write_text(readme, encoding="utf-8")
-            (docs / "INSTALLATION.md").write_text("Portable skills produce source-backed guidance\n", encoding="utf-8")
+            (docs / "INSTALLATION.md").write_text("Plugin Install\n", encoding="utf-8")
             (docs / "FULL_PLUGIN_INSTALL.md").write_text(good_full_install, encoding="utf-8")
             (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(good_prep, encoding="utf-8")
             (docs / "DEVELOPMENT.md").write_text(output_docs_development_fixture(), encoding="utf-8")
@@ -506,22 +843,7 @@ class ReviewGuardrailTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            docs_text = (
-                "Portable skills produce source-backed guidance\n"
-                "print-first HTML handoff\n"
-                "print-first HTML guide\n"
-                "not an ATO form\n"
-                "not lodgment software\n"
-                "not final tax advice\n"
-                "not fileable\n"
-                "manually copy reviewed values\n"
-                "AI extraction confirmation table\n"
-                "missing facts queue\n"
-                "evidence queue\n"
-                "accountant-review queue\n"
-                "source/provenance appendix\n"
-                "manual-copy guidance\n"
-            )
+            docs_text = output_docs_surface_fixture()
             (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
             (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
             (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(docs_text, encoding="utf-8")
@@ -545,22 +867,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             docs.mkdir(parents=True)
             assets.mkdir(parents=True)
             plugin.mkdir(parents=True)
-            docs_text = (
-                "Portable skills produce source-backed guidance\n"
-                "print-first HTML handoff\n"
-                "print-first HTML guide\n"
-                "not an ATO form\n"
-                "not lodgment software\n"
-                "not final tax advice\n"
-                "not fileable\n"
-                "manually copy reviewed values\n"
-                "AI extraction confirmation table\n"
-                "missing facts queue\n"
-                "evidence queue\n"
-                "accountant-review queue\n"
-                "source/provenance appendix\n"
-                "manual-copy guidance\n"
-            )
+            docs_text = output_docs_surface_fixture()
             (root / "README.md").write_text(output_docs_readme_fixture(), encoding="utf-8")
             (docs / "INSTALLATION.md").write_text(
                 docs_text
@@ -596,7 +903,6 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(
             any("docs/INDIVIDUAL_RETURN_PREP.md contains developer-only maintenance detail" in finding.detail for finding in findings)
         )
-        self.assertTrue(any("codex plugin add <target>" in finding.detail for finding in findings))
 
     def test_output_docs_contract_rejects_stale_renderer_commands(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -608,22 +914,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             assets.mkdir(parents=True)
             plugin.mkdir(parents=True)
             readme = output_docs_readme_fixture("from PIL import Image\n")
-            docs_text = (
-                "Portable skills produce source-backed guidance\n"
-                "print-first HTML handoff\n"
-                "print-first HTML guide\n"
-                "not an ATO form\n"
-                "not lodgment software\n"
-                "not final tax advice\n"
-                "not fileable\n"
-                "manually copy reviewed values\n"
-                "AI extraction confirmation table\n"
-                "missing facts queue\n"
-                "evidence queue\n"
-                "accountant-review queue\n"
-                "source/provenance appendix\n"
-                "manual-copy guidance\n"
-            )
+            docs_text = output_docs_surface_fixture()
             (root / "README.md").write_text(readme, encoding="utf-8")
             (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
             (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
@@ -661,22 +952,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             taxpack_refs.mkdir(parents=True)
             wrapper.mkdir(parents=True)
             readme = output_docs_readme_fixture()
-            docs_text = (
-                "Portable skills produce source-backed guidance\n"
-                "print-first HTML handoff\n"
-                "print-first HTML guide\n"
-                "not an ATO form\n"
-                "not lodgment software\n"
-                "not final tax advice\n"
-                "not fileable\n"
-                "manually copy reviewed values\n"
-                "AI extraction confirmation table\n"
-                "missing facts queue\n"
-                "evidence queue\n"
-                "accountant-review queue\n"
-                "source/provenance appendix\n"
-                "manual-copy guidance\n"
-            )
+            docs_text = output_docs_surface_fixture()
             (root / "README.md").write_text(readme, encoding="utf-8")
             (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
             (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
@@ -714,26 +990,17 @@ class ReviewGuardrailTests(unittest.TestCase):
             taxpack.mkdir(parents=True)
             root_skill.mkdir(parents=True)
             individual.mkdir(parents=True)
-            readme = output_docs_readme_fixture()
-            docs_text = (
-                "Portable skills produce source-backed guidance\n"
-                "print-first HTML handoff\n"
-                "print-first HTML guide\n"
-                "not an ATO form\n"
-                "not lodgment software\n"
-                "not final tax advice\n"
-                "not fileable\n"
-                "manually copy reviewed values\n"
-                "AI extraction confirmation table\n"
-                "missing facts queue\n"
-                "evidence queue\n"
-                "accountant-review queue\n"
-                "source/provenance appendix\n"
-                "manual-copy guidance\n"
-            )
+            readme = output_docs_readme_fixture("turn Australian tax records into accountant-ready prep outputs\n")
+            docs_text = output_docs_surface_fixture()
             (root / "README.md").write_text(readme, encoding="utf-8")
             (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
-            (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
+            (docs / "FULL_PLUGIN_INSTALL.md").write_text(
+                docs_text
+                + "npx skills installs the renderer\n"
+                + "install Node.js only if you want optional\n"
+                + "messy tax records\n",
+                encoding="utf-8",
+            )
             (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(docs_text, encoding="utf-8")
             (docs / "DEVELOPMENT.md").write_text(output_docs_development_fixture(), encoding="utf-8")
             (root / "DISCLAIMER.md").write_text("custom print-first HTML handoffs\n", encoding="utf-8")
@@ -756,6 +1023,10 @@ class ReviewGuardrailTests(unittest.TestCase):
             findings = taxmate_review_guardrails.check_output_docs_contract(root)
 
         self.assertTrue(any("HTML tax pack" in finding.detail for finding in findings))
+        self.assertTrue(any("npx skills installs the renderer" in finding.detail for finding in findings))
+        self.assertTrue(any("install Node.js only if you want optional" in finding.detail for finding in findings))
+        self.assertTrue(any("turn Australian tax records into" in finding.detail for finding in findings))
+        self.assertTrue(any("messy tax records" in finding.detail for finding in findings))
 
     def test_output_docs_contract_scans_public_disclaimer(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -769,22 +1040,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             plugin.mkdir(parents=True)
             taxpack.mkdir(parents=True)
             readme = output_docs_readme_fixture()
-            docs_text = (
-                "Portable skills produce source-backed guidance\n"
-                "print-first HTML handoff\n"
-                "print-first HTML guide\n"
-                "not an ATO form\n"
-                "not lodgment software\n"
-                "not final tax advice\n"
-                "not fileable\n"
-                "manually copy reviewed values\n"
-                "AI extraction confirmation table\n"
-                "missing facts queue\n"
-                "evidence queue\n"
-                "accountant-review queue\n"
-                "source/provenance appendix\n"
-                "manual-copy guidance\n"
-            )
+            docs_text = output_docs_surface_fixture()
             (root / "README.md").write_text(readme, encoding="utf-8")
             (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
             (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
@@ -11481,6 +11737,86 @@ class ValidatorAndCliTests(unittest.TestCase):
     def test_launcher_exposes_taxpack_command(self) -> None:
         self.assertEqual(taxmate.COMMANDS["taxpack"], "taxmate_taxpack.py")
 
+    def test_launcher_preserves_caller_cwd_for_relative_inputs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path = Path(tmp) / "sample.csv"
+            csv_path.write_text(
+                "date,description,amount,gst,owner,purpose,evidence,category,type\n"
+                "2026-04-15,OpenAI Codex subscription,33.00,3.00,owner,ABN app development,invoice,software,expense\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [str(ROOT / "scripts" / "taxmate"), "finance", "--input", "sample.csv", "--format", "json"],
+                cwd=tmp,
+                env={**os.environ, "TAXMATE_AUSTRALIA_ROOT": str(ROOT), "PYTHONDONTWRITEBYTECODE": "1"},
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("OpenAI Codex subscription", result.stdout)
+
+    def test_launcher_keeps_repo_scoped_commands_on_plugin_root(self) -> None:
+        calls: list[tuple[str, list[str], Path, Path]] = []
+        original_runner = taxmate._run_python_command
+        original_cwd = Path.cwd()
+        original_env = os.environ.get("TAXMATE_AUSTRALIA_ROOT")
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                caller_root = Path(tmp)
+                (caller_root / ".codex-plugin").mkdir()
+                (caller_root / ".codex-plugin" / "plugin.json").write_text("{}", encoding="utf-8")
+                os.environ["TAXMATE_AUSTRALIA_ROOT"] = str(ROOT)
+                os.chdir(caller_root)
+
+                def fake_runner(script: str, args: list[str], root: Path, caller_cwd: Path) -> int:
+                    calls.append((script, args, root, caller_cwd))
+                    return 0
+
+                taxmate._run_python_command = fake_runner
+
+                self.assertEqual(taxmate._dispatch("skills", ["validate"]), 0)
+                self.assertEqual(taxmate._dispatch("refresh", ["--query", "work"]), 0)
+                self.assertEqual(taxmate._dispatch("finance", ["--input", "sample.csv"]), 0)
+        finally:
+            taxmate._run_python_command = original_runner
+            os.chdir(original_cwd)
+            if original_env is None:
+                os.environ.pop("TAXMATE_AUSTRALIA_ROOT", None)
+            else:
+                os.environ["TAXMATE_AUSTRALIA_ROOT"] = original_env
+
+        self.assertEqual(calls[0][0], "taxmate_skills.py")
+        self.assertEqual(calls[0][2], ROOT)
+        self.assertEqual(calls[0][3], ROOT)
+        self.assertEqual(calls[1][0], "taxmate_refresh.py")
+        self.assertEqual(calls[1][3], ROOT)
+        self.assertEqual(calls[2][0], "taxmate_finance.py")
+        self.assertNotEqual(calls[2][3], ROOT)
+
+    def test_repo_command_roots_ignore_caller_plugin_cwd(self) -> None:
+        original_cwd = Path.cwd()
+        original_env = os.environ.get("TAXMATE_AUSTRALIA_ROOT")
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                caller_root = Path(tmp)
+                (caller_root / ".codex-plugin").mkdir()
+                (caller_root / ".codex-plugin" / "plugin.json").write_text("{}", encoding="utf-8")
+                os.environ["TAXMATE_AUSTRALIA_ROOT"] = str(ROOT)
+                os.chdir(caller_root)
+
+                self.assertEqual(atodata.SkillRoot(), str(ROOT))
+                self.assertEqual(taxmate_skills.command_root(), str(ROOT))
+                self.assertEqual(taxmate_refresh.command_root(), str(ROOT))
+        finally:
+            os.chdir(original_cwd)
+            if original_env is None:
+                os.environ.pop("TAXMATE_AUSTRALIA_ROOT", None)
+            else:
+                os.environ["TAXMATE_AUSTRALIA_ROOT"] = original_env
+
     def test_finish_report_has_check_names(self) -> None:
         checks = [{"check": "sample", "passed": True, "detail": ""}]
 
@@ -11573,6 +11909,28 @@ class ValidatorAndCliTests(unittest.TestCase):
 
             self.assertFalse(taxmate_validate.release_workflow_auto_after_ci(tmp))
 
+    def test_local_act_ci_ready(self) -> None:
+        self.assertTrue(taxmate_validate.local_act_ci_ready(str(ROOT)))
+
+    def test_local_act_ci_requires_auto_ci_trigger(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            for rel in [
+                ".actrc",
+                ".github/workflows/local-ci.yml",
+                ".github/workflows/ci.yml",
+                ".github/workflows/hol-plugin-scanner.yml",
+                "scripts/check-local-ci-ready.sh",
+                "scripts/run-local-ci-act.sh",
+            ]:
+                dest = tmp_root / rel
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_text((ROOT / rel).read_text(encoding="utf-8"), encoding="utf-8")
+            ci = tmp_root / ".github" / "workflows" / "ci.yml"
+            ci.write_text("on:\n  workflow_dispatch:\n", encoding="utf-8")
+
+            self.assertFalse(taxmate_validate.local_act_ci_ready(tmp))
+
     def test_release_config_tracks_manifest_versions(self) -> None:
         self.assertTrue(taxmate_validate.release_config_tracks_manifest_versions(str(ROOT)))
 
@@ -11583,6 +11941,7 @@ class ValidatorAndCliTests(unittest.TestCase):
                 "release-please-config.json",
                 ".release-please-manifest.json",
                 ".codex-plugin/plugin.json",
+                ".claude-plugin/plugin.json",
                 "skill.json",
                 "plugin.lock.json",
             ]:
@@ -11597,6 +11956,58 @@ class ValidatorAndCliTests(unittest.TestCase):
             config_path.write_text(json.dumps(config), encoding="utf-8")
 
             self.assertFalse(taxmate_validate.release_config_tracks_manifest_versions(str(tmp_root)))
+
+    def test_release_config_requires_claude_plugin_version_bump(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            for rel in [
+                "release-please-config.json",
+                ".release-please-manifest.json",
+                ".codex-plugin/plugin.json",
+                ".claude-plugin/plugin.json",
+                "skill.json",
+                "plugin.lock.json",
+            ]:
+                src = ROOT / rel
+                dst = tmp_root / rel
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(src, dst)
+
+            config_path = tmp_root / "release-please-config.json"
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            root_package = config["packages"]["."]
+            root_package["extra-files"] = [
+                item for item in root_package["extra-files"] if item.get("path") != ".claude-plugin/plugin.json"
+            ]
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+
+            self.assertFalse(taxmate_validate.release_config_tracks_manifest_versions(str(tmp_root)))
+
+    def test_stale_go_runtime_scan_includes_claude_plugin_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".claude-plugin").mkdir(parents=True)
+            (root / ".claude-plugin" / "plugin.json").write_text(
+                '{"description":"TaxMate uses a Go backend"}\n',
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.stale_go_runtime_claim_hits(tmp)
+
+        self.assertEqual(hits, [".claude-plugin/plugin.json:go backend"])
+
+    def test_stale_go_runtime_scan_includes_claude_marketplace_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".claude-plugin").mkdir(parents=True)
+            (root / ".claude-plugin" / "marketplace.json").write_text(
+                '{"description":"TaxMate uses a Go runtime"}\n',
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.stale_go_runtime_claim_hits(tmp)
+
+        self.assertEqual(hits, [".claude-plugin/marketplace.json:go runtime"])
 
     def test_ato_endorsement_scan_is_case_insensitive(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -11728,10 +12139,155 @@ class ValidatorAndCliTests(unittest.TestCase):
 
         self.assertEqual(hits, ["README.md:ATO-approved"])
 
+    def test_discovery_metadata_rejects_record_transformation_positioning(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "docs").mkdir()
+            (root / ".codex-plugin").mkdir()
+            (root / "agents").mkdir()
+            readme = (
+                "TaxMate Australia helps users turn Australian tax records into outputs. "
+                "It is linked to official ATO sources for individual tax return prep, GST/BAS, CGT, "
+                "accountant handoff, Codex, Claude Code, and Cowork.\n"
+            )
+            (root / "docs" / "DISCOVERY.md").write_text(
+                "GitHub About\nclaude-code\ncowork\nopenagentskill\nindividual tax return prep\n"
+                "Leave blank until there is a dedicated external landing page.\n",
+                encoding="utf-8",
+            )
+            (root / ".codex-plugin" / "plugin.json").write_text(
+                '{"interface":{"shortDescription":"Australian tax prep with ATO source links"}}\n',
+                encoding="utf-8",
+            )
+            (root / "agents" / "openai.yaml").write_text(
+                "short_description: Australian tax prep with ATO source links\n",
+                encoding="utf-8",
+            )
+
+            self.assertFalse(taxmate_validate.discovery_metadata_ready(tmp, readme))
+
     def test_individual_return_prep_docs_are_validated(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
         self.assertTrue(taxmate_validate.individual_return_prep_docs_ready(str(ROOT), readme))
+
+    def test_codex_plugin_mcp_files_are_validated(self) -> None:
+        self.assertTrue(taxmate_validate.codex_plugin_mcp_files_ready(str(ROOT)))
+
+    def test_claude_plugin_files_are_validated(self) -> None:
+        self.assertTrue(taxmate_validate.claude_plugin_files_ready(str(ROOT), CURRENT_PLUGIN_VERSION))
+
+    def test_claude_plugin_files_require_runtime_mcp(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_claude_plugin_fixture(root, include_server=False)
+
+            self.assertFalse(taxmate_validate.claude_plugin_files_ready(tmp, CURRENT_PLUGIN_VERSION))
+
+    def test_claude_plugin_files_reject_repo_relative_mcp_args(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_claude_plugin_fixture(root, mcp_args=["./mcp/server.cjs", "--stdio"])
+
+            self.assertFalse(taxmate_validate.claude_plugin_files_ready(tmp, CURRENT_PLUGIN_VERSION))
+
+    def test_claude_plugin_files_require_marketplace_repo_root_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_claude_plugin_fixture(root, marketplace_source="./.claude-plugin")
+
+            self.assertFalse(taxmate_validate.claude_plugin_files_ready(tmp, CURRENT_PLUGIN_VERSION))
+
+    def test_claude_plugin_files_require_manifest_version_match(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_claude_plugin_fixture(root, version=MISMATCH_PLUGIN_VERSION)
+
+            self.assertFalse(taxmate_validate.claude_plugin_files_ready(tmp, CURRENT_PLUGIN_VERSION))
+
+    def test_codex_plugin_mcp_files_require_taxmate_server(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "mcp").mkdir()
+            (root / ".codex-plugin").mkdir()
+            (root / ".codex-plugin" / "mcp.json").write_text(
+                json.dumps(
+                    {
+                        "mcp_servers": {
+                            "taxmateAustralia": {
+                                "cwd": ".",
+                                "command": "node",
+                                "args": ["./mcp/server.cjs", "--stdio"],
+                            }
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (root / "mcp" / "server.cjs").write_text("module.exports = {};\n", encoding="utf-8")
+
+            self.assertFalse(taxmate_validate.codex_plugin_mcp_files_ready(tmp))
+
+    def test_codex_plugin_mcp_files_reject_root_mcp_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "mcp").mkdir()
+            (root / ".codex-plugin").mkdir()
+            payload = {
+                "mcp_servers": {
+                    "taxmateAustralia": {
+                        "cwd": ".",
+                        "command": "node",
+                        "args": ["./mcp/server.cjs", "--stdio"],
+                    }
+                }
+            }
+            (root / ".codex-plugin" / "mcp.json").write_text(json.dumps(payload), encoding="utf-8")
+            (root / ".mcp.json").write_text(json.dumps(payload), encoding="utf-8")
+            (root / "mcp" / "server.cjs").write_text(VALID_MCP_SERVER_TEXT, encoding="utf-8")
+
+            self.assertFalse(taxmate_validate.codex_plugin_mcp_files_ready(tmp))
+
+    def test_codex_plugin_mcp_files_require_caller_cwd_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "mcp").mkdir()
+            (root / ".codex-plugin").mkdir()
+            payload = {
+                "mcp_servers": {
+                    "taxmateAustralia": {
+                        "cwd": ".",
+                        "command": "node",
+                        "args": ["./mcp/server.cjs", "--stdio"],
+                    }
+                }
+            }
+            (root / ".codex-plugin" / "mcp.json").write_text(json.dumps(payload), encoding="utf-8")
+            (root / "mcp" / "server.cjs").write_text(
+                "taxmate_run\nrender_individual_html\ncwd: PLUGIN_ROOT\nTAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT\n",
+                encoding="utf-8",
+            )
+
+            self.assertFalse(taxmate_validate.codex_plugin_mcp_files_ready(tmp))
+
+    def test_codex_plugin_mcp_files_reject_camelcase_wrapper(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "mcp").mkdir()
+            (root / ".codex-plugin").mkdir()
+            payload = {
+                "mcpServers": {
+                    "taxmateAustralia": {
+                        "cwd": ".",
+                        "command": "node",
+                        "args": ["./mcp/server.cjs", "--stdio"],
+                    }
+                }
+            }
+            (root / ".codex-plugin" / "mcp.json").write_text(json.dumps(payload), encoding="utf-8")
+            (root / "mcp" / "server.cjs").write_text(VALID_MCP_SERVER_TEXT, encoding="utf-8")
+
+            self.assertFalse(taxmate_validate.codex_plugin_mcp_files_ready(tmp))
 
     def test_individual_return_prep_docs_require_no_answer_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

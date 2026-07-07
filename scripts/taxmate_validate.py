@@ -108,6 +108,8 @@ def validate(root: str) -> Tuple[Dict[str, Any], bool]:
 def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifest_err: Optional[Exception], manifest_text: str) -> None:
     add("codex_plugin_manifest_exists", manifest_err is None, str(manifest_err) if manifest_err else "")
     plugin_safety = False
+    plugin_mcp_ready = False
+    claude_plugin_ready = False
     try:
         raw_manifest = json.loads(manifest_text)
         safety = raw_manifest.get("safety", {})
@@ -120,8 +122,12 @@ def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifes
                 and "Never lodge" in boundary
                 and "ATO" in boundary
             )
+        plugin_mcp_ready = raw_manifest.get("mcpServers") == "./.codex-plugin/mcp.json" and codex_plugin_mcp_files_ready(root)
+        claude_plugin_ready = claude_plugin_files_ready(root, str(raw_manifest.get("version", "")))
     except Exception:
         plugin_safety = False
+        plugin_mcp_ready = False
+        claude_plugin_ready = False
     add(
         "public_manifest_polished",
         "TaxMate Australia Maintainers" in manifest_text and '"Local"' not in manifest_text and '"Private"' not in manifest_text and '"repository": "local"' not in manifest_text,
@@ -142,6 +148,8 @@ def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifes
     website_url = manifest.get("interface.websiteURL", "")
     add("plugin_website_is_repository", website_url == manifest.get("repository"), website_url)
     add("plugin_safety_boundary_metadata", plugin_safety, "")
+    add("codex_plugin_mcp_runtime_wired", plugin_mcp_ready, "")
+    add("claude_plugin_runtime_wired", claude_plugin_ready, "")
     add("codex_plugin_no_root_monolith", not file_exists(os.path.join(root, "SKILL.md")), "")
     add(
         "open_plugin_backend_dirs",
@@ -185,7 +193,10 @@ def add_openagentskill_checks(root: str, add, manifest: Dict[str, str], readme_t
     openagentskill_public_text = f"{payload.get('description', '')} {payload.get('tagline', '')}".lower()
     add(
         "openagentskill_runtime_documented",
-        "bash" in openagentskill_public_text and "python" in openagentskill_public_text,
+        "bash" in openagentskill_public_text
+        and "python" in openagentskill_public_text
+        and "node.js" in openagentskill_public_text
+        and "claude code" in openagentskill_public_text,
         "",
     )
     add(
@@ -207,6 +218,32 @@ def add_openagentskill_checks(root: str, add, manifest: Dict[str, str], readme_t
         and "OpenAgentSkill CLI" in platforms
         and isinstance(install_targets, list)
         and any(isinstance(target, dict) and target.get("value") == expected_install for target in install_targets),
+        "",
+    )
+    add(
+        "openagentskill_codex_plugin_install_documented",
+        isinstance(install_targets, list)
+        and any(
+            isinstance(target, dict)
+            and target.get("id") == "codex"
+            and "codex plugin marketplace add nijanthan-dev/taxmate-australia" in str(target.get("value", ""))
+            and "codex plugin add taxmate-australia@taxmate-local-marketplace" in str(target.get("value", ""))
+            for target in install_targets
+        )
+        and "guidance only" in openagentskill_public_text,
+        "",
+    )
+    add(
+        "openagentskill_claude_plugin_install_documented",
+        isinstance(install_targets, list)
+        and any(
+            isinstance(target, dict)
+            and target.get("id") == "claude-code"
+            and "claude plugin marketplace add nijanthan-dev/taxmate-australia" in str(target.get("value", ""))
+            and "claude plugin install taxmate-australia@taxmate-australia" in str(target.get("value", ""))
+            for target in install_targets
+        )
+        and claude_plugin_files_ready(root, str(manifest.get("version", ""))),
         "",
     )
     agent_compatibility = payload.get("agent_compatibility")
@@ -265,13 +302,8 @@ def add_skill_and_documentation_checks(
     add("skill_folders_do_not_contain_readme", len(readme_issues) == 0, "; ".join(readme_issues))
     add("description_nonempty", all_skill_descriptions_long(root, required_skills), "")
     add(
-        "portable_root_documented",
-        (
-            "portable" in readme_text.lower()
-            and "TaxMate Australia path" in readme_text
-            and "python3" in readme_text
-        )
-        or ("./scripts/taxmate" in readme_text and "Optional portable install" in readme_text),
+        "guidance_only_skills_documented",
+        "npx skills" in readme_text and "guidance only" in readme_text and "No renderer or runtime scripts" in readme_text,
         "",
     )
     full_runtime_text = read_text(os.path.join(root, "docs", "FULL_PLUGIN_INSTALL.md")) + read_text(
@@ -282,6 +314,17 @@ def add_skill_and_documentation_checks(
         "python runtime under the hood" in full_runtime_text
         and "./scripts/taxmate" in full_runtime_text
         and "./scripts/taxmate refresh --help" in full_runtime_text,
+        "",
+    )
+    install_text = read_text(os.path.join(root, "docs", "INSTALLATION.md"))
+    full_install_text = read_text(os.path.join(root, "docs", "FULL_PLUGIN_INSTALL.md"))
+    prep_text = read_text(os.path.join(root, "docs", "INDIVIDUAL_RETURN_PREP.md"))
+    add(
+        "plugin_mcp_node_prerequisite_documented",
+        all(
+            "Node.js 20+ for the MCP launcher" in text
+            for text in [readme_text, install_text, full_install_text, prep_text]
+        ),
         "",
     )
 
@@ -396,6 +439,7 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("wrapper_help_uses_public_commands", wrapper_help_uses_public_commands(root), "")
     add("codex_environment_toml_valid", codex_environment_toml_valid(root), "")
     add("release_workflow_auto_after_ci", release_workflow_auto_after_ci(root), "")
+    add("local_act_ci_ready", local_act_ci_ready(root), "")
     add("release_config_tracks_manifest_versions", release_config_tracks_manifest_versions(root), "")
     private_hits = tracked_private_path_hits(root)
     add("tracked_text_no_private_paths", len(private_hits) == 0, "; ".join(first_n(private_hits, 5)))
@@ -557,9 +601,10 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
     agent = read_text(os.path.join(root, "agents", "openai.yaml"))
     required_readme_terms = [
         "linked to official ATO sources",
+        "individual tax return",
         "GST/BAS",
         "CGT",
-        "accountant-ready",
+        "accountant handoff",
         "Codex",
         "Claude Code",
         "Cowork",
@@ -569,7 +614,7 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
         "claude-code",
         "cowork",
         "openagentskill",
-        "tax-records",
+        "individual tax return prep",
         "Leave blank until there is a dedicated external landing page.",
     ]
     return (
@@ -581,9 +626,109 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
         and ("ATO-" + "backed") not in discovery
         and ("ATO-" + "backed") not in plugin
         and ("ATO-" + "backed") not in agent
+        and "turn Australian tax records into" not in readme_text
+        and "messy tax records" not in plugin
+        and "tax records" not in discovery
         and '"assistant"' not in plugin
         and '"super"' not in plugin
     )
+
+
+def codex_plugin_mcp_files_ready(root: str) -> bool:
+    if os.path.exists(os.path.join(root, ".mcp.json")):
+        return False
+    payload, err = read_json_file(os.path.join(root, ".codex-plugin", "mcp.json"))
+    if err is not None:
+        return False
+    if "mcpServers" in payload:
+        return False
+    servers = payload.get("mcp_servers")
+    if not isinstance(servers, dict):
+        return False
+    taxmate = servers.get("taxmateAustralia")
+    if not isinstance(taxmate, dict):
+        return False
+    server_text = read_text(os.path.join(root, "mcp", "server.cjs"))
+    return (
+        taxmate.get("command") == "node"
+        and taxmate.get("args") == ["./mcp/server.cjs", "--stdio"]
+        and taxmate.get("cwd") == "."
+        and file_exists(os.path.join(root, "mcp", "server.cjs"))
+        and "taxmate_run" in server_text
+        and "render_individual_html" in server_text
+        and '["command", "cwd"]' in server_text
+        and '["output_path", "cwd"]' in server_text
+        and '["answers_path", "output_path", "cwd"]' in server_text
+        and "function resolveCallerCwd(" in server_text
+        and "function resolveUserPath(value, callerCwd)" in server_text
+        and "cwd: callerCwd" in server_text
+        and "caller_cwd: callerCwd" in server_text
+        and "TAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT" in server_text
+        and "path.resolve(callerCwd, userPath)" in server_text
+        and 'return runTaxmate("validate", [], PLUGIN_ROOT)' in server_text
+        and taxmate_launcher_preserves_caller_cwd(root)
+    )
+
+
+def taxmate_launcher_preserves_caller_cwd(root: str) -> bool:
+    launcher = read_text(os.path.join(root, "scripts", "taxmate.py"))
+    return (
+        "caller_cwd = Path.cwd()" in launcher
+        and "CALLER_CWD_COMMANDS" in launcher
+        and "ROOT_CWD_COMMANDS" in launcher
+        and "command_cwd = caller_cwd if command in CALLER_CWD_COMMANDS else root" in launcher
+        and 'cwd=str(caller_cwd)' in launcher
+        and '"TAXMATE_AUSTRALIA_ROOT": str(root)' in launcher
+    )
+
+
+def claude_plugin_files_ready(root: str, plugin_version: str) -> bool:
+    plugin, plugin_err = read_json_file(os.path.join(root, ".claude-plugin", "plugin.json"))
+    marketplace, marketplace_err = read_json_file(os.path.join(root, ".claude-plugin", "marketplace.json"))
+    if plugin_err is not None or marketplace_err is not None:
+        return False
+
+    servers = plugin.get("mcpServers")
+    taxmate = servers.get("taxmateAustralia") if isinstance(servers, dict) else None
+    taxmate_env = taxmate.get("env") if isinstance(taxmate, dict) else None
+    marketplace_plugins = marketplace.get("plugins")
+    marketplace_entry = plugin_entry(marketplace_plugins, "taxmate-australia")
+    author = plugin.get("author")
+    owner = marketplace.get("owner")
+
+    plugin_ready = (
+        plugin.get("name") == "taxmate-australia"
+        and plugin.get("version") == plugin_version
+        and plugin.get("skills") == "./skills"
+        and isinstance(author, dict)
+        and author.get("name") == "TaxMate Australia Maintainers"
+    )
+    mcp_ready = (
+        isinstance(taxmate, dict)
+        and taxmate.get("command") == "node"
+        and taxmate.get("args") == ["${CLAUDE_PLUGIN_ROOT}/mcp/server.cjs", "--stdio"]
+        and isinstance(taxmate_env, dict)
+        and taxmate_env.get("TAXMATE_AUSTRALIA_ROOT") == "${CLAUDE_PLUGIN_ROOT}"
+        and taxmate_env.get("PYTHONDONTWRITEBYTECODE") == "1"
+        and file_exists(os.path.join(root, "mcp", "server.cjs"))
+    )
+    marketplace_ready = (
+        marketplace.get("name") == "taxmate-australia"
+        and isinstance(owner, dict)
+        and owner.get("name") == "TaxMate Australia Maintainers"
+        and isinstance(marketplace_entry, dict)
+        and marketplace_entry.get("source") == "./"
+    )
+    return plugin_ready and mcp_ready and marketplace_ready
+
+
+def plugin_entry(entries: Any, name: str) -> Optional[Dict[str, Any]]:
+    if not isinstance(entries, list):
+        return None
+    for entry in entries:
+        if isinstance(entry, dict) and entry.get("name") == name:
+            return entry
+    return None
 
 
 def individual_return_prep_docs_ready(root: str, readme_text: str) -> bool:
@@ -597,6 +742,10 @@ def individual_return_prep_docs_ready(root: str, readme_text: str) -> bool:
     required_doc_terms = [
         "TaxMate is prep-only",
         "individual-return",
+        "Plugin Runtime Path",
+        "codex plugin marketplace add nijanthan-dev/taxmate-australia",
+        "claude plugin marketplace add nijanthan-dev/taxmate-australia",
+        "Node.js 20+ for the MCP launcher",
         "./scripts/taxmate intake individual --help",
         "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json",
         "./scripts/taxmate intake individual",
@@ -1647,6 +1796,8 @@ def go_tooling_scan_files() -> List[str]:
 def public_runtime_claim_scan_files() -> List[str]:
     return [
         os.path.join(".codex-plugin", "plugin.json"),
+        os.path.join(".claude-plugin", "plugin.json"),
+        os.path.join(".claude-plugin", "marketplace.json"),
         os.path.join(".agents", "plugins", "marketplace.json"),
         os.path.join("agents", "openai.yaml"),
         "plugin.lock.json",
@@ -2199,17 +2350,62 @@ def release_workflow_auto_after_ci(root: str) -> bool:
     )
 
 
+def github_ci_workflow_has_required_triggers(text: str) -> bool:
+    return (
+        "workflow_dispatch:" in text
+        and any(re.match(r"^\s*pull_request:\s*$", line) for line in text.splitlines())
+        and any(re.match(r"^\s*push:\s*$", line) for line in text.splitlines())
+        and "branches: [main]" in text
+    )
+
+
+def local_act_ci_ready(root: str) -> bool:
+    actrc = read_text(os.path.join(root, ".actrc"))
+    local_ci = read_text(os.path.join(root, ".github", "workflows", "local-ci.yml"))
+    ci = read_text(os.path.join(root, ".github", "workflows", "ci.yml"))
+    scanner = read_text(os.path.join(root, ".github", "workflows", "hol-plugin-scanner.yml"))
+    check_script = read_text(os.path.join(root, "scripts", "check-local-ci-ready.sh"))
+    run_script = read_text(os.path.join(root, "scripts", "run-local-ci-act.sh"))
+    required_local_steps = [
+        "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+        "rm -rf .git",
+        "git commit -m act-baseline",
+        "python3 -m py_compile scripts/*.py tests/*.py",
+        "python3 -m unittest discover -s tests -p 'test_*.py'",
+        "./scripts/taxmate review-guardrails",
+        "./scripts/taxmate validate",
+        "./scripts/taxmate skills generate --check",
+        "./scripts/taxmate skills audit --check",
+        "bash scripts/test-mcp-server.sh",
+        "bash scripts/check-publication-ready.sh",
+    ]
+    return (
+        "catthehacker/ubuntu:act-22.04" in actrc
+        and "act workflow_dispatch -W .github/workflows/local-ci.yml" in run_script
+        and "docker info" in run_script
+        and "gitleaks dir . --redact --no-banner" in run_script
+        and "gitleaks detect --source . --redact --no-banner" in run_script
+        and "CI must retain pull_request trigger" in check_script
+        and "CI must retain main push trigger" in check_script
+        and "disable the workflow in GitHub when pausing hosted spend" in check_script
+        and github_ci_workflow_has_required_triggers(ci)
+        and "workflow_dispatch:" in scanner
+        and all(step in local_ci for step in required_local_steps)
+    )
+
+
 def release_config_tracks_manifest_versions(root: str) -> bool:
     config, config_err = read_json_file(os.path.join(root, "release-please-config.json"))
     manifest, manifest_err = read_json_file(os.path.join(root, ".release-please-manifest.json"))
     plugin, plugin_err = read_json_file(os.path.join(root, ".codex-plugin", "plugin.json"))
+    claude_plugin, claude_plugin_err = read_json_file(os.path.join(root, ".claude-plugin", "plugin.json"))
     skill, skill_err = read_json_file(os.path.join(root, "skill.json"))
     lock, lock_err = read_json_file(os.path.join(root, "plugin.lock.json"))
-    if any(err is not None for err in [config_err, manifest_err, plugin_err, skill_err, lock_err]):
+    if any(err is not None for err in [config_err, manifest_err, plugin_err, claude_plugin_err, skill_err, lock_err]):
         return False
 
     version = plugin.get("version")
-    if not (version == skill.get("version") == lock.get("pluginVersion") == manifest.get(".")):
+    if not (version == claude_plugin.get("version") == skill.get("version") == lock.get("pluginVersion") == manifest.get(".")):
         return False
     if not isinstance(version, str) or not version.startswith("0."):
         return False
@@ -2226,6 +2422,7 @@ def release_config_tracks_manifest_versions(root: str) -> bool:
 
     required = {
         (".codex-plugin/plugin.json", "$.version"),
+        (".claude-plugin/plugin.json", "$.version"),
         ("skill.json", "$.version"),
         ("plugin.lock.json", "$.pluginVersion"),
     }
