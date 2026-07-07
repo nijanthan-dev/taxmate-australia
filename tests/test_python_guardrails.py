@@ -11604,6 +11604,7 @@ class ValidatorAndCliTests(unittest.TestCase):
                 "release-please-config.json",
                 ".release-please-manifest.json",
                 ".codex-plugin/plugin.json",
+                ".claude-plugin/plugin.json",
                 "skill.json",
                 "plugin.lock.json",
             ]:
@@ -11615,6 +11616,32 @@ class ValidatorAndCliTests(unittest.TestCase):
             config_path = tmp_root / "release-please-config.json"
             config = json.loads(config_path.read_text(encoding="utf-8"))
             config.pop("bootstrap-sha", None)
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+
+            self.assertFalse(taxmate_validate.release_config_tracks_manifest_versions(str(tmp_root)))
+
+    def test_release_config_requires_claude_plugin_version_bump(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            for rel in [
+                "release-please-config.json",
+                ".release-please-manifest.json",
+                ".codex-plugin/plugin.json",
+                ".claude-plugin/plugin.json",
+                "skill.json",
+                "plugin.lock.json",
+            ]:
+                src = ROOT / rel
+                dst = tmp_root / rel
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(src, dst)
+
+            config_path = tmp_root / "release-please-config.json"
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            root_package = config["packages"]["."]
+            root_package["extra-files"] = [
+                item for item in root_package["extra-files"] if item.get("path") != ".claude-plugin/plugin.json"
+            ]
             config_path.write_text(json.dumps(config), encoding="utf-8")
 
             self.assertFalse(taxmate_validate.release_config_tracks_manifest_versions(str(tmp_root)))

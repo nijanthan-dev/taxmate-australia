@@ -2324,13 +2324,14 @@ def release_config_tracks_manifest_versions(root: str) -> bool:
     config, config_err = read_json_file(os.path.join(root, "release-please-config.json"))
     manifest, manifest_err = read_json_file(os.path.join(root, ".release-please-manifest.json"))
     plugin, plugin_err = read_json_file(os.path.join(root, ".codex-plugin", "plugin.json"))
+    claude_plugin, claude_plugin_err = read_json_file(os.path.join(root, ".claude-plugin", "plugin.json"))
     skill, skill_err = read_json_file(os.path.join(root, "skill.json"))
     lock, lock_err = read_json_file(os.path.join(root, "plugin.lock.json"))
-    if any(err is not None for err in [config_err, manifest_err, plugin_err, skill_err, lock_err]):
+    if any(err is not None for err in [config_err, manifest_err, plugin_err, claude_plugin_err, skill_err, lock_err]):
         return False
 
     version = plugin.get("version")
-    if not (version == skill.get("version") == lock.get("pluginVersion") == manifest.get(".")):
+    if not (version == claude_plugin.get("version") == skill.get("version") == lock.get("pluginVersion") == manifest.get(".")):
         return False
     if not isinstance(version, str) or not version.startswith("0."):
         return False
@@ -2347,6 +2348,7 @@ def release_config_tracks_manifest_versions(root: str) -> bool:
 
     required = {
         (".codex-plugin/plugin.json", "$.version"),
+        (".claude-plugin/plugin.json", "$.version"),
         ("skill.json", "$.version"),
         ("plugin.lock.json", "$.pluginVersion"),
     }

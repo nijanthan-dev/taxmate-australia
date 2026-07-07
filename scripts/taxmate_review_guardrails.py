@@ -2138,6 +2138,27 @@ def check_release_contract(root: Path) -> List[Finding]:
     bootstrap_sha = config.get("bootstrap-sha")
     if not isinstance(bootstrap_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", bootstrap_sha):
         findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "release-please-config.json missing 40-char bootstrap-sha"))
+    root_package = config.get("packages", {}).get(".")
+    extra_files = root_package.get("extra-files") if isinstance(root_package, dict) else None
+    seen = {
+        (item.get("path"), item.get("jsonpath"))
+        for item in extra_files or []
+        if isinstance(item, dict) and item.get("type") == "json"
+    }
+    required_extra_files = {
+        (".codex-plugin/plugin.json", "$.version"),
+        (".claude-plugin/plugin.json", "$.version"),
+        ("skill.json", "$.version"),
+        ("plugin.lock.json", "$.pluginVersion"),
+    }
+    missing_extra_files = sorted(f"{path}:{jsonpath}" for path, jsonpath in required_extra_files - seen)
+    if missing_extra_files:
+        findings.append(
+            Finding(
+                RELEASE_GUARDRAIL_CONTRACT,
+                "release-please-config.json missing version bump files: " + ", ".join(missing_extra_files),
+            )
+        )
     if "workflow_run:" not in release and "automatically" in development.lower():
         findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "manual release workflow must not be documented as automatic"))
     return findings
