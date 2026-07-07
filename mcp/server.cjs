@@ -12,6 +12,9 @@ const PLUGIN_MANIFEST = JSON.parse(
 );
 const SERVER_VERSION = PLUGIN_MANIFEST.version || "0.1.0";
 const TAXMATE_LAUNCHER = path.join(PLUGIN_ROOT, "scripts", "taxmate");
+const CALLER_CWD = process.env.TAXMATE_CALLER_CWD
+  ? path.resolve(process.env.TAXMATE_CALLER_CWD)
+  : process.cwd();
 const MAX_OUTPUT_CHARS = 20000;
 const COMMANDS = new Set([
   "calc",
@@ -115,6 +118,11 @@ function commandArgs(command, args) {
   return args;
 }
 
+function resolveUserPath(value) {
+  const userPath = requireString(value, "path");
+  return path.isAbsolute(userPath) ? userPath : path.resolve(CALLER_CWD, userPath);
+}
+
 function truncate(text) {
   if (text.length <= MAX_OUTPUT_CHARS) return text;
   return `${text.slice(0, MAX_OUTPUT_CHARS)}\n...[truncated ${text.length - MAX_OUTPUT_CHARS} chars]`;
@@ -123,7 +131,7 @@ function truncate(text) {
 function runTaxmate(command, args) {
   const argv = [command, ...commandArgs(command, args)];
   const result = childProcess.spawnSync(TAXMATE_LAUNCHER, argv, {
-    cwd: PLUGIN_ROOT,
+    cwd: CALLER_CWD,
     encoding: "utf8",
     env: {
       ...process.env,
@@ -137,6 +145,7 @@ function runTaxmate(command, args) {
     ok: result.status === 0,
     command,
     args,
+    caller_cwd: CALLER_CWD,
     exit_code: result.status,
     signal: result.signal || null,
     stdout: truncate(result.stdout || ""),
@@ -150,13 +159,13 @@ function callTool(name, args) {
     return runTaxmate(requireString(args.command, "command"), args.args ?? []);
   }
   if (name === TOOL_NAMES.sampleIndividualAnswers) {
-    const outputPath = requireString(args.output_path, "output_path");
+    const outputPath = resolveUserPath(args.output_path);
     const result = runTaxmate("intake", ["sample-json", "--output", outputPath]);
     return { ...result, output_path: outputPath };
   }
   if (name === TOOL_NAMES.renderIndividualHtml) {
-    const answersPath = requireString(args.answers_path, "answers_path");
-    const outputPath = requireString(args.output_path, "output_path");
+    const answersPath = resolveUserPath(args.answers_path);
+    const outputPath = resolveUserPath(args.output_path);
     const result = runTaxmate("intake", ["individual", "--answers", answersPath, "--output", outputPath]);
     return { ...result, answers_path: answersPath, output_path: outputPath };
   }

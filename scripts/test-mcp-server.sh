@@ -16,12 +16,20 @@ const childProcess = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const tmpDir = process.argv[2];
+const tmpDir = fs.realpathSync(process.argv[2]);
 const root = process.argv[3];
 const answersPath = path.join(tmpDir, "answers.json");
 const guidePath = path.join(tmpDir, "guide.html");
 const genericPath = path.join(tmpDir, "generic.json");
+const relativeAnswersPath = path.join(tmpDir, "relative-answers.json");
+const relativeGuidePath = path.join(tmpDir, "relative-guide.html");
+const financeCsvPath = path.join(tmpDir, "sample.csv");
 const serverPath = path.join(root, "mcp", "server.cjs");
+fs.writeFileSync(
+  financeCsvPath,
+  "date,description,amount,gst,owner,purpose,evidence,category,type\n" +
+    "2026-04-15,OpenAI Codex subscription,33.00,3.00,owner,ABN app development,invoice,software,expense\n",
+);
 
 function fail(message) {
   console.error(`error: ${message}`);
@@ -55,11 +63,32 @@ const requests = [
     jsonrpc: "2.0",
     id: 5,
     method: "tools/call",
-    params: { name: "taxmate_run", arguments: { command: "unknown", args: [] } },
+    params: { name: "sample_individual_answers", arguments: { output_path: "relative-answers.json" } },
   },
   {
     jsonrpc: "2.0",
     id: 6,
+    method: "tools/call",
+    params: {
+      name: "render_individual_html",
+      arguments: { answers_path: "relative-answers.json", output_path: "relative-guide.html" },
+    },
+  },
+  {
+    jsonrpc: "2.0",
+    id: 7,
+    method: "tools/call",
+    params: { name: "taxmate_run", arguments: { command: "finance", args: ["--input", "sample.csv", "--format", "json"] } },
+  },
+  {
+    jsonrpc: "2.0",
+    id: 8,
+    method: "tools/call",
+    params: { name: "taxmate_run", arguments: { command: "unknown", args: [] } },
+  },
+  {
+    jsonrpc: "2.0",
+    id: 9,
     method: "tools/call",
     params: { name: "taxmate_run", arguments: { command: "intake", args: "" } },
   },
@@ -84,19 +113,34 @@ const tools = byId.get(1)?.result?.tools?.map((tool) => tool.name).sort();
 const expectedTools = ["render_individual_html", "sample_individual_answers", "taxmate_run", "validate_taxmate_runtime"];
 if (JSON.stringify(tools) !== JSON.stringify(expectedTools)) fail(`unexpected tools: ${JSON.stringify(tools)}`);
 
-for (const id of [2, 3, 4]) {
+for (const id of [2, 3, 4, 5, 6, 7]) {
   const payload = byId.get(id)?.result?.structuredContent;
   if (!payload || payload.ok !== true || payload.exit_code !== 0) {
     fail(`tool ${id} failed: ${JSON.stringify(byId.get(id))}`);
   }
+  if (payload.caller_cwd !== tmpDir) fail(`tool ${id} did not preserve caller cwd`);
 }
-const invalid = byId.get(5)?.result;
+const relativeSample = byId.get(5)?.result?.structuredContent;
+if (relativeSample.output_path !== relativeAnswersPath) fail("relative sample output was not resolved against caller cwd");
+const relativeRender = byId.get(6)?.result?.structuredContent;
+if (relativeRender.answers_path !== relativeAnswersPath || relativeRender.output_path !== relativeGuidePath) {
+  fail("relative render paths were not resolved against caller cwd");
+}
+const finance = byId.get(7)?.result?.structuredContent;
+if (!finance.stdout.includes("OpenAI Codex subscription")) fail("relative finance input was not read from caller cwd");
+
+const invalid = byId.get(8)?.result;
 if (!invalid || invalid.isError !== true || invalid.structuredContent?.ok !== false) fail("invalid command was not rejected");
-const invalidArgs = byId.get(6)?.result;
+const invalidArgs = byId.get(9)?.result;
 if (!invalidArgs || invalidArgs.isError !== true || invalidArgs.structuredContent?.ok !== false) fail("invalid args were not rejected");
 if (!fs.existsSync(answersPath)) fail("sample answers were not written");
 if (!fs.existsSync(genericPath)) fail("generic sample answers were not written");
 if (!fs.existsSync(guidePath)) fail("HTML guide was not written");
+if (!fs.existsSync(relativeAnswersPath)) fail("relative sample answers were not written under caller cwd");
+if (!fs.existsSync(relativeGuidePath)) fail("relative HTML guide was not written under caller cwd");
+if (fs.existsSync(path.join(root, "relative-answers.json")) || fs.existsSync(path.join(root, "relative-guide.html"))) {
+  fail("relative tool paths leaked into plugin root");
+}
 
 const guide = fs.readFileSync(guidePath, "utf8");
 for (const token of ["Self-prepared HTML guide", "Accountant review", "Manual copy only"]) {

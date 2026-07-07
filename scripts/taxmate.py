@@ -37,17 +37,23 @@ def _find_repo_root(start: Path) -> Path:
     return Path.cwd()
 
 
-def _run_python_command(script: str, args: List[str], root: Path) -> int:
+def _run_python_command(script: str, args: List[str], root: Path, caller_cwd: Path) -> int:
     script_path = Path(__file__).resolve().parent / script
     if not script_path.exists():
         print(f"error: missing script {script}", file=sys.stderr)
         return 1
-    return subprocess.run([sys.executable, str(script_path), *args], cwd=str(root)).returncode
+    env = {
+        **os.environ,
+        "TAXMATE_AUSTRALIA_ROOT": str(root),
+        "PYTHONDONTWRITEBYTECODE": os.environ.get("PYTHONDONTWRITEBYTECODE", "1"),
+    }
+    return subprocess.run([sys.executable, str(script_path), *args], cwd=str(caller_cwd), env=env).returncode
 
 
 def _dispatch(command: str, args: List[str]) -> int:
-    root = _find_repo_root(Path.cwd())
-    return _run_python_command(COMMANDS[command], args, root)
+    caller_cwd = Path.cwd()
+    root = _find_repo_root(caller_cwd)
+    return _run_python_command(COMMANDS[command], args, root, caller_cwd)
 
 
 def _build_parser() -> argparse.ArgumentParser:

@@ -107,6 +107,7 @@ const plugin = JSON.parse(fs.readFileSync(".codex-plugin/plugin.json", "utf8"));
 const claudePlugin = JSON.parse(fs.readFileSync(".claude-plugin/plugin.json", "utf8"));
 const claudeMarketplace = JSON.parse(fs.readFileSync(".claude-plugin/marketplace.json", "utf8"));
 const mcp = JSON.parse(fs.readFileSync(".codex-plugin/mcp.json", "utf8"));
+const mcpServerText = fs.readFileSync("mcp/server.cjs", "utf8");
 const openAgentSkill = JSON.parse(fs.readFileSync("skill.json", "utf8"));
 const publicManifest = JSON.parse(fs.readFileSync("config/public-skills.json", "utf8"));
 const packaging = JSON.parse(fs.readFileSync("config/skill-packaging.json", "utf8"));
@@ -229,6 +230,18 @@ if (plugin.mcpServers !== "./.codex-plugin/mcp.json") fail("plugin must declare 
 const taxmateMcp = mcp.mcpServers && mcp.mcpServers.taxmateAustralia;
 if (!taxmateMcp || taxmateMcp.command !== "node" || JSON.stringify(taxmateMcp.args) !== JSON.stringify(["./mcp/server.cjs", "--stdio"]) || taxmateMcp.cwd !== ".") {
   fail("TaxMate MCP server must run mcp/server.cjs from plugin root");
+}
+for (const required of [
+  "const CALLER_CWD =",
+  "process.env.TAXMATE_CALLER_CWD",
+  "process.cwd()",
+  "cwd: CALLER_CWD",
+  "TAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT",
+  "function resolveUserPath(",
+  "path.resolve(CALLER_CWD, userPath)",
+  "caller_cwd: CALLER_CWD",
+]) {
+  if (!mcpServerText.includes(required)) fail(`MCP server missing caller-cwd contract: ${required}`);
 }
 if (!claudePluginReady()) fail("Claude plugin manifest mismatch");
 if (!claudeMcpReady()) fail("Claude plugin must expose TaxMate MCP server from CLAUDE_PLUGIN_ROOT");

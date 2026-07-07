@@ -92,7 +92,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "PR #107 MCP",
         OUTPUT_DOCS_CONTRACT,
-        "Keep host-specific MCP manifests separate: Codex uses .codex-plugin/mcp.json and Claude uses .claude-plugin/plugin.json with CLAUDE_PLUGIN_ROOT; do not restore a root .mcp.json that Claude can auto-discover from a user project cwd.",
+        "Keep host-specific MCP manifests separate, preserve caller cwd for user relative paths, keep plugin root only as TAXMATE_AUSTRALIA_ROOT, and do not restore root .mcp.json that Claude can auto-discover from a user project cwd.",
     ),
     ReviewPattern(
         "PR #107 CI",
@@ -2294,6 +2294,27 @@ def check_plugin_mcp_contract(root: Path) -> List[Finding]:
         findings.append(Finding(PLUGIN_MCP_CONTRACT, "Claude MCP server must use CLAUDE_PLUGIN_ROOT path"))
     elif not isinstance(claude_env, dict) or claude_env.get("TAXMATE_AUSTRALIA_ROOT") != "${CLAUDE_PLUGIN_ROOT}":
         findings.append(Finding(PLUGIN_MCP_CONTRACT, "Claude MCP server must set TAXMATE_AUSTRALIA_ROOT from CLAUDE_PLUGIN_ROOT"))
+    server = read(root, "mcp/server.cjs")
+    launcher = read(root, "scripts/taxmate.py")
+    findings.extend(
+        fail_if_missing(
+            PLUGIN_MCP_CONTRACT,
+            server + "\n" + launcher,
+            [
+                "const CALLER_CWD =",
+                "process.env.TAXMATE_CALLER_CWD",
+                "process.cwd()",
+                "cwd: CALLER_CWD",
+                "TAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT",
+                "function resolveUserPath(",
+                "path.resolve(CALLER_CWD, userPath)",
+                "caller_cwd: CALLER_CWD",
+                "caller_cwd = Path.cwd()",
+                "cwd=str(caller_cwd)",
+                '"TAXMATE_AUSTRALIA_ROOT": str(root)',
+            ],
+        )
+    )
     return findings
 
 

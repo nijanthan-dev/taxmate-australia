@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import os
 import re
 import shutil
 import struct
@@ -19,6 +20,16 @@ from typing import Any, Optional
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
+VALID_MCP_SERVER_TEXT = (
+    "taxmate_run\n"
+    "render_individual_html\n"
+    "const CALLER_CWD = process.env.TAXMATE_CALLER_CWD ? process.env.TAXMATE_CALLER_CWD : process.cwd();\n"
+    "cwd: CALLER_CWD\n"
+    "TAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT\n"
+    "function resolveUserPath(value) { return path.resolve(CALLER_CWD, userPath); }\n"
+    "path.resolve(CALLER_CWD, userPath)\n"
+    "caller_cwd: CALLER_CWD\n"
+)
 
 import atodata  # noqa: E402
 import png_crop  # noqa: E402
@@ -183,7 +194,7 @@ def write_claude_plugin_fixture(
         encoding="utf-8",
     )
     if include_server:
-        (root / "mcp" / "server.cjs").write_text("taxmate_run\nrender_individual_html\n", encoding="utf-8")
+        (root / "mcp" / "server.cjs").write_text(VALID_MCP_SERVER_TEXT, encoding="utf-8")
 
 
 def date_weekday(value: str) -> int:
@@ -342,6 +353,8 @@ class ReviewGuardrailTests(unittest.TestCase):
             root = Path(tmp)
             (root / ".codex-plugin").mkdir()
             (root / ".claude-plugin").mkdir()
+            (root / "mcp").mkdir()
+            (root / "scripts").mkdir()
             (root / ".codex-plugin" / "plugin.json").write_text(
                 json.dumps({"mcpServers": "./.codex-plugin/mcp.json"}),
                 encoding="utf-8",
@@ -371,11 +384,20 @@ class ReviewGuardrailTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
+            (root / "mcp" / "server.cjs").write_text(
+                "taxmate_run\nrender_individual_html\ncwd: PLUGIN_ROOT\nTAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT\n",
+                encoding="utf-8",
+            )
+            (root / "scripts" / "taxmate.py").write_text(
+                "root = Path.cwd()\nsubprocess.run([], cwd=str(root))\n",
+                encoding="utf-8",
+            )
 
             findings = taxmate_review_guardrails.check_plugin_mcp_contract(root)
 
         self.assertTrue(any("root .mcp.json" in finding.detail for finding in findings))
         self.assertTrue(any("CLAUDE_PLUGIN_ROOT path" in finding.detail for finding in findings))
+        self.assertTrue(any("cwd: CALLER_CWD" in finding.detail for finding in findings))
 
     def test_local_ci_contract_rejects_auto_ci_triggers(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -11592,6 +11614,27 @@ class ValidatorAndCliTests(unittest.TestCase):
     def test_launcher_exposes_taxpack_command(self) -> None:
         self.assertEqual(taxmate.COMMANDS["taxpack"], "taxmate_taxpack.py")
 
+    def test_launcher_preserves_caller_cwd_for_relative_inputs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path = Path(tmp) / "sample.csv"
+            csv_path.write_text(
+                "date,description,amount,gst,owner,purpose,evidence,category,type\n"
+                "2026-04-15,OpenAI Codex subscription,33.00,3.00,owner,ABN app development,invoice,software,expense\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [str(ROOT / "scripts" / "taxmate"), "finance", "--input", "sample.csv", "--format", "json"],
+                cwd=tmp,
+                env={**os.environ, "TAXMATE_AUSTRALIA_ROOT": str(ROOT), "PYTHONDONTWRITEBYTECODE": "1"},
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("OpenAI Codex subscription", result.stdout)
+
     def test_finish_report_has_check_names(self) -> None:
         checks = [{"check": "sample", "passed": True, "detail": ""}]
 
@@ -11993,7 +12036,29 @@ class ValidatorAndCliTests(unittest.TestCase):
             }
             (root / ".codex-plugin" / "mcp.json").write_text(json.dumps(payload), encoding="utf-8")
             (root / ".mcp.json").write_text(json.dumps(payload), encoding="utf-8")
-            (root / "mcp" / "server.cjs").write_text("taxmate_run\nrender_individual_html\n", encoding="utf-8")
+            (root / "mcp" / "server.cjs").write_text(VALID_MCP_SERVER_TEXT, encoding="utf-8")
+
+            self.assertFalse(taxmate_validate.codex_plugin_mcp_files_ready(tmp))
+
+    def test_codex_plugin_mcp_files_require_caller_cwd_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "mcp").mkdir()
+            (root / ".codex-plugin").mkdir()
+            payload = {
+                "mcpServers": {
+                    "taxmateAustralia": {
+                        "cwd": ".",
+                        "command": "node",
+                        "args": ["./mcp/server.cjs", "--stdio"],
+                    }
+                }
+            }
+            (root / ".codex-plugin" / "mcp.json").write_text(json.dumps(payload), encoding="utf-8")
+            (root / "mcp" / "server.cjs").write_text(
+                "taxmate_run\nrender_individual_html\ncwd: PLUGIN_ROOT\nTAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT\n",
+                encoding="utf-8",
+            )
 
             self.assertFalse(taxmate_validate.codex_plugin_mcp_files_ready(tmp))
 
