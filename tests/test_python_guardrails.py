@@ -356,7 +356,7 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("small business CGT concession review" in finding.detail for finding in findings))
         self.assertTrue(any("entity/affiliate/connected entity" in finding.detail for finding in findings))
 
-    def test_plugin_mcp_contract_rejects_root_mcp_and_claude_relative_path(self) -> None:
+    def test_plugin_mcp_contract_rejects_stale_codex_mcp_and_claude_relative_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / ".codex-plugin").mkdir()
@@ -368,7 +368,7 @@ class ReviewGuardrailTests(unittest.TestCase):
                 encoding="utf-8",
             )
             mcp_payload = {
-                "mcp_servers": {
+                "mcpServers": {
                     "taxmateAustralia": {
                         "cwd": ".",
                         "command": "node",
@@ -403,11 +403,12 @@ class ReviewGuardrailTests(unittest.TestCase):
 
             findings = taxmate_review_guardrails.check_plugin_mcp_contract(root)
 
+        self.assertTrue(any("stale .codex-plugin/mcp.json" in finding.detail for finding in findings))
         self.assertTrue(any("root .mcp.json" in finding.detail for finding in findings))
         self.assertTrue(any("CLAUDE_PLUGIN_ROOT path" in finding.detail for finding in findings))
         self.assertTrue(any("[\"command\", \"cwd\"]" in finding.detail for finding in findings))
 
-    def test_plugin_mcp_contract_rejects_camelcase_codex_mcp_wrapper(self) -> None:
+    def test_plugin_mcp_contract_rejects_snakecase_codex_mcp_wrapper(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / ".codex-plugin").mkdir()
@@ -415,13 +416,13 @@ class ReviewGuardrailTests(unittest.TestCase):
             (root / "mcp").mkdir()
             (root / "scripts").mkdir()
             (root / ".codex-plugin" / "plugin.json").write_text(
-                json.dumps({"mcpServers": "./.codex-plugin/mcp.json"}),
+                json.dumps({"mcpServers": "./.mcp.json"}),
                 encoding="utf-8",
             )
-            (root / ".codex-plugin" / "mcp.json").write_text(
+            (root / ".mcp.json").write_text(
                 json.dumps(
                     {
-                        "mcpServers": {
+                        "mcp_servers": {
                             "taxmateAustralia": {
                                 "cwd": ".",
                                 "command": "node",
@@ -458,7 +459,7 @@ class ReviewGuardrailTests(unittest.TestCase):
 
             findings = taxmate_review_guardrails.check_plugin_mcp_contract(root)
 
-        self.assertTrue(any("mcp_servers wrapper" in finding.detail for finding in findings))
+        self.assertTrue(any("missing taxmateAustralia" in finding.detail for finding in findings))
 
     def test_local_ci_contract_requires_auto_ci_triggers(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -12210,31 +12211,18 @@ class ValidatorAndCliTests(unittest.TestCase):
             root = Path(tmp)
             (root / "mcp").mkdir()
             (root / ".codex-plugin").mkdir()
-            (root / ".codex-plugin" / "mcp.json").write_text(
-                json.dumps(
-                    {
-                        "mcp_servers": {
-                            "taxmateAustralia": {
-                                "cwd": ".",
-                                "command": "node",
-                                "args": ["./mcp/server.cjs", "--stdio"],
-                            }
-                        }
-                    }
-                ),
-                encoding="utf-8",
-            )
+            (root / ".mcp.json").write_text(json.dumps({"mcpServers": {}}), encoding="utf-8")
             (root / "mcp" / "server.cjs").write_text("module.exports = {};\n", encoding="utf-8")
 
             self.assertFalse(taxmate_validate.codex_plugin_mcp_files_ready(tmp))
 
-    def test_codex_plugin_mcp_files_reject_root_mcp_manifest(self) -> None:
+    def test_codex_plugin_mcp_files_reject_stale_codex_plugin_mcp_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "mcp").mkdir()
             (root / ".codex-plugin").mkdir()
             payload = {
-                "mcp_servers": {
+                "mcpServers": {
                     "taxmateAustralia": {
                         "cwd": ".",
                         "command": "node",
@@ -12254,28 +12242,6 @@ class ValidatorAndCliTests(unittest.TestCase):
             (root / "mcp").mkdir()
             (root / ".codex-plugin").mkdir()
             payload = {
-                "mcp_servers": {
-                    "taxmateAustralia": {
-                        "cwd": ".",
-                        "command": "node",
-                        "args": ["./mcp/server.cjs", "--stdio"],
-                    }
-                }
-            }
-            (root / ".codex-plugin" / "mcp.json").write_text(json.dumps(payload), encoding="utf-8")
-            (root / "mcp" / "server.cjs").write_text(
-                "taxmate_run\nrender_individual_html\ncwd: PLUGIN_ROOT\nTAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT\n",
-                encoding="utf-8",
-            )
-
-            self.assertFalse(taxmate_validate.codex_plugin_mcp_files_ready(tmp))
-
-    def test_codex_plugin_mcp_files_reject_camelcase_wrapper(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            (root / "mcp").mkdir()
-            (root / ".codex-plugin").mkdir()
-            payload = {
                 "mcpServers": {
                     "taxmateAustralia": {
                         "cwd": ".",
@@ -12284,7 +12250,29 @@ class ValidatorAndCliTests(unittest.TestCase):
                     }
                 }
             }
-            (root / ".codex-plugin" / "mcp.json").write_text(json.dumps(payload), encoding="utf-8")
+            (root / ".mcp.json").write_text(json.dumps(payload), encoding="utf-8")
+            (root / "mcp" / "server.cjs").write_text(
+                "taxmate_run\nrender_individual_html\ncwd: PLUGIN_ROOT\nTAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT\n",
+                encoding="utf-8",
+            )
+
+            self.assertFalse(taxmate_validate.codex_plugin_mcp_files_ready(tmp))
+
+    def test_codex_plugin_mcp_files_reject_snakecase_wrapper(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "mcp").mkdir()
+            (root / ".codex-plugin").mkdir()
+            payload = {
+                "mcp_servers": {
+                    "taxmateAustralia": {
+                        "cwd": ".",
+                        "command": "node",
+                        "args": ["./mcp/server.cjs", "--stdio"],
+                    }
+                }
+            }
+            (root / ".mcp.json").write_text(json.dumps(payload), encoding="utf-8")
             (root / "mcp" / "server.cjs").write_text(VALID_MCP_SERVER_TEXT, encoding="utf-8")
 
             self.assertFalse(taxmate_validate.codex_plugin_mcp_files_ready(tmp))

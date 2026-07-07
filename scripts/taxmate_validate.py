@@ -122,7 +122,7 @@ def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifes
                 and "Never lodge" in boundary
                 and "ATO" in boundary
             )
-        plugin_mcp_ready = raw_manifest.get("mcpServers") == "./.codex-plugin/mcp.json" and codex_plugin_mcp_files_ready(root)
+        plugin_mcp_ready = raw_manifest.get("mcpServers") == "./.mcp.json" and codex_plugin_mcp_files_ready(root)
         claude_plugin_ready = claude_plugin_files_ready(root, str(raw_manifest.get("version", "")))
     except Exception:
         plugin_safety = False
@@ -635,14 +635,12 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
 
 
 def codex_plugin_mcp_files_ready(root: str) -> bool:
-    if os.path.exists(os.path.join(root, ".mcp.json")):
+    if os.path.exists(os.path.join(root, ".codex-plugin", "mcp.json")):
         return False
-    payload, err = read_json_file(os.path.join(root, ".codex-plugin", "mcp.json"))
+    payload, err = read_json_file(os.path.join(root, ".mcp.json"))
     if err is not None:
         return False
-    if "mcpServers" in payload:
-        return False
-    servers = payload.get("mcp_servers")
+    servers = payload.get("mcpServers")
     if not isinstance(servers, dict):
         return False
     taxmate = servers.get("taxmateAustralia")
