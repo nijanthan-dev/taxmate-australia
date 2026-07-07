@@ -87,7 +87,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "PR #107",
         OUTPUT_DOCS_CONTRACT,
-        "Plugin install docs and public metadata must disclose that the MCP launcher requires Node.js while TaxMate commands run on the bash and Python runtime.",
+        "Plugin install docs and public metadata must disclose that the MCP launcher requires Node.js while TaxMate commands run on the bash and Python runtime; tests must derive plugin versions from release-managed manifests.",
     ),
     ReviewPattern(
         "PR #107 MCP",
@@ -2127,6 +2127,8 @@ def check_release_contract(root: Path) -> List[Finding]:
     release = read(root, ".github/workflows/release.yml")
     development = read(root, "docs/DEVELOPMENT.md")
     config = json.loads(read(root, "release-please-config.json"))
+    plugin = json.loads(read(root, ".codex-plugin/plugin.json"))
+    tests = read(root, "tests/test_python_guardrails.py")
     findings: List[Finding] = []
     required = [
         "workflow_dispatch:",
@@ -2171,6 +2173,9 @@ def check_release_contract(root: Path) -> List[Finding]:
                 "release-please-config.json missing version bump files: " + ", ".join(missing_extra_files),
             )
         )
+    version = plugin.get("version")
+    if isinstance(version, str) and version and version in tests:
+        findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "tests must derive plugin version from manifests, not hard-code current version"))
     if "workflow_run:" not in release and "automatically" in development.lower():
         findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "manual release workflow must not be documented as automatic"))
     return findings

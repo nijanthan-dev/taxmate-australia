@@ -19,6 +19,8 @@ from typing import Any, Optional
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
+CURRENT_PLUGIN_VERSION = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
+MISMATCH_PLUGIN_VERSION = "0.0.0-test-mismatch"
 sys.path.insert(0, str(SCRIPTS))
 VALID_MCP_SERVER_TEXT = (
     "taxmate_run\n"
@@ -161,7 +163,7 @@ def output_docs_surface_fixture(extra: str = "") -> str:
 def write_claude_plugin_fixture(
     root: Path,
     *,
-    version: str = "0.17.0",
+    version: str = CURRENT_PLUGIN_VERSION,
     mcp_args: Optional[list[str]] = None,
     marketplace_source: str = "./",
     include_server: bool = True,
@@ -509,6 +511,66 @@ class ReviewGuardrailTests(unittest.TestCase):
             findings = taxmate_review_guardrails.check_local_ci_contract(root)
 
         self.assertTrue(any("automatic pull_request and main push triggers" in finding.detail for finding in findings))
+
+    def test_release_contract_rejects_test_version_literals(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".github" / "workflows").mkdir(parents=True)
+            (root / ".codex-plugin").mkdir()
+            (root / "docs").mkdir()
+            (root / "tests").mkdir()
+            (root / ".github" / "workflows" / "release.yml").write_text(
+                "\n".join(
+                    [
+                        "workflow_dispatch:",
+                        "workflow_run:",
+                        'workflows: ["CI"]',
+                        "types: [completed]",
+                        "branches: [main]",
+                        "Require green CI",
+                        "GH_REPO: nijanthan-dev/taxmate-australia",
+                        "--workflow CI --branch main --commit",
+                        "Require main unchanged",
+                        "git ls-remote https://github.com/nijanthan-dev/taxmate-australia.git refs/heads/main",
+                        "RELEASE_PLEASE_TOKEN",
+                        "release-please-action@",
+                        "target-branch: main",
+                        "manifest-file: .release-please-manifest.json",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (root / "docs" / "DEVELOPMENT.md").write_text("Manual release notes.\n", encoding="utf-8")
+            (root / ".codex-plugin" / "plugin.json").write_text(
+                json.dumps({"version": CURRENT_PLUGIN_VERSION}),
+                encoding="utf-8",
+            )
+            (root / "release-please-config.json").write_text(
+                json.dumps(
+                    {
+                        "bootstrap-sha": "a" * 40,
+                        "packages": {
+                            ".": {
+                                "extra-files": [
+                                    {"type": "json", "path": ".codex-plugin/plugin.json", "jsonpath": "$.version"},
+                                    {"type": "json", "path": ".claude-plugin/plugin.json", "jsonpath": "$.version"},
+                                    {"type": "json", "path": "skill.json", "jsonpath": "$.version"},
+                                    {"type": "json", "path": "plugin.lock.json", "jsonpath": "$.pluginVersion"},
+                                ]
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (root / "tests" / "test_python_guardrails.py").write_text(
+                f"expected = {CURRENT_PLUGIN_VERSION!r}\n",
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_release_contract(root)
+
+        self.assertTrue(any("must derive plugin version" in finding.detail for finding in findings))
 
     def test_review_guardrails_detect_wfh_parser_fallbacks(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -12113,35 +12175,35 @@ class ValidatorAndCliTests(unittest.TestCase):
         self.assertTrue(taxmate_validate.codex_plugin_mcp_files_ready(str(ROOT)))
 
     def test_claude_plugin_files_are_validated(self) -> None:
-        self.assertTrue(taxmate_validate.claude_plugin_files_ready(str(ROOT), "0.17.0"))
+        self.assertTrue(taxmate_validate.claude_plugin_files_ready(str(ROOT), CURRENT_PLUGIN_VERSION))
 
     def test_claude_plugin_files_require_runtime_mcp(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             write_claude_plugin_fixture(root, include_server=False)
 
-            self.assertFalse(taxmate_validate.claude_plugin_files_ready(tmp, "0.17.0"))
+            self.assertFalse(taxmate_validate.claude_plugin_files_ready(tmp, CURRENT_PLUGIN_VERSION))
 
     def test_claude_plugin_files_reject_repo_relative_mcp_args(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             write_claude_plugin_fixture(root, mcp_args=["./mcp/server.cjs", "--stdio"])
 
-            self.assertFalse(taxmate_validate.claude_plugin_files_ready(tmp, "0.17.0"))
+            self.assertFalse(taxmate_validate.claude_plugin_files_ready(tmp, CURRENT_PLUGIN_VERSION))
 
     def test_claude_plugin_files_require_marketplace_repo_root_source(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             write_claude_plugin_fixture(root, marketplace_source="./.claude-plugin")
 
-            self.assertFalse(taxmate_validate.claude_plugin_files_ready(tmp, "0.17.0"))
+            self.assertFalse(taxmate_validate.claude_plugin_files_ready(tmp, CURRENT_PLUGIN_VERSION))
 
     def test_claude_plugin_files_require_manifest_version_match(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            write_claude_plugin_fixture(root, version="0.16.0")
+            write_claude_plugin_fixture(root, version=MISMATCH_PLUGIN_VERSION)
 
-            self.assertFalse(taxmate_validate.claude_plugin_files_ready(tmp, "0.17.0"))
+            self.assertFalse(taxmate_validate.claude_plugin_files_ready(tmp, CURRENT_PLUGIN_VERSION))
 
     def test_codex_plugin_mcp_files_require_taxmate_server(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
