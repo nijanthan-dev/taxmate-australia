@@ -2,7 +2,7 @@
   "mcpServers": {
     "taxmateAustralia": {
       "title": "TaxMate Australia",
-      "description": "Run TaxMate Australia plugin runtime commands from the installed plugin cache.",
+      "description": "Run TaxMate Australia plugin runtime commands from the installed plugin cache; user-file tools require an explicit workspace cwd.",
       "icons": [
         {
           "src": "./assets/icon.png",

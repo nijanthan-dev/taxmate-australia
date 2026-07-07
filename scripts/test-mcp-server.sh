@@ -42,13 +42,13 @@ const requests = [
     jsonrpc: "2.0",
     id: 2,
     method: "tools/call",
-    params: { name: "sample_individual_answers", arguments: { output_path: answersPath } },
+    params: { name: "sample_individual_answers", arguments: { cwd: tmpDir, output_path: answersPath } },
   },
   {
     jsonrpc: "2.0",
     id: 3,
     method: "tools/call",
-    params: { name: "render_individual_html", arguments: { answers_path: answersPath, output_path: guidePath } },
+    params: { name: "render_individual_html", arguments: { cwd: tmpDir, answers_path: answersPath, output_path: guidePath } },
   },
   {
     jsonrpc: "2.0",
@@ -56,14 +56,14 @@ const requests = [
     method: "tools/call",
     params: {
       name: "taxmate_run",
-      arguments: { command: "intake", args: ["sample-json", "--output", genericPath] },
+      arguments: { cwd: tmpDir, command: "intake", args: ["sample-json", "--output", genericPath] },
     },
   },
   {
     jsonrpc: "2.0",
     id: 5,
     method: "tools/call",
-    params: { name: "sample_individual_answers", arguments: { output_path: "relative-answers.json" } },
+    params: { name: "sample_individual_answers", arguments: { cwd: tmpDir, output_path: "relative-answers.json" } },
   },
   {
     jsonrpc: "2.0",
@@ -71,31 +71,37 @@ const requests = [
     method: "tools/call",
     params: {
       name: "render_individual_html",
-      arguments: { answers_path: "relative-answers.json", output_path: "relative-guide.html" },
+      arguments: { cwd: tmpDir, answers_path: "relative-answers.json", output_path: "relative-guide.html" },
     },
   },
   {
     jsonrpc: "2.0",
     id: 7,
     method: "tools/call",
-    params: { name: "taxmate_run", arguments: { command: "finance", args: ["--input", "sample.csv", "--format", "json"] } },
+    params: { name: "taxmate_run", arguments: { cwd: tmpDir, command: "finance", args: ["--input", "sample.csv", "--format", "json"] } },
   },
   {
     jsonrpc: "2.0",
     id: 8,
     method: "tools/call",
-    params: { name: "taxmate_run", arguments: { command: "unknown", args: [] } },
+    params: { name: "taxmate_run", arguments: { cwd: tmpDir, command: "unknown", args: [] } },
   },
   {
     jsonrpc: "2.0",
     id: 9,
     method: "tools/call",
-    params: { name: "taxmate_run", arguments: { command: "intake", args: "" } },
+    params: { name: "taxmate_run", arguments: { cwd: tmpDir, command: "intake", args: "" } },
+  },
+  {
+    jsonrpc: "2.0",
+    id: 10,
+    method: "tools/call",
+    params: { name: "sample_individual_answers", arguments: { output_path: "missing-cwd.json" } },
   },
 ];
 
 const result = childProcess.spawnSync("node", [serverPath, "--stdio"], {
-  cwd: tmpDir,
+  cwd: root,
   input: `${JSON.stringify(requests)}\n`,
   encoding: "utf8",
   maxBuffer: 10 * 1024 * 1024,
@@ -118,26 +124,30 @@ for (const id of [2, 3, 4, 5, 6, 7]) {
   if (!payload || payload.ok !== true || payload.exit_code !== 0) {
     fail(`tool ${id} failed: ${JSON.stringify(byId.get(id))}`);
   }
-  if (payload.caller_cwd !== tmpDir) fail(`tool ${id} did not preserve caller cwd`);
+  if (payload.caller_cwd !== tmpDir) fail(`tool ${id} did not use explicit workspace cwd`);
 }
 const relativeSample = byId.get(5)?.result?.structuredContent;
-if (relativeSample.output_path !== relativeAnswersPath) fail("relative sample output was not resolved against caller cwd");
+if (relativeSample.output_path !== relativeAnswersPath) fail("relative sample output was not resolved against workspace cwd");
 const relativeRender = byId.get(6)?.result?.structuredContent;
 if (relativeRender.answers_path !== relativeAnswersPath || relativeRender.output_path !== relativeGuidePath) {
-  fail("relative render paths were not resolved against caller cwd");
+  fail("relative render paths were not resolved against workspace cwd");
 }
 const finance = byId.get(7)?.result?.structuredContent;
-if (!finance.stdout.includes("OpenAI Codex subscription")) fail("relative finance input was not read from caller cwd");
+if (!finance.stdout.includes("OpenAI Codex subscription")) fail("relative finance input was not read from workspace cwd");
 
 const invalid = byId.get(8)?.result;
 if (!invalid || invalid.isError !== true || invalid.structuredContent?.ok !== false) fail("invalid command was not rejected");
 const invalidArgs = byId.get(9)?.result;
 if (!invalidArgs || invalidArgs.isError !== true || invalidArgs.structuredContent?.ok !== false) fail("invalid args were not rejected");
+const missingCwd = byId.get(10)?.result;
+if (!missingCwd || missingCwd.isError !== true || !missingCwd.structuredContent?.error?.includes("cwd")) {
+  fail("relative tool call without cwd was not rejected");
+}
 if (!fs.existsSync(answersPath)) fail("sample answers were not written");
 if (!fs.existsSync(genericPath)) fail("generic sample answers were not written");
 if (!fs.existsSync(guidePath)) fail("HTML guide was not written");
-if (!fs.existsSync(relativeAnswersPath)) fail("relative sample answers were not written under caller cwd");
-if (!fs.existsSync(relativeGuidePath)) fail("relative HTML guide was not written under caller cwd");
+if (!fs.existsSync(relativeAnswersPath)) fail("relative sample answers were not written under workspace cwd");
+if (!fs.existsSync(relativeGuidePath)) fail("relative HTML guide was not written under workspace cwd");
 if (fs.existsSync(path.join(root, "relative-answers.json")) || fs.existsSync(path.join(root, "relative-guide.html"))) {
   fail("relative tool paths leaked into plugin root");
 }

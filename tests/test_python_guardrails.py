@@ -23,12 +23,16 @@ sys.path.insert(0, str(SCRIPTS))
 VALID_MCP_SERVER_TEXT = (
     "taxmate_run\n"
     "render_individual_html\n"
-    "const CALLER_CWD = process.env.TAXMATE_CALLER_CWD ? process.env.TAXMATE_CALLER_CWD : process.cwd();\n"
-    "cwd: CALLER_CWD\n"
+    "[\"command\", \"cwd\"]\n"
+    "[\"output_path\", \"cwd\"]\n"
+    "[\"answers_path\", \"output_path\", \"cwd\"]\n"
+    "function resolveCallerCwd(value) { return path.resolve(requireString(value, \"cwd\")); }\n"
+    "function resolveUserPath(value, callerCwd) { return path.resolve(callerCwd, userPath); }\n"
+    "cwd: callerCwd\n"
     "TAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT\n"
-    "function resolveUserPath(value) { return path.resolve(CALLER_CWD, userPath); }\n"
-    "path.resolve(CALLER_CWD, userPath)\n"
-    "caller_cwd: CALLER_CWD\n"
+    "path.resolve(callerCwd, userPath)\n"
+    "caller_cwd: callerCwd\n"
+    "return runTaxmate(\"validate\", [], PLUGIN_ROOT)\n"
 )
 
 import atodata  # noqa: E402
@@ -399,7 +403,7 @@ class ReviewGuardrailTests(unittest.TestCase):
 
         self.assertTrue(any("root .mcp.json" in finding.detail for finding in findings))
         self.assertTrue(any("CLAUDE_PLUGIN_ROOT path" in finding.detail for finding in findings))
-        self.assertTrue(any("cwd: CALLER_CWD" in finding.detail for finding in findings))
+        self.assertTrue(any("[\"command\", \"cwd\"]" in finding.detail for finding in findings))
 
     def test_local_ci_contract_rejects_auto_ci_triggers(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

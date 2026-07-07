@@ -233,16 +233,18 @@ if (!taxmateMcp || taxmateMcp.command !== "node" || JSON.stringify(taxmateMcp.ar
   fail("TaxMate MCP server must run mcp/server.cjs from plugin root");
 }
 for (const required of [
-  "const CALLER_CWD =",
-  "process.env.TAXMATE_CALLER_CWD",
-  "process.cwd()",
-  "cwd: CALLER_CWD",
+  "[\"command\", \"cwd\"]",
+  "[\"output_path\", \"cwd\"]",
+  "[\"answers_path\", \"output_path\", \"cwd\"]",
+  "function resolveCallerCwd(",
+  "function resolveUserPath(value, callerCwd)",
+  "cwd: callerCwd",
   "TAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT",
-  "function resolveUserPath(",
-  "path.resolve(CALLER_CWD, userPath)",
-  "caller_cwd: CALLER_CWD",
+  "path.resolve(callerCwd, userPath)",
+  "caller_cwd: callerCwd",
+  "return runTaxmate(\"validate\", [], PLUGIN_ROOT)",
 ]) {
-  if (!mcpServerText.includes(required)) fail(`MCP server missing caller-cwd contract: ${required}`);
+  if (!mcpServerText.includes(required)) fail(`MCP server missing explicit-cwd contract: ${required}`);
 }
 for (const required of [
   "caller_cwd = Path.cwd()",

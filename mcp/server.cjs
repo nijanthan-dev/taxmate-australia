@@ -12,9 +12,6 @@ const PLUGIN_MANIFEST = JSON.parse(
 );
 const SERVER_VERSION = PLUGIN_MANIFEST.version || "0.1.0";
 const TAXMATE_LAUNCHER = path.join(PLUGIN_ROOT, "scripts", "taxmate");
-const CALLER_CWD = process.env.TAXMATE_CALLER_CWD
-  ? path.resolve(process.env.TAXMATE_CALLER_CWD)
-  : process.cwd();
 const MAX_OUTPUT_CHARS = 20000;
 const COMMANDS = new Set([
   "calc",
@@ -52,7 +49,7 @@ function toolDefinitions() {
       TOOL_NAMES.run,
       "Run TaxMate Command",
       [
-      "Run an allowlisted TaxMate Australia runtime command from the installed plugin cache.",
+        "Run an allowlisted TaxMate Australia runtime command from the installed plugin cache.",
         "Use existing scripts/taxmate command families only. This is a preparation workflow and never lodges or files with the ATO.",
       ].join(" "),
       objectSchema(
@@ -68,8 +65,12 @@ function toolDefinitions() {
             default: [],
             description: "Arguments to pass after the command. Each entry is passed as one argv item; no shell is used.",
           },
+          cwd: {
+            type: "string",
+            description: "Workspace directory for resolving relative TaxMate command arguments.",
+          },
         },
-        ["command"],
+        ["command", "cwd"],
       ),
     ),
     tool(
@@ -79,8 +80,9 @@ function toolDefinitions() {
       objectSchema(
         {
           output_path: { type: "string", description: "JSON output path." },
+          cwd: { type: "string", description: "Workspace directory for resolving relative output_path values." },
         },
-        ["output_path"],
+        ["output_path", "cwd"],
       ),
     ),
     tool(
@@ -91,8 +93,9 @@ function toolDefinitions() {
         {
           answers_path: { type: "string", description: "Input answers JSON path." },
           output_path: { type: "string", description: "HTML output path." },
+          cwd: { type: "string", description: "Workspace directory for resolving relative answers_path and output_path values." },
         },
-        ["answers_path", "output_path"],
+        ["answers_path", "output_path", "cwd"],
       ),
     ),
     tool(
@@ -118,9 +121,13 @@ function commandArgs(command, args) {
   return args;
 }
 
-function resolveUserPath(value) {
+function resolveCallerCwd(value) {
+  return path.resolve(requireString(value, "cwd"));
+}
+
+function resolveUserPath(value, callerCwd) {
   const userPath = requireString(value, "path");
-  return path.isAbsolute(userPath) ? userPath : path.resolve(CALLER_CWD, userPath);
+  return path.isAbsolute(userPath) ? userPath : path.resolve(callerCwd, userPath);
 }
 
 function truncate(text) {
@@ -128,10 +135,10 @@ function truncate(text) {
   return `${text.slice(0, MAX_OUTPUT_CHARS)}\n...[truncated ${text.length - MAX_OUTPUT_CHARS} chars]`;
 }
 
-function runTaxmate(command, args) {
+function runTaxmate(command, args, callerCwd) {
   const argv = [command, ...commandArgs(command, args)];
   const result = childProcess.spawnSync(TAXMATE_LAUNCHER, argv, {
-    cwd: CALLER_CWD,
+    cwd: callerCwd,
     encoding: "utf8",
     env: {
       ...process.env,
@@ -145,7 +152,7 @@ function runTaxmate(command, args) {
     ok: result.status === 0,
     command,
     args,
-    caller_cwd: CALLER_CWD,
+    caller_cwd: callerCwd,
     exit_code: result.status,
     signal: result.signal || null,
     stdout: truncate(result.stdout || ""),
@@ -156,21 +163,24 @@ function runTaxmate(command, args) {
 function callTool(name, args) {
   if (!isPlainObject(args)) throw new Error("tool arguments must be an object");
   if (name === TOOL_NAMES.run) {
-    return runTaxmate(requireString(args.command, "command"), args.args ?? []);
+    const callerCwd = resolveCallerCwd(args.cwd);
+    return runTaxmate(requireString(args.command, "command"), args.args ?? [], callerCwd);
   }
   if (name === TOOL_NAMES.sampleIndividualAnswers) {
-    const outputPath = resolveUserPath(args.output_path);
-    const result = runTaxmate("intake", ["sample-json", "--output", outputPath]);
+    const callerCwd = resolveCallerCwd(args.cwd);
+    const outputPath = resolveUserPath(args.output_path, callerCwd);
+    const result = runTaxmate("intake", ["sample-json", "--output", outputPath], callerCwd);
     return { ...result, output_path: outputPath };
   }
   if (name === TOOL_NAMES.renderIndividualHtml) {
-    const answersPath = resolveUserPath(args.answers_path);
-    const outputPath = resolveUserPath(args.output_path);
-    const result = runTaxmate("intake", ["individual", "--answers", answersPath, "--output", outputPath]);
+    const callerCwd = resolveCallerCwd(args.cwd);
+    const answersPath = resolveUserPath(args.answers_path, callerCwd);
+    const outputPath = resolveUserPath(args.output_path, callerCwd);
+    const result = runTaxmate("intake", ["individual", "--answers", answersPath, "--output", outputPath], callerCwd);
     return { ...result, answers_path: answersPath, output_path: outputPath };
   }
   if (name === TOOL_NAMES.validateRuntime) {
-    return runTaxmate("validate", []);
+    return runTaxmate("validate", [], PLUGIN_ROOT);
   }
   throw new Error(`unknown TaxMate tool: ${name}`);
 }

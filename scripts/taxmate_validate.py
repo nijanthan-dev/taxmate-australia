@@ -654,11 +654,16 @@ def codex_plugin_mcp_files_ready(root: str) -> bool:
         and file_exists(os.path.join(root, "mcp", "server.cjs"))
         and "taxmate_run" in server_text
         and "render_individual_html" in server_text
-        and "const CALLER_CWD =" in server_text
-        and "cwd: CALLER_CWD" in server_text
+        and '["command", "cwd"]' in server_text
+        and '["output_path", "cwd"]' in server_text
+        and '["answers_path", "output_path", "cwd"]' in server_text
+        and "function resolveCallerCwd(" in server_text
+        and "function resolveUserPath(value, callerCwd)" in server_text
+        and "cwd: callerCwd" in server_text
+        and "caller_cwd: callerCwd" in server_text
         and "TAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT" in server_text
-        and "function resolveUserPath(" in server_text
-        and "path.resolve(CALLER_CWD, userPath)" in server_text
+        and "path.resolve(callerCwd, userPath)" in server_text
+        and 'return runTaxmate("validate", [], PLUGIN_ROOT)' in server_text
         and taxmate_launcher_preserves_caller_cwd(root)
     )
 
