@@ -33,6 +33,24 @@ OUTPUT_DOCS_CONTRACT = "output_docs_contract"
 MARKETPLACE_ADD_PREFIX = "codex plugin marketplace add "
 LOCAL_MARKETPLACE_ADD_COMMAND = "codex plugin marketplace add ."
 LOCAL_PLUGIN_ADD_COMMAND = "codex plugin add taxmate-australia@{name}"
+PLUGIN_MCP_REQUIRED_FRAGMENTS = [
+    '["command", "cwd"]',
+    '["output_path", "cwd"]',
+    '["answers_path", "output_path", "cwd"]',
+    "function resolveCallerCwd(",
+    "function resolveUserPath(value, callerCwd)",
+    "cwd: callerCwd",
+    "TAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT",
+    "path.resolve(callerCwd, userPath)",
+    "caller_cwd: callerCwd",
+    'return runTaxmate("validate", [], PLUGIN_ROOT)',
+    "caller_cwd = Path.cwd()",
+    "cwd=str(caller_cwd)",
+    "CALLER_CWD_COMMANDS",
+    "ROOT_CWD_COMMANDS",
+    "command_cwd = caller_cwd if command in CALLER_CWD_COMMANDS else root",
+    '"TAXMATE_AUSTRALIA_ROOT": str(root)',
+]
 PUBLIC_OUTPUT_DOCS = [
     "README.md",
     "docs/INSTALLATION.md",
@@ -2309,24 +2327,7 @@ def check_plugin_mcp_contract(root: Path) -> List[Finding]:
         fail_if_missing(
             PLUGIN_MCP_CONTRACT,
             server + "\n" + launcher,
-            [
-                '["command", "cwd"]',
-                '["output_path", "cwd"]',
-                '["answers_path", "output_path", "cwd"]',
-                "function resolveCallerCwd(",
-                "function resolveUserPath(value, callerCwd)",
-                "cwd: callerCwd",
-                "TAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT",
-                "path.resolve(callerCwd, userPath)",
-                "caller_cwd: callerCwd",
-                'return runTaxmate("validate", [], PLUGIN_ROOT)',
-                "caller_cwd = Path.cwd()",
-                "cwd=str(caller_cwd)",
-                "CALLER_CWD_COMMANDS",
-                "ROOT_CWD_COMMANDS",
-                "command_cwd = caller_cwd if command in CALLER_CWD_COMMANDS else root",
-                '"TAXMATE_AUSTRALIA_ROOT": str(root)',
-            ],
+            PLUGIN_MCP_REQUIRED_FRAGMENTS,
         )
     )
     return findings

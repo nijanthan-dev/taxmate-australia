@@ -27,6 +27,28 @@ import taxmate_taxpack
 EMPTY_CONTENT = skillgen.EmptyContentHashValue
 SKILL_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 RESERVED_SKILL_PREFIXES = ("claude", "anthropic")
+CODEX_MCP_SERVER_REQUIRED_FRAGMENTS = [
+    "taxmate_run",
+    "render_individual_html",
+    '["command", "cwd"]',
+    '["output_path", "cwd"]',
+    '["answers_path", "output_path", "cwd"]',
+    "function resolveCallerCwd(",
+    "function resolveUserPath(value, callerCwd)",
+    "cwd: callerCwd",
+    "caller_cwd: callerCwd",
+    "TAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT",
+    "path.resolve(callerCwd, userPath)",
+    'return runTaxmate("validate", [], PLUGIN_ROOT)',
+]
+TAXMATE_LAUNCHER_CWD_REQUIRED_FRAGMENTS = [
+    "caller_cwd = Path.cwd()",
+    "CALLER_CWD_COMMANDS",
+    "ROOT_CWD_COMMANDS",
+    "command_cwd = caller_cwd if command in CALLER_CWD_COMMANDS else root",
+    "cwd=str(caller_cwd)",
+    '"TAXMATE_AUSTRALIA_ROOT": str(root)',
+]
 
 
 def run(argv: Optional[List[str]] = None) -> int:
@@ -652,32 +674,14 @@ def codex_plugin_mcp_files_ready(root: str) -> bool:
         and taxmate.get("args") == ["./mcp/server.cjs", "--stdio"]
         and taxmate.get("cwd") == "."
         and file_exists(os.path.join(root, "mcp", "server.cjs"))
-        and "taxmate_run" in server_text
-        and "render_individual_html" in server_text
-        and '["command", "cwd"]' in server_text
-        and '["output_path", "cwd"]' in server_text
-        and '["answers_path", "output_path", "cwd"]' in server_text
-        and "function resolveCallerCwd(" in server_text
-        and "function resolveUserPath(value, callerCwd)" in server_text
-        and "cwd: callerCwd" in server_text
-        and "caller_cwd: callerCwd" in server_text
-        and "TAXMATE_AUSTRALIA_ROOT: PLUGIN_ROOT" in server_text
-        and "path.resolve(callerCwd, userPath)" in server_text
-        and 'return runTaxmate("validate", [], PLUGIN_ROOT)' in server_text
+        and all(fragment in server_text for fragment in CODEX_MCP_SERVER_REQUIRED_FRAGMENTS)
         and taxmate_launcher_preserves_caller_cwd(root)
     )
 
 
 def taxmate_launcher_preserves_caller_cwd(root: str) -> bool:
     launcher = read_text(os.path.join(root, "scripts", "taxmate.py"))
-    return (
-        "caller_cwd = Path.cwd()" in launcher
-        and "CALLER_CWD_COMMANDS" in launcher
-        and "ROOT_CWD_COMMANDS" in launcher
-        and "command_cwd = caller_cwd if command in CALLER_CWD_COMMANDS else root" in launcher
-        and 'cwd=str(caller_cwd)' in launcher
-        and '"TAXMATE_AUSTRALIA_ROOT": str(root)' in launcher
-    )
+    return all(fragment in launcher for fragment in TAXMATE_LAUNCHER_CWD_REQUIRED_FRAGMENTS)
 
 
 def claude_plugin_files_ready(root: str, plugin_version: str) -> bool:
