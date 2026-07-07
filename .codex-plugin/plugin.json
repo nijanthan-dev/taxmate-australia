@@ -49,7 +49,7 @@
     "workbook"
   ],
   "license": "Apache-2.0",
-  "mcpServers": "./.codex-plugin/mcp.json",
+  "mcpServers": "./.mcp.json",
   "name": "taxmate-australia",
   "repository": "https://github.com/nijanthan-dev/taxmate-australia",
   "safety": {

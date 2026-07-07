@@ -13,8 +13,8 @@ fail() {
 [[ -f .codex-plugin/plugin.json ]] || fail "missing plugin manifest"
 [[ -f .claude-plugin/plugin.json ]] || fail "missing Claude plugin manifest"
 [[ -f .claude-plugin/marketplace.json ]] || fail "missing Claude plugin marketplace"
-[[ -f .codex-plugin/mcp.json ]] || fail "missing Codex MCP manifest"
-[[ ! -f .mcp.json ]] || fail "root .mcp.json conflicts with Claude plugin auto-discovery; use .codex-plugin/mcp.json"
+[[ -f .mcp.json ]] || fail "missing root Codex MCP manifest"
+[[ ! -f .codex-plugin/mcp.json ]] || fail "stale .codex-plugin/mcp.json conflicts with root Codex MCP manifest"
 [[ -f mcp/server.cjs ]] || fail "missing MCP server"
 [[ -f README.md ]] || fail "missing README"
 [[ -f DISCLAIMER.md ]] || fail "missing DISCLAIMER.md"
@@ -87,6 +87,10 @@ if git grep -nE 'taxmate-australiastralia|TaxMate Australiastralia|TAXMATE_AUSTR
   fail "malformed TaxMate Australia rename artifact leaked"
 fi
 
+if git grep -nE 'test -f \.codex-plugin/mcp\.json|test ! -f \.mcp\.json|mcp_servers' -- .github/workflows; then
+  fail "stale Codex MCP workflow assertion leaked"
+fi
+
 if git grep -nE '^name: (individual-return|employment-deductions|work-from-home|abn-business|gst-bas|payg-employer|capital-gains-tax|shares-etfs-managed-funds|crypto-assets|property-rental-cgt|superannuation|private-health-medicare|records-evidence|workbook|taxpack)$' -- skills wrappers; then
   fail "generic public skill frontmatter leaked"
 fi
@@ -106,7 +110,7 @@ const root = process.cwd();
 const plugin = JSON.parse(fs.readFileSync(".codex-plugin/plugin.json", "utf8"));
 const claudePlugin = JSON.parse(fs.readFileSync(".claude-plugin/plugin.json", "utf8"));
 const claudeMarketplace = JSON.parse(fs.readFileSync(".claude-plugin/marketplace.json", "utf8"));
-const mcp = JSON.parse(fs.readFileSync(".codex-plugin/mcp.json", "utf8"));
+const mcp = JSON.parse(fs.readFileSync(".mcp.json", "utf8"));
 const mcpServerText = fs.readFileSync("mcp/server.cjs", "utf8");
 const taxmateLauncherText = fs.readFileSync("scripts/taxmate.py", "utf8");
 const openAgentSkill = JSON.parse(fs.readFileSync("skill.json", "utf8"));
@@ -227,9 +231,8 @@ for (const name of publicSkills) {
   if (!publicSkillPaths[name]) fail(`public skill missing source path: ${name}`);
 }
 if (plugin.interface.websiteURL !== plugin.repository) fail("plugin website must point to repository");
-if (plugin.mcpServers !== "./.codex-plugin/mcp.json") fail("plugin must declare Codex MCP runtime manifest");
-if (mcp.mcpServers) fail("Codex MCP file must use documented mcp_servers wrapper, not mcpServers");
-const taxmateMcp = mcp.mcp_servers && mcp.mcp_servers.taxmateAustralia;
+if (plugin.mcpServers !== "./.mcp.json") fail("plugin must declare root Codex MCP runtime manifest");
+const taxmateMcp = mcp.mcpServers && mcp.mcpServers.taxmateAustralia;
 if (!taxmateMcp || taxmateMcp.command !== "node" || JSON.stringify(taxmateMcp.args) !== JSON.stringify(["./mcp/server.cjs", "--stdio"]) || taxmateMcp.cwd !== ".") {
   fail("TaxMate MCP server must run mcp/server.cjs from plugin root");
 }
