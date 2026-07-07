@@ -2269,6 +2269,9 @@ def check_plugin_mcp_contract(root: Path) -> List[Finding]:
     findings: List[Finding] = []
     if root.joinpath(".codex-plugin/mcp.json").exists():
         findings.append(Finding(PLUGIN_MCP_CONTRACT, "stale .codex-plugin/mcp.json must not be packaged; use root .mcp.json"))
+    ci = read_optional(root, ".github/workflows/ci.yml")
+    if "test -f .codex-plugin/mcp.json" in ci or "test ! -f .mcp.json" in ci or "mcp_servers" in ci:
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "CI plugin package check must require root .mcp.json and reject stale .codex-plugin/mcp.json"))
 
     try:
         codex_plugin = json.loads(read(root, ".codex-plugin/plugin.json"))

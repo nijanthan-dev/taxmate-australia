@@ -361,6 +361,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             root = Path(tmp)
             (root / ".codex-plugin").mkdir()
             (root / ".claude-plugin").mkdir()
+            (root / ".github" / "workflows").mkdir(parents=True)
             (root / "mcp").mkdir()
             (root / "scripts").mkdir()
             (root / ".codex-plugin" / "plugin.json").write_text(
@@ -400,11 +401,17 @@ class ReviewGuardrailTests(unittest.TestCase):
                 "root = Path.cwd()\nsubprocess.run([], cwd=str(root))\n",
                 encoding="utf-8",
             )
+            (root / ".github" / "workflows" / "ci.yml").write_text(
+                "      - run: test -f .codex-plugin/mcp.json\n"
+                "      - run: test ! -f .mcp.json\n",
+                encoding="utf-8",
+            )
 
             findings = taxmate_review_guardrails.check_plugin_mcp_contract(root)
 
         self.assertTrue(any("stale .codex-plugin/mcp.json" in finding.detail for finding in findings))
         self.assertTrue(any("root .mcp.json" in finding.detail for finding in findings))
+        self.assertTrue(any("CI plugin package check" in finding.detail for finding in findings))
         self.assertTrue(any("CLAUDE_PLUGIN_ROOT path" in finding.detail for finding in findings))
         self.assertTrue(any("[\"command\", \"cwd\"]" in finding.detail for finding in findings))
 

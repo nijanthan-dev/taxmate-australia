@@ -87,6 +87,10 @@ if git grep -nE 'taxmate-australiastralia|TaxMate Australiastralia|TAXMATE_AUSTR
   fail "malformed TaxMate Australia rename artifact leaked"
 fi
 
+if git grep -nE 'test -f \.codex-plugin/mcp\.json|test ! -f \.mcp\.json|mcp_servers' -- .github/workflows; then
+  fail "stale Codex MCP workflow assertion leaked"
+fi
+
 if git grep -nE '^name: (individual-return|employment-deductions|work-from-home|abn-business|gst-bas|payg-employer|capital-gains-tax|shares-etfs-managed-funds|crypto-assets|property-rental-cgt|superannuation|private-health-medicare|records-evidence|workbook|taxpack)$' -- skills wrappers; then
   fail "generic public skill frontmatter leaked"
 fi
