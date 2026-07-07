@@ -640,7 +640,9 @@ def codex_plugin_mcp_files_ready(root: str) -> bool:
     payload, err = read_json_file(os.path.join(root, ".codex-plugin", "mcp.json"))
     if err is not None:
         return False
-    servers = payload.get("mcpServers")
+    if "mcpServers" in payload:
+        return False
+    servers = payload.get("mcp_servers")
     if not isinstance(servers, dict):
         return False
     taxmate = servers.get("taxmateAustralia")

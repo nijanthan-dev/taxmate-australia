@@ -228,7 +228,8 @@ for (const name of publicSkills) {
 }
 if (plugin.interface.websiteURL !== plugin.repository) fail("plugin website must point to repository");
 if (plugin.mcpServers !== "./.codex-plugin/mcp.json") fail("plugin must declare Codex MCP runtime manifest");
-const taxmateMcp = mcp.mcpServers && mcp.mcpServers.taxmateAustralia;
+if (mcp.mcpServers) fail("Codex MCP file must use documented mcp_servers wrapper, not mcpServers");
+const taxmateMcp = mcp.mcp_servers && mcp.mcp_servers.taxmateAustralia;
 if (!taxmateMcp || taxmateMcp.command !== "node" || JSON.stringify(taxmateMcp.args) !== JSON.stringify(["./mcp/server.cjs", "--stdio"]) || taxmateMcp.cwd !== ".") {
   fail("TaxMate MCP server must run mcp/server.cjs from plugin root");
 }

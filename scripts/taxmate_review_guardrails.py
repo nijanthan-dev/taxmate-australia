@@ -92,7 +92,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "PR #107 MCP",
         OUTPUT_DOCS_CONTRACT,
-        "Keep host-specific MCP manifests separate, require explicit workspace cwd for user relative paths, keep plugin root only as TAXMATE_AUSTRALIA_ROOT, and do not restore root .mcp.json that Claude can auto-discover from a user project cwd.",
+        "Keep host-specific MCP manifests separate, keep Codex bundled .mcp.json files on the documented mcp_servers schema, require explicit workspace cwd for user relative paths, keep plugin root only as TAXMATE_AUSTRALIA_ROOT, and do not restore root .mcp.json that Claude can auto-discover from a user project cwd.",
     ),
     ReviewPattern(
         "PR #107 CI",
@@ -2276,7 +2276,10 @@ def check_plugin_mcp_contract(root: Path) -> List[Finding]:
         codex_mcp = json.loads(read(root, ".codex-plugin/mcp.json"))
     except json.JSONDecodeError as exc:
         return [Finding(PLUGIN_MCP_CONTRACT, f"invalid .codex-plugin/mcp.json: {exc}")]
-    codex_server = codex_mcp.get("mcpServers", {}).get("taxmateAustralia")
+    if "mcpServers" in codex_mcp:
+        findings.append(Finding(PLUGIN_MCP_CONTRACT, "Codex MCP file must use documented mcp_servers wrapper, not mcpServers"))
+    codex_servers = codex_mcp.get("mcp_servers")
+    codex_server = codex_servers.get("taxmateAustralia") if isinstance(codex_servers, dict) else None
     if not isinstance(codex_server, dict):
         findings.append(Finding(PLUGIN_MCP_CONTRACT, "Codex MCP manifest missing taxmateAustralia server"))
     elif codex_server.get("cwd") != "." or codex_server.get("args") != ["./mcp/server.cjs", "--stdio"]:
