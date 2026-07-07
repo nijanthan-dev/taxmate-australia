@@ -16,13 +16,9 @@ fail() {
 grep -q "catthehacker/ubuntu:act-22.04" .actrc || fail ".actrc must pin the local act image"
 grep -q "workflow_dispatch:" .github/workflows/ci.yml || fail "CI must stay manually runnable"
 grep -q "workflow_dispatch:" .github/workflows/hol-plugin-scanner.yml || fail "HOL scanner must stay manually runnable"
-
-if grep -Eq "^[[:space:]]*(pull_request|push):" .github/workflows/ci.yml; then
-  fail "CI automatic pull_request/push triggers are paused; use scripts/run-local-ci-act.sh"
-fi
-if grep -Eq "^[[:space:]]*(pull_request|push):" .github/workflows/hol-plugin-scanner.yml; then
-  fail "HOL scanner automatic pull_request/push triggers are paused"
-fi
+grep -Eq "^[[:space:]]*pull_request:" .github/workflows/ci.yml || fail "CI must retain pull_request trigger; disable the workflow in GitHub when pausing hosted spend"
+grep -Eq "^[[:space:]]*push:" .github/workflows/ci.yml || fail "CI must retain main push trigger for release workflow_run"
+grep -q "branches: \\[main\\]" .github/workflows/ci.yml || fail "CI push trigger must target main"
 
 grep -q "bash scripts/check-publication-ready.sh" .github/workflows/local-ci.yml || fail "local act workflow must run publication guardrails"
 grep -q "./scripts/taxmate review-guardrails" .github/workflows/local-ci.yml || fail "local act workflow must run review guardrails"

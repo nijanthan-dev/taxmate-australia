@@ -97,7 +97,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "PR #107 CI",
         LOCAL_CI_CONTRACT,
-        "Keep expensive GitHub CI and scanner workflows manual-only, run the local act workflow before push, and keep review/package invariants enforced by pre-commit and publication checks.",
+        "Keep CI automatic triggers in workflow YAML, pause hosted-runner spend by disabling GitHub workflows when needed, run the local act workflow before push, and keep review/package invariants enforced by pre-commit and publication checks.",
     ),
     ReviewPattern(
         "PR #22",
@@ -2323,8 +2323,13 @@ def check_plugin_mcp_contract(root: Path) -> List[Finding]:
     return findings
 
 
-def workflow_has_auto_ci_trigger(text: str) -> bool:
-    return any(re.match(r"^\s*(pull_request|push):\s*$", line) for line in text.splitlines())
+def workflow_has_required_ci_triggers(text: str) -> bool:
+    return (
+        "workflow_dispatch:" in text
+        and any(re.match(r"^\s*pull_request:\s*$", line) for line in text.splitlines())
+        and any(re.match(r"^\s*push:\s*$", line) for line in text.splitlines())
+        and "branches: [main]" in text
+    )
 
 
 def check_local_ci_contract(root: Path) -> List[Finding]:
@@ -2338,10 +2343,8 @@ def check_local_ci_contract(root: Path) -> List[Finding]:
     publication = read(root, "scripts/check-publication-ready.sh")
     development = read(root, "docs/DEVELOPMENT.md")
     findings: List[Finding] = []
-    if workflow_has_auto_ci_trigger(ci):
-        findings.append(Finding(LOCAL_CI_CONTRACT, "GitHub CI automatic PR/push triggers must stay paused"))
-    if workflow_has_auto_ci_trigger(scanner):
-        findings.append(Finding(LOCAL_CI_CONTRACT, "HOL scanner automatic PR/push triggers must stay paused"))
+    if not workflow_has_required_ci_triggers(ci):
+        findings.append(Finding(LOCAL_CI_CONTRACT, "GitHub CI must keep automatic pull_request and main push triggers"))
     findings.extend(
         fail_if_missing(
             LOCAL_CI_CONTRACT,
@@ -2362,7 +2365,8 @@ def check_local_ci_contract(root: Path) -> List[Finding]:
                 "bash scripts/test-mcp-server.sh",
                 "bash scripts/check-local-ci-ready.sh",
                 "taxmate-local-ci-ready",
-                "Automatic GitHub CI is paused",
+                "Automatic CI triggers stay in workflow YAML",
+                "disabled_manually",
             ],
         )
     )

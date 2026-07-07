@@ -237,17 +237,17 @@ Do not claim official plugin discovery unless a published listing has been verif
 
 ## Local CI
 
-Automatic GitHub CI is paused to avoid hosted-runner spend. Run the local act workflow before pushing:
+Automatic CI triggers stay in workflow YAML so PR checks and the main release `workflow_run` path still work. To pause hosted-runner spend, disable the CI workflow in GitHub, then run the local act workflow before pushing:
 
 ```bash
 scripts/run-local-ci-act.sh
 ```
 
-The local workflow runs bash+python runtime checks, generated-source checks, environment guardrails, plugin smokes, publication validation, and local Gitleaks when installed. The GitHub CI and HOL scanner workflows remain manual-only through `workflow_dispatch`.
+The local workflow runs bash+python runtime checks, generated-source checks, environment guardrails, plugin smokes, publication validation, and local Gitleaks when installed. When GitHub CI is `disabled_manually`, temporarily enable it only when branch protection needs fresh required statuses.
 
 ## Release
 
-- After a successful merge to `main`, run the Release workflow manually from `main` after local checks pass. It can also follow an explicitly dispatched main CI run.
+- After a successful merge to `main`, Release can follow a successful main CI `workflow_run`. If CI is disabled to avoid hosted-runner spend, temporarily enable and run CI for the merge commit, or run the Release workflow manually from `main` after local checks pass.
 - The workflow requires `RELEASE_PLEASE_TOKEN`, a repo secret whose token can create release pull requests and write contents/issues.
 - Versions are calculated from Conventional Commits:
   - `feat:` -> minor

@@ -2348,11 +2348,13 @@ def release_workflow_auto_after_ci(root: str) -> bool:
     )
 
 
-def github_workflow_has_no_auto_ci_triggers(text: str) -> bool:
-    for line in text.splitlines():
-        if re.match(r"^\s*(pull_request|push):\s*$", line):
-            return False
-    return "workflow_dispatch:" in text
+def github_ci_workflow_has_required_triggers(text: str) -> bool:
+    return (
+        "workflow_dispatch:" in text
+        and any(re.match(r"^\s*pull_request:\s*$", line) for line in text.splitlines())
+        and any(re.match(r"^\s*push:\s*$", line) for line in text.splitlines())
+        and "branches: [main]" in text
+    )
 
 
 def local_act_ci_ready(root: str) -> bool:
@@ -2381,9 +2383,11 @@ def local_act_ci_ready(root: str) -> bool:
         and "docker info" in run_script
         and "gitleaks dir . --redact --no-banner" in run_script
         and "gitleaks detect --source . --redact --no-banner" in run_script
-        and "pull_request|push" in check_script
-        and github_workflow_has_no_auto_ci_triggers(ci)
-        and github_workflow_has_no_auto_ci_triggers(scanner)
+        and "CI must retain pull_request trigger" in check_script
+        and "CI must retain main push trigger" in check_script
+        and "disable the workflow in GitHub when pausing hosted spend" in check_script
+        and github_ci_workflow_has_required_triggers(ci)
+        and "workflow_dispatch:" in scanner
         and all(step in local_ci for step in required_local_steps)
     )
 

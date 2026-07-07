@@ -405,17 +405,17 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("CLAUDE_PLUGIN_ROOT path" in finding.detail for finding in findings))
         self.assertTrue(any("[\"command\", \"cwd\"]" in finding.detail for finding in findings))
 
-    def test_local_ci_contract_rejects_auto_ci_triggers(self) -> None:
+    def test_local_ci_contract_requires_auto_ci_triggers(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / ".github" / "workflows").mkdir(parents=True)
             (root / "scripts").mkdir()
             (root / ".github" / "workflows" / "ci.yml").write_text(
-                "on:\n  pull_request:\n  workflow_dispatch:\n",
+                "on:\n  workflow_dispatch:\n",
                 encoding="utf-8",
             )
             (root / ".github" / "workflows" / "hol-plugin-scanner.yml").write_text(
-                "on:\n  push:\n  workflow_dispatch:\n",
+                "on:\n  workflow_dispatch:\n",
                 encoding="utf-8",
             )
             (root / ".github" / "workflows" / "local-ci.yml").write_text(
@@ -434,7 +434,9 @@ class ReviewGuardrailTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (root / "scripts" / "check-local-ci-ready.sh").write_text(
-                "pull_request|push\n",
+                "CI must retain pull_request trigger\n"
+                "CI must retain main push trigger\n"
+                "disable the workflow in GitHub when pausing hosted spend\n",
                 encoding="utf-8",
             )
             (root / ".pre-commit-config.yaml").write_text(
@@ -447,13 +449,13 @@ class ReviewGuardrailTests(unittest.TestCase):
             )
             (root / "docs").mkdir()
             (root / "docs" / "DEVELOPMENT.md").write_text(
-                "Automatic GitHub CI is paused\n",
+                "Automatic CI triggers stay in workflow YAML\ndisabled_manually\n",
                 encoding="utf-8",
             )
 
             findings = taxmate_review_guardrails.check_local_ci_contract(root)
 
-        self.assertTrue(any("automatic PR/push triggers" in finding.detail for finding in findings))
+        self.assertTrue(any("automatic pull_request and main push triggers" in finding.detail for finding in findings))
 
     def test_review_guardrails_detect_wfh_parser_fallbacks(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -11795,7 +11797,7 @@ class ValidatorAndCliTests(unittest.TestCase):
     def test_local_act_ci_ready(self) -> None:
         self.assertTrue(taxmate_validate.local_act_ci_ready(str(ROOT)))
 
-    def test_local_act_ci_rejects_auto_trigger(self) -> None:
+    def test_local_act_ci_requires_auto_ci_trigger(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
             for rel in [
@@ -11810,7 +11812,7 @@ class ValidatorAndCliTests(unittest.TestCase):
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_text((ROOT / rel).read_text(encoding="utf-8"), encoding="utf-8")
             ci = tmp_root / ".github" / "workflows" / "ci.yml"
-            ci.write_text(ci.read_text(encoding="utf-8").replace("  workflow_dispatch:", "  pull_request:\n  workflow_dispatch:"), encoding="utf-8")
+            ci.write_text("on:\n  workflow_dispatch:\n", encoding="utf-8")
 
             self.assertFalse(taxmate_validate.local_act_ci_ready(tmp))
 
