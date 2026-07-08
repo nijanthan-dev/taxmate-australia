@@ -15415,6 +15415,56 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
                 self.assertIn("blocked: WFH fixed-rate covers phone/data", plan["answer"])
                 self.assertIn("blocked: WFH fixed-rate covers phone/data", incidental["answer"])
 
+    def test_nested_wfh_fixed_rate_method_blocks_phone_plan(self) -> None:
+        cases = (
+            ("wfh", "method"),
+            ("wfh", "wfh_method"),
+            ("wfh", "work_from_home_method"),
+            ("wfh", "claim_method"),
+            ("wfh", "deduction_method"),
+            ("wfh", "calculation_method"),
+            ("wfh_work_pattern", "method"),
+            ("wfh_work_pattern", "wfh_method"),
+            ("wfh_work_pattern", "work_from_home_method"),
+            ("wfh_work_pattern", "claim_method"),
+            ("wfh_work_pattern", "deduction_method"),
+            ("wfh_work_pattern", "calculation_method"),
+        )
+        for nested_key, method_key in cases:
+            with self.subTest(nested_key=nested_key, method_key=method_key):
+                answers = self.phone_payload()
+                answers[nested_key] = {method_key: "fixed-rate method"}
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+                incidental = next(item for item in payload["items"] if item["number"] == "PHONE-INC")
+
+                self.assertIn("blocked: WFH fixed-rate covers phone/data", plan["answer"])
+                self.assertIn("blocked: WFH fixed-rate covers phone/data", incidental["answer"])
+
+    def test_phone_nested_wfh_method_blocks_phone_plan(self) -> None:
+        cases = (
+            {"wfh": {"method": "fixed-rate method"}},
+            {"work_from_home": {"method": "fixed-rate method"}},
+            {"work_from_home_method": "fixed-rate method"},
+            {"claim_method": "fixed-rate method"},
+            {"deduction_method": "fixed-rate method"},
+            {"calculation_method": "fixed-rate method"},
+        )
+        for update in cases:
+            with self.subTest(update=update):
+                payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(**update))
+                plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+
+                self.assertIn("blocked: WFH fixed-rate covers phone/data", plan["answer"])
+
+    def test_conflicting_phone_and_global_wfh_methods_block_phone_plan(self) -> None:
+        answers = self.phone_payload(wfh_method="actual-cost")
+        answers["wfh"] = {"method": "fixed-rate method"}
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+
+        self.assertIn("blocked: WFH fixed-rate covers phone/data", plan["answer"])
+
     def test_wfh_70_cents_method_wording_blocks_phone_plan(self) -> None:
         for method in ("70 cents per hour", "70c method", "70 c method", "70 c/hour method"):
             with self.subTest(method=method):
@@ -15489,6 +15539,23 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
         plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
 
         self.assertNotIn("blocked: WFH fixed-rate covers phone/data", plan["answer"])
+
+    def test_nested_wfh_negative_fixed_rate_wording_does_not_block_phone(self) -> None:
+        cases = (
+            ("wfh", {"method": "actual cost rather than fixed rate"}),
+            ("wfh_work_pattern", {"method": "fixed rate: no"}),
+            ("phone", {"wfh": {"method": "not using fixed-rate method"}}),
+            ("phone", {"work_from_home_method": "actual cost rather than fixed rate"}),
+        )
+        for location, update in cases:
+            with self.subTest(location=location, update=update):
+                answers = self.phone_payload(**update) if location == "phone" else self.phone_payload()
+                if location != "phone":
+                    answers[location] = update
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+
+                self.assertNotIn("blocked: WFH fixed-rate covers phone/data", plan["answer"])
 
     def test_employer_reimbursed_phone_bill_is_not_candidate(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(employer_reimbursed=True))
@@ -15762,10 +15829,21 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
         self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["evidence_items"]))
 
     def test_global_wfh_method_without_phone_input_does_not_create_phone_rows(self) -> None:
-        payload = taxmate_intake.answers_to_pack_payload({"wfh_method": "fixed-rate method"})
+        cases = (
+            {"wfh_method": "fixed-rate method"},
+            {"wfh": {"method": "fixed-rate method"}},
+            {"wfh": {"wfh_method": "fixed-rate method"}},
+            {"wfh_work_pattern": {"method": "fixed-rate method"}},
+            {"phone": {"wfh": {"method": "fixed-rate method"}}},
+            {"phone": {"work_from_home": {"method": "fixed-rate method"}}},
+            {"phone": {"work_from_home_method": "fixed-rate method"}},
+        )
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
 
-        self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["items"]))
-        self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["evidence_items"]))
+                self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["items"]))
+                self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["evidence_items"]))
 
     def test_phone_metadata_only_without_cost_or_usage_does_not_create_phone_rows(self) -> None:
         cases = [

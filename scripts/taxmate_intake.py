@@ -3273,8 +3273,34 @@ PHONE_FIELD_ALIASES = {
     "employer_provided": ("phone_employer_provided", "employer_provided_phone"),
     "gst_registered": ("phone_gst_registered", "phone_gst_registration_status"),
     "gst_registration_date": ("phone_gst_registration_date",),
-    "wfh_method": ("phone_wfh_method", "wfh_method"),
+    "wfh_method": (
+        "phone_wfh_method",
+        "wfh_method",
+        "work_from_home_method",
+        "claim_method",
+        "deduction_method",
+        "calculation_method",
+    ),
 }
+PHONE_LOCAL_WFH_NESTED_KEYS = ("wfh", "work_from_home", "work_from_home_pattern")
+PHONE_WFH_NESTED_KEYS = ("wfh", "wfh_work_pattern")
+PHONE_WFH_METHOD_ALIASES = (
+    "method",
+    "wfh_method",
+    "work_from_home_method",
+    "claim_method",
+    "deduction_method",
+    "calculation_method",
+    "method_preference",
+)
+PHONE_WFH_METHOD_METADATA_KEYS = (
+    "method",
+    "wfh_method",
+    "work_from_home_method",
+    "claim_method",
+    "deduction_method",
+    "calculation_method",
+)
 PHONE_GST_STATUS_KEYS = (
     "gst_registered",
     "gst_registration_status",
@@ -3315,6 +3341,8 @@ PHONE_METADATA_KEYS = {
     "employer_reimbursed",
     "employer_paid",
     "employer_provided",
+    *PHONE_LOCAL_WFH_NESTED_KEYS,
+    *PHONE_WFH_METHOD_METADATA_KEYS,
     *PHONE_GST_STATUS_KEYS,
     *PHONE_GST_DATE_KEYS,
     "wfh_method",
@@ -3379,6 +3407,13 @@ def phone_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
         value = first_alias_value(answers, aliases)
         if value is not None:
             raw[target] = value
+    wfh_method = phone_preferred_wfh_method(
+        raw.get("wfh_method"),
+        phone_local_wfh_method(raw),
+        phone_nested_wfh_method(answers),
+    )
+    if wfh_method is not None:
+        raw["wfh_method"] = wfh_method
     raw["device"] = phone_child_answers(raw.get("device"), raw, answers, PHONE_DEVICE_ALIASES, PHONE_DEVICE_SIGNAL_KEYS)
     raw["plan"] = phone_child_answers(raw.get("plan"), raw, answers, PHONE_PLAN_ALIASES, PHONE_PLAN_SIGNAL_KEYS)
     raw["incidental"] = phone_child_answers(raw.get("incidental"), raw, answers, PHONE_INCIDENTAL_ALIASES, PHONE_INCIDENTAL_SIGNAL_KEYS)
@@ -3387,6 +3422,43 @@ def phone_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     if is_missing(raw.get("context")) and (has_abn_inputs(answers) or has_bas_inputs(answers)):
         raw["context"] = "employee" if phone_context_is_employee(display_value(raw.get("freeform"))) else "abn"
     return raw
+
+
+def phone_preferred_wfh_method(*values: Any) -> Any:
+    candidates = [value for value in values if value is not None and not is_missing(value)]
+    for value in candidates:
+        if phone_wfh_fixed_rate_value(value):
+            return value
+    return candidates[0] if candidates else None
+
+
+def phone_local_wfh_method(raw: Dict[str, Any]) -> Any:
+    values = [
+        raw.get(alias)
+        for alias in PHONE_WFH_METHOD_ALIASES
+        if alias in raw and not is_missing(raw.get(alias))
+    ]
+    for key in PHONE_LOCAL_WFH_NESTED_KEYS:
+        nested = raw.get(key)
+        if not isinstance(nested, dict):
+            continue
+        values.extend(
+            nested.get(alias)
+            for alias in PHONE_WFH_METHOD_ALIASES
+            if alias in nested and not is_missing(nested.get(alias))
+        )
+    return phone_preferred_wfh_method(*values)
+
+
+def phone_nested_wfh_method(answers: Dict[str, Any]) -> Any:
+    for key in PHONE_WFH_NESTED_KEYS:
+        raw = answers.get(key)
+        if not isinstance(raw, dict):
+            continue
+        value = first_alias_value(raw, PHONE_WFH_METHOD_ALIASES)
+        if value is not None:
+            return value
+    return None
 
 
 def phone_normalized_nested_raw(raw: Dict[str, Any]) -> Dict[str, Any]:
@@ -3798,7 +3870,11 @@ def phone_bool(value: Any) -> Optional[bool]:
 
 
 def phone_wfh_fixed_rate(raw: Dict[str, Any]) -> bool:
-    method = display_value(raw.get("wfh_method")).strip().lower()
+    return phone_wfh_fixed_rate_value(raw.get("wfh_method"))
+
+
+def phone_wfh_fixed_rate_value(value: Any) -> bool:
+    method = display_value(value).strip().lower()
     normalized = re.sub(r"[^a-z0-9]+", " ", method.replace("_", " ").replace("-", " ")).strip()
     if "?" in method:
         return False
