@@ -3211,11 +3211,15 @@ def parse_gst_registration(value: Any) -> Optional[bool]:
     if contains_unknown(value):
         return None
     canonical = re.sub(r"[^a-z0-9]+", " ", text(value).strip().lower()).strip()
+    negation = r"(not|no|without|isn\s+t|isnt|is\s+not)"
     negative_registration = canonical in {"no", "n", "false", "not registered", "not gst registered"} or re.search(
-        r"\b(not|no|without)\b(?:\s+\w+){0,3}\s+gst\b(?:\s+\w+){0,3}\s+registered\b",
+        rf"\b{negation}\b(?:\s+\w+){{0,3}}\s+gst\b(?:\s+\w+){{0,3}}\s+registered\b",
         canonical,
     ) or re.search(
-        r"\b(not|no|without)\b(?:\s+\w+){0,3}\s+registered\b(?:\s+\w+){0,3}\s+gst\b",
+        rf"\b{negation}\b(?:\s+\w+){{0,3}}\s+registered\b(?:\s+\w+){{0,3}}\s+gst\b",
+        canonical,
+    ) or re.search(
+        rf"\bgst\b(?:\s+\w+){{0,3}}\s+{negation}\b(?:\s+\w+){{0,3}}\s+registered\b",
         canonical,
     )
     if negative_registration:
@@ -3659,9 +3663,10 @@ def phone_context_is_abn(value: str) -> bool:
 
 
 def phone_context_has_negated_abn(normalized: str) -> bool:
+    business_context = r"(abn|business|sole\s+trader)"
     return bool(
-        re.search(r"\b(not|no|without)\b\s+(a\s+|an\s+)?\b(abn|business)\b", normalized)
-        or re.search(r"\bnon\s+(abn|business)\b", normalized)
+        re.search(rf"\b(not|no|without)\b\s+(a\s+|an\s+)?\b{business_context}\b", normalized)
+        or re.search(rf"\bnon\s+{business_context}\b", normalized)
     )
 
 

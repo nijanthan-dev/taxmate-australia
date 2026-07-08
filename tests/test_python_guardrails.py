@@ -15631,7 +15631,14 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
                 self.assertTrue(any("GST tax invoice" in item["answer"] for item in payload["evidence_items"]))
 
     def test_negative_abn_phone_context_stays_employee_review(self) -> None:
-        for context in ("employee, not ABN", "employee not an ABN", "without an ABN", "not a business"):
+        for context in (
+            "employee, not ABN",
+            "employee not an ABN",
+            "without an ABN",
+            "not a business",
+            "employee not sole trader",
+            "not a sole trader",
+        ):
             with self.subTest(context=context):
                 payload = taxmate_intake.answers_to_pack_payload(
                     self.phone_payload(context=context, gst_registered=True)
@@ -15893,8 +15900,10 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
         cases = (
             ("gst_registration_status", "no"),
             ("gst_registration_status", "not registered for GST"),
+            ("gst_registration_status", "GST isn't registered"),
             ("registered", False),
             ("registered", "not GST registered"),
+            ("registered", "GST not registered"),
         )
         for field, value in cases:
             with self.subTest(field=field):
