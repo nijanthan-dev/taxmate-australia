@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.18.1...v0.19.0) (2026-07-08)
+
+
+### Features
+
+* add deduction offset prep ([1beb455](https://github.com/nijanthan-dev/taxmate-australia/commit/1beb455d59e0f80f24533969a64e98c91690ef81))
+
 ## [0.18.1](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.18.0...v0.18.1) (2026-07-08)
 
 
