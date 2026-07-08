@@ -3259,6 +3259,12 @@ PHONE_METADATA_KEYS = {
     "employer_reimbursed",
     "employer_paid",
     "employer_provided",
+    "gst_registered",
+    "gst_registration_date",
+    "gst_registration_status",
+    "registered",
+    "registered_from",
+    "registration_date",
     "wfh_method",
 }
 PHONE_OPT_OUT_KEYS = {
@@ -3364,7 +3370,7 @@ def phone_nested_answers(raw: Any, answers: Dict[str, Any], aliases: Dict[str, t
     result = dict(raw) if isinstance(raw, dict) else {}
     for target, keys in aliases.items():
         value = first_alias_value(answers, keys)
-        if value is not None:
+        if value is not None and (target not in result or is_missing(result.get(target))):
             result[target] = value
     return result
 
@@ -3423,8 +3429,8 @@ def phone_plan_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[s
     plan = raw.get("plan") if isinstance(raw.get("plan"), dict) else {}
     if not has_meaningful_value(plan):
         return []
-    monthly = safe_money_value(plan.get("monthly_cost"))
-    months = safe_money_value(plan.get("months_claimed"))
+    monthly = phone_nonnegative_money_value(plan.get("monthly_cost"))
+    months = phone_months_claimed_value(plan.get("months_claimed"))
     work_use = phone_percent_value(plan.get("work_use_percent"))
     candidate = None if monthly is None or months is None or work_use is None else round(monthly * months * work_use / 100, 2)
     itemised = phone_bool(plan.get("itemised_bill"))
@@ -3463,7 +3469,7 @@ def phone_device_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict
     device = raw.get("device") if isinstance(raw.get("device"), dict) else {}
     if not has_meaningful_value(device):
         return []
-    cost = safe_money_value(device.get("cost"))
+    cost = phone_nonnegative_money_value(device.get("cost"))
     work_use = phone_percent_value(device.get("work_use_percent"))
     work_amount = None if cost is None or work_use is None else round(cost * work_use / 100, 2)
     blocked = phone_device_blocked(raw)
@@ -3503,7 +3509,7 @@ def phone_device_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict
         )
     ]
     if "insurance_amount" in device:
-        insurance = safe_money_value(device.get("insurance_amount"))
+        insurance = phone_nonnegative_money_value(device.get("insurance_amount"))
         insurance_work = None if insurance is None or work_use is None else round(insurance * work_use / 100, 2)
         insurance_status = "Evidence" if insurance is None or evidence_missing(device.get("receipt")) else "Accountant review"
         insurance_answer = f"insurance {money_text(insurance)}; work use {percent_text(work_use)}; work portion {money_text(insurance_work)}; evidence {display_value(device.get('receipt'))}"
@@ -3531,9 +3537,9 @@ def phone_incidental_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[
     incidental = raw.get("incidental") if isinstance(raw.get("incidental"), dict) else {}
     if not has_meaningful_value(incidental):
         return []
-    supplied = safe_money_value(incidental.get("claim_amount"))
-    raw_calls = safe_money_value(incidental.get("work_calls"))
-    raw_texts = safe_money_value(incidental.get("work_texts"))
+    supplied = phone_nonnegative_money_value(incidental.get("claim_amount"))
+    raw_calls = phone_nonnegative_money_value(incidental.get("work_calls"))
+    raw_texts = phone_nonnegative_money_value(incidental.get("work_texts"))
     missing_usage = supplied is None and (raw_calls is None or raw_texts is None)
     calculated = None if missing_usage else round((raw_calls or 0) * 0.75 + (raw_texts or 0) * 0.10, 2)
     amount = supplied if supplied is not None else calculated
@@ -3588,8 +3594,11 @@ def phone_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Di
         rows.append(phone_evidence_row(len(rows) + 1, "Incidental phone basic records", raw, answers))
     if (
         has_meaningful_value(incidental)
-        and safe_money_value(incidental.get("claim_amount")) is None
-        and (safe_money_value(incidental.get("work_calls")) is None or safe_money_value(incidental.get("work_texts")) is None)
+        and phone_nonnegative_money_value(incidental.get("claim_amount")) is None
+        and (
+            phone_nonnegative_money_value(incidental.get("work_calls")) is None
+            or phone_nonnegative_money_value(incidental.get("work_texts")) is None
+        )
     ):
         rows.append(phone_evidence_row(len(rows) + 1, "Incidental phone call/text counts or supplied claim amount", raw, answers))
     if has_meaningful_value(raw.get("freeform")):
@@ -3813,7 +3822,10 @@ def phone_device_blocked(raw: Dict[str, Any]) -> List[str]:
 
 def phone_plan_evidence_gap(plan: Dict[str, Any]) -> bool:
     itemised = phone_bool(plan.get("itemised_bill"))
-    if safe_money_value(plan.get("monthly_cost")) is None or safe_money_value(plan.get("months_claimed")) is None:
+    if (
+        phone_nonnegative_money_value(plan.get("monthly_cost")) is None
+        or phone_months_claimed_value(plan.get("months_claimed")) is None
+    ):
         return True
     if phone_percent_value(plan.get("work_use_percent")) is None:
         return True
@@ -3825,7 +3837,11 @@ def phone_plan_evidence_gap(plan: Dict[str, Any]) -> bool:
 
 
 def phone_device_evidence_gap(device: Dict[str, Any]) -> bool:
-    return safe_money_value(device.get("cost")) is None or phone_percent_value(device.get("work_use_percent")) is None or evidence_missing(device.get("receipt"))
+    return (
+        phone_nonnegative_money_value(device.get("cost")) is None
+        or phone_percent_value(device.get("work_use_percent")) is None
+        or evidence_missing(device.get("receipt"))
+    )
 
 
 def phone_under_300_candidate(device: Dict[str, Any], cost: Optional[float], work_use: Optional[float]) -> bool:
@@ -3847,6 +3863,20 @@ def phone_percent_value(value: Any) -> Optional[float]:
     if parsed is None:
         parsed = safe_money_value(value)
     if parsed is None or parsed < 0 or parsed > 100:
+        return None
+    return parsed
+
+
+def phone_nonnegative_money_value(value: Any) -> Optional[float]:
+    parsed = safe_money_value(value)
+    if parsed is None or parsed < 0:
+        return None
+    return parsed
+
+
+def phone_months_claimed_value(value: Any) -> Optional[float]:
+    parsed = phone_nonnegative_money_value(value)
+    if parsed is None or parsed > 12:
         return None
     return parsed
 

@@ -15570,6 +15570,29 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
         self.assertIn("work calls unknown; work texts 5.00", incidental["answer"])
         self.assertTrue(any("call/text counts" in item["answer"] for item in payload["evidence_items"]))
 
+    def test_negative_phone_amounts_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(
+                plan={
+                    "monthly_cost": -50,
+                    "months_claimed": 10,
+                    "work_use_percent": 50,
+                    "bills": "held",
+                    "log": "held",
+                },
+                device={"description": "Phone", "cost": -100, "work_use_percent": 60, "receipt": "held"},
+                incidental={"work_calls": -1, "work_texts": 5, "basic_records": "held"},
+            )
+        )
+        by_number = {item["number"]: item for item in payload["items"]}
+
+        self.assertEqual("Evidence", by_number["PHONE-PLAN"]["status"])
+        self.assertIn("monthly unknown", by_number["PHONE-PLAN"]["answer"])
+        self.assertEqual("Evidence", by_number["PHONE-DEVICE"]["status"])
+        self.assertIn("cost unknown", by_number["PHONE-DEVICE"]["answer"])
+        self.assertEqual("Evidence", by_number["PHONE-INC"]["status"])
+        self.assertIn("work calls unknown; work texts 5.00", by_number["PHONE-INC"]["answer"])
+
     def test_incidental_over_50_stays_evidence(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             self.phone_payload(incidental={"claim_amount": 75, "basic_records": "held"})
@@ -15637,6 +15660,10 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
             {"phone_context": "employee"},
             {"phone_paid_by_user": True},
             {"phone": {"context": "abn", "paid_by_user": True, "wfh_method": "fixed-rate"}},
+            {"phone": {"context": "abn", "gst_registered": True}},
+            {"phone": {"gst_registered": True}},
+            {"phone": {"gst_registration_status": "yes", "gst_registration_date": "2025-07-01"}},
+            {"phone": {"registered": True, "registered_from": "2025-07-01"}},
         ]
         for answers in cases:
             with self.subTest(answers=answers):
@@ -15753,6 +15780,42 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
         self.assertIn("cost 1100.00", by_number["PHONE-DEVICE"]["answer"])
         self.assertIn("work calls 3.00; work texts 2.00", by_number["PHONE-INC"]["answer"])
 
+    def test_nested_phone_child_values_override_generic_aliases(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "phone": {
+                    "context": "employee",
+                    "paid_by_user": True,
+                    "employer_reimbursed": False,
+                    "wfh_method": "actual-cost",
+                    "work_use_percent": 10,
+                    "plan": {
+                        "monthly_cost": 50,
+                        "months_claimed": 10,
+                        "work_use_percent": 40,
+                        "itemised_bill": True,
+                        "representative_period_start": "2025-08-01",
+                        "representative_period_end": "2025-08-28",
+                        "bills": "held",
+                        "log": "held",
+                    },
+                    "device": {
+                        "description": "Phone",
+                        "cost": 1000,
+                        "purchase_date": "2025-07-01",
+                        "work_use_percent": 60,
+                        "receipt": "held",
+                    },
+                }
+            }
+        )
+        by_number = {item["number"]: item for item in payload["items"]}
+
+        self.assertIn("work use 40%;", by_number["PHONE-PLAN"]["answer"])
+        self.assertIn("candidate 200.00", by_number["PHONE-PLAN"]["answer"])
+        self.assertIn("work use 60%;", by_number["PHONE-DEVICE"]["answer"])
+        self.assertIn("work-use amount 600.00", by_number["PHONE-DEVICE"]["answer"])
+
     def test_nested_phone_direct_plan_fields_do_not_create_device_row_from_work_use_only(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {"phone": {"monthly_cost": 65, "months_claimed": 11, "work_use_percent": 20, "bills": "held", "log": "held"}}
@@ -15853,6 +15916,26 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
         plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
 
         self.assertIn("candidate 20.00", plan["answer"])
+
+    def test_phone_plan_invalid_month_ranges_stay_evidence(self) -> None:
+        for months in (-1, 24):
+            with self.subTest(months=months):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    self.phone_payload(
+                        plan={
+                            "monthly_cost": 50,
+                            "months_claimed": months,
+                            "work_use_percent": 50,
+                            "bills": "held",
+                            "log": "held",
+                        }
+                    )
+                )
+                plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+
+                self.assertEqual("Evidence", plan["status"])
+                self.assertIn("months unknown", plan["answer"])
+                self.assertIn("candidate unknown", plan["answer"])
 
 
 if __name__ == "__main__":
