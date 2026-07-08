@@ -329,6 +329,7 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("parse_gst_registration" in finding.detail for finding in findings))
         self.assertTrue(any("PHONE_EMPLOYER_MARKER_GROUPS" in finding.detail for finding in findings))
         self.assertTrue(any("phone_gst_registration_unknown" in finding.detail for finding in findings))
+        self.assertTrue(any("phone_freeform_mixed_use" in finding.detail for finding in findings))
         self.assertTrue(any("confirmed" in finding.detail for finding in findings))
         self.assertTrue(any("2025-09-26" in finding.detail for finding in findings))
         self.assertTrue(any("2026-06-08" in finding.detail for finding in findings))
@@ -16091,6 +16092,21 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
                 overview = next(item for item in payload["items"] if item["number"] == "PHONE")
 
                 self.assertEqual("Accountant review", overview["status"])
+                self.assertTrue(any("free-form phone fact" in item["answer"] for item in payload["evidence_items"]))
+
+    def test_mixed_use_free_form_phone_facts_stay_under_review(self) -> None:
+        for value in (
+            "phone not used exclusively for work",
+            "phone not used only for work",
+            "mobile partly private use",
+            "mixed-use phone plan",
+        ):
+            with self.subTest(value=value):
+                payload = taxmate_intake.answers_to_pack_payload({"phone": value})
+                overview = next(item for item in payload["items"] if item["number"] == "PHONE")
+
+                self.assertEqual("Accountant review", overview["status"])
+                self.assertIn(f"free-form facts {value}", overview["answer"])
                 self.assertTrue(any("free-form phone fact" in item["answer"] for item in payload["evidence_items"]))
 
     def test_free_form_employee_not_abn_context_not_overridden_by_abn_bas(self) -> None:

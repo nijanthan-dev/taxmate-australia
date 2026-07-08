@@ -141,7 +141,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issues #111/#112 phone intake",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Phone intake must apply negation before positive GST and employer-marker matches, group same-concept paid/reimbursed/provided markers, preserve unknown nested phone fields as visible free-form Evidence, request GST-status evidence for missing or unknown ABN phone GST facts, and avoid blank phone rows from metadata-only inputs.",
+        "Phone intake must apply negation before positive GST and employer-marker matches, group same-concept paid/reimbursed/provided markers, preserve mixed-use and unknown nested phone fields as visible free-form Evidence, request GST-status evidence for missing or unknown ABN phone GST facts, and avoid blank phone rows from metadata-only inputs.",
     ),
     ReviewPattern(
         "PR #55 ESS intake",
@@ -457,6 +457,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "PHONE_NESTED_ALIAS_GROUPS = (",
                 "def phone_normalized_nested_raw(",
                 "def phone_nested_known_field(",
+                "def phone_freeform_mixed_use(",
                 "def phone_text_has_affirmed_marker(",
                 "def phone_marker_match_negated(",
                 "def phone_gst_registration_unknown(",

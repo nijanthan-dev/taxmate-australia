@@ -3861,6 +3861,8 @@ def phone_freeform_absent(value: Any) -> bool:
     normalized = re.sub(r"[^a-z0-9]+", " ", lowered).strip()
     if re.search(r"\b(not sure|unsure|uncertain|whether|can i|could i|no idea|unknown|question)\b", normalized):
         return False
+    if phone_freeform_mixed_use(normalized):
+        return False
     subject = r"(phone|mobile|internet|device|handset)"
     claim_word = r"(claim|claimed|claiming|deduction|expense|expenses|cost|costs)"
     no_word = r"no(?!\s+idea)"
@@ -3879,6 +3881,20 @@ def phone_freeform_absent(value: Any) -> bool:
     if any(re.search(pattern, normalized) for pattern in opt_out_patterns):
         return True
     return False
+
+
+def phone_freeform_mixed_use(normalized: str) -> bool:
+    subject = r"(phone|mobile|internet|device|handset)"
+    work_context = r"(work|business|employment|job)"
+    exclusive = r"(only|exclusively|solely|wholly|100)"
+    return bool(
+        re.search(r"\bmixed\s+use\b|\bmixed\s+business\s+and\s+private\b", normalized)
+        or re.search(r"\b(private|personal)\s+use\b", normalized)
+        or re.search(r"\b(partly|partially)\s+(private|personal|work|business)\b", normalized)
+        or re.search(rf"\b{subject}\b.*\bnot\b.*\bused\b.*\b{exclusive}\b.*\b{work_context}\b", normalized)
+        or re.search(rf"\b{subject}\b.*\bnot\b.*\b{exclusive}\b.*\b{work_context}\b", normalized)
+        or re.search(rf"\bnot\b.*\b{exclusive}\b.*\b{work_context}\b.*\b{subject}\b", normalized)
+    )
 
 
 def phone_gst_registered(raw: Dict[str, Any], answers: Dict[str, Any]) -> bool:
