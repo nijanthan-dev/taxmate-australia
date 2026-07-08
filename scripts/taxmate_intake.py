@@ -3212,24 +3212,26 @@ def parse_gst_registration(value: Any) -> Optional[bool]:
         return None
     canonical = re.sub(r"[^a-z0-9]+", " ", text(value).strip().lower()).strip()
     negation = r"(not|no|without|isn\s+t|isnt|is\s+not)"
-    negative_registration = canonical in {"no", "n", "false", "not registered", "not gst registered"} or re.search(
+    negative_patterns = (
         rf"\b{negation}\b(?:\s+\w+){{0,3}}\s+gst\b(?:\s+\w+){{0,3}}\s+registered\b",
-        canonical,
-    ) or re.search(
         rf"\b{negation}\b(?:\s+\w+){{0,3}}\s+registered\b(?:\s+\w+){{0,3}}\s+gst\b",
-        canonical,
-    ) or re.search(
         rf"\bgst\b(?:\s+\w+){{0,3}}\s+{negation}\b(?:\s+\w+){{0,3}}\s+registered\b",
-        canonical,
+        r"\b(no|false)\b(?:\s+\w+){0,3}\s+gst\b",
+        r"\bgst\b(?:\s+\w+){0,3}\s+(no|false)\b",
+    )
+    negative_registration = canonical in {"no", "n", "false", "not registered", "not gst registered"} or any(
+        re.search(pattern, canonical) for pattern in negative_patterns
     )
     if negative_registration:
         return False
-    positive_registration = canonical in {"yes", "y", "true", "registered", "gst registered"} or re.search(
+    positive_patterns = (
         r"\bgst\b(?:\s+\w+){0,3}\s+registered\b",
-        canonical,
-    ) or re.search(
         r"\bregistered\b(?:\s+\w+){0,3}\s+gst\b",
-        canonical,
+        r"\b(yes|true)\b(?:\s+\w+){0,3}\s+gst\b",
+        r"\bgst\b(?:\s+\w+){0,3}\s+(yes|true)\b",
+    )
+    positive_registration = canonical in {"yes", "y", "true", "registered", "gst registered"} or any(
+        re.search(pattern, canonical) for pattern in positive_patterns
     )
     if positive_registration:
         return True
@@ -3269,10 +3271,44 @@ PHONE_FIELD_ALIASES = {
     "employer_reimbursed": ("phone_employer_reimbursed", "phone_reimbursed"),
     "employer_paid": ("phone_employer_paid",),
     "employer_provided": ("phone_employer_provided", "employer_provided_phone"),
+    "gst_registered": ("phone_gst_registered", "phone_gst_registration_status"),
+    "gst_registration_date": ("phone_gst_registration_date",),
     "wfh_method": ("phone_wfh_method", "wfh_method"),
 }
-PHONE_GST_STATUS_KEYS = ("gst_registered", "gst_registration_status", "registered")
-PHONE_GST_DATE_KEYS = ("gst_registration_date", "registered_from", "registration_date")
+PHONE_GST_STATUS_KEYS = (
+    "gst_registered",
+    "gst_registration_status",
+    "registered",
+    "phone_gst_registered",
+    "phone_gst_registration_status",
+)
+PHONE_GST_DATE_KEYS = (
+    "gst_registration_date",
+    "registered_from",
+    "registration_date",
+    "phone_gst_registration_date",
+)
+PHONE_EMPLOYER_REIMBURSED_MARKERS = ("reimburs\\w*", "refund\\w*", "paid back")
+PHONE_EMPLOYER_PAID_MARKERS = (
+    "employer paid",
+    "paid by employer",
+    "company paid",
+    "work paid",
+    "paid by work",
+    "employer covers",
+    "company covers",
+    "work covers",
+)
+PHONE_EMPLOYER_PROVIDED_MARKERS = (
+    "employer provided",
+    "provided by employer",
+    "company provided",
+    "provided by work",
+    "issued by employer",
+    "issued by work",
+    "work phone",
+    "company phone",
+)
 PHONE_METADATA_KEYS = {
     "context",
     "paid_by_user",
@@ -3621,6 +3657,8 @@ def phone_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Di
         rows.append(phone_evidence_row(len(rows) + 1, "Structured phone cost, work-use, and evidence details for free-form phone fact", raw, answers))
     if phone_abn_context(raw, answers) and phone_gst_registered(raw, answers):
         rows.append(phone_evidence_row(len(rows) + 1, "GST tax invoice and GST-credit basis for phone costs", raw, answers))
+    elif phone_abn_context(raw, answers) and phone_gst_registration_unknown(raw, answers):
+        rows.append(phone_evidence_row(len(rows) + 1, "GST registration status for phone GST-credit review", raw, answers))
     return rows
 
 
@@ -3656,24 +3694,41 @@ def phone_context_is_abn(value: str) -> bool:
     normalized = re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
     if phone_context_has_negated_abn(normalized):
         return False
+    if phone_context_has_business_uncertainty(normalized):
+        return False
     tokens = set(normalized.split())
     if value in {"abn", "business", "sole trader", "sole-trader", "both"}:
         return True
-    return "abn" in tokens or "business" in tokens or {"sole", "trader"}.issubset(tokens)
+    return (
+        "abn" in tokens
+        or "business" in tokens
+        or {"sole", "trader"}.issubset(tokens)
+        or {"self", "employed"}.issubset(tokens)
+    )
 
 
 def phone_context_has_negated_abn(normalized: str) -> bool:
-    business_context = r"(abn|business|sole\s+trader)"
+    business_context = r"(abn|business|sole\s+trader|self\s+employed)"
     return bool(
-        re.search(rf"\b(not|no|without)\b\s+(a\s+|an\s+)?\b{business_context}\b", normalized)
+        re.search(rf"\b(not|no|without)\b(?:\s+\w+){{0,3}}\s+(a\s+|an\s+)?\b{business_context}\b", normalized)
         or re.search(rf"\bnon\s+{business_context}\b", normalized)
     )
+
+
+def phone_context_has_business_uncertainty(normalized: str) -> bool:
+    if re.search(r"\b(not sure|unsure|uncertain|maybe|possibly|whether|question)\b", normalized):
+        return True
+    tokens = set(normalized.split())
+    business_terms = {"abn", "business", "sole", "trader", "self", "employed"}
+    return "if" in tokens and bool(tokens.intersection(business_terms))
 
 
 def phone_context_is_employee(value: str) -> bool:
     normalized = re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
     tokens = set(normalized.split())
     if phone_context_is_abn(value):
+        return False
+    if phone_context_has_business_uncertainty(normalized) and "only" not in tokens:
         return False
     return bool(normalized) and (
         phone_context_has_negated_abn(normalized)
@@ -3700,11 +3755,14 @@ def phone_freeform_absent(value: Any) -> bool:
     opt_out_patterns = (
         rf"\b({no_word}|without)\b.*\b{subject}\b.*\b{claim_word}\b",
         rf"\b({no_word}|without)\b.*\b{claim_word}\b.*\b{subject}\b",
+        rf"\b(dont|don t|do not|didnt|didn t|did not|not going to|not gonna|not planning to)\b.*\b{claim_word}\b.*\b{subject}\b",
         rf"\bnot\s+(claim|claimed|claiming|deducting)\b.*\b{subject}\b",
         rf"\b{subject}\b.*\b{claim_word}\b.*\b(none|nil|zero)\b",
         rf"\b{subject}\b.*\b(not|never)\b.*\b(claimed|claiming|used)\b",
+        rf"\b{subject}\b.*\b(not|never)\b.*\b(deductible|allowed|allowable)\b",
         rf"\bnot eligible\b.*\b{subject}\b.*\b{claim_word}\b",
         rf"\b{subject}\b.*\b{claim_word}\b.*\bnot eligible\b",
+        rf"\b{subject}\b.*\b{claim_word}\b.*\b(not allowed|not allowable)\b",
     )
     if any(re.search(pattern, normalized) for pattern in opt_out_patterns):
         return True
@@ -3712,10 +3770,18 @@ def phone_freeform_absent(value: Any) -> bool:
 
 
 def phone_gst_registered(raw: Dict[str, Any], answers: Dict[str, Any]) -> bool:
+    return parse_gst_registration(phone_gst_registration_value(raw, answers)) is True
+
+
+def phone_gst_registration_unknown(raw: Dict[str, Any], answers: Dict[str, Any]) -> bool:
+    return parse_gst_registration(phone_gst_registration_value(raw, answers)) is None
+
+
+def phone_gst_registration_value(raw: Dict[str, Any], answers: Dict[str, Any]) -> Any:
     gst = first_alias_value(raw, PHONE_GST_STATUS_KEYS)
     if is_missing(gst):
-        gst = bas_gst_registration_answer(answers)
-    return parse_gst_registration(gst) is True
+        return bas_gst_registration_answer(answers)
+    return gst
 
 
 def phone_bool(value: Any) -> Optional[bool]:
@@ -3734,6 +3800,8 @@ def phone_bool(value: Any) -> Optional[bool]:
 def phone_wfh_fixed_rate(raw: Dict[str, Any]) -> bool:
     method = display_value(raw.get("wfh_method")).strip().lower()
     normalized = re.sub(r"[^a-z0-9]+", " ", method.replace("_", " ").replace("-", " ")).strip()
+    if "?" in method:
+        return False
     if re.search(r"\b(not sure|unsure|uncertain|maybe|possibly|whether|if|no idea|unknown)\b", normalized):
         return False
     negative_patterns = (
@@ -3817,11 +3885,11 @@ def phone_employee_excluded(raw: Dict[str, Any]) -> List[str]:
     terms: List[str] = []
     if phone_user_paid_false(raw.get("paid_by_user")):
         terms.append("not paid by user")
-    if phone_employer_flag_true(raw.get("employer_reimbursed"), ("reimburs\\w*",)):
+    if phone_employer_flag_true(raw.get("employer_reimbursed"), PHONE_EMPLOYER_REIMBURSED_MARKERS):
         terms.append("employer reimbursed")
-    if phone_employer_flag_true(raw.get("employer_paid"), ("employer paid", "paid by employer", "company paid")):
+    if phone_employer_flag_true(raw.get("employer_paid"), PHONE_EMPLOYER_PAID_MARKERS):
         terms.append("employer paid")
-    if phone_employer_flag_true(raw.get("employer_provided"), ("employer provided", "provided by employer", "company provided")):
+    if phone_employer_flag_true(raw.get("employer_provided"), PHONE_EMPLOYER_PROVIDED_MARKERS):
         terms.append("employer provided")
     return terms
 
@@ -3878,14 +3946,18 @@ def phone_under_300_candidate(device: Dict[str, Any], cost: Optional[float], wor
 
 def phone_percent_value(value: Any) -> Optional[float]:
     parsed = None
+    had_percent_suffix = False
     if isinstance(value, str):
         lowered = value.strip().lower()
         for suffix in ("%", " percent", " per cent"):
             if lowered.endswith(suffix):
+                had_percent_suffix = True
                 parsed = safe_money_value(lowered[: -len(suffix)].strip())
                 break
     if parsed is None:
         parsed = safe_money_value(value)
+    if isinstance(value, str) and not had_percent_suffix and parsed is not None and 0 < parsed < 1:
+        return None
     if parsed is None or parsed < 0 or parsed > 100:
         return None
     return parsed
@@ -3893,9 +3965,24 @@ def phone_percent_value(value: Any) -> Optional[float]:
 
 def phone_nonnegative_money_value(value: Any) -> Optional[float]:
     parsed = safe_money_value(value)
+    if parsed is None:
+        parsed = phone_number_with_unit_value(value)
     if parsed is None or parsed < 0:
         return None
     return parsed
+
+
+def phone_number_with_unit_value(value: Any) -> Optional[float]:
+    if not isinstance(value, str):
+        return None
+    lowered = value.strip().lower()
+    unit_pattern = r"(\$|\baud\b|\bdollars?\b|\bper month\b|\bmonthly\b|\bmonths?\b|\bcalls?\b|\btexts?\b)"
+    if not re.search(unit_pattern, lowered):
+        return None
+    match = re.search(r"-?\d+(?:\.\d+)?", lowered.replace(",", ""))
+    if not match:
+        return None
+    return float(match.group(0))
 
 
 def phone_months_claimed_value(value: Any) -> Optional[float]:
