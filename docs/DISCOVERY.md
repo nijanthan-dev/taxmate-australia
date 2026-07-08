@@ -7,7 +7,7 @@ Use this file as the source of truth for public discovery copy across GitHub Abo
 Description:
 
 ```text
-Australian individual tax return prep linked to official ATO sources for Codex, Claude Code, and Cowork: GST/BAS, CGT, evidence gaps, and accountant handoff.
+Prep-only Australian individual tax return plugin and portable skills for Codex, Claude Code, Cowork, and OpenAgentSkill: official ATO source links, GST/BAS and CGT review flags, evidence gaps, and manual myTax/paper/accountant handoff.
 ```
 
 Website:
@@ -21,6 +21,7 @@ Topics:
 ```text
 abn
 accountant
+agent-skills
 ato
 australian-tax
 bas
