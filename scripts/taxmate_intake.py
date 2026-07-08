@@ -3253,18 +3253,16 @@ PHONE_FIELD_ALIASES = {
     "employer_provided": ("phone_employer_provided", "employer_provided_phone"),
     "wfh_method": ("phone_wfh_method", "wfh_method"),
 }
+PHONE_GST_STATUS_KEYS = ("gst_registered", "gst_registration_status", "registered")
+PHONE_GST_DATE_KEYS = ("gst_registration_date", "registered_from", "registration_date")
 PHONE_METADATA_KEYS = {
     "context",
     "paid_by_user",
     "employer_reimbursed",
     "employer_paid",
     "employer_provided",
-    "gst_registered",
-    "gst_registration_date",
-    "gst_registration_status",
-    "registered",
-    "registered_from",
-    "registration_date",
+    *PHONE_GST_STATUS_KEYS,
+    *PHONE_GST_DATE_KEYS,
     "wfh_method",
 }
 PHONE_OPT_OUT_KEYS = {
@@ -3688,7 +3686,7 @@ def phone_freeform_absent(value: Any) -> bool:
 
 
 def phone_gst_registered(raw: Dict[str, Any], answers: Dict[str, Any]) -> bool:
-    gst = raw.get("gst_registered")
+    gst = first_alias_value(raw, PHONE_GST_STATUS_KEYS)
     if is_missing(gst):
         gst = bas_gst_registration_answer(answers)
     return parse_gst_registration(gst) is True
