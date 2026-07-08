@@ -15625,6 +15625,7 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
             ("employer_paid", "not reimbursed but company paid", "employer paid"),
             ("employer_reimbursed", "reimbursed by employer, not paid by employer", "employer reimbursed"),
             ("employer_provided", "company provided phone, not reimbursed", "employer provided"),
+            ("employer_provided", "work phone not reimbursed", "employer provided"),
         ]
         for field, value, reason in cases:
             with self.subTest(field=field, value=value):
@@ -15652,8 +15653,11 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
             ("employer_reimbursed", "reimbursed by employer no"),
             ("employer_paid", "employer did not pay"),
             ("employer_paid", "paid by employer no"),
+            ("employer_paid", "company paid not paid by employer"),
             ("employer_provided", "not provided by employer"),
             ("employer_provided", "provided by employer no"),
+            ("employer_provided", "work phone not provided by employer"),
+            ("employer_provided", "company phone not provided by employer"),
         ]
         for field, value in cases:
             with self.subTest(field=field):
@@ -16142,6 +16146,11 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
             ("registered", "not GST registered"),
             ("registered", "GST not registered"),
             ("registered", "no GST registration"),
+            ("registered", "registered but not for GST"),
+            ("registered", "registered not GST"),
+            ("registered", "registered without GST"),
+            ("registered", "registered but no GST"),
+            ("registered", "GST registered no"),
         )
         for field, value in cases:
             with self.subTest(field=field):

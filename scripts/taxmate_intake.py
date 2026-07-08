@@ -3216,6 +3216,7 @@ def parse_gst_registration(value: Any) -> Optional[bool]:
         rf"\b{negation}\b(?:\s+\w+){{0,3}}\s+gst\b(?:\s+\w+){{0,3}}\s+registered\b",
         rf"\b{negation}\b(?:\s+\w+){{0,3}}\s+registered\b(?:\s+\w+){{0,3}}\s+gst\b",
         rf"\bgst\b(?:\s+\w+){{0,3}}\s+{negation}\b(?:\s+\w+){{0,3}}\s+registered\b",
+        rf"\bregistered\b(?:\s+\w+){{0,3}}\s+{negation}\b(?:\s+\w+){{0,3}}\s+gst\b",
         r"\b(no|false)\b(?:\s+\w+){0,3}\s+gst\b",
         r"\bgst\b(?:\s+\w+){0,3}\s+(no|false)\b",
     )
@@ -3339,6 +3340,11 @@ PHONE_EMPLOYER_MARKERS = (
     *PHONE_EMPLOYER_REIMBURSED_MARKERS,
     *PHONE_EMPLOYER_PAID_MARKERS,
     *PHONE_EMPLOYER_PROVIDED_MARKERS,
+)
+PHONE_EMPLOYER_MARKER_GROUPS = (
+    ("reimbursed", PHONE_EMPLOYER_REIMBURSED_MARKERS),
+    ("paid", PHONE_EMPLOYER_PAID_MARKERS),
+    ("provided", PHONE_EMPLOYER_PROVIDED_MARKERS),
 )
 PHONE_TEXT_NEGATION_PATTERN = (
     r"(no|not|never|without|dont|don t|didnt|didn t|did not|n a|not applicable)"
@@ -3938,12 +3944,20 @@ def phone_marker_match_negated(normalized: str, marker: str, match: re.Match[str
 
 
 def phone_negation_targets_other_employer_marker(text_value: str, current_marker: str) -> bool:
+    current_kind = phone_employer_marker_kind(current_marker)
     for marker in PHONE_EMPLOYER_MARKERS:
         if marker == current_marker:
             continue
         if re.search(rf"^\s*(?:\w+\s+){{0,3}}\b{marker}\b", text_value):
-            return True
+            return phone_employer_marker_kind(marker) != current_kind
     return False
+
+
+def phone_employer_marker_kind(marker: str) -> str:
+    for kind, markers in PHONE_EMPLOYER_MARKER_GROUPS:
+        if marker in markers:
+            return kind
+    return marker
 
 
 def phone_user_paid_false(value: Any) -> bool:
