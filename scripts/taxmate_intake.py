@@ -3886,7 +3886,8 @@ def phone_gst_registered(raw: Dict[str, Any], answers: Dict[str, Any]) -> bool:
 
 
 def phone_gst_registration_unknown(raw: Dict[str, Any], answers: Dict[str, Any]) -> bool:
-    return parse_gst_registration(phone_gst_registration_value(raw, answers)) is None
+    value = phone_gst_registration_value(raw, answers)
+    return is_missing(value) or parse_gst_registration(value) is None
 
 
 def phone_gst_registration_value(raw: Dict[str, Any], answers: Dict[str, Any]) -> Any:

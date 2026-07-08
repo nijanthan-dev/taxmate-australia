@@ -327,6 +327,8 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("state-wide public holidays" in finding.detail for finding in findings))
         self.assertTrue(any("regional, capital-city-only, sector-only, and partial-day" in finding.detail for finding in findings))
         self.assertTrue(any("parse_gst_registration" in finding.detail for finding in findings))
+        self.assertTrue(any("PHONE_EMPLOYER_MARKER_GROUPS" in finding.detail for finding in findings))
+        self.assertTrue(any("phone_gst_registration_unknown" in finding.detail for finding in findings))
         self.assertTrue(any("confirmed" in finding.detail for finding in findings))
         self.assertTrue(any("2025-09-26" in finding.detail for finding in findings))
         self.assertTrue(any("2026-06-08" in finding.detail for finding in findings))
@@ -16186,6 +16188,13 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
         payload = taxmate_intake.answers_to_pack_payload(
             self.phone_payload(context="abn", gst_registered="not sure if registered for GST")
         )
+
+        self.assertTrue(
+            any("GST registration status" in item["answer"] for item in payload["evidence_items"])
+        )
+
+    def test_phone_abn_missing_gst_registration_requests_gst_status_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(context="abn"))
 
         self.assertTrue(
             any("GST registration status" in item["answer"] for item in payload["evidence_items"])
