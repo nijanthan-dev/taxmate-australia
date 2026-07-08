@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.18.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.17.0...v0.18.0) (2026-07-07)
+
+
+### Features
+
+* package plugin runtime ([90c3033](https://github.com/nijanthan-dev/taxmate-australia/commit/90c30337254ccebaf1583ccaa207ed3a0db71984))
+
+
+### Bug Fixes
+
+* load Codex MCP from root ([3bc16fa](https://github.com/nijanthan-dev/taxmate-australia/commit/3bc16fa473d12f3a856df7e74804ebd7e756c47a))
+
 ## [0.17.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.16.0...v0.17.0) (2026-07-05)
 
 
