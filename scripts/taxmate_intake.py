@@ -3210,11 +3210,25 @@ def parse_gst_registration(value: Any) -> Optional[bool]:
         return False
     if contains_unknown(value):
         return None
-    canonical = text(value).strip().lower()
-    if canonical in {"yes", "y", "true", "registered", "gst registered"}:
-        return True
-    if canonical in {"no", "n", "false", "not registered", "not gst registered"}:
+    canonical = re.sub(r"[^a-z0-9]+", " ", text(value).strip().lower()).strip()
+    negative_registration = canonical in {"no", "n", "false", "not registered", "not gst registered"} or re.search(
+        r"\b(not|no|without)\b(?:\s+\w+){0,3}\s+gst\b(?:\s+\w+){0,3}\s+registered\b",
+        canonical,
+    ) or re.search(
+        r"\b(not|no|without)\b(?:\s+\w+){0,3}\s+registered\b(?:\s+\w+){0,3}\s+gst\b",
+        canonical,
+    )
+    if negative_registration:
         return False
+    positive_registration = canonical in {"yes", "y", "true", "registered", "gst registered"} or re.search(
+        r"\bgst\b(?:\s+\w+){0,3}\s+registered\b",
+        canonical,
+    ) or re.search(
+        r"\bregistered\b(?:\s+\w+){0,3}\s+gst\b",
+        canonical,
+    )
+    if positive_registration:
+        return True
     return None
 
 
@@ -3636,12 +3650,19 @@ def phone_abn_context(raw: Dict[str, Any], answers: Dict[str, Any]) -> bool:
 
 def phone_context_is_abn(value: str) -> bool:
     normalized = re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
-    if any(marker in normalized for marker in ("not abn", "no abn", "non abn", "without abn")):
+    if phone_context_has_negated_abn(normalized):
         return False
     tokens = set(normalized.split())
     if value in {"abn", "business", "sole trader", "sole-trader", "both"}:
         return True
     return "abn" in tokens or "business" in tokens or {"sole", "trader"}.issubset(tokens)
+
+
+def phone_context_has_negated_abn(normalized: str) -> bool:
+    return bool(
+        re.search(r"\b(not|no|without)\b\s+(a\s+|an\s+)?\b(abn|business)\b", normalized)
+        or re.search(r"\bnon\s+(abn|business)\b", normalized)
+    )
 
 
 def phone_context_is_employee(value: str) -> bool:
@@ -3650,7 +3671,7 @@ def phone_context_is_employee(value: str) -> bool:
     if phone_context_is_abn(value):
         return False
     return bool(normalized) and (
-        any(marker in normalized for marker in ("not abn", "no abn", "non abn", "without abn"))
+        phone_context_has_negated_abn(normalized)
         or "employee" in tokens
     )
 

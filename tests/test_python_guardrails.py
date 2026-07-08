@@ -15631,14 +15631,17 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
                 self.assertTrue(any("GST tax invoice" in item["answer"] for item in payload["evidence_items"]))
 
     def test_negative_abn_phone_context_stays_employee_review(self) -> None:
-        payload = taxmate_intake.answers_to_pack_payload(
-            self.phone_payload(context="employee, not ABN", gst_registered=True)
-        )
-        overview = next(item for item in payload["items"] if item["number"] == "PHONE")
-        plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+        for context in ("employee, not ABN", "employee not an ABN", "without an ABN", "not a business"):
+            with self.subTest(context=context):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    self.phone_payload(context=context, gst_registered=True)
+                )
+                overview = next(item for item in payload["items"] if item["number"] == "PHONE")
+                plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
 
-        self.assertNotIn("ABN/GST/BAS review path", overview["tab_text"])
-        self.assertEqual("D5 Other work-related expenses", plan["ato_area"])
+                self.assertNotIn("ABN/GST/BAS review path", overview["tab_text"])
+                self.assertEqual("D5 Other work-related expenses", plan["ato_area"])
+                self.assertFalse(any("GST tax invoice" in item["answer"] for item in payload["evidence_items"]))
 
     def test_abn_bas_facts_without_phone_input_do_not_create_phone_rows(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
@@ -15872,7 +15875,13 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
         self.assertTrue(any("GST tax invoice" in item["answer"] for item in payload["evidence_items"]))
 
     def test_phone_gst_registration_aliases_keep_bas_review(self) -> None:
-        for field, value in (("gst_registration_status", "yes"), ("registered", True)):
+        cases = (
+            ("gst_registration_status", "yes"),
+            ("gst_registration_status", "registered for GST"),
+            ("registered", True),
+            ("registered", "GST-registered"),
+        )
+        for field, value in cases:
             with self.subTest(field=field):
                 payload = taxmate_intake.answers_to_pack_payload(
                     self.phone_payload(context="abn", **{field: value})
@@ -15881,7 +15890,13 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
                 self.assertTrue(any("GST tax invoice" in item["answer"] for item in payload["evidence_items"]))
 
     def test_phone_gst_registration_negative_aliases_skip_gst_evidence(self) -> None:
-        for field, value in (("gst_registration_status", "no"), ("registered", False)):
+        cases = (
+            ("gst_registration_status", "no"),
+            ("gst_registration_status", "not registered for GST"),
+            ("registered", False),
+            ("registered", "not GST registered"),
+        )
+        for field, value in cases:
             with self.subTest(field=field):
                 payload = taxmate_intake.answers_to_pack_payload(
                     self.phone_payload(context="abn", **{field: value})
