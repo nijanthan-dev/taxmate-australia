@@ -1089,6 +1089,15 @@ def rulesMarkdown(topic_obj: Topic, sources: List[Source]) -> str:
                 "",
             ]
         )
+    if topic_obj.slug == "employment-deductions":
+        lines.extend(
+            [
+                "Phone plan, data, handset, and incidental-use handling is structured only through the individual-return runtime phone workflow. Collect employee/ABN/both context, user-paid status, employer paid/reimbursed/provided flags, WFH fixed-rate versus actual-cost method, plan cost and 4-week work/private basis, device cost/date/work-use, records, and changed work-use facts where supplied.",
+                "",
+                "WFH fixed-rate blocks separate phone/data claim candidates. Employer-paid, reimbursed, or provided phone costs are not employee claim candidates. ABN, GST, BAS, mixed-use, depreciation method/effective-life, set/substantially-identical items, and incomplete evidence stay Evidence or `Accountant review`. Source lists for other employee deductions are not structured runtime support unless `config/runtime-coverage.json` marks them structured.",
+                "",
+            ]
+        )
     if topic_obj.slug == "capital-gains-tax":
         lines.extend(
             [

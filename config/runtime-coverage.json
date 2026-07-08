@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "statuses": ["structured", "triage_only", "review_only", "source_only", "out_of_scope"],
+  "concepts": [
+    {
+      "id": "employment-deductions",
+      "title": "Employment deductions",
+      "runtime_status": "triage_only",
+      "source_skills": ["employment-deductions"],
+      "source_concepts": ["work-related", "deduction", "allowance", "tools", "travel", "education", "meals"],
+      "runtime_functions": ["base_items", "phone_rows", "asset_rows"],
+      "tests": ["RuntimeCoverageTests", "PhoneDeductionWorkflowTests"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/employment-deductions/references/rules.md"],
+      "issue": "#70",
+      "notes": "Phone is structured in #111; other employee deduction types remain explicit triage/review until child workflows land."
+    },
+    {
+      "id": "phone-deductions",
+      "title": "Phone plan, data, handset, incidental use",
+      "runtime_status": "structured",
+      "source_skills": ["employment-deductions", "work-from-home", "abn-business", "gst-bas"],
+      "source_ids": ["ato-0a702ac5d106", "ato-e20dc9550574", "ato-1264e41fe05e", "ato-e21183fadd94"],
+      "source_concepts": ["mobile phone", "mobile internet", "devices", "fixed-rate-method", "actual-cost-method", "depreciating assets", "GST credit"],
+      "runtime_functions": ["phone_answers", "phone_rows", "phone_plan_rows", "phone_device_rows", "phone_evidence_rows"],
+      "tests": ["PhoneDeductionWorkflowTests"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/individual-return/SKILL.md", "skills/employment-deductions/references/rules.md"],
+      "issue": "#111",
+      "notes": "Prep-only structured phone workflow. ABN/GST/depreciation method details stay Accountant review."
+    },
+    {
+      "id": "wfh-fixed-rate",
+      "title": "WFH fixed-rate",
+      "runtime_status": "structured",
+      "source_skills": ["work-from-home"],
+      "source_concepts": ["fixed-rate-method", "working-from-home-expenses"],
+      "runtime_functions": ["wfh_answers", "wfh_rows", "calculate_wfh_hours"],
+      "tests": ["test_wfh_calendar_excludes_leave_and_unworked_public_holidays", "test_wfh_missing_records_block_fixed_rate_candidate"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/work-from-home/references/rules.md"],
+      "issue": "",
+      "notes": "2025-26 fixed-rate helper with records/method review."
+    },
+    {
+      "id": "wfh-actual-cost-occupancy",
+      "title": "WFH actual-cost and occupancy",
+      "runtime_status": "review_only",
+      "source_skills": ["work-from-home"],
+      "source_concepts": ["actual-cost-method", "occupancy-expenses", "home-based-business"],
+      "runtime_functions": ["wfh_rows", "phone_rows"],
+      "tests": ["RuntimeCoverageTests", "PhoneDeductionWorkflowTests"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/work-from-home/references/rules.md"],
+      "issue": "#112",
+      "notes": "Actual-cost comparison and occupancy remain review-first; fixed-rate blocks separate phone/data rows."
+    },
+    {
+      "id": "abn-business-categories",
+      "title": "ABN sole-trader categories",
+      "runtime_status": "triage_only",
+      "source_skills": ["abn-business"],
+      "source_concepts": ["ABN", "business expense", "sole trader", "business-deductions", "personal-services-income", "business-losses"],
+      "runtime_functions": ["abn_rows", "abn_business_evidence_rows", "phone_rows"],
+      "tests": ["test_zero_amount_abn_answers_stay_visible_with_record_evidence", "test_phone_abn_routes_to_business_review"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/abn-business/references/rules.md"],
+      "issue": "#112",
+      "notes": "ABN worksheet is structured at summary/category level; complex category treatment remains review-first."
+    },
+    {
+      "id": "gst-bas-special-topics",
+      "title": "GST/BAS special topics",
+      "runtime_status": "triage_only",
+      "source_skills": ["gst-bas"],
+      "source_concepts": ["GST", "BAS", "GST credit", "tax invoice", "payg-instalments"],
+      "runtime_functions": ["bas_rows", "bas_evidence_rows", "phone_rows"],
+      "tests": ["test_bas_worksheet_calculates_totals_and_stays_review", "test_phone_gst_registered_keeps_bas_review"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/gst-bas/references/rules.md"],
+      "issue": "#112",
+      "notes": "Core BAS worksheet exists; WET/LCT/fuel tax/reverse charge/groups/time limits/cancellation stay review-only."
+    },
+    {
+      "id": "private-health-medicare-spouse-dependants",
+      "title": "Private health, Medicare, spouse, dependants",
+      "runtime_status": "review_only",
+      "source_skills": ["private-health-medicare"],
+      "source_concepts": ["private health", "Medicare levy", "Medicare levy surcharge", "spouse", "dependants"],
+      "runtime_functions": ["base_items", "evidence_rows"],
+      "tests": ["test_private_health_classifies_before_income"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/private-health-medicare/references/rules.md"],
+      "issue": "#71",
+      "notes": "Shallow intake only; statement/tier/detail workflow remains child issue #71."
+    },
+    {
+      "id": "super-contribution-deductions",
+      "title": "Personal super contribution deductions",
+      "runtime_status": "source_only",
+      "source_skills": ["superannuation"],
+      "source_concepts": ["personal-super-contributions", "notice of intent", "concessional-contributions", "super"],
+      "runtime_functions": [],
+      "tests": ["RuntimeCoverageTests"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/superannuation/references/rules.md"],
+      "issue": "#70",
+      "notes": "Source-backed but not structured. Must not be described as runtime-supported until a child workflow lands."
+    },
+    {
+      "id": "government-payments",
+      "title": "Government payments and allowances",
+      "runtime_status": "review_only",
+      "source_skills": ["employment-deductions"],
+      "source_ids": ["ato-9fcf81b13886"],
+      "source_concepts": ["government payments", "allowance", "income"],
+      "runtime_functions": ["base_items"],
+      "tests": ["RuntimeCoverageTests"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md"],
+      "issue": "#112",
+      "notes": "Generic field is visible as review/evidence; detailed payment-type workflow is not structured."
+    },
+    {
+      "id": "fbt-rfba-triage",
+      "title": "FBT/RFBA triage",
+      "runtime_status": "triage_only",
+      "source_skills": ["payg-employer"],
+      "source_ids": ["ato-03f67d25002e", "ato-de950c469c37", "ato-dfa8b8fcffee", "ato-f35212d4e324"],
+      "source_concepts": ["FBT", "reportable fringe benefits", "salary sacrificing"],
+      "runtime_functions": ["payg_rows", "base_items"],
+      "tests": ["RuntimeCoverageTests"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/payg-employer/references/rules.md"],
+      "issue": "#112",
+      "notes": "RFBA is preserved from PAYG statements; FBT calculation remains out of scope/review-only."
+    },
+    {
+      "id": "cgt-crypto-rental-investments",
+      "title": "Existing structured CGT, crypto, rental, investment workflows",
+      "runtime_status": "structured",
+      "source_skills": ["capital-gains-tax", "crypto-assets", "property-rental-cgt", "shares-etfs-managed-funds"],
+      "source_concepts": ["CGT", "crypto", "rental", "investment", "shares", "managed fund"],
+      "runtime_functions": ["cgt_rows", "crypto_rows", "rental_property_rows", "investment_rows"],
+      "tests": ["RuntimeCoverageTests"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md"],
+      "issue": "",
+      "notes": "Structured, review-first workflows already exist; this manifest prevents them being confused with source-only topics."
+    }
+  ]
+}

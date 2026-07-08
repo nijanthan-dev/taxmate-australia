@@ -57,6 +57,7 @@ The current individual-return handoff includes:
 - primary and secondary PAYG income statement rows with payer, ABN, occupation, gross, withholding, allowances, RFBA, RESC, lump sum labels, statement evidence, and aggregate reconciliation;
 - itemized investment income rows for bank interest, dividends/franking, managed fund/ETF/AMIT distributions, and trust distribution routing;
 - general CGT event schedule and itemized non-crypto/non-rental CGT event rows with records, current-year and carried-forward loss facts, discount, foreign-resident discount, main residence, and small-business CGT concession review signals, source provenance, reconciliation prompts, and amount-not-worked-out wording;
+- phone plan/data/device/incidental-use rows with WFH fixed-rate double-dip blocking, employer paid/reimbursed/provided exclusions, evidence prompts, and ABN/GST/BAS review routing;
 - ABN prep section and BAS worksheet, including ABN profile, income streams, expense categories, 1A/1B, GST-free/input-taxed sales, adjustments, PAYG labels, tax invoice evidence, and accounting-basis review;
 - missing facts queue, evidence queue, and accountant-review queue;
 - source/provenance appendix with source URLs and checked-at dates.
@@ -78,6 +79,7 @@ The sample data is synthetic. Screenshot maintenance is a contributor task docum
 - Helps users prepare PAYG income statements, ABN/sole-trader facts, GST/BAS facts, investment statements, general CGT event and main residence exemption claim facts, rental property facts, crypto events, superannuation, private health, and other individual-return material.
 - Keeps missing-evidence prompts, review queues, source-backed notes, and conservative `Accountant review` flags visible.
 - Keeps source URLs, checked-at dates, source coverage checks, and generated topic skills visible.
+- Audits verified source coverage against runtime/docs/tests status with `./scripts/taxmate coverage audit`.
 - Builds taxpack and print-first HTML guide handoffs from reviewed data.
 - Helps users manually copy reviewed answers into myTax, paper ATO forms, or an accountant handoff. TaxMate does not fill official ATO PDFs or create returns users can submit directly to the ATO.
 

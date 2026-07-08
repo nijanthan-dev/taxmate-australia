@@ -25,6 +25,7 @@ sys.path.insert(0, str(SCRIPTS))
 VALID_MCP_SERVER_TEXT = (
     "taxmate_run\n"
     "render_individual_html\n"
+    "\"coverage\",\n"
     "[\"command\", \"cwd\"]\n"
     "[\"output_path\", \"cwd\"]\n"
     "[\"answers_path\", \"output_path\", \"cwd\"]\n"
@@ -42,6 +43,7 @@ import png_crop  # noqa: E402
 import skillgen  # noqa: E402
 import taxmate  # noqa: E402
 import taxmate_calc  # noqa: E402
+import taxmate_coverage  # noqa: E402
 import taxmate_finance  # noqa: E402
 import taxmate_intake  # noqa: E402
 import taxmate_refresh  # noqa: E402
@@ -15148,6 +15150,709 @@ class SmallBusinessCgtConcessionWorkflowTests(unittest.TestCase):
         self.assertIn("15-year exemption true", body)
         self.assertIn(taxmate_intake.ATO_CGT_SMALL_BUSINESS_15_YEAR_SOURCE, body)
         self.assertNotRegex((row["answer"] + " " + row["tab_text"]).lower(), r"\b(eligible|final|claimable|lodgment-ready|calculated)\b")
+
+class RuntimeCoverageTests(unittest.TestCase):
+    def test_runtime_coverage_manifest_marks_source_only_topics_explicitly(self) -> None:
+        payload = taxmate_coverage.audit_payload(ROOT)
+        by_id = {item["id"]: item for item in payload["concepts"]}
+
+        self.assertEqual("structured", by_id["phone-deductions"]["runtime_status"])
+        self.assertGreater(by_id["phone-deductions"]["source_count"], 0)
+        self.assertEqual("source_only", by_id["super-contribution-deductions"]["runtime_status"])
+        self.assertEqual("#70", by_id["super-contribution-deductions"]["issue"])
+        self.assertEqual("review_only", by_id["private-health-medicare-spouse-dependants"]["runtime_status"])
+
+    def test_runtime_coverage_manifest_validates(self) -> None:
+        ok, errors = taxmate_coverage.validate_manifest(ROOT)
+
+        self.assertTrue(ok, errors)
+        self.assertTrue(taxmate_validate.runtime_coverage_audit_command_ready(str(ROOT)))
+        self.assertEqual(taxmate.COMMANDS["coverage"], "taxmate_coverage.py")
+        self.assertIn('"coverage",', ROOT.joinpath("mcp/server.cjs").read_text(encoding="utf-8"))
+
+    def test_runtime_coverage_uses_specific_source_pins_before_broad_terms(self) -> None:
+        coverage = taxmate_coverage.load_source_coverage(ROOT)
+        sources = {entry["source_id"]: entry for entry in coverage["sources"]}
+        payload = taxmate_coverage.audit_payload(ROOT)
+        concepts = {item["id"]: item for item in payload["concepts"]}
+
+        self.assertTrue(taxmate_coverage.source_matches(sources["ato-0a702ac5d106"], concepts["phone-deductions"]))
+        self.assertFalse(taxmate_coverage.source_matches(sources["ato-1021b1dc6513"], concepts["phone-deductions"]))
+        self.assertTrue(taxmate_coverage.source_matches(sources["ato-9fcf81b13886"], concepts["government-payments"]))
+        self.assertFalse(taxmate_coverage.source_matches(sources["ato-095b0ade158a"], concepts["government-payments"]))
+
+    def test_runtime_coverage_rejects_each_bad_explicit_source_pin(self) -> None:
+        coverage = taxmate_coverage.load_source_coverage(ROOT)
+        concept = {
+            "id": "bad-pins",
+            "source_ids": ["ato-0a702ac5d106", "ato-not-real"],
+            "source_urls": [taxmate_intake.ATO_PHONE_SOURCE, "https://example.invalid/not-verified"],
+        }
+
+        errors = taxmate_coverage.source_pin_errors(coverage["sources"], concept)
+
+        self.assertIn("bad-pins source_id not verified: ato-not-real", errors)
+        self.assertIn("bad-pins source_url not verified: https://example.invalid/not-verified", errors)
+
+    def test_runtime_coverage_rejects_generic_only_concept_matches(self) -> None:
+        concept = {"source_skills": ["employment-deductions"], "source_concepts": ["deduction", "tools"]}
+        generic_source = {"status": "verified", "skills": ["employment-deductions"], "covered_concepts": ["deduction"]}
+        specific_source = {"status": "verified", "skills": ["employment-deductions"], "covered_concepts": ["tools"]}
+
+        self.assertFalse(taxmate_coverage.source_matches(generic_source, concept))
+        self.assertTrue(taxmate_coverage.source_matches(specific_source, concept))
+
+    def test_phone_docs_do_not_reference_unsupported_digital_id_changed_use(self) -> None:
+        for rel in (
+            "docs/INDIVIDUAL_RETURN_PREP.md",
+            "skills/individual-return/SKILL.md",
+            "skills/employment-deductions/references/rules.md",
+        ):
+            with self.subTest(rel=rel):
+                body = ROOT.joinpath(rel).read_text(encoding="utf-8")
+
+                self.assertNotIn("Digital ID", body)
+                self.assertNotIn("myID", body)
+
+
+class PhoneDeductionWorkflowTests(unittest.TestCase):
+    def phone_payload(self, **updates: Any) -> dict[str, Any]:
+        phone = {
+            "context": "employee",
+            "paid_by_user": True,
+            "employer_reimbursed": False,
+            "employer_paid": False,
+            "employer_provided": False,
+            "wfh_method": "actual-cost",
+            "plan": {
+                "monthly_cost": 65,
+                "months_claimed": 11,
+                "itemised_bill": True,
+                "representative_period_start": "2025-08-01",
+                "representative_period_end": "2025-08-28",
+                "work_use_percent": 20,
+                "basis": "call-count",
+                "bills": "held",
+                "log": "held",
+            },
+            "device": {
+                "description": "Phone",
+                "cost": 1100,
+                "purchase_date": "2025-07-01",
+                "work_use_percent": 40,
+                "receipt": "held",
+                "method_preference": "prime-cost",
+                "effective_life_years": 3,
+                "insurance_amount": 0,
+            },
+            "incidental": {
+                "claim_amount": 0,
+                "work_calls": 0,
+                "work_texts": 0,
+                "basic_records": "held",
+            },
+        }
+        phone.update(updates)
+        return {"income_year": "2025-26", "phone": phone}
+
+    def test_employee_phone_plan_itemised_bill_creates_dedicated_row(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(self.phone_payload())
+        plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+
+        self.assertEqual("Accountant review", plan["status"])
+        self.assertIn("candidate 143.00", plan["answer"])
+        self.assertIn("representative period 2025-08-01 to 2025-08-28", plan["answer"])
+        self.assertIn(taxmate_intake.ATO_PHONE_SOURCE, plan["source_urls"])
+        self.assertFalse(any(item["number"] == "phone" for item in payload["items"]))
+
+    def test_non_itemised_phone_without_four_week_record_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(
+                plan={
+                    "monthly_cost": 40,
+                    "months_claimed": 10,
+                    "itemised_bill": False,
+                    "work_use_percent": 25,
+                    "bills": "held",
+                    "log": "unknown",
+                }
+            )
+        )
+        plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+
+        self.assertEqual("Evidence", plan["status"])
+        self.assertIn("non-itemised/prepaid requires representative 4-week", plan["answer"])
+        self.assertTrue(any(item["number"].startswith("PHONE-EVID") and "4-week" in item["answer"] for item in payload["evidence_items"]))
+
+    def test_phone_work_use_percent_strings_calculate_candidates(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(
+                plan={
+                    "monthly_cost": 50,
+                    "months_claimed": 10,
+                    "itemised_bill": True,
+                    "representative_period_start": "2025-08-01",
+                    "representative_period_end": "2025-08-28",
+                    "work_use_percent": "50%",
+                    "bills": "held",
+                    "log": "held",
+                },
+                device={
+                    "description": "Phone",
+                    "cost": 1000,
+                    "purchase_date": "2025-07-01",
+                    "work_use_percent": "40%",
+                    "receipt": "held",
+                },
+            )
+        )
+        plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+        device = next(item for item in payload["items"] if item["number"] == "PHONE-DEVICE")
+
+        self.assertEqual("Accountant review", plan["status"])
+        self.assertIn("candidate 250.00", plan["answer"])
+        self.assertIn("work use 50%", plan["answer"])
+        self.assertIn("work-use amount 400.00", device["answer"])
+        self.assertNotIn("evidence needed before method review", device["answer"])
+
+    def test_phone_work_use_percent_out_of_range_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(
+                plan={
+                    "monthly_cost": 50,
+                    "months_claimed": 10,
+                    "itemised_bill": True,
+                    "representative_period_start": "2025-08-01",
+                    "representative_period_end": "2025-08-28",
+                    "work_use_percent": 150,
+                    "bills": "held",
+                    "log": "held",
+                },
+                device={
+                    "description": "Phone",
+                    "cost": 1000,
+                    "purchase_date": "2025-07-01",
+                    "work_use_percent": -10,
+                    "receipt": "held",
+                },
+            )
+        )
+        plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+        device = next(item for item in payload["items"] if item["number"] == "PHONE-DEVICE")
+
+        self.assertEqual("Evidence", plan["status"])
+        self.assertEqual("Evidence", device["status"])
+        self.assertIn("work use unknown", plan["answer"])
+        self.assertIn("candidate unknown", plan["answer"])
+        self.assertIn("work use unknown", device["answer"])
+        self.assertIn("work-use amount unknown", device["answer"])
+
+    def test_wfh_fixed_rate_blocks_phone_plan_and_incidental(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(wfh_method="fixed-rate"))
+        plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+        incidental = next(item for item in payload["items"] if item["number"] == "PHONE-INC")
+
+        self.assertIn("blocked: WFH fixed-rate covers phone/data", plan["answer"])
+        self.assertIn("blocked: WFH fixed-rate covers phone/data", incidental["answer"])
+        self.assertIn("Phone plan blocked", plan["tab_text"])
+
+    def test_wfh_fixed_rate_method_wording_blocks_phone_plan(self) -> None:
+        for method in ("fixed-rate method", "revised fixed-rate method", "fixed rate method"):
+            with self.subTest(method=method):
+                payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(wfh_method=method))
+                plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+                incidental = next(item for item in payload["items"] if item["number"] == "PHONE-INC")
+
+                self.assertIn("blocked: WFH fixed-rate covers phone/data", plan["answer"])
+                self.assertIn("blocked: WFH fixed-rate covers phone/data", incidental["answer"])
+
+    def test_wfh_70_cents_method_wording_blocks_phone_plan(self) -> None:
+        for method in ("70 cents per hour", "70c method", "70 c method", "70 c/hour method"):
+            with self.subTest(method=method):
+                payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(wfh_method=method))
+                plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+                incidental = next(item for item in payload["items"] if item["number"] == "PHONE-INC")
+
+                self.assertIn("blocked: WFH fixed-rate covers phone/data", plan["answer"])
+                self.assertIn("blocked: WFH fixed-rate covers phone/data", incidental["answer"])
+
+    def test_wfh_negative_fixed_rate_wording_does_not_block_phone(self) -> None:
+        for method in (
+            "not fixed rate",
+            "no fixed rate",
+            "actual cost not fixed rate",
+            "not using fixed-rate method",
+            "not claiming fixed rate",
+            "did not use fixed rate",
+            "dont use fixed rate",
+            "didnt use fixed rate",
+            "not claiming the revised fixed-rate method",
+            "not using revised fixed rate",
+            "without using fixed rate",
+            "not the fixed rate method",
+            "not eligible for fixed rate",
+            "fixed rate not used",
+            "fixed rate not claimed",
+            "actual cost method instead of fixed rate",
+            "not using 70 cents per hour",
+            "not claiming 70 cents fixed rate",
+            "did not claim 70c per hour",
+            "actual cost did not use 70 cents",
+            "fixed rate not applicable",
+            "fixed rate not selected",
+            "70 cents method not applicable",
+            "fixed rate n/a",
+            "fixed rate not elected",
+            "fixed rate not opted",
+            "actual cost rather than fixed rate",
+            "fixed rate: no",
+            "fixed rate false",
+            "fixed rate off",
+            "70c per hour: no",
+            "70 c method false",
+        ):
+            with self.subTest(method=method):
+                payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(wfh_method=method))
+                plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+                incidental = next(item for item in payload["items"] if item["number"] == "PHONE-INC")
+
+                self.assertNotIn("blocked: WFH fixed-rate covers phone/data", plan["answer"])
+                self.assertNotIn("blocked: WFH fixed-rate covers phone/data", incidental["answer"])
+
+    def test_wfh_ambiguous_fixed_rate_wording_does_not_assert_block(self) -> None:
+        for method in (
+            "not sure if fixed rate method applies",
+            "unsure whether I used the 70 cents method",
+            "unknown if revised fixed-rate method was used",
+            "maybe fixed rate, maybe actual cost",
+            "fixed rate unsure",
+            "fixed rate unknown",
+        ):
+            with self.subTest(method=method):
+                payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(wfh_method=method))
+                plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+
+                self.assertEqual("Accountant review", plan["status"])
+                self.assertNotIn("blocked: WFH fixed-rate covers phone/data", plan["answer"])
+
+    def test_employer_reimbursed_phone_bill_is_not_candidate(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(employer_reimbursed=True))
+        plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+        device = next(item for item in payload["items"] if item["number"] == "PHONE-DEVICE")
+        insurance = next(item for item in payload["items"] if item["number"] == "PHONE-INS")
+
+        self.assertIn("blocked: employer reimbursed", plan["answer"])
+        self.assertIn("blocked: employer reimbursed", device["answer"])
+        self.assertIn("blocked: employer reimbursed", insurance["answer"])
+        self.assertIn("Phone insurance blocked", insurance["tab_text"])
+
+    def test_employee_exclusions_block_incidental_tab_text(self) -> None:
+        cases = [
+            ("paid_by_user", False, "not paid by user"),
+            ("employer_reimbursed", True, "employer reimbursed"),
+            ("employer_paid", True, "employer paid"),
+            ("employer_provided", True, "employer provided"),
+        ]
+        for field, value, reason in cases:
+            with self.subTest(field=field):
+                payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(**{field: value}))
+                incidental = next(item for item in payload["items"] if item["number"] == "PHONE-INC")
+
+                self.assertIn(f"blocked: {reason}", incidental["answer"])
+                self.assertIn(f"blocked: {reason}", incidental["tab_text"])
+
+    def test_employee_exclusion_text_variants_block_phone_rows(self) -> None:
+        cases = [
+            ("paid_by_user", "employer paid the phone bill", "not paid by user"),
+            ("paid_by_user", "no, employer paid", "not paid by user"),
+            ("paid_by_user", "no - reimbursed by employer", "not paid by user"),
+            ("employer_reimbursed", "reimbursed by employer", "employer reimbursed"),
+            ("employer_paid", "paid by employer", "employer paid"),
+            ("employer_provided", "company provided phone", "employer provided"),
+        ]
+        for field, value, reason in cases:
+            with self.subTest(field=field):
+                payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(**{field: value}))
+                plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+
+                self.assertIn(f"blocked: {reason}", plan["answer"])
+
+    def test_employee_exclusion_negated_text_variants_do_not_block_phone_rows(self) -> None:
+        cases = [
+            ("paid_by_user", "no answer"),
+            ("paid_by_user", "no response"),
+            ("paid_by_user", "no details provided"),
+            ("paid_by_user", "no data"),
+            ("paid_by_user", "no user answer"),
+            ("paid_by_user", "no payment info"),
+            ("paid_by_user", "no confirmation"),
+            ("paid_by_user", "no paid-by-user answer"),
+            ("paid_by_user", "no phone_paid_by_user response"),
+            ("paid_by_user", "no paid by user answer"),
+            ("paid_by_user", "no payment details provided"),
+            ("paid_by_user", "no value"),
+            ("paid_by_user", "no field value"),
+            ("employer_reimbursed", "not reimbursed by employer"),
+            ("employer_paid", "employer did not pay"),
+            ("employer_provided", "not provided by employer"),
+        ]
+        for field, value in cases:
+            with self.subTest(field=field):
+                payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(**{field: value}))
+                plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+
+                self.assertNotIn("blocked:", plan["answer"])
+
+    def test_phone_over_300_is_decline_in_value_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(self.phone_payload())
+        device = next(item for item in payload["items"] if item["number"] == "PHONE-DEVICE")
+
+        self.assertEqual("Accountant review", device["status"])
+        self.assertIn("decline-in-value review; not full immediate claim", device["answer"])
+
+    def test_phone_under_300_requires_set_rule_and_preserves_falsey_values(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(
+                employer_reimbursed=False,
+                employer_provided=False,
+                device={
+                    "description": "Cheap phone",
+                    "cost": 300,
+                    "purchase_date": "2025-09-01",
+                    "work_use_percent": 60,
+                    "receipt": "held",
+                    "set_or_substantially_identical": False,
+                    "more_than_50_percent_work_use": True,
+                    "insurance_amount": 0,
+                },
+            )
+        )
+        device = next(item for item in payload["items"] if item["number"] == "PHONE-DEVICE")
+        insurance = next(item for item in payload["items"] if item["number"] == "PHONE-INS")
+
+        self.assertIn("immediate deduction candidate if source-backed conditions", device["answer"])
+        self.assertIn("set/substantially-identical false", device["answer"])
+        self.assertIn("insurance 0.00", insurance["answer"])
+
+    def test_incidental_under_50_with_basic_records_creates_row(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(
+                incidental={
+                    "claim_amount": 0,
+                    "work_calls": 10,
+                    "work_texts": 5,
+                    "basic_records": "held",
+                }
+            )
+        )
+        incidental = next(item for item in payload["items"] if item["number"] == "PHONE-INC")
+
+        self.assertEqual("Accountant review", incidental["status"])
+        self.assertIn("claim 0.00", incidental["answer"])
+        self.assertIn("work calls 10.00; work texts 5.00", incidental["answer"])
+
+    def test_incidental_with_records_only_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(incidental={"basic_records": "held"})
+        )
+        incidental = next(item for item in payload["items"] if item["number"] == "PHONE-INC")
+
+        self.assertEqual("Evidence", incidental["status"])
+
+    def test_incidental_unknown_usage_counts_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(incidental={"work_calls": "unknown", "work_texts": 5, "basic_records": "held"})
+        )
+        incidental = next(item for item in payload["items"] if item["number"] == "PHONE-INC")
+
+        self.assertEqual("Evidence", incidental["status"])
+        self.assertIn("claim unknown", incidental["answer"])
+        self.assertIn("work calls unknown; work texts 5.00", incidental["answer"])
+        self.assertTrue(any("call/text counts" in item["answer"] for item in payload["evidence_items"]))
+
+    def test_incidental_over_50_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(incidental={"claim_amount": 75, "basic_records": "held"})
+        )
+        incidental = next(item for item in payload["items"] if item["number"] == "PHONE-INC")
+
+        self.assertEqual("Evidence", incidental["status"])
+        self.assertIn("over $50 incidental threshold", incidental["answer"])
+
+    def test_phone_abn_routes_to_business_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(context="abn", gst_registered=True, abn_income=0, abn_expenses=0)
+        )
+        overview = next(item for item in payload["items"] if item["number"] == "PHONE")
+        plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+        device = next(item for item in payload["items"] if item["number"] == "PHONE-DEVICE")
+        incidental = next(item for item in payload["items"] if item["number"] == "PHONE-INC")
+
+        self.assertIn("ABN/GST/BAS review path", overview["tab_text"])
+        self.assertEqual("ABN/GST/BAS phone review", plan["ato_area"])
+        self.assertEqual("ABN/GST/BAS phone review", device["ato_area"])
+        self.assertEqual("ABN/GST/BAS phone review", incidental["ato_area"])
+        self.assertIn(taxmate_intake.ATO_GST_CREDITS_SOURCE, overview["source_urls"])
+
+    def test_mixed_employee_abn_phone_context_routes_to_business_review(self) -> None:
+        for context in ("employee and ABN", "ABN and employee", "employee/sole trader", "business and employment"):
+            with self.subTest(context=context):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    self.phone_payload(context=context, gst_registered=True)
+                )
+                overview = next(item for item in payload["items"] if item["number"] == "PHONE")
+                plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+
+                self.assertIn("ABN/GST/BAS review path", overview["tab_text"])
+                self.assertEqual("ABN/GST/BAS phone review", plan["ato_area"])
+                self.assertTrue(any("GST tax invoice" in item["answer"] for item in payload["evidence_items"]))
+
+    def test_negative_abn_phone_context_stays_employee_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(context="employee, not ABN", gst_registered=True)
+        )
+        overview = next(item for item in payload["items"] if item["number"] == "PHONE")
+        plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+
+        self.assertNotIn("ABN/GST/BAS review path", overview["tab_text"])
+        self.assertEqual("D5 Other work-related expenses", plan["ato_area"])
+
+    def test_abn_bas_facts_without_phone_input_do_not_create_phone_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"abn_income": 0, "abn_expenses": 0, "gst_registered": True}
+        )
+
+        self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["items"]))
+        self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["evidence_items"]))
+
+    def test_global_wfh_method_without_phone_input_does_not_create_phone_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload({"wfh_method": "fixed-rate method"})
+
+        self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["items"]))
+        self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["evidence_items"]))
+
+    def test_phone_metadata_only_without_cost_or_usage_does_not_create_phone_rows(self) -> None:
+        cases = [
+            {"phone": {"context": "employee"}},
+            {"phone_context": "employee"},
+            {"phone_paid_by_user": True},
+            {"phone": {"context": "abn", "paid_by_user": True, "wfh_method": "fixed-rate"}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["items"]))
+                self.assertFalse(any(str(item["number"]).lower() == "phone" for item in payload["items"]))
+                self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["evidence_items"]))
+
+    def test_free_form_phone_answer_uses_phone_review_workflow(self) -> None:
+        for key in ("phone", "mobile_phone"):
+            with self.subTest(key=key):
+                payload = taxmate_intake.answers_to_pack_payload({key: "Work calls on personal mobile; bills not ready"})
+                overview = next(item for item in payload["items"] if item["number"] == "PHONE")
+
+                self.assertEqual("Accountant review", overview["status"])
+                self.assertIn("free-form facts Work calls on personal mobile", overview["answer"])
+                self.assertFalse(any(item["number"] == key and item["status"] == "Used" for item in payload["items"]))
+                self.assertTrue(any("free-form phone fact" in item["answer"] for item in payload["evidence_items"]))
+
+    def test_free_form_phone_abn_context_routes_to_business_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "phone": "I use mobile for ABN and employee work; bills not ready",
+                "gst_registered": True,
+            }
+        )
+        overview = next(item for item in payload["items"] if item["number"] == "PHONE")
+
+        self.assertIn("ABN/GST/BAS review path", overview["tab_text"])
+        self.assertTrue(any("GST tax invoice" in item["answer"] for item in payload["evidence_items"]))
+
+    def test_free_form_phone_absence_values_do_not_create_phone_rows(self) -> None:
+        for value in (
+            False,
+            "no phone claim",
+            "no phone deduction",
+            "no mobile claim",
+            "no mobile phone claim",
+            "no mobile phone deduction",
+            "no phone or internet claim",
+            "no phone expenses",
+            "phone expenses none",
+            "no phone costs",
+            "no device claim",
+            "no handset claim",
+            "not claiming internet",
+            "not claiming phone internet",
+            "phone not claimed",
+            "mobile not claimed",
+        ):
+            with self.subTest(value=value):
+                payload = taxmate_intake.answers_to_pack_payload({"phone": value})
+
+                self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["items"]))
+                self.assertFalse(any(str(item["number"]).lower() == "phone" for item in payload["items"]))
+                self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["evidence_items"]))
+
+    def test_nested_phone_opt_out_dicts_do_not_create_phone_rows(self) -> None:
+        cases = [
+            {"phone": {"freeform": "no phone claim"}},
+            {"phone": {"claim": False}},
+            {"phone": {"no_claim": True}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+
+                self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["items"]))
+                self.assertFalse(any(str(item["number"]).lower() == "phone" for item in payload["items"]))
+                self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["evidence_items"]))
+
+    def test_free_form_negative_eligibility_and_conditional_opt_outs_do_not_create_rows(self) -> None:
+        for value in (
+            "not eligible for phone claim",
+            "phone claim not eligible",
+            "no phone claim maybe later",
+        ):
+            with self.subTest(value=value):
+                payload = taxmate_intake.answers_to_pack_payload({"phone": value})
+
+                self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["items"]))
+                self.assertFalse(any(str(item["number"]).lower() == "phone" for item in payload["items"]))
+                self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["evidence_items"]))
+
+    def test_nested_phone_direct_plan_device_and_incidental_fields_create_child_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "phone": {
+                    "context": "employee",
+                    "paid_by_user": True,
+                    "employer_reimbursed": False,
+                    "wfh_method": "actual-cost",
+                    "monthly_cost": 65,
+                    "months_claimed": 11,
+                    "itemised_bill": True,
+                    "representative_period_start": "2025-08-01",
+                    "representative_period_end": "2025-08-28",
+                    "work_use_percent": 20,
+                    "bills": "held",
+                    "log": "held",
+                    "cost": 1100,
+                    "purchase_date": "2025-07-01",
+                    "receipt": "held",
+                    "work_calls": 3,
+                    "work_texts": 2,
+                    "basic_records": "held",
+                }
+            }
+        )
+        by_number = {item["number"]: item for item in payload["items"]}
+
+        self.assertIn("candidate 143.00", by_number["PHONE-PLAN"]["answer"])
+        self.assertIn("cost 1100.00", by_number["PHONE-DEVICE"]["answer"])
+        self.assertIn("work calls 3.00; work texts 2.00", by_number["PHONE-INC"]["answer"])
+
+    def test_nested_phone_direct_plan_fields_do_not_create_device_row_from_work_use_only(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"phone": {"monthly_cost": 65, "months_claimed": 11, "work_use_percent": 20, "bills": "held", "log": "held"}}
+        )
+
+        self.assertTrue(any(item["number"] == "PHONE-PLAN" for item in payload["items"]))
+        self.assertFalse(any(item["number"] == "PHONE-DEVICE" for item in payload["items"]))
+
+    def test_ambiguous_free_form_phone_facts_stay_under_review(self) -> None:
+        for value in (
+            "not sure if I can claim phone",
+            "not sure whether phone expenses are deductible",
+            "no idea if phone can be claimed",
+            "no phone claim question because I am unsure",
+        ):
+            with self.subTest(value=value):
+                payload = taxmate_intake.answers_to_pack_payload({"phone": value})
+                overview = next(item for item in payload["items"] if item["number"] == "PHONE")
+
+                self.assertEqual("Accountant review", overview["status"])
+                self.assertTrue(any("free-form phone fact" in item["answer"] for item in payload["evidence_items"]))
+
+    def test_free_form_employee_not_abn_context_not_overridden_by_abn_bas(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "phone": "employee not ABN phone bills",
+                "gst_registered": True,
+            }
+        )
+        overview = next(item for item in payload["items"] if item["number"] == "PHONE")
+        plan_rows = [item for item in payload["items"] if item["number"] == "PHONE-PLAN"]
+
+        self.assertNotIn("ABN/GST/BAS review path", overview["tab_text"])
+        self.assertFalse(plan_rows)
+        self.assertFalse(any("GST tax invoice" in item["answer"] for item in payload["evidence_items"]))
+
+    def test_explicit_employee_phone_context_is_not_overridden_by_abn(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(context="employee", gst_registered=True, abn_income=0, abn_expenses=0)
+        )
+        overview = next(item for item in payload["items"] if item["number"] == "PHONE")
+        device = next(item for item in payload["items"] if item["number"] == "PHONE-DEVICE")
+
+        self.assertNotIn("ABN/GST/BAS review path", overview["tab_text"])
+        self.assertEqual("D5 Other work-related expenses", device["ato_area"])
+        self.assertNotIn(taxmate_intake.ATO_GST_CREDITS_SOURCE, overview["source_urls"])
+        self.assertFalse(any("GST tax invoice" in item["answer"] for item in payload["evidence_items"]))
+
+    def test_phone_gst_registered_keeps_bas_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(context="abn", gst_registered=True)
+        )
+
+        self.assertTrue(any("GST tax invoice" in item["answer"] for item in payload["evidence_items"]))
+
+    def test_phone_abn_gst_child_rows_and_evidence_include_gst_sources(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            self.phone_payload(
+                context="abn",
+                gst_registered=True,
+                plan={"monthly_cost": 40, "months_claimed": 10, "work_use_percent": 25},
+            )
+        )
+
+        for row in [item for item in payload["items"] if str(item["number"]).startswith("PHONE-")]:
+            with self.subTest(number=row["number"]):
+                self.assertIn(taxmate_intake.ATO_GST_CREDITS_SOURCE, row["source_urls"])
+        evidence = next(item for item in payload["evidence_items"] if "GST tax invoice" in item["answer"])
+        self.assertIn(taxmate_intake.ATO_GST_CREDITS_SOURCE, evidence["source_urls"])
+
+    def test_phone_rows_render_in_html_with_sources(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(wfh_method="fixed-rate"))
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("PHONE-PLAN", body)
+        self.assertIn("Phone plan/data", body)
+        self.assertIn("Phone handset/device", body)
+        self.assertIn("WFH fixed-rate covers phone/data", body)
+        self.assertIn(taxmate_intake.ATO_PHONE_SOURCE, body)
+
+    def test_phone_flat_aliases_are_accepted(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "phone_context": "employee",
+                "phone_paid_by_user": True,
+                "phone_employer_reimbursed": False,
+                "phone_wfh_method": "actual-cost",
+                "phone_plan_monthly_cost": 20,
+                "phone_plan_months_claimed": 2,
+                "phone_plan_work_use_percent": 50,
+                "phone_itemised_bill": True,
+                "phone_representative_period_start": "2025-08-01",
+                "phone_representative_period_end": "2025-08-28",
+                "phone_bills": "held",
+                "phone_log": "held",
+            }
+        )
+        plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+
+        self.assertIn("candidate 20.00", plan["answer"])
 
 
 if __name__ == "__main__":

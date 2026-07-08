@@ -34,6 +34,7 @@ MARKETPLACE_ADD_PREFIX = "codex plugin marketplace add "
 LOCAL_MARKETPLACE_ADD_COMMAND = "codex plugin marketplace add ."
 LOCAL_PLUGIN_ADD_COMMAND = "codex plugin add taxmate-australia@{name}"
 PLUGIN_MCP_REQUIRED_FRAGMENTS = [
+    '"coverage",',
     '["command", "cwd"]',
     '["output_path", "cwd"]',
     '["answers_path", "output_path", "cwd"]',

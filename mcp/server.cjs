@@ -15,6 +15,7 @@ const TAXMATE_LAUNCHER = path.join(PLUGIN_ROOT, "scripts", "taxmate");
 const MAX_OUTPUT_CHARS = 20000;
 const COMMANDS = new Set([
   "calc",
+  "coverage",
   "finance",
   "intake",
   "refresh",

@@ -15,6 +15,7 @@ Core plugin checks:
 ```bash
 PYTHONPYCACHEPREFIX=/tmp/taxmate-pycache python3 -m py_compile scripts/*.py
 ./scripts/taxmate review-guardrails
+./scripts/taxmate coverage audit
 ./scripts/taxmate validate
 ./scripts/taxmate skills generate --check
 ./scripts/taxmate skills audit --check
@@ -114,6 +115,7 @@ Run runtime commands with the bash+python stack:
 ./scripts/taxmate finance --help
 ./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json
 ./scripts/taxmate intake individual --answers /tmp/taxmate-answers.json --output /tmp/taxmate-guide.html
+./scripts/taxmate coverage audit
 ./scripts/taxmate validate
 ```
 

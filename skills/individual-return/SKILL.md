@@ -44,7 +44,7 @@ metadata:
 
 # TaxMate Australia Individual Return
 
-Use this skill to orchestrate V1 individual tax-return preparation, including PAYG, ESS, ETP, investment income, general CGT event review, crypto, rental, ABN, BAS, WFH, and review queues. It is a preparation aid only, not tax advice, financial advice, legal advice, accounting advice, BAS-agent advice, registered-tax-agent advice, investment advice, lodgment software, or a substitute for a qualified professional. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency.
+Use this skill to orchestrate V1 individual tax-return preparation, including PAYG, ESS, ETP, investment income, general CGT event review, crypto, rental, ABN, BAS, WFH, phone plan/device facts, and review queues. It is a preparation aid only, not tax advice, financial advice, legal advice, accounting advice, BAS-agent advice, registered-tax-agent advice, investment advice, lodgment software, or a substitute for a qualified professional. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency.
 
 Read `references/rules.md` before building an intake or handoff.
 
@@ -92,6 +92,7 @@ Handle individual tax return prep for the selected income year, normally 2025-26
 - sole-trader ABN profile, income streams, expense categories, GST registration status/date, accounting basis, record system, business-versus-hobby, PSI review, private-use apportionment, home-business, motor vehicle, depreciation/capital expense, and profit or loss;
 - BAS worksheet facts: period, coverage, 1A GST collected, 1B GST credits, GST-free or input-taxed sales, PAYG withholding or instalments, adjustments, accounting basis, GST registration date, and tax invoice evidence;
 - employee and ABN deductions, reimbursement, evidence, GST, work/private split, and mixed-use review;
+- phone plan/data/device and incidental-use facts, including employee/ABN/both context, user-paid status, employer paid/reimbursed/provided flags, WFH method, bills, 4-week records, work-use percentage, device cost/date, changed work-use facts, insurance, and ABN/GST/BAS routing;
 - WFH calendar facts, state-wide public holidays, limited regional/sector/partial-day public holidays, leave, weekends worked, hours, records, fixed-rate and actual-cost support;
 - assets such as monitors and laptops, including cost, date, owner, work use, method facts, evidence, and review status.
 
@@ -119,9 +120,10 @@ Do not fully handle company, trust, partnership, full supplementary, complete CG
 16. For rental property worksheet prep, collect property identity, ownership, income, loan interest, repairs, capital works, depreciation, other expenses, records, private-use or holiday-home days, available-for-rent days, and net rental loss facts. Explicit no-rental-property answers without facts should skip the workflow; no-rental plus facts, missing records, unknown or malformed amounts, repairs-versus-capital ambiguity, missing private-use apportionment, capital works, depreciation, and net rental loss stay Evidence or `Accountant review`; never decide final rental treatment or call it copy-ready.
 17. For sole-trader ABN prep, collect ABN, business name, activity, start/end dates, GST registration status/date, accounting basis, record system, business income streams, and expense categories. Keep private apportionment, home-business, motor vehicle, depreciation, capital expense, losses, PSI, business-versus-hobby, and non-commercial-loss facts visible in Evidence or `Accountant review`.
 18. For BAS, prepare a worksheet only. Collect period coverage, 1A, 1B, GST-free/input-taxed sales, adjustments, PAYG labels, tax invoice evidence, accounting basis, and GST registration facts. Calculate totals where facts are complete, but do not lodge, finalise, fill official BAS forms, or support BAS lodgment.
-19. For assets, never claim full cost by default. Ask work-use and method facts, then present immediate, depreciation, low-value-pool, or review outcomes only when source-backed.
-20. When full runtime execution is available, use the runtime intake command and output one print-first HTML pack only. Do not expose internal Python script names to users.
+19. For phone costs, keep phone plan/data, handset/device, insurance, and incidental-use rows separate. WFH fixed-rate blocks separate phone/data candidates. Employer-paid, reimbursed, or provided costs are blocked. ABN/GST/BAS, mixed use, over-$300 decline-in-value, effective-life/method, and set/substantially-identical facts stay Evidence or `Accountant review`.
+20. For assets, never claim full cost by default. Ask work-use and method facts, then present immediate, depreciation, low-value-pool, or review outcomes only when source-backed.
+21. When full runtime execution is available, use the runtime intake command and output one print-first HTML pack only. Do not expose internal Python script names to users.
 
 ## Output Contract
 
-When full runtime execution is available, the final handoff is HTML only. It must include prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, PAYG income statement rows, itemized investment income rows, CGT schedule and item rows, ABN prep, BAS worksheet, missing facts, evidence queue, accountant-review queue, and source/provenance appendix.
+When full runtime execution is available, the final handoff is HTML only. It must include prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, PAYG income statement rows, phone plan/device/incidental rows where supplied, itemized investment income rows, CGT schedule and item rows, ABN prep, BAS worksheet, missing facts, evidence queue, accountant-review queue, and source/provenance appendix.
