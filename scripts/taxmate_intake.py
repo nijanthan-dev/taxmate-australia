@@ -3407,6 +3407,12 @@ PHONE_INCIDENTAL_ALIASES = {
 PHONE_DEVICE_SIGNAL_KEYS = set(PHONE_DEVICE_ALIASES).difference({"work_use_percent"})
 PHONE_PLAN_SIGNAL_KEYS = set(PHONE_PLAN_ALIASES).difference({"work_use_percent"})
 PHONE_INCIDENTAL_SIGNAL_KEYS = set(PHONE_INCIDENTAL_ALIASES)
+PHONE_NESTED_ALIAS_GROUPS = (
+    PHONE_FIELD_ALIASES,
+    PHONE_DEVICE_ALIASES,
+    PHONE_PLAN_ALIASES,
+    PHONE_INCIDENTAL_ALIASES,
+)
 
 
 def phone_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
@@ -3477,6 +3483,7 @@ def phone_nested_wfh_method(answers: Dict[str, Any]) -> Any:
 
 def phone_normalized_nested_raw(raw: Dict[str, Any]) -> Dict[str, Any]:
     result: Dict[str, Any] = {}
+    freeform_parts: List[str] = []
     for key, value in raw.items():
         normalized_key = str(key).strip().lower()
         if normalized_key in PHONE_OPT_OUT_KEYS and phone_freeform_absent(value):
@@ -3486,8 +3493,27 @@ def phone_normalized_nested_raw(raw: Dict[str, Any]) -> Dict[str, Any]:
                 continue
             if phone_bool(value) is False or is_missing(value):
                 continue
+        if not phone_nested_known_field(normalized_key):
+            if phone_freeform_present(value):
+                freeform_parts.append(f"{normalized_key} {display_value(value)}")
+            continue
         result[key] = value
+    if freeform_parts:
+        existing = ""
+        if phone_freeform_present(result.get("freeform")):
+            existing = display_value(result.get("freeform"))
+        result["freeform"] = "; ".join(part for part in (existing, *freeform_parts) if part)
     return result
+
+
+def phone_nested_known_field(key: str) -> bool:
+    if key in {"device", "plan", "incidental", "freeform", *PHONE_METADATA_KEYS}:
+        return True
+    return any(
+        key == target or key in aliases
+        for aliases_by_target in PHONE_NESTED_ALIAS_GROUPS
+        for target, aliases in aliases_by_target.items()
+    )
 
 
 def phone_child_answers(
@@ -3973,7 +3999,7 @@ def phone_user_paid_false(value: Any) -> bool:
         return False
     if re.search(r"\b(not|never|did not|dont|don t|didnt|didn t)\b(?:\s+\w+){0,3}\s+\b(pay|paid)\b", normalized):
         return True
-    return phone_text_has_affirmed_marker(normalized, ("reimburs\\w*", "employer paid", "paid by employer", "provided by employer", "company provided"))
+    return phone_text_has_affirmed_marker(normalized, PHONE_EMPLOYER_MARKERS)
 
 
 def phone_user_paid_unanswered_text(normalized: str) -> bool:

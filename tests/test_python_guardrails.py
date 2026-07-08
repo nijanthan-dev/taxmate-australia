@@ -15588,6 +15588,10 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
             ("paid_by_user", "employer paid the phone bill", "not paid by user"),
             ("paid_by_user", "no, employer paid", "not paid by user"),
             ("paid_by_user", "no - reimbursed by employer", "not paid by user"),
+            ("paid_by_user", "work phone", "not paid by user"),
+            ("paid_by_user", "company phone", "not paid by user"),
+            ("paid_by_user", "employer provided phone", "not paid by user"),
+            ("paid_by_user", "issued by employer", "not paid by user"),
             ("employer_reimbursed", "reimbursed by employer", "employer reimbursed"),
             ("employer_paid", "paid by employer", "employer paid"),
             ("employer_provided", "company provided phone", "employer provided"),
@@ -15649,6 +15653,7 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
             ("paid_by_user", "no payment details provided"),
             ("paid_by_user", "no value"),
             ("paid_by_user", "no field value"),
+            ("paid_by_user", "work phone not provided by employer"),
             ("employer_reimbursed", "not reimbursed by employer"),
             ("employer_reimbursed", "reimbursed by employer no"),
             ("employer_paid", "employer did not pay"),
@@ -15952,6 +15957,23 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
                 self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["items"]))
                 self.assertFalse(any(str(item["number"]).lower() == "phone" for item in payload["items"]))
                 self.assertFalse(any(str(item["number"]).startswith("PHONE") for item in payload["evidence_items"]))
+
+    def test_nested_unknown_phone_fields_are_visible_freeform_facts(self) -> None:
+        cases = (
+            ({"notes": "work calls on personal mobile"}, "notes work calls on personal mobile"),
+            ({"claim": True}, "claim true"),
+            (
+                {"freeform": "Phone bills pending", "notes": "work call diary exists"},
+                "Phone bills pending; notes work call diary exists",
+            ),
+        )
+        for phone, expected in cases:
+            with self.subTest(phone=phone):
+                payload = taxmate_intake.answers_to_pack_payload({"phone": phone})
+                overview = next(item for item in payload["items"] if item["number"] == "PHONE")
+
+                self.assertIn(f"free-form facts {expected}", overview["answer"])
+                self.assertTrue(any("free-form phone fact" in item["answer"] for item in payload["evidence_items"]))
 
     def test_nested_phone_opt_out_dicts_do_not_create_phone_rows(self) -> None:
         cases = [
