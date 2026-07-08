@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.1](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.18.0...v0.18.1) (2026-07-08)
+
+
+### Bug Fixes
+
+* phone deductions guardrails ([1e88d9f](https://github.com/nijanthan-dev/taxmate-australia/commit/1e88d9f34c9c5fdbafaf8b082b22831890220a7f))
+
 ## [0.18.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.17.0...v0.18.0) (2026-07-07)
 
 
