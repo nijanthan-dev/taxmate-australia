@@ -150,6 +150,10 @@ These are conservative topic summaries from official sources, not copied ATO pag
 - Do not claim source-backed treatment from metadata-only sources without explicit validation.
 
 ## Accountant-review boundaries
+Personal super contribution deduction handling is structured through the individual-return runtime. Collect fund, member, contribution date and amount, notice of intent, fund acknowledgement, intended deduction amount, concessional-cap review signals, and Division 293 review signals.
+
+Missing notice of intent, missing fund acknowledgement, contribution amount/date uncertainty, cap uncertainty, Division 293 uncertainty, SMSF-adjacent facts, and unsupported super offsets stay Evidence or `Accountant review`. Never decide final deductibility, cap treatment, offset eligibility, or Division 293 outcomes.
+
 - caps
 - SG rates
 - payment date

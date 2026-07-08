@@ -224,6 +224,11 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
         "README and install docs must describe portable-vs-runtime output, HTML-only prep handoff sections, synthetic data, and manual-copy boundaries while developer docs carry screenshot refresh commands and the docs-update rule for user-facing output changes.",
     ),
     ReviewPattern(
+        "Issue #70 deduction/offset intake",
+        INDIVIDUAL_INTAKE_CONTRACT,
+        "Deduction, personal-super, and offset intake must keep source provenance specific to the row kind, gate GST/BAS sources on the deduction row's GST/BAS signal rather than global BAS inputs, match short deduction routing tokens such as car as whole words, classify software/tool items before broad licence/membership matches, surface offset evidence gaps when claim is omitted, uncertain, or only a supported offset type is supplied but suppress them for boolean or phrase-based negative claims, derive false-only structured placeholders from field alias maps including numeric 0 false defaults while preserving false flags attached to core facts, ignore boolean false amount-only placeholders while preserving zero amount rows, skip natural-language no-op scalar item entries and top-level scalar no-op aliases before row creation, keep partial reimbursement/employer-paid/provided and partial offset eligibility/review phrases in evidence instead of treating them as clean negatives, prefer concrete aliases over earlier unknown or serialized-false placeholders, compare 0/1 amount aliases as money rather than booleans, compare equivalent evidence/NOI/ack denials and boolean aliases by field-aware canonical meaning including negative boolean phrases, suppress negative review phrases before evidence gating, treat explicit document/evidence denials and false evidence/NOI/ack values as concrete facts, preserve false aliases in conflicting boolean alias groups, validate malformed personal-super contribution dates before clearing evidence, surface conflicting concrete aliases in row and evidence text, preserve scalar/free-form facts beside structured rows, inside mixed lists, in nested parent notes, under item alias keys beside item arrays, in note-only containers, in supplemental note dictionaries, in recognized item-level notes, in unrecognized dictionaries, in unrecognized/partially recognized dict list items, in partially recognized dictionaries with unknown sibling keys, and in recognized parent-level aliases beside nested item arrays across all deduction/super/offset alias groups without letting raw notes satisfy evidence/NOI/ack fields, keep receipt/statement/NOI/acknowledgement denials including bare not-sent/not-acknowledged and denial-only super NOI/ack wording in evidence queues, and keep recognized direct-item aliases such as description with their amount/evidence fields intact while keeping super-specific offset sources off spouse, zone/remote, other, unsupported, and scalar generic offset fallback rows while preserving them for super offset rows.",
+    ),
+    ReviewPattern(
         "Release guardrails",
         RELEASE_GUARDRAIL_CONTRACT,
         "Release workflow edits must preserve green-CI checks, unchanged-main checks, version manifest alignment, and the Release Please bootstrap SHA.",
@@ -366,6 +371,177 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     capital_gains_rules = read_optional(root, "skills/capital-gains-tax/references/rules.md")
     capital_gains_evidence = read_optional(root, "skills/capital-gains-tax/references/evidence.md")
     findings: List[Finding] = []
+    generic_offset_sources = re.search(r"ATO_OFFSET_SOURCES\s*=\s*\[(.*?)\]\nATO_SUPER_OFFSET_SOURCES", text, re.DOTALL)
+    if not generic_offset_sources:
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "missing split generic/super offset source constants"))
+    elif any(
+        super_source in generic_offset_sources.group(1)
+        for super_source in ["ATO_SUPER_COCONTRIBUTION_SOURCE", "ATO_INVESTMENTS_INSURANCE_SUPER_SOURCE"]
+    ):
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "generic offset sources include super-specific provenance"))
+    false_only_start = text.find("FALSE_ONLY_ITEM_FIELDS = frozenset(")
+    false_only_end = text.find("def false_only_alias_keys(", false_only_start)
+    false_only_block = text[false_only_start:false_only_end] if false_only_start != -1 and false_only_end != -1 else ""
+    if '"notice_of_intent"' in false_only_block or '"fund_acknowledgement"' in false_only_block:
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "super NOI/ack denial aliases must not be false-only placeholders"))
+    if "or has_bas_inputs(answers):\n        sources = [*sources, ATO_GST_CREDITS_SOURCE, ATO_TAX_INVOICES_SOURCE]" in text:
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "deduction GST/BAS sources must be gated by row-level GST/BAS signal"))
+    if not contains_in_order(text, ["def item_alias_conflict_key(", "amount = safe_money_value(value)", "parsed_bool = phone_bool(value)"]):
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "item alias conflict keys must parse money before bool for 0/1 amounts"))
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            text,
+            [
+                "ATO_OFFSET_SOURCES = [ATO_TAX_OFFSETS_SOURCE]",
+                "ATO_SUPER_OFFSET_SOURCES = [",
+                "return ATO_SUPER_OFFSET_SOURCES",
+                "return ATO_OFFSET_SOURCES",
+                "tokens = set(normalized.split())",
+                'tokens.intersection({"travel", "car", "vehicle", "taxi", "rideshare", "uber"})',
+                "def offset_claim_false(",
+                "def offset_claim_partial_value(",
+                "def deduction_flag_negative(",
+                "def deduction_flag_partial_value(",
+                "def partial_negative_context_value(",
+                "def review_flag_partial_value(",
+                "if deduction_flag_partial_value(value):",
+                "if review_flag_partial_value(value):",
+                "if offset_claim_partial_value(value):",
+                "def deduction_private_use_negative(",
+                "claim_false = offset_claim_false(claim)",
+                "if is_missing(value) or contains_unknown(value):",
+                'r"\\b(not|no|never)\\b.*\\b(claim|claiming|claimed|apply|applying|applied|eligible|entitled|entitlement)\\b"',
+                'r"\\b(ineligible|unentitled)\\b"',
+                'r"\\b(not|no|never|without)\\b.*\\b(reimburs|employer|paid|provided|gst|bas|duplicate|risk|overlap)\\w*\\b"',
+                'r"\\b(no|not|without|zero)\\b.*\\b(private|personal|non work|nonwork|mixed)\\b"',
+                "review_offset_facts = not claim_false",
+                'kind != "unsupported"',
+                "or not is_missing(amount)",
+                "def false_only_item_placeholder(",
+                "def false_only_item_value(",
+                "def issue70_false_only_item_value(",
+                "def false_only_placeholder_value(",
+                "def scalar_noop_item_value(",
+                "def false_only_scalar_placeholder(",
+                "if false_only_scalar_placeholder(value):",
+                "scalar_noop_item_value(value)",
+                "AMOUNT_ONLY_FALSE_ITEM_KEYS = tuple(",
+                "key in AMOUNT_ONLY_FALSE_ITEM_KEYS and value is False",
+                "value == 0",
+                "if issue70_false_only_item_value(spec.key, value):",
+                "if false_only_item_value(value, item_keys, recognized_keys, false_only_keys):",
+                "false_only_scalar_placeholder(item)",
+                "false_only_item_placeholder(raw, recognized_keys, false_only_keys)",
+                "false_only_item_placeholder(item, recognized_keys, false_only_keys)",
+                "def field_has_structured_item_answers(",
+                "structured_deduction_fields = {",
+                "structured_super_contribution_fields = {",
+                "structured_offset_fields = {",
+                "if spec.key in structured_deduction_fields:",
+                "if spec.key in structured_super_contribution_fields:",
+                "if spec.key in structured_offset_fields:",
+                "def item_values_with_scalar_entries(",
+                "item_values_with_scalar_entries(value, scalar_key, recognized_keys, false_only_keys)",
+                "def item_key_value_entries(",
+                "item_key_value_entries(value.get(item_key), scalar_key, recognized_keys, false_only_keys)",
+                "FALSE_ONLY_ITEM_FIELDS = frozenset(",
+                "def false_only_alias_keys(",
+                "false_only_alias_keys(DEDUCTION_FIELD_ALIASES)",
+                "false_only_alias_keys(SUPER_CONTRIBUTION_FIELD_ALIASES)",
+                "false_only_alias_keys(OFFSET_FIELD_ALIASES)",
+                "FALSE_CONCRETE_ALIAS_GROUPS = (",
+                "BOOLEAN_FALSE_CONCRETE_ALIAS_GROUPS = (",
+                "def false_concrete_alias_group(",
+                "include_boolean and aliases in BOOLEAN_FALSE_CONCRETE_ALIAS_GROUPS",
+                "false_concrete_alias_group(aliases, include_boolean=True)",
+                "def concrete_item_alias_value(",
+                "def explicit_evidence_denial_value(",
+                '"not sent"',
+                '"not acknowledged"',
+                "def normalized_item_field(",
+                "def item_alias_conflict_key(",
+                "ITEM_ALIAS_AMOUNT_FIELDS = frozenset(",
+                "ITEM_ALIAS_EVIDENCE_FIELDS = frozenset(",
+                "ITEM_ALIAS_BOOLEAN_FIELDS = frozenset(",
+                "if field in ITEM_ALIAS_EVIDENCE_FIELDS:",
+                "item_alias_negative_boolean_value(field, value)",
+                "def item_alias_negative_boolean_value(",
+                "def review_flag_review(",
+                "def review_flag_negative(",
+                "if review_flag_review(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES[\"concessional_cap_review\"])):",
+                "if review_flag_review(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES[\"division_293_review\"])):",
+                "if review_offset_facts and review_flag_review(normalized_item_field(item, OFFSET_FIELD_ALIASES[\"review_signal\"])):",
+                "def item_alias_conflict_details(",
+                "def item_alias_conflict_text(",
+                "terms.extend(item_alias_conflict_details(item, DEDUCTION_FIELD_ALIASES))",
+                "terms.extend(item_alias_conflict_details(item, SUPER_CONTRIBUTION_FIELD_ALIASES))",
+                "terms.extend(item_alias_conflict_details(item, OFFSET_FIELD_ALIASES))",
+                "alias conflicts {conflicts}",
+                "if concrete_item_alias_value(value, false_is_concrete):",
+                "if contains_unknown(value):",
+                "rows.append(raw_text_item_entry(display_value(item), scalar_key))",
+                "DEDUCTION_NESTED_KEYS,",
+                "DEDUCTION_ITEM_KEYS,",
+                "item_alias_keys(SUPER_CONTRIBUTION_FIELD_ALIASES)",
+                "OFFSET_NESTED_KEYS,",
+                "OFFSET_ITEM_KEYS,",
+                "SUPPLEMENTAL_ITEM_NOTE_KEYS = frozenset(",
+                "def supplemental_note_entries(",
+                "def supplemental_scalar_item_entries(",
+                "rows.extend(supplemental_scalar_item_entries(item, (), scalar_key, recognized_keys))",
+                "supplemental_items = supplemental_scalar_item_entries(value, item_keys, scalar_key, recognized_keys)",
+                "key in recognized_keys",
+                "def raw_fallback_item_entry(",
+                "fallback_item = raw_fallback_item_entry(value, scalar_key, recognized_keys, false_only_keys)",
+                "def unrecognized_sibling_item_entry(",
+                "def recognized_parent_item_entry(",
+                "parent_item = recognized_parent_item_entry(value, item_keys, recognized_keys, false_only_keys)",
+                "sibling_item = unrecognized_sibling_item_entry(value, item_keys, scalar_key, recognized_keys)",
+                "if parent_item is not None:",
+                "rows.extend(supplemental_items)",
+                "elif supplemental_items:",
+                "is_recognized_item_dict(value, recognized_keys, false_only_keys)",
+                "if sibling_item is not None:",
+                "return {scalar_key: raw_text}",
+                '"receipt not held"',
+                '"without receipt"',
+                '"no statement"',
+                '"notice not sent"',
+                '"notice of intent not lodged"',
+                '"no notice of intent"',
+                '"no acknowledgement"',
+                "def personal_super_contribution_subject(",
+                "personal_super_contribution_subject(item)",
+                "contribution_date = normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES[\"contribution_date\"])",
+                "if evidence_missing(contribution_date) or parse_iso_date(contribution_date) is None:",
+                "def offset_subject(",
+                "offset_subject(item, kind)",
+                "raw type {display_value(normalized_item_field(item, OFFSET_FIELD_ALIASES['kind']))}",
+                'f"notes {display_value(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES[\'notes\']))}"',
+                'QuestionSpec("deductions", "Deductions", "Deduction notes", "D1-D10 deductions", False)',
+                'QuestionSpec("offsets", "Offsets", "Offset notes", "Tax offsets", False)',
+                'QuestionSpec("tax_offsets", "Offsets", "Tax offset notes", "Tax offsets", False)',
+                'if key in SUPER_CONTRIBUTION_NESTED_KEYS:',
+                'if key in OFFSET_NESTED_KEYS:',
+            ],
+        )
+    )
+    if not contains_in_order(
+        text,
+        [
+            '("self education", "self-education", "education", "training", "seminar", "course")',
+            '("tool", "equipment", "asset", "computer", "laptop", "software", "monitor")',
+            '("union", "professional", "membership", "accreditation", "licence", "license")',
+        ],
+    ):
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "software/tool routing must precede broad licence/membership routing"))
+    amount_malformed_match = re.search(r"def amount_malformed\(.*?^def ", text, re.DOTALL | re.MULTILINE)
+    if amount_malformed_match and re.search(r"amount\s*<\s*0", amount_malformed_match.group(0)):
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "shared amount_malformed must not reject signed BAS amounts"))
+    raw_text_match = re.search(r"def raw_text_item_entry\(.*?^def ", text, re.DOTALL | re.MULTILINE)
+    if raw_text_match and re.search(r"\[\"(evidence|notice_of_intent|fund_acknowledgement|review_signal)\"\]\s*=\s*raw_text", raw_text_match.group(0)):
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "raw free-form item text must not satisfy evidence fields"))
     route_line = ""
     for line in skill_text.splitlines():
         if "Route tax-treatment decisions" in line:

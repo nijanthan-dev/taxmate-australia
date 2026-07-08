@@ -57,6 +57,7 @@ The current individual-return handoff includes:
 - primary and secondary PAYG income statement rows with payer, ABN, occupation, gross, withholding, allowances, RFBA, RESC, lump sum labels, statement evidence, and aggregate reconciliation;
 - itemized investment income rows for bank interest, dividends/franking, managed fund/ETF/AMIT distributions, and trust distribution routing;
 - general CGT event schedule and itemized non-crypto/non-rental CGT event rows with records, current-year and carried-forward loss facts, discount, foreign-resident discount, main residence, and small-business CGT concession review signals, source provenance, reconciliation prompts, and amount-not-worked-out wording;
+- itemized deduction rows for gifts/donations, tax affairs costs, income protection, self-education, union/professional fees, work travel/car/public transport, tools/equipment/assets, personal super contribution deduction prep, and offset routing, all with evidence and review queues;
 - phone plan/data/device/incidental-use rows with WFH fixed-rate double-dip blocking, employer paid/reimbursed/provided exclusions, evidence prompts, and ABN/GST/BAS review routing;
 - ABN prep section and BAS worksheet, including ABN profile, income streams, expense categories, 1A/1B, GST-free/input-taxed sales, adjustments, PAYG labels, tax invoice evidence, and accounting-basis review;
 - missing facts queue, evidence queue, and accountant-review queue;
@@ -70,13 +71,13 @@ Example guide from synthetic sample data. Shows the overview, prep boundary, man
 
 ![Example TaxMate Australia manual-copy worksheet for synthetic John Doe data](assets/readme/taxmate-guide-john-doe-worksheet.png)
 
-The lower handoff preview shows the evidence queue, accountant-review queue, row-level provenance, and the source/provenance appendix. The generated HTML also includes ABN prep, BAS worksheet, and missing-facts sections above this section.
+The lower handoff preview shows itemized deduction and personal-super rows with accountant-review tabs and row-level provenance. The generated HTML also includes offset routing, ABN prep, BAS worksheet, missing facts, evidence queue, accountant-review queue, and source/provenance appendix.
 
 The sample data is synthetic. Screenshot maintenance is a contributor task documented in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## What It Does
 
-- Helps users prepare PAYG income statements, ABN/sole-trader facts, GST/BAS facts, investment statements, general CGT event and main residence exemption claim facts, rental property facts, crypto events, superannuation, private health, and other individual-return material.
+- Helps users prepare PAYG income statements, ABN/sole-trader facts, GST/BAS facts, investment statements, general CGT event and main residence exemption claim facts, rental property facts, crypto events, deductions, superannuation, private health, offsets, and other individual-return material.
 - Keeps missing-evidence prompts, review queues, source-backed notes, and conservative `Accountant review` flags visible.
 - Keeps source URLs, checked-at dates, source coverage checks, and generated topic skills visible.
 - Audits verified source coverage against runtime/docs/tests status with `./scripts/taxmate coverage audit`.
@@ -114,6 +115,10 @@ Use the taxmate-australia-individual-return skill to prepare investment income r
 ```
 
 ```text
+Use the taxmate-australia-individual-return skill to prepare itemized deduction rows from my gifts, tax agent fees, income protection, self-education, union fees, work travel, tools/assets, personal super contribution deduction facts, and offset signals. Keep receipts, reimbursements, employer-paid/provided flags, work/private splits, GST/BAS overlap, duplicate-risk, notice of intent, fund acknowledgement, cap/Division 293 review, and source provenance visible.
+```
+
+```text
 Use the taxmate-australia-individual-return skill to prepare itemized CGT event review rows from my asset list, owners, acquisition and disposal dates, proceeds, cost base, incidental costs, current-year and carried-forward capital loss facts, discount timing or review signals, foreign-resident discount signals, small-business concession claim facts, concession type, active asset and entity/affiliate/connected entity facts, records, and review flags. Reconcile supplied totals only as prep evidence. Do not work out capital gain/loss amounts or concession amounts.
 ```
 
@@ -140,7 +145,7 @@ Use the installed TaxMate Australia plugin to prepare the print-first individual
 ```
 
 ```text
-I have a reviewed answers file. Use TaxMate to create the prep-only HTML handoff with the AI confirmation table, PAYG rows, investment rows, CGT schedule and item rows, detailed ABN prep, BAS worksheet, review queues, and source/provenance appendix.
+I have a reviewed answers file. Use TaxMate to create the prep-only HTML handoff with the AI confirmation table, PAYG rows, investment rows, deduction/super/offset rows, CGT schedule and item rows, detailed ABN prep, BAS worksheet, review queues, and source/provenance appendix.
 ```
 
 If you are using `npx skills` guidance only, the agent can build the checklist, review prompts, manual-copy guidance, and source-backed review flags in chat. Rendering the HTML file needs the plugin runtime.

@@ -184,7 +184,7 @@ Refresh the README preview assets from synthetic sample data:
   --screenshot=/tmp/taxmate-guide-full.png \
   file:///tmp/taxmate-guide.html
 python3 scripts/png_crop.py /tmp/taxmate-guide-full.png \
-  assets/readme/taxmate-guide-john-doe-worksheet.png 0 5350 1120 760
+  assets/readme/taxmate-guide-john-doe-worksheet.png 0 3750 1120 760
 ```
 
 Any PR that changes user-facing output, output sections, screenshots/images, install/use docs, or individual-return handoff expectations must update README/docs in the same PR, or state why no docs update is needed.

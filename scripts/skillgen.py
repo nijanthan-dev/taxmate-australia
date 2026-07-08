@@ -1094,7 +1094,18 @@ def rulesMarkdown(topic_obj: Topic, sources: List[Source]) -> str:
             [
                 "Phone plan, data, handset, and incidental-use handling is structured only through the individual-return runtime phone workflow. Collect employee/ABN/both context, user-paid status, employer paid/reimbursed/provided flags, WFH fixed-rate versus actual-cost method, plan cost and 4-week work/private basis, device cost/date/work-use, records, and changed work-use facts where supplied.",
                 "",
-                "WFH fixed-rate blocks separate phone/data claim candidates. Employer-paid, reimbursed, or provided phone costs are not employee claim candidates. Missing or unknown ABN phone GST status stays Evidence. Preserve free-form and unknown nested phone facts instead of blank rows. ABN, GST, BAS, mixed-use, depreciation method/effective-life, set/substantially-identical items, and incomplete evidence stay Evidence or `Accountant review`. Source lists for other employee deductions are not structured runtime support unless `config/runtime-coverage.json` marks them structured.",
+                "Itemized deduction handling is structured through the individual-return runtime. Collect one row per deduction with label/type, amount, receipt or statement evidence, reimbursement, employer-paid/provided flags, work/private split, GST/BAS interaction, duplicate-risk facts, and source provenance. Structured prep rows cover gifts/donations, cost of managing tax affairs, income protection insurance, self-education, union/professional fees, work travel/car/public transport, and tools/equipment/assets.",
+                "",
+                "WFH fixed-rate blocks separate phone/data claim candidates. Employer-paid, reimbursed, or provided phone costs are not employee claim candidates. Missing or unknown ABN phone GST status stays Evidence. Preserve free-form and unknown nested phone facts instead of blank rows. Missing receipts, malformed or unknown amounts, reimbursements, employer-paid/provided costs, mixed/private use, GST/BAS overlap, duplicate-risk, unsupported deduction types, ABN, GST, BAS, depreciation method/effective-life, set/substantially-identical items, and incomplete evidence stay Evidence or `Accountant review`.",
+                "",
+            ]
+        )
+    if topic_obj.slug == "superannuation":
+        lines.extend(
+            [
+                "Personal super contribution deduction handling is structured through the individual-return runtime. Collect fund, member, contribution date and amount, notice of intent, fund acknowledgement, intended deduction amount, concessional-cap review signals, and Division 293 review signals.",
+                "",
+                "Missing notice of intent, missing fund acknowledgement, contribution amount/date uncertainty, cap uncertainty, Division 293 uncertainty, SMSF-adjacent facts, and unsupported super offsets stay Evidence or `Accountant review`. Never decide final deductibility, cap treatment, offset eligibility, or Division 293 outcomes.",
                 "",
             ]
         )

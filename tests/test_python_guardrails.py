@@ -323,6 +323,24 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("if not amounts or any(amount is None for amount in amounts):" in finding.detail for finding in findings))
         self.assertTrue(any("contextual = abn_contextual_aliases_allowed(answers)" in finding.detail for finding in findings))
         self.assertTrue(any("ABN_CONTEXTUAL_FIELD_ALIASES.get(key, ()) if contextual else ()" in finding.detail for finding in findings))
+
+    def test_review_guardrails_reject_signed_amount_check_in_shared_malformed_parser(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            scripts = root / "scripts"
+            scripts.mkdir()
+            (scripts / "taxmate_intake.py").write_text(
+                "def amount_malformed(value):\n"
+                "    amount = money_value(value, unknown_as_missing=True)\n"
+                "    return amount is not None and amount < 0\n"
+                "def item_amount(item):\n"
+                "    return None\n",
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_individual_intake_contract(root)
+
+        self.assertTrue(any("signed BAS amounts" in finding.detail for finding in findings))
         self.assertTrue(any('bool(income_streams or expense_categories or raw["amount_evidence"])' in finding.detail for finding in findings))
         self.assertTrue(any("state-wide public holidays" in finding.detail for finding in findings))
         self.assertTrue(any("regional, capital-city-only, sector-only, and partial-day" in finding.detail for finding in findings))
@@ -1254,10 +1272,11 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("", resident["answer"])
 
     def test_nested_unknown_answers_render_as_evidence(self) -> None:
-        rows = taxmate_intake.base_items(taxmate_intake.sample_answers())
-        deductions = next(row for row in rows if row["number"] == "employee_deductions")
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        evidence = next(row for row in payload["evidence_items"] if row["number"] == "DED-EVID-1")
 
-        self.assertEqual("Evidence", deductions["status"])
+        self.assertEqual("Evidence", evidence["status"])
+        self.assertIn("Union fees", evidence["answer"])
 
     def test_complex_checklist_answers_do_not_render_used(self) -> None:
         answers = taxmate_intake.sample_answers()
@@ -1269,9 +1288,12 @@ class IndividualIntakeTests(unittest.TestCase):
         rows = taxmate_intake.base_items(answers)
         by_number = {row["number"]: row for row in rows}
 
-        for key in ["employee_deductions", "wfh_work_pattern", "wfh_records", "asset_items"]:
+        for key in ["wfh_work_pattern", "wfh_records", "asset_items"]:
             with self.subTest(key=key):
                 self.assertEqual("Accountant review", by_number[key]["status"])
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        deduction = next(row for row in payload["items"] if row["number"] == "DED-1")
+        self.assertEqual("Accountant review", deduction["status"])
 
     def test_missing_ess_statement_base_rows_stay_evidence(self) -> None:
         for value in [False, "no ESS statement", "statement not received"]:
@@ -10925,6 +10947,21 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("period coverage review", rows[0]["tab_text"])
         self.assertFalse(any(row["number"].startswith("BAS-EVID") for row in evidence))
 
+    def test_bas_signed_adjustments_do_not_trigger_malformed_amount_evidence(self) -> None:
+        answers = {
+            "period": "Q4",
+            "accounting_basis": "cash",
+            "period_coverage": "full period",
+            "invoice_evidence": "tax invoices held",
+            "gst_bas": {"bas_adjustments": -10},
+        }
+
+        rows = taxmate_intake.bas_rows(answers)
+        evidence = taxmate_intake.evidence_rows(answers)
+
+        self.assertIn("adjustments -10.00", rows[0]["answer"])
+        self.assertFalse(any(row["question"] == "BAS amount evidence required" for row in evidence))
+
     def test_bas_label_aliases_enable_contextual_metadata_aliases(self) -> None:
         answers = {
             "label_1a": 220,
@@ -15157,15 +15194,1661 @@ class SmallBusinessCgtConcessionWorkflowTests(unittest.TestCase):
         self.assertIn(taxmate_intake.ATO_CGT_SMALL_BUSINESS_15_YEAR_SOURCE, body)
         self.assertNotRegex((row["answer"] + " " + row["tab_text"]).lower(), r"\b(eligible|final|claimable|lodgment-ready|calculated)\b")
 
+class IndividualDeductionOffsetWorkflowTests(unittest.TestCase):
+    def test_itemized_deduction_rows_preserve_falsey_and_sources(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "employee_deductions": [
+                    {
+                        "label": "Union fees",
+                        "type": "union",
+                        "amount": 0,
+                        "evidence": "receipt held",
+                        "reimbursed": False,
+                        "employer_paid": False,
+                        "employer_provided": False,
+                        "work_use_percent": 100,
+                        "gst_bas_interaction": False,
+                        "duplicate_risk": False,
+                    },
+                    {
+                        "label": "Self education course",
+                        "type": "self education",
+                        "amount": 850,
+                        "evidence": "unknown",
+                        "reimbursed": False,
+                        "work_use_percent": 80,
+                        "work_private_split": "mixed work/private use",
+                        "duplicate_risk": "also in employer records",
+                    },
+                ]
+            }
+        )
+        union = next(item for item in payload["items"] if item["number"] == "DED-1")
+        self_ed = next(item for item in payload["items"] if item["number"] == "DED-2")
+
+        self.assertEqual("Accountant review", union["status"])
+        self.assertIn("amount 0.00", union["answer"])
+        self.assertIn("reimbursed false", union["answer"])
+        self.assertIn("employer paid false", union["answer"])
+        self.assertIn("GST/BAS false", union["answer"])
+        self.assertIn(taxmate_intake.ATO_MEMBERSHIPS_FEES_SOURCE, union["source_urls"])
+        self.assertIn("Self-education", self_ed["answer"])
+        self.assertIn(taxmate_intake.ATO_SELF_EDUCATION_SOURCE, self_ed["source_urls"])
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+        self.assertIn("Self education course", evidence)
+        self.assertIn("receipt/statement evidence", evidence)
+        self.assertIn("work/private split evidence", evidence)
+        self.assertIn("duplicate-risk review", evidence)
+
+    def test_common_deduction_types_route_to_source_backed_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {"label": "DGR donation", "type": "gift", "amount": 50, "evidence": "receipt held"},
+                    {"label": "Tax agent invoice", "type": "tax agent fees", "amount": 220, "evidence": "invoice held"},
+                    {"label": "Income protection premium", "type": "income protection", "amount": 600, "evidence": "policy statement held"},
+                    {"label": "Public transport", "type": "public transport", "amount": 120, "evidence": "travel diary held"},
+                    {"label": "Tools", "type": "tools", "amount": 400, "evidence": "receipt held", "work_use_percent": 80},
+                ]
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"] if str(item["number"]).startswith("DED-")}
+
+        self.assertIn(taxmate_intake.ATO_GIFTS_DONATIONS_SOURCE, rows["DED-1"]["source_urls"])
+        self.assertIn(taxmate_intake.ATO_TAX_AFFAIRS_SOURCE, rows["DED-2"]["source_urls"])
+        self.assertIn(taxmate_intake.ATO_INVESTMENTS_INSURANCE_SUPER_SOURCE, rows["DED-3"]["source_urls"])
+        self.assertIn(taxmate_intake.ATO_PUBLIC_TRANSPORT_SOURCE, rows["DED-4"]["source_urls"])
+        self.assertIn(taxmate_intake.ATO_ASSET_SOURCE, rows["DED-5"]["source_urls"])
+
+    def test_car_routing_uses_whole_word_not_care_or_carpet(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {"label": "Child care expenses", "type": "child care", "amount": 120, "evidence": "receipt held"},
+                    {"label": "Carpet cleaning", "type": "carpet cleaning", "amount": 220, "evidence": "invoice held"},
+                    {"label": "Work car expenses", "type": "car", "amount": 300, "evidence": "logbook held"},
+                ]
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"] if str(item["number"]).startswith("DED-")}
+
+        self.assertIn("Unsupported/other deduction", rows["DED-1"]["answer"])
+        self.assertIn("Unsupported/other deduction", rows["DED-2"]["answer"])
+        self.assertNotIn(taxmate_intake.ATO_CAR_TRANSPORT_TRAVEL_SOURCE, rows["DED-1"]["source_urls"])
+        self.assertNotIn(taxmate_intake.ATO_CAR_TRANSPORT_TRAVEL_SOURCE, rows["DED-2"]["source_urls"])
+        self.assertIn(taxmate_intake.ATO_CAR_TRANSPORT_TRAVEL_SOURCE, rows["DED-3"]["source_urls"])
+
+    def test_scalar_employee_deduction_stays_visible_with_structured_individual_deduction(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "employee_deductions": "laundry $80 no receipt",
+                "individual_deductions": [{"label": "Tax agent", "type": "tax agent", "amount": 220, "evidence": "invoice held"}],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+
+        self.assertIn("DED-1", rows)
+        self.assertIn("employee_deductions", rows)
+        self.assertIn("laundry $80 no receipt", rows["employee_deductions"]["answer"])
+        self.assertNotIn("individual_deductions", rows)
+
+    def test_scalar_individual_deduction_stays_visible_with_structured_employee_deduction(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "employee_deductions": [{"label": "Union fees", "type": "union", "amount": 120, "evidence": "receipt held"}],
+                "individual_deductions": "laundry $80 no receipt",
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+
+        self.assertIn("DED-1", rows)
+        self.assertNotIn("employee_deductions", rows)
+        self.assertIn("individual_deductions", rows)
+        self.assertIn("laundry $80 no receipt", rows["individual_deductions"]["answer"])
+
+    def test_scalar_deduction_alias_stays_visible_with_structured_deduction_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "deductions": "laundry $80 no receipt",
+                "individual_deductions": [{"label": "Tax agent", "type": "tax agent", "amount": 220, "evidence": "invoice held"}],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+
+        self.assertIn("DED-1", rows)
+        self.assertIn("deductions", rows)
+        self.assertIn("laundry $80 no receipt", rows["deductions"]["answer"])
+        self.assertIn(taxmate_intake.ATO_WORK_RELATED_DEDUCTIONS_SOURCE, rows["deductions"]["source_urls"])
+        self.assertNotIn("individual_deductions", rows)
+
+    def test_scalar_super_and_offset_aliases_stay_visible_with_structured_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "amount": 1200,
+                        "notice_of_intent": "sent",
+                        "fund_acknowledgement": "held",
+                        "intended_deduction_amount": 1200,
+                    }
+                ],
+                "super_contribution_deductions": "extra super contribution unsure",
+                "individual_offsets": [{"type": "zone offset", "amount": "unknown", "evidence": "unknown"}],
+                "offsets": "spouse offset maybe",
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+
+        self.assertIn("SUPER-DED-1", rows)
+        self.assertIn("super_contribution_deductions", rows)
+        self.assertIn("extra super contribution unsure", rows["super_contribution_deductions"]["answer"])
+        self.assertIn(taxmate_intake.ATO_PERSONAL_SUPER_CONTRIBUTIONS_SOURCE, rows["super_contribution_deductions"]["source_urls"])
+        self.assertIn("OFFSET-1", rows)
+        self.assertIn("offsets", rows)
+        self.assertIn("spouse offset maybe", rows["offsets"]["answer"])
+        self.assertIn(taxmate_intake.ATO_TAX_OFFSETS_SOURCE, rows["offsets"]["source_urls"])
+        self.assertNotIn(taxmate_intake.ATO_SUPER_COCONTRIBUTION_SOURCE, rows["offsets"]["source_urls"])
+        self.assertNotIn(taxmate_intake.ATO_INVESTMENTS_INSURANCE_SUPER_SOURCE, rows["offsets"]["source_urls"])
+
+    def test_scalar_noop_aliases_do_not_render_base_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "deductions": "none",
+                "employee_deductions": "no deductions",
+                "individual_deductions": "not claiming any deductions",
+                "personal_super_contributions": "no personal super contributions",
+                "super_contribution_deductions": "not claiming super contribution deductions",
+                "offsets": "no offsets",
+                "individual_offsets": "not applying for offsets",
+            }
+        )
+        row_numbers = {item["number"] for item in payload["items"]}
+        evidence_numbers = {item["number"] for item in payload["evidence_items"]}
+
+        self.assertFalse(
+            row_numbers.intersection(
+                {
+                    "deductions",
+                    "employee_deductions",
+                    "individual_deductions",
+                    "personal_super_contributions",
+                    "super_contribution_deductions",
+                    "offsets",
+                    "individual_offsets",
+                }
+            )
+        )
+        self.assertFalse(any(str(number).startswith(("DED-", "SUPER-DED-", "OFFSET-")) for number in row_numbers))
+        self.assertFalse(any(str(number).startswith(("DED-EVID", "SUPER-DED-EVID", "OFFSET-EVID")) for number in evidence_numbers))
+
+    def test_mixed_structured_and_scalar_list_entries_stay_visible(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {"label": "Tax agent", "type": "tax agent", "amount": 220, "evidence": "invoice held"},
+                    "laundry $80 no receipt",
+                ],
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "amount": 1200,
+                        "notice_of_intent": "sent",
+                        "fund_acknowledgement": "held",
+                        "intended_deduction_amount": 1200,
+                    },
+                    "extra super contribution unsure",
+                ],
+                "individual_offsets": [
+                    {"type": "zone offset", "amount": "unknown", "evidence": "unknown"},
+                    "spouse offset maybe",
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+
+        self.assertIn("Tax agent", rows["DED-1"]["answer"])
+        self.assertIn("laundry $80 no receipt", rows["DED-2"]["answer"])
+        self.assertIn("Example Super", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("extra super contribution unsure", rows["SUPER-DED-2"]["answer"])
+        self.assertIn("Zone/remote", rows["OFFSET-1"]["answer"])
+        self.assertIn("spouse offset maybe", rows["OFFSET-2"]["answer"])
+        self.assertNotIn("individual_deductions", rows)
+        self.assertNotIn("personal_super_contributions", rows)
+        self.assertNotIn("individual_offsets", rows)
+
+    def test_nested_parent_notes_stay_visible_with_structured_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "deductions": {
+                    "items": [{"label": "Tax agent", "type": "tax agent", "amount": 220, "evidence": "invoice held"}],
+                    "notes": "laundry $80 no receipt",
+                },
+                "personal_super_contributions": {
+                    "items": [
+                        {
+                            "fund": "Example Super",
+                            "amount": 1200,
+                            "notice_of_intent": "sent",
+                            "fund_acknowledgement": "held",
+                            "intended_deduction_amount": 1200,
+                        }
+                    ],
+                    "notes": "extra super contribution unsure",
+                },
+                "offsets": {
+                    "items": [{"type": "zone offset", "amount": "unknown", "evidence": "unknown"}],
+                    "notes": "spouse offset maybe",
+                },
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+
+        self.assertIn("Tax agent", rows["DED-1"]["answer"])
+        self.assertIn("laundry $80 no receipt", rows["DED-2"]["answer"])
+        self.assertIn("Example Super", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("extra super contribution unsure", rows["SUPER-DED-2"]["answer"])
+        self.assertIn("Zone/remote", rows["OFFSET-1"]["answer"])
+        self.assertIn("spouse offset maybe", rows["OFFSET-2"]["answer"])
+        self.assertNotIn("deductions", rows)
+        self.assertNotIn("personal_super_contributions", rows)
+        self.assertNotIn("offsets", rows)
+
+    def test_canonical_deduction_object_notes_stay_visible_with_item_array(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "employee_deductions": {
+                    "items": [{"label": "Tax agent", "type": "tax agent", "amount": 220, "evidence": "invoice held"}],
+                    "notes": "laundry $80 no receipt",
+                }
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+
+        self.assertIn("Tax agent", rows["DED-1"]["answer"])
+        self.assertIn("laundry $80 no receipt", rows["DED-2"]["answer"])
+        self.assertNotIn("employee_deductions", rows)
+
+    def test_note_only_containers_preserve_scalar_notes(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "deductions": {"items": [], "notes": "laundry $80 no receipt"},
+                "personal_super_contributions": {"items": [], "notes": "extra super contribution unsure"},
+                "offsets": {"items": [], "notes": "spouse offset maybe"},
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+
+        self.assertIn("laundry $80 no receipt", rows["DED-1"]["answer"])
+        self.assertIn("extra super contribution unsure", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("spouse offset maybe", rows["OFFSET-1"]["answer"])
+        self.assertNotIn("deductions", rows)
+        self.assertNotIn("personal_super_contributions", rows)
+        self.assertNotIn("offsets", rows)
+
+    def test_unrecognized_item_dictionaries_preserve_raw_facts(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "deductions": {"laundry": "$80 no receipt"},
+                "personal_super_contributions": {"extra_super": "$1200 no notice of intent"},
+                "offsets": {"zone": "unknown eligibility evidence"},
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("laundry", rows["DED-1"]["answer"])
+        self.assertIn("$80 no receipt", rows["DED-1"]["answer"])
+        self.assertIn("extra_super", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("no notice of intent", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("zone", rows["OFFSET-1"]["answer"])
+        self.assertIn("unknown eligibility evidence", rows["OFFSET-1"]["answer"])
+        self.assertIn("receipt/statement evidence", evidence)
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("fund acknowledgement", evidence)
+        self.assertIn("eligibility evidence", evidence)
+        self.assertNotIn("deductions", rows)
+        self.assertNotIn("personal_super_contributions", rows)
+        self.assertNotIn("offsets", rows)
+
+    def test_freeform_item_notes_do_not_satisfy_evidence_fields(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "deductions": {"laundry": "$80"},
+                "personal_super_contributions": {"extra_super": "paid $1200"},
+                "offsets": {"zone": "maybe"},
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("$80", rows["DED-1"]["answer"])
+        self.assertIn("paid $1200", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("maybe", rows["OFFSET-1"]["answer"])
+        self.assertIn("receipt/statement evidence", evidence)
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("fund acknowledgement", evidence)
+        self.assertIn("eligibility evidence", evidence)
+
+    def test_partially_recognized_item_dictionaries_preserve_unknown_siblings(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": {"amount": 0, "laundry": "$80 no receipt"},
+                "personal_super_contributions": {"amount": 1200, "extra_super": "$1200 no notice of intent"},
+                "individual_offsets": {"amount": 0, "zone": "unknown eligibility evidence"},
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("laundry", rows["DED-2"]["answer"])
+        self.assertIn("$80 no receipt", rows["DED-2"]["answer"])
+        self.assertIn("extra_super", rows["SUPER-DED-2"]["answer"])
+        self.assertIn("no notice of intent", rows["SUPER-DED-2"]["answer"])
+        self.assertIn("zone", rows["OFFSET-2"]["answer"])
+        self.assertIn("unknown eligibility evidence", rows["OFFSET-2"]["answer"])
+        self.assertIn("receipt/statement evidence", evidence)
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("eligibility evidence", evidence)
+        self.assertNotIn("individual_deductions", rows)
+        self.assertNotIn("personal_super_contributions", rows)
+        self.assertNotIn("individual_offsets", rows)
+
+    def test_item_array_containers_preserve_unknown_siblings(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "deductions": {
+                    "items": [{"label": "Tax agent", "type": "tax agent", "amount": 220, "evidence": "invoice held"}],
+                    "laundry": "$80 no receipt",
+                },
+                "personal_super_contributions": {
+                    "items": [{"fund": "Example Super", "amount": 1200, "notice_of_intent": "sent", "fund_acknowledgement": "held"}],
+                    "extra_super": "$1200 no notice of intent",
+                },
+                "offsets": {
+                    "items": [{"type": "zone offset", "amount": "unknown", "evidence": "unknown"}],
+                    "extra_zone": "unknown eligibility evidence",
+                },
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+
+        self.assertIn("laundry", rows["DED-2"]["answer"])
+        self.assertIn("extra_super", rows["SUPER-DED-2"]["answer"])
+        self.assertIn("extra_zone", rows["OFFSET-2"]["answer"])
+        self.assertNotIn("deductions", rows)
+        self.assertNotIn("personal_super_contributions", rows)
+        self.assertNotIn("offsets", rows)
+
+    def test_dict_list_items_preserve_raw_and_unknown_sibling_facts(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {"laundry": "$80 no receipt"},
+                    {"amount": 40, "laundry": "$40 no receipt"},
+                ],
+                "personal_super_contributions": [{"extra_super": "$1200 no notice of intent"}],
+                "individual_offsets": [{"zone": "unknown eligibility evidence"}],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("laundry", rows["DED-1"]["answer"])
+        self.assertIn("$80 no receipt", rows["DED-1"]["answer"])
+        self.assertIn("amount 40.00", rows["DED-2"]["answer"])
+        self.assertIn("$40 no receipt", rows["DED-3"]["answer"])
+        self.assertIn("extra_super", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("zone", rows["OFFSET-1"]["answer"])
+        self.assertIn("receipt/statement evidence", evidence)
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("eligibility evidence", evidence)
+
+    def test_false_only_structured_placeholders_are_ignored(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [{"reimbursed": False, "employer_paid": False, "gst_bas_interaction": False}],
+                "personal_super_contributions": {"items": [{"division_293_review": False}]},
+                "individual_offsets": [{"claim": False}],
+            }
+        )
+        row_numbers = {item["number"] for item in payload["items"]}
+        evidence_numbers = {item["number"] for item in payload["evidence_items"]}
+
+        self.assertNotIn("DED-1", row_numbers)
+        self.assertNotIn("SUPER-DED-1", row_numbers)
+        self.assertNotIn("OFFSET-1", row_numbers)
+        self.assertNotIn("individual_deductions", row_numbers)
+        self.assertNotIn("personal_super_contributions", row_numbers)
+        self.assertNotIn("individual_offsets", row_numbers)
+        self.assertFalse(any(str(number).startswith(("DED-EVID", "SUPER-DED-EVID", "OFFSET-EVID")) for number in evidence_numbers))
+
+    def test_scalar_false_item_array_placeholders_are_ignored(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [False],
+                "personal_super_contributions": {"items": [False]},
+                "individual_offsets": [False],
+            }
+        )
+        row_numbers = {item["number"] for item in payload["items"]}
+        evidence_numbers = {item["number"] for item in payload["evidence_items"]}
+
+        self.assertNotIn("DED-1", row_numbers)
+        self.assertNotIn("SUPER-DED-1", row_numbers)
+        self.assertNotIn("OFFSET-1", row_numbers)
+        self.assertNotIn("individual_deductions", row_numbers)
+        self.assertNotIn("personal_super_contributions", row_numbers)
+        self.assertNotIn("individual_offsets", row_numbers)
+        self.assertFalse(any(str(number).startswith(("DED-EVID", "SUPER-DED-EVID", "OFFSET-EVID")) for number in evidence_numbers))
+
+    def test_natural_language_noop_scalar_item_placeholders_are_ignored(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": ["no deductions", "not claiming any deductions", "laundry $80 no receipt"],
+                "personal_super_contributions": {
+                    "items": [
+                        "no personal super contributions",
+                        "not claiming super contribution deductions",
+                        "extra super $1200 no notice of intent",
+                    ]
+                },
+                "individual_offsets": ["no offsets", "not applying for offsets"],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        rendered = "\n".join(item["answer"] for item in [*payload["items"], *payload["evidence_items"]])
+
+        self.assertIn("laundry $80 no receipt", rows["DED-1"]["answer"])
+        self.assertIn("extra super $1200 no notice of intent", rows["SUPER-DED-1"]["answer"])
+        self.assertNotIn("OFFSET-1", rows)
+        self.assertNotIn("no deductions", rendered)
+        self.assertNotIn("not claiming any deductions", rendered)
+        self.assertNotIn("no personal super contributions", rendered)
+        self.assertNotIn("not claiming super contribution deductions", rendered)
+        self.assertNotIn("no offsets", rendered)
+        self.assertNotIn("not applying for offsets", rendered)
+
+    def test_serialized_false_only_structured_placeholders_are_ignored(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {
+                        "reimbursed": "false",
+                        "reimbursement": "false",
+                        "employer_paid": "0",
+                        "employer_provided": 0,
+                        "gst_bas_interaction": "off",
+                    },
+                    "false",
+                ],
+                "personal_super_contributions": [
+                    {"concessional_cap_review": 0, "division_293": "false"},
+                ],
+                "individual_offsets": [{"claiming": 0}, "off"],
+            }
+        )
+        row_numbers = {item["number"] for item in payload["items"]}
+        evidence_numbers = {item["number"] for item in payload["evidence_items"]}
+
+        self.assertNotIn("DED-1", row_numbers)
+        self.assertNotIn("SUPER-DED-1", row_numbers)
+        self.assertNotIn("OFFSET-1", row_numbers)
+        self.assertFalse(any(str(number).startswith(("DED-EVID", "SUPER-DED-EVID", "OFFSET-EVID")) for number in evidence_numbers))
+
+    def test_zero_one_amount_aliases_compare_as_money_not_bools(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {
+                        "label": "Course",
+                        "amount": 0,
+                        "cost": "0.00",
+                        "evidence": "receipt held",
+                    }
+                ],
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "amount": 1,
+                        "contribution_amount": "1.00",
+                        "notice_of_intent": "sent",
+                        "fund_acknowledgement": "held",
+                    }
+                ],
+                "individual_offsets": [
+                    {
+                        "type": "zone offset",
+                        "claim": True,
+                        "amount": 0,
+                        "offset_amount": "0.00",
+                        "evidence": "residency statement held",
+                    }
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("amount 0.00", rows["DED-1"]["answer"])
+        self.assertIn("contribution 1.00", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("amount 0.00", rows["OFFSET-1"]["answer"])
+        self.assertNotIn("amount alias conflict", rows["DED-1"]["answer"])
+        self.assertNotIn("amount alias conflict", rows["SUPER-DED-1"]["answer"])
+        self.assertNotIn("amount alias conflict", rows["OFFSET-1"]["answer"])
+        self.assertNotIn("amount alias conflict", evidence)
+
+    def test_equivalent_denial_and_boolean_aliases_do_not_conflict(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {
+                        "label": "Course",
+                        "amount": 120,
+                        "evidence": "no receipt",
+                        "receipt": False,
+                    }
+                ],
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "amount": 1200,
+                        "notice_of_intent": "no notice of intent",
+                        "noi": False,
+                        "fund_acknowledgement": "fund acknowledgement not received",
+                        "acknowledgement": False,
+                    }
+                ],
+                "individual_offsets": [
+                    {
+                        "type": "zone offset",
+                        "claim": True,
+                        "claimed": 1,
+                        "amount": 50,
+                        "evidence": "no statement",
+                        "statement": False,
+                    }
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertNotIn("alias conflict", rows["DED-1"]["answer"])
+        self.assertNotIn("alias conflict", rows["SUPER-DED-1"]["answer"])
+        self.assertNotIn("alias conflict", rows["OFFSET-1"]["answer"])
+        self.assertNotIn("alias conflict", evidence)
+        self.assertIn("receipt/statement evidence", evidence)
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("fund acknowledgement", evidence)
+
+    def test_equivalent_negative_boolean_alias_phrases_do_not_conflict(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {
+                        "label": "Course",
+                        "amount": 120,
+                        "evidence": "receipt held",
+                        "reimbursed": False,
+                        "employer_reimbursed": "not reimbursed",
+                        "work_private_split": False,
+                        "mixed_use": "no private use",
+                    }
+                ],
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "amount": 1200,
+                        "notice_of_intent": "sent",
+                        "fund_acknowledgement": "held",
+                        "concessional_cap_review": False,
+                        "cap_review": "no cap review",
+                    }
+                ],
+                "individual_offsets": [
+                    {
+                        "type": "zone offset",
+                        "claim": False,
+                        "eligible": "not eligible",
+                        "amount": 50,
+                        "evidence": "residency statement held",
+                    }
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertNotIn("alias conflict", rows["DED-1"]["answer"])
+        self.assertNotIn("alias conflict", rows["SUPER-DED-1"]["answer"])
+        self.assertNotIn("alias conflict", rows["OFFSET-1"]["answer"])
+        self.assertNotIn("alias conflict", evidence)
+
+    def test_partial_reimbursement_phrases_stay_in_evidence_queue(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {
+                        "label": "Course",
+                        "amount": 120,
+                        "evidence": "receipt held",
+                        "reimbursed": "not fully reimbursed",
+                        "employer_paid": "not all paid by employer",
+                        "employer_provided": "partly provided by employer",
+                    }
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("not fully reimbursed", rows["DED-1"]["answer"])
+        self.assertIn("not all paid by employer", rows["DED-1"]["answer"])
+        self.assertIn("partly provided by employer", rows["DED-1"]["answer"])
+        self.assertIn("reimbursement review", evidence)
+        self.assertIn("employer-paid review", evidence)
+        self.assertIn("employer-provided review", evidence)
+
+    def test_partial_offset_claim_and_review_phrases_stay_in_evidence_queue(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_offsets": [
+                    {
+                        "type": "zone offset",
+                        "claim": "not fully eligible",
+                        "amount": "unknown",
+                        "evidence": "unknown",
+                        "review_signal": "partly eligible",
+                    }
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("claim not fully eligible", rows["OFFSET-1"]["answer"])
+        self.assertIn("review signal partly eligible", rows["OFFSET-1"]["answer"])
+        self.assertIn("offset amount evidence", evidence)
+        self.assertIn("eligibility evidence", evidence)
+        self.assertIn("eligibility review", evidence)
+
+    def test_negative_review_flag_phrases_do_not_create_evidence_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "member": "Jane Doe",
+                        "contribution_date": "2026-06-01",
+                        "amount": 1200,
+                        "intended_deduction_amount": 1200,
+                        "notice_of_intent": "sent",
+                        "fund_acknowledgement": "held",
+                        "cap_review": "no cap review",
+                        "division_293": "no Division 293 review",
+                    }
+                ],
+                "individual_offsets": [
+                    {
+                        "type": "zone offset",
+                        "claim": True,
+                        "amount": 50,
+                        "evidence": "residency statement held",
+                        "review_signal": "no eligibility issue",
+                    }
+                ],
+            }
+        )
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertNotIn("concessional cap review", evidence)
+        self.assertNotIn("Division 293 review", evidence)
+        self.assertNotIn("eligibility review", evidence)
+        self.assertFalse(any(str(item["number"]).startswith(("SUPER-DED-EVID", "OFFSET-EVID")) for item in payload["evidence_items"]))
+
+    def test_conflicting_false_and_true_boolean_aliases_stay_visible_and_queued(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {
+                        "label": "Course",
+                        "amount": 120,
+                        "evidence": "receipt held",
+                        "reimbursed": False,
+                        "employer_reimbursed": True,
+                    }
+                ],
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "amount": 1200,
+                        "notice_of_intent": "sent",
+                        "fund_acknowledgement": "held",
+                        "concessional_cap_review": False,
+                        "cap_review": True,
+                    }
+                ],
+                "individual_offsets": [
+                    {
+                        "type": "zone offset",
+                        "claim": False,
+                        "eligible": True,
+                        "amount": 50,
+                        "evidence": "residency statement held",
+                    }
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("reimbursed false", rows["DED-1"]["answer"])
+        self.assertIn("reimbursed alias conflict (reimbursed false; employer_reimbursed true)", rows["DED-1"]["answer"])
+        self.assertIn(
+            "concessional cap review alias conflict (concessional_cap_review false; cap_review true)",
+            rows["SUPER-DED-1"]["answer"],
+        )
+        self.assertIn("claim false", rows["OFFSET-1"]["answer"])
+        self.assertIn("claim alias conflict (claim false; eligible true)", rows["OFFSET-1"]["answer"])
+        self.assertIn("reimbursed alias conflict (reimbursed false; employer_reimbursed true)", evidence)
+        self.assertIn("concessional cap review alias conflict (concessional_cap_review false; cap_review true)", evidence)
+        self.assertIn("claim alias conflict (claim false; eligible true)", evidence)
+
+    def test_item_aliases_prefer_concrete_values_over_placeholders(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {
+                        "label": "Course",
+                        "amount": "unknown",
+                        "cost": 120,
+                        "evidence": "unknown",
+                        "receipt": "receipt held",
+                        "reimbursed": "false",
+                        "employer_reimbursed": True,
+                    }
+                ],
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "amount": "unknown",
+                        "contribution_amount": 1200,
+                        "notice_of_intent": "unknown",
+                        "noi": "sent",
+                        "fund_acknowledgement": "unknown",
+                        "acknowledgement": "held",
+                    }
+                ],
+                "individual_offsets": [
+                    {
+                        "type": "zone offset",
+                        "claim": "false",
+                        "claiming": True,
+                        "amount": "unknown",
+                        "offset_amount": 50,
+                        "evidence": "unknown",
+                        "record": "residency docs held",
+                    }
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("amount 120.00", rows["DED-1"]["answer"])
+        self.assertIn("receipt held", rows["DED-1"]["answer"])
+        self.assertIn("reimbursed true", rows["DED-1"]["answer"])
+        self.assertIn("contribution 1200.00", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("notice sent", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("fund acknowledgement held", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("claim true", rows["OFFSET-1"]["answer"])
+        self.assertIn("amount 50.00", rows["OFFSET-1"]["answer"])
+        self.assertIn("residency docs held", rows["OFFSET-1"]["answer"])
+        self.assertNotIn("receipt/statement evidence", evidence)
+        self.assertNotIn("notice of intent", evidence)
+        self.assertNotIn("fund acknowledgement", evidence)
+        self.assertNotIn("eligibility evidence", evidence)
+
+    def test_item_alias_conflicts_stay_visible_and_queued(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {
+                        "label": "Course",
+                        "amount": 100,
+                        "cost": 200,
+                        "evidence": "receipt held",
+                    }
+                ],
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "amount": 1000,
+                        "contribution_amount": 1200,
+                        "notice_of_intent": "sent",
+                        "fund_acknowledgement": "held",
+                    }
+                ],
+                "individual_offsets": [
+                    {
+                        "type": "zone offset",
+                        "claim": True,
+                        "amount": 10,
+                        "offset_amount": 20,
+                        "evidence": "residency docs held",
+                    }
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("amount 100.00", rows["DED-1"]["answer"])
+        self.assertIn("amount alias conflict (amount 100; cost 200)", rows["DED-1"]["answer"])
+        self.assertIn("contribution 1000.00", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("amount alias conflict (amount 1000; contribution_amount 1200)", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("amount 10.00", rows["OFFSET-1"]["answer"])
+        self.assertIn("amount alias conflict (amount 10; offset_amount 20)", rows["OFFSET-1"]["answer"])
+        self.assertIn("amount alias conflict (amount 100; cost 200)", evidence)
+        self.assertIn("amount alias conflict (amount 1000; contribution_amount 1200)", evidence)
+        self.assertIn("amount alias conflict (amount 10; offset_amount 20)", evidence)
+
+    def test_evidence_denial_alias_conflicts_stay_visible_and_queued(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {
+                        "label": "Course",
+                        "amount": 120,
+                        "evidence": "no receipt",
+                        "receipt": "receipt held",
+                    }
+                ],
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "amount": 1200,
+                        "notice_of_intent": "no notice of intent",
+                        "noi": "sent",
+                        "fund_acknowledgement": "no acknowledgement",
+                        "acknowledgement": "held",
+                    }
+                ],
+                "individual_offsets": [
+                    {
+                        "type": "zone offset",
+                        "claim": True,
+                        "amount": 50,
+                        "evidence": "without residency statement",
+                        "statement": "residency statement held",
+                    }
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("evidence no receipt", rows["DED-1"]["answer"])
+        self.assertIn("evidence alias conflict (evidence no receipt; receipt receipt held)", rows["DED-1"]["answer"])
+        self.assertIn("notice no notice of intent", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("fund acknowledgement no acknowledgement", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("notice of intent alias conflict (notice_of_intent no notice of intent; noi sent)", rows["SUPER-DED-1"]["answer"])
+        self.assertIn(
+            "fund acknowledgement alias conflict (fund_acknowledgement no acknowledgement; acknowledgement held)",
+            rows["SUPER-DED-1"]["answer"],
+        )
+        self.assertIn("evidence without residency statement", rows["OFFSET-1"]["answer"])
+        self.assertIn("evidence alias conflict (evidence without residency statement; statement residency statement held)", rows["OFFSET-1"]["answer"])
+        self.assertIn("receipt/statement evidence", evidence)
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("fund acknowledgement", evidence)
+        self.assertIn("eligibility evidence", evidence)
+        self.assertIn("evidence alias conflict (evidence no receipt; receipt receipt held)", evidence)
+        self.assertIn("notice of intent alias conflict (notice_of_intent no notice of intent; noi sent)", evidence)
+        self.assertIn("evidence alias conflict (evidence without residency statement; statement residency statement held)", evidence)
+
+    def test_false_evidence_alias_conflicts_stay_visible_and_queued(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {
+                        "label": "Course",
+                        "amount": 120,
+                        "evidence": False,
+                        "receipt": "receipt held",
+                    }
+                ],
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "amount": 1200,
+                        "notice_of_intent": False,
+                        "noi": "sent",
+                        "fund_acknowledgement": False,
+                        "acknowledgement": "held",
+                    }
+                ],
+                "individual_offsets": [
+                    {
+                        "type": "zone offset",
+                        "claim": True,
+                        "amount": 50,
+                        "evidence": False,
+                        "statement": "residency statement held",
+                    }
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("evidence false", rows["DED-1"]["answer"])
+        self.assertIn("evidence alias conflict (evidence false; receipt receipt held)", rows["DED-1"]["answer"])
+        self.assertIn("notice false", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("fund acknowledgement false", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("notice of intent alias conflict (notice_of_intent false; noi sent)", rows["SUPER-DED-1"]["answer"])
+        self.assertIn(
+            "fund acknowledgement alias conflict (fund_acknowledgement false; acknowledgement held)",
+            rows["SUPER-DED-1"]["answer"],
+        )
+        self.assertIn("evidence false", rows["OFFSET-1"]["answer"])
+        self.assertIn("evidence alias conflict (evidence false; statement residency statement held)", rows["OFFSET-1"]["answer"])
+        self.assertIn("receipt/statement evidence", evidence)
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("fund acknowledgement", evidence)
+        self.assertIn("eligibility evidence", evidence)
+        self.assertIn("evidence alias conflict (evidence false; receipt receipt held)", evidence)
+        self.assertIn("notice of intent alias conflict (notice_of_intent false; noi sent)", evidence)
+        self.assertIn("evidence alias conflict (evidence false; statement residency statement held)", evidence)
+
+    def test_bare_super_notice_denials_stay_in_evidence_queue(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "contribution_date": "2026-06-01",
+                        "amount": 1200,
+                        "notice_of_intent": "not sent",
+                        "fund_acknowledgement": "not acknowledged",
+                    }
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence_rows = {item["number"]: item for item in payload["evidence_items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("notice not sent", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("fund acknowledgement not acknowledged", rows["SUPER-DED-1"]["answer"])
+        self.assertTrue(any(number.startswith("SUPER-DED-EVID") for number in evidence_rows))
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("fund acknowledgement", evidence)
+
+    def test_contextual_super_notice_denials_stay_in_evidence_queue(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "contribution_date": "2026-06-01",
+                        "amount": 1200,
+                        "notice_of_intent": "notice of intent not received",
+                        "fund_acknowledgement": "fund acknowledgement not acknowledged",
+                    }
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("notice notice of intent not received", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("fund acknowledgement fund acknowledgement not acknowledged", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("fund acknowledgement", evidence)
+
+    def test_super_notice_denial_only_rows_stay_visible_and_queued(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "personal_super_contributions": [
+                    {"notice_of_intent": False},
+                    {"fund_acknowledgement": False},
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("SUPER-DED-1", rows)
+        self.assertIn("SUPER-DED-2", rows)
+        self.assertIn("notice false", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("fund acknowledgement false", rows["SUPER-DED-2"]["answer"])
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("fund acknowledgement", evidence)
+
+    def test_gst_sources_are_gated_to_deduction_item_signal(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "gst_registered": True,
+                "individual_deductions": [
+                    {
+                        "label": "Union fee",
+                        "type": "union_professional",
+                        "amount": 120,
+                        "evidence": "receipt held",
+                        "gst_bas_interaction": False,
+                    },
+                    {
+                        "label": "Tool",
+                        "type": "tools_assets",
+                        "amount": 220,
+                        "evidence": "tax invoice held",
+                        "gst_bas_interaction": True,
+                    },
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+
+        self.assertNotIn(taxmate_intake.ATO_GST_CREDITS_SOURCE, rows["DED-1"]["source_urls"])
+        self.assertNotIn(taxmate_intake.ATO_TAX_INVOICES_SOURCE, rows["DED-1"]["source_urls"])
+        self.assertIn(taxmate_intake.ATO_GST_CREDITS_SOURCE, rows["DED-2"]["source_urls"])
+        self.assertIn(taxmate_intake.ATO_TAX_INVOICES_SOURCE, rows["DED-2"]["source_urls"])
+
+    def test_zero_amount_only_rows_are_not_false_only_placeholders(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [{"amount": 0}],
+                "personal_super_contributions": [{"amount": 0}],
+                "individual_offsets": [{"amount": 0}],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+
+        self.assertIn("amount 0.00", rows["DED-1"]["answer"])
+        self.assertIn("contribution 0.00", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("amount 0.00", rows["OFFSET-1"]["answer"])
+
+    def test_boolean_false_amount_only_placeholders_are_ignored(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [{"amount": False}],
+                "personal_super_contributions": [{"amount": False}, {"intended_deduction_amount": False}],
+                "individual_offsets": [{"amount": False}],
+            }
+        )
+
+        self.assertFalse(any(str(item["number"]).startswith(("DED-", "SUPER-DED-", "OFFSET-")) for item in payload["items"]))
+        self.assertFalse(any(str(item["number"]).startswith(("DED-", "SUPER-DED-", "OFFSET-")) for item in payload["evidence_items"]))
+
+    def test_false_flags_with_core_facts_stay_visible(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [{"label": "Tax agent", "amount": 220, "evidence": "invoice held", "reimbursed": False}],
+                "personal_super_contributions": [{"fund": "Example Super", "amount": 1200, "division_293_review": False}],
+                "individual_offsets": [{"type": "zone offset", "claim": False, "amount": 0, "evidence": "not claimed"}],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+
+        self.assertIn("reimbursed false", rows["DED-1"]["answer"])
+        self.assertIn("Division 293 review false", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("claim false", rows["OFFSET-1"]["answer"])
+
+    def test_supplemental_note_dictionaries_are_stringified(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "deductions": {"notes": {"laundry": "$80 no receipt"}},
+                "personal_super_contributions": {"notes": {"extra_super": "$1200 no notice of intent"}},
+                "offsets": {"notes": {"zone": "unknown eligibility evidence"}},
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("laundry", rows["DED-1"]["answer"])
+        self.assertIn("$80 no receipt", rows["DED-1"]["answer"])
+        self.assertIn("extra_super", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("no notice of intent", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("zone", rows["OFFSET-1"]["answer"])
+        self.assertIn("unknown eligibility evidence", rows["OFFSET-1"]["answer"])
+        self.assertIn("receipt/statement evidence", evidence)
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("eligibility evidence", evidence)
+
+    def test_description_alias_keeps_recognized_amount_and_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"individual_deductions": {"description": "Laundry", "amount": 80, "evidence": "receipt held"}}
+        )
+        row = next(item for item in payload["items"] if item["number"] == "DED-1")
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("Laundry", row["answer"])
+        self.assertIn("80.00", row["answer"])
+        self.assertIn("receipt held", row["answer"])
+        self.assertNotIn("receipt/statement evidence", evidence)
+
+    def test_recognized_item_level_notes_stay_visible(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {"label": "Course", "amount": 120, "evidence": "receipt held", "notes": "employer reimbursed half"}
+                ],
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "amount": 1200,
+                        "notice_of_intent": "sent",
+                        "fund_acknowledgement": "held",
+                        "comments": "cap carry-forward unsure",
+                    }
+                ],
+                "individual_offsets": [
+                    {"type": "zone offset", "amount": 0, "evidence": "residency docs held", "comments": "days unsure"}
+                ],
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("employer reimbursed half", rows["DED-2"]["answer"])
+        self.assertIn("cap carry-forward unsure", rows["SUPER-DED-2"]["answer"])
+        self.assertIn("days unsure", rows["OFFSET-2"]["answer"])
+        self.assertIn("employer reimbursed half", evidence)
+        self.assertIn("cap carry-forward unsure", evidence)
+        self.assertIn("days unsure", evidence)
+
+    def test_parent_aliases_with_item_arrays_stay_visible(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "deductions": {
+                    "items": [{"label": "Tax agent", "type": "tax agent", "amount": 220, "evidence": "invoice held"}],
+                    "description": "Laundry",
+                    "amount": 80,
+                    "evidence": "no receipt",
+                },
+                "personal_super_contributions": {
+                    "items": [{"fund": "Example Super", "amount": 1200, "notice_of_intent": "sent", "fund_acknowledgement": "held"}],
+                    "description": "Top-up contribution",
+                    "amount": 900,
+                    "notice_of_intent": "no notice of intent",
+                    "fund_acknowledgement": "no acknowledgement",
+                },
+                "offsets": {
+                    "items": [{"type": "spouse offset", "claim": True, "amount": 10, "evidence": "statement held"}],
+                    "type": "zone offset",
+                    "claim": True,
+                    "amount": "unknown",
+                    "evidence": "unknown",
+                },
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("80.00", rows["DED-2"]["answer"])
+        self.assertIn("Laundry", rows["DED-2"]["answer"])
+        self.assertIn("no receipt", rows["DED-2"]["answer"])
+        self.assertIn("Top-up contribution", rows["SUPER-DED-2"]["answer"])
+        self.assertIn("contribution 900.00", rows["SUPER-DED-2"]["answer"])
+        self.assertIn("no notice of intent", rows["SUPER-DED-2"]["answer"])
+        self.assertIn("Zone/remote", rows["OFFSET-2"]["answer"])
+        self.assertIn("amount unknown", rows["OFFSET-2"]["answer"])
+        self.assertIn("receipt/statement evidence", evidence)
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("eligibility evidence", evidence)
+
+    def test_scalar_item_alias_keys_with_item_arrays_stay_visible(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "deductions": {
+                    "items": [{"label": "Tax agent", "type": "tax agent", "amount": 220, "evidence": "invoice held"}],
+                    "individual_deductions": "laundry $80 no receipt",
+                },
+                "personal_super_contributions": {
+                    "items": [{"fund": "Example Super", "amount": 1200, "notice_of_intent": "sent", "fund_acknowledgement": "held"}],
+                    "personal_super_contributions": "extra super $300 no notice of intent",
+                },
+                "offsets": {
+                    "items": [{"type": "zone offset", "amount": "unknown", "evidence": "unknown"}],
+                    "individual_offsets": "seniors offset maybe no statement",
+                },
+            }
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("Tax agent", rows["DED-1"]["answer"])
+        self.assertIn("laundry $80 no receipt", rows["DED-2"]["answer"])
+        self.assertIn("Example Super", rows["SUPER-DED-1"]["answer"])
+        self.assertIn("extra super $300 no notice of intent", rows["SUPER-DED-2"]["answer"])
+        self.assertIn("Zone/remote", rows["OFFSET-1"]["answer"])
+        self.assertIn("seniors offset maybe no statement", rows["OFFSET-2"]["answer"])
+        self.assertIn("receipt/statement evidence", evidence)
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("eligibility evidence", evidence)
+
+    def test_software_licence_routes_to_tools_assets_before_memberships(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"individual_deductions": [{"label": "Software licence", "type": "software license", "amount": 120, "evidence": "receipt held"}]}
+        )
+        row = next(item for item in payload["items"] if item["number"] == "DED-1")
+
+        self.assertIn("Tools/equipment/assets", row["answer"])
+        self.assertIn(taxmate_intake.ATO_TOOLS_EQUIPMENT_SOURCE, row["source_urls"])
+        self.assertNotIn(taxmate_intake.ATO_MEMBERSHIPS_FEES_SOURCE, row["source_urls"])
+
+    def test_deduction_receipt_denials_stay_in_evidence_queue(self) -> None:
+        for evidence_text in ("receipt not held", "without receipt", "no statement"):
+            with self.subTest(evidence=evidence_text):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {"individual_deductions": [{"label": "Course", "type": "self education", "amount": 120, "evidence": evidence_text}]}
+                )
+                evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+                self.assertIn("Course", evidence)
+                self.assertIn("receipt/statement evidence", evidence)
+
+    def test_negative_super_notice_and_acknowledgement_stay_in_evidence_queue(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "member": "Jane",
+                        "contribution_date": "2026-05-20",
+                        "amount": 1200,
+                        "notice_of_intent": "not sent",
+                        "fund_acknowledgement": "held",
+                        "intended_deduction_amount": 1200,
+                    },
+                    {
+                        "fund": "Example Super",
+                        "member": "Jane",
+                        "contribution_date": "2026-05-20",
+                        "amount": 1200,
+                        "notice_of_intent": "no notice of intent",
+                        "fund_acknowledgement": "no acknowledgement",
+                        "intended_deduction_amount": 1200,
+                    },
+                ]
+            }
+        )
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("fund acknowledgement", evidence)
+
+    def test_reimbursed_employer_paid_gst_and_unsupported_deductions_stay_queued(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {
+                        "label": "Work travel",
+                        "type": "travel",
+                        "amount": 300,
+                        "evidence": "receipt held",
+                        "reimbursed": True,
+                        "employer_paid": "unknown",
+                        "employer_provided": True,
+                        "gst_bas_interaction": True,
+                    },
+                    {"label": "Unsupported item", "type": "personal grocery fee", "amount": 10, "evidence": "receipt held"},
+                    {"label": "Negative item", "type": "gift", "amount": -5, "evidence": "receipt held"},
+                ]
+            }
+        )
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("reimbursement review", evidence)
+        self.assertIn("employer-paid review", evidence)
+        self.assertIn("employer-provided review", evidence)
+        self.assertIn("GST/BAS overlap review", evidence)
+        self.assertIn("official source support", evidence)
+        self.assertIn("amount evidence", evidence)
+        unsupported = next(item for item in payload["items"] if item["number"] == "DED-2")
+        self.assertIn("Unsupported/other deduction", unsupported["answer"])
+        self.assertIn(taxmate_intake.ATO_WORK_RELATED_DEDUCTIONS_SOURCE, unsupported["source_urls"])
+        self.assertNotIn(taxmate_intake.ATO_MEMBERSHIPS_FEES_SOURCE, unsupported["source_urls"])
+        travel = next(item for item in payload["items"] if item["number"] == "DED-1")
+        self.assertIn(taxmate_intake.ATO_GST_CREDITS_SOURCE, travel["source_urls"])
+
+    def test_negative_deduction_flag_phrases_do_not_queue_review_terms(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {
+                        "label": "Course",
+                        "type": "self education",
+                        "amount": 120,
+                        "evidence": "receipt held",
+                        "reimbursed": "not reimbursed",
+                        "employer_paid": "not employer paid",
+                        "employer_provided": "not employer provided",
+                        "gst_bas_interaction": "not GST registered",
+                        "duplicate_risk": "no duplicate risk",
+                        "work_use_percent": 100,
+                    }
+                ]
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "DED-1")
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("reimbursed not reimbursed", row["answer"])
+        self.assertNotIn("reimbursement review", evidence)
+        self.assertNotIn("employer-paid review", evidence)
+        self.assertNotIn("employer-provided review", evidence)
+        self.assertNotIn("GST/BAS overlap review", evidence)
+        self.assertNotIn("duplicate-risk review", evidence)
+
+    def test_uncertain_deduction_flag_phrases_stay_queued(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {
+                        "label": "Course",
+                        "type": "self education",
+                        "amount": 120,
+                        "evidence": "receipt held",
+                        "reimbursed": "not sure if reimbursed",
+                        "work_use_percent": 100,
+                    }
+                ]
+            }
+        )
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("reimbursement review", evidence)
+
+    def test_zero_private_use_phrases_do_not_queue_split_evidence(self) -> None:
+        for extra in (
+            {"private_use_percent": "0%"},
+            {"work_private_split": "no private use"},
+        ):
+            with self.subTest(extra=extra):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "individual_deductions": [
+                            {
+                                "label": "Course",
+                                "type": "self education",
+                                "amount": 120,
+                                "evidence": "receipt held",
+                                **extra,
+                            }
+                        ]
+                    }
+                )
+                evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+                self.assertNotIn("work/private split evidence", evidence)
+
+    def test_positive_or_uncertain_private_use_stays_queued(self) -> None:
+        for extra in (
+            {"private_use_percent": "10%"},
+            {"work_private_split": "not sure about private use"},
+        ):
+            with self.subTest(extra=extra):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "individual_deductions": [
+                            {
+                                "label": "Course",
+                                "type": "self education",
+                                "amount": 120,
+                                "evidence": "receipt held",
+                                **extra,
+                            }
+                        ]
+                    }
+                )
+                evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+                self.assertIn("work/private split evidence", evidence)
+
+    def test_personal_super_contribution_deduction_routes_notice_caps_and_div293(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "personal_super_contributions": [
+                    {
+                        "fund": "Example Super",
+                        "member": "Jane Doe",
+                        "contribution_date": "2026-05-20",
+                        "amount": 3000,
+                        "notice_of_intent": "sent",
+                        "fund_acknowledgement": "held",
+                        "intended_deduction_amount": 3000,
+                        "concessional_cap_review": True,
+                        "division_293_review": False,
+                    },
+                    {
+                        "fund": "Missing Notice Super",
+                        "member": "Jane Doe",
+                        "contribution_date": "unknown",
+                        "amount": -1,
+                        "notice_of_intent": False,
+                        "fund_acknowledgement": False,
+                        "intended_deduction_amount": 0,
+                        "division_293_review": True,
+                    },
+                ]
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "SUPER-DED-1")
+        missing = next(item for item in payload["items"] if item["number"] == "SUPER-DED-2")
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("contribution 3000.00", row["answer"])
+        self.assertIn("Division 293 review false", row["answer"])
+        self.assertIn(taxmate_intake.ATO_PERSONAL_SUPER_CONTRIBUTIONS_SOURCE, row["source_urls"])
+        self.assertIn(taxmate_intake.ATO_CONCESSIONAL_CONTRIBUTIONS_CAP_SOURCE, row["source_urls"])
+        self.assertIn("intended deduction 0.00", missing["answer"])
+        self.assertIn("contribution date", evidence)
+        self.assertIn("notice of intent", evidence)
+        self.assertIn("fund acknowledgement", evidence)
+        self.assertIn("Division 293 review", evidence)
+
+    def test_malformed_super_contribution_dates_stay_in_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "personal_super_contributions": [
+                    {
+                        "fund": "Bad Date Super",
+                        "member": "Jane Doe",
+                        "contribution_date": "31/06/2026",
+                        "amount": 1200,
+                        "notice_of_intent": "sent",
+                        "fund_acknowledgement": "held",
+                    },
+                    {
+                        "fund": "Bad Iso Super",
+                        "member": "Jane Doe",
+                        "contribution_date": "2026-13-40",
+                        "amount": 900,
+                        "notice_of_intent": "sent",
+                        "fund_acknowledgement": "held",
+                    },
+                ]
+            }
+        )
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertIn("Bad Date Super", evidence)
+        self.assertIn("Bad Iso Super", evidence)
+        self.assertEqual(2, evidence.count("contribution date"))
+
+    def test_offsets_preserve_false_claim_zero_amount_and_route_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_offsets": [
+                    {"type": "super co-contribution", "claim": False, "amount": 0, "evidence": "not claimed"},
+                    {"type": "zone offset", "claim": True, "amount": "unknown", "evidence": "residency days unknown"},
+                    {"type": "other offset", "claim": True, "amount": 20, "evidence": "unknown"},
+                ]
+            }
+        )
+        super_offset = next(item for item in payload["items"] if item["number"] == "OFFSET-1")
+        zone_offset = next(item for item in payload["items"] if item["number"] == "OFFSET-2")
+        evidence = "\n".join(item["answer"] for item in payload["evidence_items"])
+
+        self.assertEqual("Accountant review", super_offset["status"])
+        self.assertIn("claim false", super_offset["answer"])
+        self.assertIn("amount 0.00", super_offset["answer"])
+        self.assertIn(taxmate_intake.ATO_SUPER_COCONTRIBUTION_SOURCE, super_offset["source_urls"])
+        self.assertIn(taxmate_intake.ATO_INVESTMENTS_INSURANCE_SUPER_SOURCE, super_offset["source_urls"])
+        self.assertIn("Zone/remote", zone_offset["answer"])
+        self.assertIn(taxmate_intake.ATO_TAX_OFFSETS_SOURCE, zone_offset["source_urls"])
+        self.assertNotIn(taxmate_intake.ATO_SUPER_COCONTRIBUTION_SOURCE, zone_offset["source_urls"])
+        self.assertNotIn(taxmate_intake.ATO_INVESTMENTS_INSURANCE_SUPER_SOURCE, zone_offset["source_urls"])
+        self.assertIn("offset amount evidence", evidence)
+        self.assertIn("official offset support", evidence)
+
+    def test_non_super_offset_rows_keep_super_sources_out(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_offsets": [
+                    {"type": "spouse offset", "claim": True, "amount": "unknown", "evidence": "unknown"},
+                    {"type": "zone offset", "claim": True, "amount": "unknown", "evidence": "unknown"},
+                    {"type": "seniors offset", "claim": True, "amount": "unknown", "evidence": "unknown"},
+                    {"type": "", "claim": True, "amount": "unknown", "evidence": "unknown"},
+                ]
+            }
+        )
+        rows = [item for item in payload["items"] if str(item["number"]).startswith("OFFSET-")]
+        evidence_rows = [item for item in payload["evidence_items"] if str(item["number"]).startswith("OFFSET-EVID-")]
+
+        self.assertEqual(4, len(rows))
+        self.assertEqual(4, len(evidence_rows))
+        for row in rows + evidence_rows:
+            with self.subTest(number=row["number"], answer=row["answer"]):
+                self.assertIn(taxmate_intake.ATO_TAX_OFFSETS_SOURCE, row["source_urls"])
+                self.assertNotIn(taxmate_intake.ATO_SUPER_COCONTRIBUTION_SOURCE, row["source_urls"])
+                self.assertNotIn(taxmate_intake.ATO_INVESTMENTS_INSURANCE_SUPER_SOURCE, row["source_urls"])
+
+    def test_generic_offset_base_row_uses_generic_offset_source_only(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload({"individual_offsets": "maybe zone offset"})
+        row = next(item for item in payload["items"] if item["number"] == "individual_offsets")
+
+        self.assertIn(taxmate_intake.ATO_TAX_OFFSETS_SOURCE, row["source_urls"])
+        self.assertNotIn(taxmate_intake.ATO_SUPER_COCONTRIBUTION_SOURCE, row["source_urls"])
+        self.assertNotIn(taxmate_intake.ATO_INVESTMENTS_INSURANCE_SUPER_SOURCE, row["source_urls"])
+
+    def test_offset_unknown_amount_evidence_surfaces_when_claim_omitted(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"individual_offsets": [{"type": "zone offset", "amount": "unknown", "evidence": "unknown"}]}
+        )
+        row = next(item for item in payload["items"] if item["number"] == "OFFSET-1")
+        evidence = next(item for item in payload["evidence_items"] if item["number"] == "OFFSET-EVID-1")
+
+        self.assertIn("offset amount evidence", row["tab_text"])
+        self.assertIn("eligibility evidence", row["tab_text"])
+        self.assertIn("offset amount evidence", evidence["answer"])
+        self.assertIn("eligibility evidence", evidence["answer"])
+
+    def test_offset_type_only_rows_queue_amount_and_eligibility_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"individual_offsets": [{"type": "zone offset"}, {"type": "super co-contribution"}]}
+        )
+        rows = {item["number"]: item for item in payload["items"]}
+        evidence_rows = {item["number"]: item for item in payload["evidence_items"] if str(item["number"]).startswith("OFFSET-EVID-")}
+
+        self.assertIn("offset amount evidence", rows["OFFSET-1"]["tab_text"])
+        self.assertIn("eligibility evidence", rows["OFFSET-1"]["tab_text"])
+        self.assertIn("offset amount evidence", rows["OFFSET-2"]["tab_text"])
+        self.assertIn("eligibility evidence", rows["OFFSET-2"]["tab_text"])
+        self.assertIn("offset amount evidence", evidence_rows["OFFSET-EVID-1"]["answer"])
+        self.assertIn("eligibility evidence", evidence_rows["OFFSET-EVID-1"]["answer"])
+        self.assertIn("offset amount evidence", evidence_rows["OFFSET-EVID-2"]["answer"])
+        self.assertIn("eligibility evidence", evidence_rows["OFFSET-EVID-2"]["answer"])
+
+    def test_offset_explicit_false_claim_does_not_create_amount_gap(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {"individual_offsets": [{"type": "zone offset", "claim": False, "amount": "unknown", "evidence": "unknown"}]}
+        )
+        row = next(item for item in payload["items"] if item["number"] == "OFFSET-1")
+        evidence_rows = [item for item in payload["evidence_items"] if str(item["number"]).startswith("OFFSET-EVID-")]
+
+        self.assertIn("accountant review", row["tab_text"])
+        self.assertEqual([], evidence_rows)
+
+    def test_offset_negative_claim_phrases_do_not_create_amount_gap(self) -> None:
+        for claim_key, claim in (
+            ("claim", "not claimed"),
+            ("claim", "will not claim"),
+            ("applying", "not applying"),
+            ("eligible", "not eligible"),
+            ("eligible", "not entitled"),
+            ("eligible", "ineligible"),
+        ):
+            with self.subTest(claim_key=claim_key, claim=claim):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {"individual_offsets": [{"type": "zone offset", claim_key: claim, "amount": "unknown", "evidence": "unknown"}]}
+                )
+                row = next(item for item in payload["items"] if item["number"] == "OFFSET-1")
+                evidence_rows = [item for item in payload["evidence_items"] if str(item["number"]).startswith("OFFSET-EVID-")]
+
+                self.assertIn(f"claim {claim}", row["answer"])
+                self.assertIn("accountant review", row["tab_text"])
+                self.assertEqual([], evidence_rows)
+
+    def test_offset_uncertain_claim_phrases_keep_amount_gap(self) -> None:
+        for claim_key, claim in (
+            ("claim", "not sure whether I can claim"),
+            ("eligible", "not sure if entitled"),
+        ):
+            with self.subTest(claim_key=claim_key, claim=claim):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {"individual_offsets": [{"type": "zone offset", claim_key: claim, "amount": "unknown", "evidence": "unknown"}]}
+                )
+                row = next(item for item in payload["items"] if item["number"] == "OFFSET-1")
+                evidence = next(item for item in payload["evidence_items"] if item["number"] == "OFFSET-EVID-1")
+
+                self.assertIn("offset amount evidence", row["tab_text"])
+                self.assertIn("eligibility evidence", row["tab_text"])
+                self.assertIn("offset amount evidence", evidence["answer"])
+                self.assertIn("eligibility evidence", evidence["answer"])
+
+    def test_deduction_offset_rows_render_in_html_review_and_evidence_queues(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "individual_deductions": [
+                    {"label": "Tax agent", "type": "tax agent", "amount": 220, "evidence": "invoice held"},
+                    {"label": "Course", "type": "self education", "amount": "unknown", "evidence": "no receipt"},
+                ],
+                "personal_super_contributions": [
+                    {"fund": "Example Super", "member": "Jane", "amount": 0, "notice_of_intent": False, "fund_acknowledgement": False}
+                ],
+                "individual_offsets": [{"type": "zone offset", "claim": True, "amount": "unknown", "evidence": "unknown"}],
+            }
+        )
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("DED-1", body)
+        self.assertIn("SUPER-DED-1", body)
+        self.assertIn("OFFSET-1", body)
+        self.assertIn("Evidence queue", body)
+        self.assertIn("Accountant review queue", body)
+        self.assertIn(taxmate_intake.ATO_TAX_AFFAIRS_SOURCE, body)
+        self.assertIn(taxmate_intake.ATO_PERSONAL_SUPER_CONTRIBUTIONS_SOURCE, body)
+        self.assertNotRegex(body.lower(), r"\b(lodgment-ready|claimable|final tax advice)\b")
+
+
 class RuntimeCoverageTests(unittest.TestCase):
-    def test_runtime_coverage_manifest_marks_source_only_topics_explicitly(self) -> None:
+    def test_runtime_coverage_manifest_marks_structured_and_review_topics_explicitly(self) -> None:
         payload = taxmate_coverage.audit_payload(ROOT)
         by_id = {item["id"]: item for item in payload["concepts"]}
 
         self.assertEqual("structured", by_id["phone-deductions"]["runtime_status"])
         self.assertGreater(by_id["phone-deductions"]["source_count"], 0)
-        self.assertEqual("source_only", by_id["super-contribution-deductions"]["runtime_status"])
+        self.assertEqual("structured", by_id["employment-deductions"]["runtime_status"])
+        self.assertEqual("structured", by_id["super-contribution-deductions"]["runtime_status"])
+        self.assertEqual("structured", by_id["individual-offset-routing"]["runtime_status"])
         self.assertEqual("#70", by_id["super-contribution-deductions"]["issue"])
+        self.assertEqual("#70", by_id["individual-offset-routing"]["issue"])
         self.assertEqual("review_only", by_id["private-health-medicare-spouse-dependants"]["runtime_status"])
 
     def test_runtime_coverage_manifest_validates(self) -> None:

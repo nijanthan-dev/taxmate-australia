@@ -1200,7 +1200,15 @@ CGT_FIELD_ABSENCE_PHRASES = (
     "na",
 )
 REVIEWABLE_COMPLEX_FIELDS = (
+    "deductions",
     "employee_deductions",
+    "individual_deductions",
+    "personal_super_deductions",
+    "personal_super_contributions",
+    "super_contribution_deductions",
+    "offsets",
+    "individual_offsets",
+    "tax_offsets",
     "wfh_work_pattern",
     "wfh_records",
     "asset_items",
@@ -1286,6 +1294,47 @@ ATO_PHONE_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deduc
 ATO_HOME_PHONE_INTERNET_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/home-phone-and-internet-expenses"
 ATO_ASSET_300_OR_LESS_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work/assets-costing-300-dollars-or-less"
 ATO_ASSET_OVER_300_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work/assets-costing-more-than-300-dollars"
+ATO_WORK_RELATED_DEDUCTIONS_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions"
+ATO_GIFTS_DONATIONS_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/gifts-and-donations"
+ATO_TAX_AFFAIRS_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/cost-of-managing-tax-affairs"
+ATO_INVESTMENTS_INSURANCE_SUPER_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/investments-insurance-and-super"
+ATO_SELF_EDUCATION_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/education-training-and-seminars/self-education-expenses"
+ATO_MEMBERSHIPS_FEES_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/memberships-accreditations-fees-and-commissions"
+ATO_CAR_TRANSPORT_TRAVEL_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel"
+ATO_CAR_EXPENSES_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel/motor-vehicle-and-car-expenses/expenses-for-a-car-you-own-or-lease"
+ATO_PUBLIC_TRANSPORT_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel/taxi-ride-share-and-public-transport-expenses"
+ATO_TRAVEL_RECORDS_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel/overnight-travel-expenses-and-allowances/keeping-travel-expense-records"
+ATO_TOOLS_EQUIPMENT_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work"
+ATO_PERSONAL_SUPER_CONTRIBUTIONS_SOURCE = "https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super/growing-and-keeping-track-of-your-super/how-to-save-more-in-your-super/personal-super-contributions"
+ATO_CONCESSIONAL_CONTRIBUTIONS_CAP_SOURCE = "https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super/growing-and-keeping-track-of-your-super/caps-limits-and-tax-on-super-contributions/concessional-contributions-cap"
+ATO_DIVISION_293_SOURCE = "https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super/growing-and-keeping-track-of-your-super/caps-limits-and-tax-on-super-contributions/division-293-tax-on-concessional-contributions-by-high-income-earners"
+ATO_TAX_OFFSETS_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/tax-offsets"
+ATO_SUPER_COCONTRIBUTION_SOURCE = "https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super/growing-and-keeping-track-of-your-super/how-to-save-more-in-your-super/government-super-contributions/super-co-contribution"
+ATO_DEDUCTION_SOURCES = [
+    ATO_WORK_RELATED_DEDUCTIONS_SOURCE,
+    ATO_GIFTS_DONATIONS_SOURCE,
+    ATO_TAX_AFFAIRS_SOURCE,
+    ATO_INVESTMENTS_INSURANCE_SUPER_SOURCE,
+    ATO_SELF_EDUCATION_SOURCE,
+    ATO_MEMBERSHIPS_FEES_SOURCE,
+    ATO_CAR_TRANSPORT_TRAVEL_SOURCE,
+    ATO_CAR_EXPENSES_SOURCE,
+    ATO_PUBLIC_TRANSPORT_SOURCE,
+    ATO_TRAVEL_RECORDS_SOURCE,
+    ATO_TOOLS_EQUIPMENT_SOURCE,
+    ATO_ASSET_SOURCE,
+]
+ATO_PERSONAL_SUPER_DEDUCTION_SOURCES = [
+    ATO_PERSONAL_SUPER_CONTRIBUTIONS_SOURCE,
+    ATO_CONCESSIONAL_CONTRIBUTIONS_CAP_SOURCE,
+    ATO_DIVISION_293_SOURCE,
+]
+ATO_OFFSET_SOURCES = [ATO_TAX_OFFSETS_SOURCE]
+ATO_SUPER_OFFSET_SOURCES = [
+    ATO_TAX_OFFSETS_SOURCE,
+    ATO_SUPER_COCONTRIBUTION_SOURCE,
+    ATO_INVESTMENTS_INSURANCE_SUPER_SOURCE,
+]
 ATO_PHONE_SOURCES = [
     ATO_PHONE_SOURCE,
     ATO_HOME_PHONE_INTERNET_SOURCE,
@@ -1586,7 +1635,15 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("bas_period", "BAS", "BAS period", "BAS worksheet", False),
         QuestionSpec("gst_collected", "BAS", "GST collected", "BAS 1A", False),
         QuestionSpec("gst_credits", "BAS", "GST credits", "BAS 1B", False),
+        QuestionSpec("deductions", "Deductions", "Deduction notes", "D1-D10 deductions", False),
         QuestionSpec("employee_deductions", "Deductions", "Employee deductions", "D1-D10 deductions", False),
+        QuestionSpec("individual_deductions", "Deductions", "Itemized deduction rows", "D1-D10 deductions", False),
+        QuestionSpec("personal_super_contributions", "Deductions", "Personal super contribution deduction prep", "D12 Personal super contributions", False),
+        QuestionSpec("personal_super_deductions", "Deductions", "Personal super contribution deduction notes", "D12 Personal super contributions", False),
+        QuestionSpec("super_contribution_deductions", "Deductions", "Super contribution deduction notes", "D12 Personal super contributions", False),
+        QuestionSpec("offsets", "Offsets", "Offset notes", "Tax offsets", False),
+        QuestionSpec("individual_offsets", "Offsets", "Individual offset review rows", "Tax offsets", False),
+        QuestionSpec("tax_offsets", "Offsets", "Tax offset notes", "Tax offsets", False),
         QuestionSpec("phone", "Deductions", "Phone plan, data, and device facts", "D5 Other work-related expenses", False),
         QuestionSpec("wfh_work_pattern", "WFH", "WFH work pattern", "D5 Other work-related expenses", False),
         QuestionSpec("wfh_records", "WFH", "WFH records held", "D5 Other work-related expenses", False),
@@ -1800,7 +1857,49 @@ def sample_answers() -> Dict[str, Any]:
         "bas_period": "Quarter ending 30 Jun 2026",
         "gst_collected": 818.18,
         "gst_credits": 140,
-        "employee_deductions": [{"label": "Union fees", "amount": 0, "evidence": "unknown"}],
+        "employee_deductions": [
+            {"label": "Union fees", "type": "union", "amount": 0, "evidence": "unknown", "reimbursed": False},
+            {
+                "label": "Tax agent fee",
+                "type": "tax agent fees",
+                "amount": 275,
+                "evidence": "invoice held",
+                "reimbursed": False,
+                "employer_paid": False,
+                "employer_provided": False,
+                "work_use_percent": 100,
+                "gst_bas_interaction": False,
+                "duplicate_risk": False,
+            },
+            {
+                "label": "Self-education course",
+                "type": "self education",
+                "amount": 850,
+                "evidence": "receipt held",
+                "work_use_percent": 80,
+                "reimbursed": False,
+                "employer_paid": False,
+                "gst_bas_interaction": False,
+                "duplicate_risk": "also in employer reimbursement records",
+            },
+        ],
+        "personal_super_contributions": [
+            {
+                "fund": "Example Super Fund",
+                "member": "John Doe",
+                "contribution_date": "2026-05-20",
+                "amount": 3000,
+                "notice_of_intent": "sent",
+                "fund_acknowledgement": "held",
+                "intended_deduction_amount": 3000,
+                "concessional_cap_review": True,
+                "division_293_review": False,
+            }
+        ],
+        "individual_offsets": [
+            {"type": "super co-contribution", "claim": False, "amount": 0, "evidence": "not claimed"},
+            {"type": "zone offset", "claim": True, "amount": "unknown", "evidence": "residency days not confirmed"},
+        ],
         "phone": {
             "context": "employee",
             "paid_by_user": True,
@@ -1913,12 +2012,18 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     investment = investment_answers(answers)
     payg = payg_answers(answers)
     cgt = cgt_answers(answers)
+    deductions = deduction_answers(answers)
+    personal_super_contributions = personal_super_contribution_answers(answers)
+    offsets = offset_answers(answers)
     items = base_items(answers)
     extracted_values = extraction_rows(answers.get("extracted_values", []))
     abn_items = abn_rows(answers) if has_abn_inputs(answers) else []
     bas_items = bas_rows(answers) if has_bas_inputs(answers) else []
     missing_items = missing_fact_rows(answers)
     evidence_items = evidence_rows(answers)
+    items.extend(deduction_rows(deductions, answers))
+    items.extend(personal_super_contribution_rows(personal_super_contributions))
+    items.extend(offset_rows(offsets))
     phone = phone_answers(answers)
     items.extend(phone_rows(phone, answers))
     items.extend(wfh_rows(wfh_answers(answers)))
@@ -1950,6 +2055,42 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     investment = investment_answers(answers)
     payg = payg_answers(answers)
     cgt = cgt_answers(answers)
+    structured_deduction_fields = {
+        key
+        for key in DEDUCTION_NESTED_KEYS
+        if field_has_structured_item_answers(
+            answers,
+            key,
+            DEDUCTION_ITEM_KEYS,
+            "label",
+            item_alias_keys(DEDUCTION_FIELD_ALIASES),
+            false_only_alias_keys(DEDUCTION_FIELD_ALIASES),
+        )
+    }
+    structured_super_contribution_fields = {
+        key
+        for key in SUPER_CONTRIBUTION_NESTED_KEYS
+        if field_has_structured_item_answers(
+            answers,
+            key,
+            SUPER_CONTRIBUTION_ITEM_KEYS,
+            "notes",
+            item_alias_keys(SUPER_CONTRIBUTION_FIELD_ALIASES),
+            false_only_alias_keys(SUPER_CONTRIBUTION_FIELD_ALIASES),
+        )
+    }
+    structured_offset_fields = {
+        key
+        for key in OFFSET_NESTED_KEYS
+        if field_has_structured_item_answers(
+            answers,
+            key,
+            OFFSET_ITEM_KEYS,
+            "type",
+            item_alias_keys(OFFSET_FIELD_ALIASES),
+            false_only_alias_keys(OFFSET_FIELD_ALIASES),
+        )
+    }
     has_payg_items = bool(payg_item_values(payg.get("items")))
     has_cgt = has_cgt_inputs(cgt)
     has_phone = has_phone_inputs(phone_answers(answers))
@@ -1957,6 +2098,12 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     bas = bas_summary(answers) if has_bas_inputs(answers) else {}
     for spec in question_specs():
         value = investment_base_item_value(spec.key, answers, investment)
+        if spec.key in structured_deduction_fields:
+            continue
+        if spec.key in structured_super_contribution_fields:
+            continue
+        if spec.key in structured_offset_fields:
+            continue
         if spec.key == "phone" and (
             has_phone or isinstance(answers.get("phone"), dict) or ("phone" in answers and phone_freeform_absent(answers.get("phone")))
         ):
@@ -2007,7 +2154,243 @@ def investment_base_item_value(key: str, answers: Dict[str, Any], investment: Di
     return answers.get(key)
 
 
+def item_alias_keys(field_aliases: Dict[str, tuple[str, ...]], fields: Optional[Iterable[str]] = None) -> tuple[str, ...]:
+    selected = set(fields) if fields is not None else set(field_aliases)
+    return tuple(dict.fromkeys(alias for field, aliases in field_aliases.items() if field in selected for alias in aliases))
+
+
+FALSE_ONLY_ITEM_FIELDS = frozenset(
+    {
+        "reimbursed",
+        "employer_paid",
+        "employer_provided",
+        "work_private_split",
+        "gst_bas_interaction",
+        "duplicate_risk",
+        "claim",
+        "review_signal",
+        "concessional_cap_review",
+        "division_293_review",
+    }
+)
+
+
+def false_only_alias_keys(field_aliases: Dict[str, tuple[str, ...]]) -> tuple[str, ...]:
+    return item_alias_keys(field_aliases, FALSE_ONLY_ITEM_FIELDS)
+
+
+def false_only_placeholder_value(key: str, value: Any, false_only_keys: tuple[str, ...]) -> bool:
+    if value is False:
+        return True
+    if key in false_only_keys and isinstance(value, (int, float)) and not isinstance(value, bool) and value == 0:
+        return True
+    return key in false_only_keys and isinstance(value, str) and phone_bool(value) is False
+
+
+def scalar_noop_item_value(value: str) -> bool:
+    if contains_unknown(value):
+        return False
+    normalized = re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+    if normalized in {"no claim", "no claims", "not claiming", "not claimed", "declined"}:
+        return True
+    claim_context = (
+        r"(deduction|deductions|deductible|claim|claims|offset|offsets|rebate|rebates|personal\s+super|"
+        r"super\s+contribution|super\s+contributions|superannuation\s+contribution|"
+        r"superannuation\s+contributions)"
+    )
+    return bool(
+        re.search(rf"\b(no|none|nil|without)\b(?:\s+\w+){{0,4}}\s+\b{claim_context}\b", normalized)
+        or re.search(
+            rf"\b(not|do\s+not|dont|don\s+t|did\s+not|didnt|didn\s+t|will\s+not|wont|won\s+t)\s+"
+            rf"(claim|claiming|claimed|apply|applying|applied)\b(?:\s+\w+){{0,5}}\s+\b{claim_context}\b",
+            normalized,
+        )
+        or re.search(
+            rf"\b{claim_context}\b(?:\s+\w+){{0,5}}\s+\b(none|nil|not\s+claimed|not\s+claiming|"
+            r"not\s+applicable|declined)\b",
+            normalized,
+        )
+    )
+
+
+def false_only_scalar_placeholder(value: Any) -> bool:
+    return value is False or (
+        isinstance(value, str) and (phone_bool(value) is False or scalar_noop_item_value(value))
+    )
+
+
+def false_only_item_placeholder(
+    raw: Dict[str, Any],
+    recognized_keys: tuple[str, ...],
+    false_only_keys: tuple[str, ...] = (),
+) -> bool:
+    if not recognized_keys:
+        return False
+    meaningful_items = {key: value for key, value in raw.items() if has_meaningful_value(value)}
+    if not meaningful_items:
+        return False
+    return all(
+        (key in false_only_keys and false_only_placeholder_value(key, value, false_only_keys))
+        or (key in AMOUNT_ONLY_FALSE_ITEM_KEYS and value is False)
+        for key, value in meaningful_items.items()
+    )
+
+
+def false_only_item_value(
+    value: Any,
+    item_keys: tuple[str, ...],
+    recognized_keys: tuple[str, ...],
+    false_only_keys: tuple[str, ...] = (),
+) -> bool:
+    if isinstance(value, list):
+        meaningful_items = [item for item in value if has_meaningful_value(item)]
+        return bool(meaningful_items) and all(
+            false_only_scalar_placeholder(item)
+            or (isinstance(item, dict) and false_only_item_placeholder(item, recognized_keys, false_only_keys))
+            for item in meaningful_items
+        )
+    if isinstance(value, dict):
+        direct_values = {key: item for key, item in value.items() if key not in item_keys and has_meaningful_value(item)}
+        nested_values = [value.get(key) for key in item_keys if has_meaningful_value(value.get(key))]
+        direct_false_only = not direct_values or false_only_item_placeholder(direct_values, recognized_keys, false_only_keys)
+        nested_false_only = not nested_values or all(
+            false_only_item_value(item, item_keys, recognized_keys, false_only_keys) for item in nested_values
+        )
+        return (bool(direct_values) or bool(nested_values)) and direct_false_only and nested_false_only
+    return False
+
+
+def issue70_false_only_item_value(key: str, value: Any) -> bool:
+    if key in DEDUCTION_NESTED_KEYS + SUPER_CONTRIBUTION_NESTED_KEYS + OFFSET_NESTED_KEYS:
+        if false_only_scalar_placeholder(value):
+            return True
+    if key in DEDUCTION_NESTED_KEYS:
+        return false_only_item_value(
+            value,
+            DEDUCTION_ITEM_KEYS,
+            item_alias_keys(DEDUCTION_FIELD_ALIASES),
+            false_only_alias_keys(DEDUCTION_FIELD_ALIASES),
+        )
+    if key in SUPER_CONTRIBUTION_NESTED_KEYS:
+        return false_only_item_value(
+            value,
+            SUPER_CONTRIBUTION_ITEM_KEYS,
+            item_alias_keys(SUPER_CONTRIBUTION_FIELD_ALIASES),
+            false_only_alias_keys(SUPER_CONTRIBUTION_FIELD_ALIASES),
+        )
+    if key in OFFSET_NESTED_KEYS:
+        return false_only_item_value(
+            value,
+            OFFSET_ITEM_KEYS,
+            item_alias_keys(OFFSET_FIELD_ALIASES),
+            false_only_alias_keys(OFFSET_FIELD_ALIASES),
+        )
+    return False
+
+
+def is_recognized_item_dict(
+    raw: Dict[str, Any],
+    recognized_keys: tuple[str, ...],
+    false_only_keys: tuple[str, ...] = (),
+) -> bool:
+    if false_only_item_placeholder(raw, recognized_keys, false_only_keys):
+        return False
+    return any(key in raw and not is_missing(raw.get(key)) for key in recognized_keys)
+
+
+def raw_text_item_entry(raw_text: str, scalar_key: str) -> Dict[str, Any]:
+    return {scalar_key: raw_text}
+
+
+def raw_fallback_item_entry(
+    raw: Dict[str, Any],
+    scalar_key: str,
+    recognized_keys: tuple[str, ...],
+    false_only_keys: tuple[str, ...] = (),
+) -> Optional[Dict[str, Any]]:
+    if (
+        not has_meaningful_value(raw)
+        or false_only_item_placeholder(raw, recognized_keys, false_only_keys)
+        or is_recognized_item_dict(raw, recognized_keys, false_only_keys)
+    ):
+        return None
+    return raw_text_item_entry(display_value(raw), scalar_key)
+
+
+def unrecognized_sibling_item_entry(
+    raw: Dict[str, Any],
+    item_keys: tuple[str, ...],
+    scalar_key: str,
+    recognized_keys: tuple[str, ...],
+) -> Optional[Dict[str, Any]]:
+    sibling_values = {
+        key: value
+        for key, value in raw.items()
+        if key not in item_keys
+        and key not in SUPPLEMENTAL_ITEM_NOTE_KEYS
+        and key not in recognized_keys
+        and has_meaningful_value(value)
+    }
+    if not sibling_values:
+        return None
+    return raw_text_item_entry(display_value(sibling_values), scalar_key)
+
+
+def recognized_parent_item_entry(
+    raw: Dict[str, Any],
+    item_keys: tuple[str, ...],
+    recognized_keys: tuple[str, ...],
+    false_only_keys: tuple[str, ...] = (),
+) -> Optional[Dict[str, Any]]:
+    parent_values = {
+        key: value
+        for key, value in raw.items()
+        if key not in item_keys and key in recognized_keys and has_meaningful_value(value)
+    }
+    if not parent_values or false_only_item_placeholder(parent_values, recognized_keys, false_only_keys):
+        return None
+    return parent_values
+
+
+def field_has_structured_item_answers(
+    answers: Dict[str, Any],
+    key: str,
+    item_keys: tuple[str, ...],
+    scalar_key: str,
+    recognized_keys: tuple[str, ...],
+    false_only_keys: tuple[str, ...] = (),
+) -> bool:
+    value = answers.get(key)
+    if isinstance(value, list):
+        return bool(item_values_with_scalar_entries(value, scalar_key, recognized_keys, false_only_keys))
+    if isinstance(value, dict):
+        if false_only_item_value(value, item_keys, recognized_keys, false_only_keys):
+            return False
+        nested_items: List[Dict[str, Any]] = []
+        for item_key in item_keys:
+            nested_items.extend(item_key_value_entries(value.get(item_key), scalar_key, recognized_keys, false_only_keys))
+        supplemental_items = supplemental_scalar_item_entries(value, item_keys, scalar_key, recognized_keys)
+        parent_item = recognized_parent_item_entry(value, item_keys, recognized_keys, false_only_keys)
+        fallback_item = raw_fallback_item_entry(value, scalar_key, recognized_keys, false_only_keys)
+        sibling_item = unrecognized_sibling_item_entry(value, item_keys, scalar_key, recognized_keys)
+        return (
+            bool(nested_items)
+            or bool(supplemental_items)
+            or parent_item is not None
+            or is_recognized_item_dict(value, recognized_keys, false_only_keys)
+            or fallback_item is not None
+            or sibling_item is not None
+        )
+    return False
+
+
 def base_item_sources(key: str) -> Any:
+    if key in DEDUCTION_NESTED_KEYS:
+        return ATO_DEDUCTION_SOURCES
+    if key in SUPER_CONTRIBUTION_NESTED_KEYS:
+        return ATO_PERSONAL_SUPER_DEDUCTION_SOURCES
+    if key in OFFSET_NESTED_KEYS:
+        return ATO_OFFSET_SOURCES
     if key in REVIEWABLE_INVESTMENT_FIELDS:
         return INVESTMENT_SOURCES
     if key in REVIEWABLE_PAYG_FIELDS:
@@ -2018,6 +2401,8 @@ def base_item_sources(key: str) -> Any:
 
 
 def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
+    if issue70_false_only_item_value(spec.key, value):
+        return False
     if spec.key in PAYG_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
         return False
     if spec.key in REVIEWABLE_PAYG_FIELDS and payg_flat_value_is_absent(spec.key, value):
@@ -2677,11 +3062,91 @@ def item_values(raw_items: Any) -> List[Dict[str, Any]]:
     return [item for item in raw_items if isinstance(item, dict) and has_meaningful_value(item)]
 
 
+def item_values_with_scalar_entries(
+    raw_items: Any,
+    scalar_key: str,
+    recognized_keys: tuple[str, ...] = (),
+    false_only_keys: tuple[str, ...] = (),
+) -> List[Dict[str, Any]]:
+    if isinstance(raw_items, dict):
+        raw_items = [raw_items]
+    if not isinstance(raw_items, list):
+        return []
+    rows: List[Dict[str, Any]] = []
+    for item in raw_items:
+        if isinstance(item, dict):
+            if not has_meaningful_value(item) or false_only_item_placeholder(item, recognized_keys, false_only_keys):
+                continue
+            if recognized_keys and not is_recognized_item_dict(item, recognized_keys, false_only_keys):
+                rows.append(raw_text_item_entry(display_value(item), scalar_key))
+            else:
+                rows.append(item)
+                if recognized_keys:
+                    rows.extend(supplemental_scalar_item_entries(item, (), scalar_key, recognized_keys))
+                    sibling_item = unrecognized_sibling_item_entry(item, (), scalar_key, recognized_keys)
+                    if sibling_item is not None:
+                        rows.append(sibling_item)
+        elif false_only_scalar_placeholder(item):
+            continue
+        elif has_meaningful_value(item):
+            rows.append({scalar_key: item})
+    return rows
+
+
+def item_key_value_entries(
+    raw_items: Any,
+    scalar_key: str,
+    recognized_keys: tuple[str, ...] = (),
+    false_only_keys: tuple[str, ...] = (),
+) -> List[Dict[str, Any]]:
+    rows = item_values_with_scalar_entries(raw_items, scalar_key, recognized_keys, false_only_keys)
+    if rows or isinstance(raw_items, (dict, list)) or false_only_scalar_placeholder(raw_items) or not has_meaningful_value(raw_items):
+        return rows
+    return [raw_text_item_entry(display_value(raw_items), scalar_key)]
+
+
+SUPPLEMENTAL_ITEM_NOTE_KEYS = frozenset({"notes", "note", "freeform", "description", "details", "other", "comments", "additional_notes"})
+
+
+def supplemental_note_entries(value: Any, scalar_key: str) -> List[Dict[str, Any]]:
+    values = value if isinstance(value, list) else [value]
+    rows: List[Dict[str, Any]] = []
+    for item in values:
+        if not has_meaningful_value(item):
+            continue
+        if isinstance(item, (dict, list)):
+            rows.append(raw_text_item_entry(display_value(item), scalar_key))
+        else:
+            rows.append({scalar_key: item})
+    return rows
+
+
+def supplemental_scalar_item_entries(
+    raw: Dict[str, Any],
+    item_keys: tuple[str, ...],
+    scalar_key: str,
+    recognized_keys: tuple[str, ...] = (),
+) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for key, value in raw.items():
+        if key in item_keys or key in recognized_keys or key not in SUPPLEMENTAL_ITEM_NOTE_KEYS:
+            continue
+        rows.extend(supplemental_note_entries(value, scalar_key))
+    return rows
+
+
 def safe_money_value(value: Any) -> Optional[float]:
     try:
         return money_value(value, unknown_as_missing=True)
     except ValueError:
         return None
+
+
+def nonnegative_money_value(value: Any) -> Optional[float]:
+    amount = safe_money_value(value)
+    if amount is None or amount < 0:
+        return None
+    return amount
 
 
 def amount_malformed(value: Any) -> bool:
@@ -2759,7 +3224,23 @@ def evidence_missing(value: Any) -> bool:
     if isinstance(value, dict):
         return not value or any(evidence_missing(item) for item in value.values())
     lowered = text(value).strip().lower()
-    return lowered in {"no", "n", "false", "none", "n/a", "na", "not applicable", "not held", "not available", "missing"} or any(
+    return explicit_evidence_denial_value(value) or lowered in {
+        "no",
+        "n",
+        "false",
+        "none",
+        "n/a",
+        "na",
+        "not applicable",
+        "not held",
+        "not available",
+        "not sent",
+        "not lodged",
+        "not received",
+        "not acknowledged",
+        "not confirmed",
+        "missing",
+    } or any(
         phrase in lowered
         for phrase in (
             "no record",
@@ -2769,6 +3250,14 @@ def evidence_missing(value: Any) -> bool:
             "record not held",
             "records not held",
             "without records",
+            "no receipt",
+            "no receipts",
+            "receipt not held",
+            "receipts not held",
+            "without receipt",
+            "without receipts",
+            "receipt missing",
+            "receipts missing",
             "no invoice",
             "no invoices",
             "no tax invoice",
@@ -2780,6 +3269,27 @@ def evidence_missing(value: Any) -> bool:
             "invoice not applicable",
             "tax invoice not applicable",
             "records missing",
+            "no statement",
+            "no statements",
+            "statement not held",
+            "statements not held",
+            "without statement",
+            "without statements",
+            "statement missing",
+            "statements missing",
+            "notice not sent",
+            "notice of intent not sent",
+            "noi not sent",
+            "not lodged",
+            "notice not lodged",
+            "notice of intent not lodged",
+            "no notice",
+            "no notice of intent",
+            "no noi",
+            "no acknowledgement",
+            "no acknowledgment",
+            "acknowledgement not held",
+            "acknowledgment not held",
             "tax invoices not available",
             "not available",
             "unavailable",
@@ -3252,6 +3762,9 @@ def evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     wfh = answers.get("wfh", {})
     if isinstance(wfh, dict) and contains_unknown(wfh.get("records")):
         rows.append(evidence_row("WFH records", "D5 WFH", "Diary, timesheet, roster, or similar records"))
+    rows.extend(deduction_evidence_rows(deduction_answers(answers), answers))
+    rows.extend(personal_super_contribution_evidence_rows(personal_super_contribution_answers(answers)))
+    rows.extend(offset_evidence_rows(offset_answers(answers)))
     rows.extend(phone_evidence_rows(phone_answers(answers), answers))
     rows.extend(investment_evidence_rows(investment_answers(answers), answers))
     rows.extend(payg_evidence_rows(payg_answers(answers), answers))
@@ -3263,6 +3776,779 @@ def evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def evidence_row(number: Any, area: str, evidence: str) -> Dict[str, Any]:
     return guide_row(number, area, "Evidence required", evidence, "Draft value remains not copy-ready until evidence is confirmed.", "Evidence", ATO_INDIVIDUAL_SOURCE)
+
+
+DEDUCTION_NESTED_KEYS = ("deductions", "individual_deductions", "employee_deductions")
+DEDUCTION_ITEM_KEYS = ("items", "deduction_items", "employee_deductions", "individual_deductions")
+DEDUCTION_FIELD_ALIASES = {
+    "label": ("label", "name", "description", "category"),
+    "kind": ("type", "kind", "deduction_type", "category"),
+    "amount": ("amount", "cost", "expense", "claim_amount"),
+    "evidence": ("evidence", "receipt", "receipts", "invoice", "record", "records", "statement"),
+    "reimbursed": ("reimbursed", "employer_reimbursed", "reimbursement"),
+    "employer_paid": ("employer_paid", "paid_by_employer", "work_paid"),
+    "employer_provided": ("employer_provided", "provided_by_employer", "work_provided"),
+    "work_use_percent": ("work_use_percent", "work_percent", "business_use_percent"),
+    "private_use_percent": ("private_use_percent", "private_percent", "personal_use_percent"),
+    "work_private_split": ("work_private_split", "apportionment", "private_use", "mixed_use"),
+    "gst_bas_interaction": ("gst_bas_interaction", "gst_credit_claimed", "bas_claimed", "gst_registered", "tax_invoice"),
+    "duplicate_risk": ("duplicate_risk", "also_claimed_in", "duplicate_with", "overlap"),
+}
+DEDUCTION_KIND_LABELS = {
+    "gift": "Gifts/donations",
+    "tax_affairs": "Cost of managing tax affairs",
+    "income_protection": "Income protection insurance",
+    "self_education": "Self-education",
+    "union_professional": "Union/professional fees",
+    "travel": "Work travel/car/public transport",
+    "tools_assets": "Tools/equipment/assets",
+}
+SUPER_CONTRIBUTION_NESTED_KEYS = ("personal_super_contributions", "personal_super_deductions", "super_contribution_deductions")
+SUPER_CONTRIBUTION_ITEM_KEYS = ("items", "contributions", "personal_super_contributions")
+SUPER_CONTRIBUTION_FIELD_ALIASES = {
+    "fund": ("fund", "super_fund", "fund_name"),
+    "member": ("member", "member_name", "account_holder"),
+    "contribution_date": ("contribution_date", "date", "paid_date", "payment_date"),
+    "amount": ("amount", "contribution_amount", "paid_amount"),
+    "notice_of_intent": ("notice_of_intent", "noi", "notice"),
+    "fund_acknowledgement": ("fund_acknowledgement", "acknowledgement", "fund_acknowledgment"),
+    "intended_deduction_amount": ("intended_deduction_amount", "deduction_amount", "claim_amount"),
+    "concessional_cap_review": ("concessional_cap_review", "cap_review", "cap_uncertainty"),
+    "division_293_review": ("division_293_review", "div293_review", "division_293"),
+    "notes": ("notes", "note", "freeform", "description"),
+}
+OFFSET_NESTED_KEYS = ("individual_offsets", "offsets", "tax_offsets")
+OFFSET_ITEM_KEYS = ("items", "offset_items", "individual_offsets")
+OFFSET_FIELD_ALIASES = {
+    "kind": ("type", "kind", "offset_type", "label", "name"),
+    "claim": ("claim", "claimed", "claiming", "eligible", "applying"),
+    "amount": ("amount", "claim_amount", "offset_amount"),
+    "evidence": ("evidence", "record", "records", "statement"),
+    "review_signal": ("review_signal", "review", "eligibility", "notes"),
+}
+FALSE_CONCRETE_ALIAS_GROUPS = (
+    DEDUCTION_FIELD_ALIASES["evidence"],
+    SUPER_CONTRIBUTION_FIELD_ALIASES["notice_of_intent"],
+    SUPER_CONTRIBUTION_FIELD_ALIASES["fund_acknowledgement"],
+    OFFSET_FIELD_ALIASES["evidence"],
+)
+BOOLEAN_FALSE_CONCRETE_ALIAS_GROUPS = (
+    DEDUCTION_FIELD_ALIASES["reimbursed"],
+    DEDUCTION_FIELD_ALIASES["employer_paid"],
+    DEDUCTION_FIELD_ALIASES["employer_provided"],
+    DEDUCTION_FIELD_ALIASES["work_private_split"],
+    DEDUCTION_FIELD_ALIASES["gst_bas_interaction"],
+    DEDUCTION_FIELD_ALIASES["duplicate_risk"],
+    SUPER_CONTRIBUTION_FIELD_ALIASES["concessional_cap_review"],
+    SUPER_CONTRIBUTION_FIELD_ALIASES["division_293_review"],
+    OFFSET_FIELD_ALIASES["claim"],
+    OFFSET_FIELD_ALIASES["review_signal"],
+)
+AMOUNT_ONLY_FALSE_ITEM_KEYS = tuple(
+    dict.fromkeys(
+        (
+            *DEDUCTION_FIELD_ALIASES["amount"],
+            *SUPER_CONTRIBUTION_FIELD_ALIASES["amount"],
+            *SUPER_CONTRIBUTION_FIELD_ALIASES["intended_deduction_amount"],
+            *OFFSET_FIELD_ALIASES["amount"],
+        )
+    )
+)
+
+
+def deduction_answers(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    return normalized_item_answers(
+        answers,
+        DEDUCTION_NESTED_KEYS,
+        DEDUCTION_ITEM_KEYS,
+        "label",
+        item_alias_keys(DEDUCTION_FIELD_ALIASES),
+        false_only_alias_keys(DEDUCTION_FIELD_ALIASES),
+    )
+
+
+def personal_super_contribution_answers(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    return normalized_item_answers(
+        answers,
+        SUPER_CONTRIBUTION_NESTED_KEYS,
+        SUPER_CONTRIBUTION_ITEM_KEYS,
+        "notes",
+        item_alias_keys(SUPER_CONTRIBUTION_FIELD_ALIASES),
+        false_only_alias_keys(SUPER_CONTRIBUTION_FIELD_ALIASES),
+    )
+
+
+def offset_answers(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    return normalized_item_answers(
+        answers,
+        OFFSET_NESTED_KEYS,
+        OFFSET_ITEM_KEYS,
+        "type",
+        item_alias_keys(OFFSET_FIELD_ALIASES),
+        false_only_alias_keys(OFFSET_FIELD_ALIASES),
+    )
+
+
+def normalized_item_answers(
+    answers: Dict[str, Any],
+    nested_keys: tuple[str, ...],
+    item_keys: tuple[str, ...],
+    scalar_key: str,
+    recognized_keys: tuple[str, ...],
+    false_only_keys: tuple[str, ...] = (),
+) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for key in nested_keys:
+        value = answers.get(key)
+        if isinstance(value, list):
+            rows.extend(item_values_with_scalar_entries(value, scalar_key, recognized_keys, false_only_keys))
+        elif isinstance(value, dict):
+            if false_only_item_value(value, item_keys, recognized_keys, false_only_keys):
+                continue
+            nested_items: List[Dict[str, Any]] = []
+            for item_key in item_keys:
+                nested_items.extend(item_key_value_entries(value.get(item_key), scalar_key, recognized_keys, false_only_keys))
+            supplemental_items = supplemental_scalar_item_entries(value, item_keys, scalar_key, recognized_keys)
+            parent_item = recognized_parent_item_entry(value, item_keys, recognized_keys, false_only_keys)
+            sibling_item = unrecognized_sibling_item_entry(value, item_keys, scalar_key, recognized_keys)
+            if nested_items:
+                rows.extend(nested_items)
+                if parent_item is not None:
+                    rows.append(parent_item)
+                rows.extend(supplemental_items)
+                if sibling_item is not None:
+                    rows.append(sibling_item)
+            elif is_recognized_item_dict(value, recognized_keys, false_only_keys):
+                rows.append(value)
+                rows.extend(supplemental_items)
+                if sibling_item is not None:
+                    rows.append(sibling_item)
+            elif supplemental_items:
+                rows.extend(supplemental_items)
+                if sibling_item is not None:
+                    rows.append(sibling_item)
+            else:
+                fallback_item = raw_fallback_item_entry(value, scalar_key, recognized_keys, false_only_keys)
+                if fallback_item is not None:
+                    rows.append(fallback_item)
+    return rows
+
+
+def false_concrete_alias_group(aliases: tuple[str, ...], *, include_boolean: bool = False) -> bool:
+    return aliases in FALSE_CONCRETE_ALIAS_GROUPS or (include_boolean and aliases in BOOLEAN_FALSE_CONCRETE_ALIAS_GROUPS)
+
+
+def concrete_item_alias_value(value: Any, false_is_concrete: bool = False) -> bool:
+    if is_missing(value):
+        return False
+    if contains_unknown(value) and not explicit_evidence_denial_value(value):
+        return False
+    if value is False:
+        return false_is_concrete
+    if isinstance(value, str) and phone_bool(value) is False:
+        return false_is_concrete
+    return has_meaningful_value(value)
+
+
+def explicit_evidence_denial_value(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    normalized = re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+    evidence_context = r"(receipt|receipts|statement|statements|invoice|invoices|record|records|evidence|notice|intent|acknowledgement|acknowledgment)"
+    return bool(
+        re.search(rf"\b(no|without|missing)\b(?:\s+\w+){{0,3}}\s+\b{evidence_context}\b", normalized)
+        or re.search(
+            rf"\b{evidence_context}\b(?:\s+\w+){{0,3}}\s+\b(missing|not held|not available|not sent|not lodged|not received|not acknowledged|not confirmed)\b",
+            normalized,
+        )
+    )
+
+
+def normalized_item_field(item: Dict[str, Any], aliases: tuple[str, ...]) -> Any:
+    values = [item.get(key) for key in aliases if key in item and not is_missing(item.get(key))]
+    false_is_concrete = false_concrete_alias_group(aliases)
+    for value in values:
+        if concrete_item_alias_value(value, false_is_concrete):
+            return value
+    for value in values:
+        if contains_unknown(value):
+            return value
+    for value in values:
+        if has_meaningful_value(value) or value is False:
+            return value
+    return None
+
+
+ITEM_ALIAS_AMOUNT_FIELDS = frozenset({"amount", "intended_deduction_amount"})
+ITEM_ALIAS_EVIDENCE_FIELDS = frozenset({"evidence", "notice_of_intent", "fund_acknowledgement"})
+ITEM_ALIAS_BOOLEAN_FIELDS = frozenset(
+    {
+        "reimbursed",
+        "employer_paid",
+        "employer_provided",
+        "work_private_split",
+        "gst_bas_interaction",
+        "duplicate_risk",
+        "concessional_cap_review",
+        "division_293_review",
+        "claim",
+        "review_signal",
+    }
+)
+
+
+def item_alias_conflict_key(field: str, value: Any) -> tuple[str, str]:
+    if field in ITEM_ALIAS_EVIDENCE_FIELDS:
+        return ("evidence", "missing" if evidence_missing(value) else "present")
+    if field in ITEM_ALIAS_AMOUNT_FIELDS:
+        amount = safe_money_value(value)
+        if amount is not None:
+            return ("money", f"{amount:.2f}")
+    parsed_bool = phone_bool(value)
+    if parsed_bool is not None:
+        return ("bool", str(parsed_bool))
+    if field in ITEM_ALIAS_BOOLEAN_FIELDS and item_alias_negative_boolean_value(field, value):
+        return ("bool", "False")
+    amount = safe_money_value(value)
+    if amount is not None:
+        return ("money", f"{amount:.2f}")
+    return ("text", display_value(value).strip().casefold())
+
+
+def item_alias_negative_boolean_value(field: str, value: Any) -> bool:
+    if is_missing(value) or contains_unknown(value):
+        return False
+    if field == "claim":
+        return offset_claim_false(value)
+    if field == "work_private_split":
+        return deduction_private_use_negative(value)
+    if field in {"concessional_cap_review", "division_293_review", "review_signal"}:
+        return review_flag_negative(value)
+    return deduction_flag_negative(value)
+
+
+def item_alias_conflict_details(item: Dict[str, Any], field_aliases: Dict[str, tuple[str, ...]]) -> List[str]:
+    details: List[str] = []
+    for field, aliases in field_aliases.items():
+        false_is_concrete = false_concrete_alias_group(aliases, include_boolean=True)
+        values = [
+            (alias, item.get(alias))
+            for alias in aliases
+            if alias in item and concrete_item_alias_value(item.get(alias), false_is_concrete)
+        ]
+        if len(values) < 2:
+            continue
+        keys = {item_alias_conflict_key(field, value) for _, value in values}
+        if len(keys) > 1:
+            rendered = "; ".join(f"{alias} {display_value(value)}" for alias, value in values)
+            details.append(f"{field.replace('_', ' ')} alias conflict ({rendered})")
+    return details
+
+
+def item_alias_conflict_text(item: Dict[str, Any], field_aliases: Dict[str, tuple[str, ...]]) -> str:
+    return "; ".join(item_alias_conflict_details(item, field_aliases))
+
+
+def deduction_rows(items: List[Dict[str, Any]], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for index, item in enumerate(items, start=1):
+        if not has_meaningful_value(item):
+            continue
+        kind = deduction_kind(item)
+        amount = nonnegative_money_value(normalized_item_field(item, DEDUCTION_FIELD_ALIASES["amount"]))
+        gaps = deduction_review_terms(item, kind)
+        rows.append(
+            guide_row(
+                f"DED-{index}",
+                deduction_ato_area(kind),
+                deduction_question(item, kind),
+                deduction_answer_text(item, kind, amount),
+                "Itemized deduction rows are prep-only. Evidence, reimbursement, employer-paid/provided, private-use, GST/BAS, duplicate-risk, and source-support checks must be resolved before manual copy.",
+                "Accountant review",
+                deduction_sources(kind, item, answers),
+                tab_text=deduction_tab_text(kind, gaps),
+            )
+        )
+    return rows
+
+
+def deduction_kind(item: Dict[str, Any]) -> str:
+    parts: List[str] = []
+    for key in ("kind", "label"):
+        value = normalized_item_field(item, DEDUCTION_FIELD_ALIASES[key])
+        if value is not None:
+            parts.append(display_value(value))
+    raw = " ".join(parts).lower()
+    normalized = re.sub(r"[^a-z0-9]+", " ", raw).strip()
+    tokens = set(normalized.split())
+    if any(term in normalized for term in ("gift", "donation", "donations", "deductible gift recipient", "dgr")):
+        return "gift"
+    if any(term in normalized for term in ("tax agent", "managing tax", "tax affairs", "accountant fee", "accounting fee")):
+        return "tax_affairs"
+    if "income protection" in normalized or ("insurance" in normalized and "income" in normalized):
+        return "income_protection"
+    if any(term in normalized for term in ("self education", "self-education", "education", "training", "seminar", "course")):
+        return "self_education"
+    if any(term in normalized for term in ("tool", "equipment", "asset", "computer", "laptop", "software", "monitor")):
+        return "tools_assets"
+    if any(term in normalized for term in ("union", "professional", "membership", "accreditation", "licence", "license")):
+        return "union_professional"
+    if (
+        any(term in normalized for term in ("public transport", "ride share"))
+        or tokens.intersection({"travel", "car", "vehicle", "taxi", "rideshare", "uber"})
+    ):
+        return "travel"
+    return "unsupported"
+
+
+def deduction_question(item: Dict[str, Any], kind: str) -> str:
+    label = display_value(normalized_item_field(item, DEDUCTION_FIELD_ALIASES["label"]))
+    return label or DEDUCTION_KIND_LABELS.get(kind, "Deduction item")
+
+
+def deduction_ato_area(kind: str) -> str:
+    return {
+        "gift": "D9 Gifts or donations",
+        "tax_affairs": "D10 Cost of managing tax affairs",
+        "income_protection": "D15 Other deductions / income protection review",
+        "self_education": "D4 Work-related self-education expenses",
+        "union_professional": "D5 Other work-related expenses",
+        "travel": "D1/D2 Work-related travel and car expenses",
+        "tools_assets": "D5 Other work-related expenses",
+    }.get(kind, "Deductions review")
+
+
+def deduction_answer_text(item: Dict[str, Any], kind: str, amount: Optional[float]) -> str:
+    text = (
+        f"type {DEDUCTION_KIND_LABELS.get(kind, 'Unsupported/other deduction')}; "
+        f"label {deduction_question(item, kind)}; amount {money_text(amount)}; "
+        f"evidence {display_value(normalized_item_field(item, DEDUCTION_FIELD_ALIASES['evidence']))}; "
+        f"reimbursed {display_value(normalized_item_field(item, DEDUCTION_FIELD_ALIASES['reimbursed']))}; "
+        f"employer paid {display_value(normalized_item_field(item, DEDUCTION_FIELD_ALIASES['employer_paid']))}; "
+        f"employer provided {display_value(normalized_item_field(item, DEDUCTION_FIELD_ALIASES['employer_provided']))}; "
+        f"work use {display_value(normalized_item_field(item, DEDUCTION_FIELD_ALIASES['work_use_percent']))}; "
+        f"private use {display_value(normalized_item_field(item, DEDUCTION_FIELD_ALIASES['private_use_percent']))}; "
+        f"split {display_value(normalized_item_field(item, DEDUCTION_FIELD_ALIASES['work_private_split']))}; "
+        f"GST/BAS {display_value(normalized_item_field(item, DEDUCTION_FIELD_ALIASES['gst_bas_interaction']))}; "
+        f"duplicate risk {display_value(normalized_item_field(item, DEDUCTION_FIELD_ALIASES['duplicate_risk']))}"
+    )
+    conflicts = item_alias_conflict_text(item, DEDUCTION_FIELD_ALIASES)
+    return f"{text}; alias conflicts {conflicts}" if conflicts else text
+
+
+def deduction_review_terms(item: Dict[str, Any], kind: str) -> List[str]:
+    terms: List[str] = []
+    amount_value = normalized_item_field(item, DEDUCTION_FIELD_ALIASES["amount"])
+    if amount_malformed(amount_value) or nonnegative_money_value(amount_value) is None:
+        terms.append("amount evidence")
+    if evidence_missing(normalized_item_field(item, DEDUCTION_FIELD_ALIASES["evidence"])):
+        terms.append("receipt/statement evidence")
+    if deduction_flag_review(normalized_item_field(item, DEDUCTION_FIELD_ALIASES["reimbursed"])):
+        terms.append("reimbursement review")
+    if deduction_flag_review(normalized_item_field(item, DEDUCTION_FIELD_ALIASES["employer_paid"])):
+        terms.append("employer-paid review")
+    if deduction_flag_review(normalized_item_field(item, DEDUCTION_FIELD_ALIASES["employer_provided"])):
+        terms.append("employer-provided review")
+    if deduction_private_use_review(item, kind):
+        terms.append("work/private split evidence")
+    if deduction_flag_review(normalized_item_field(item, DEDUCTION_FIELD_ALIASES["gst_bas_interaction"])):
+        terms.append("GST/BAS overlap review")
+    if deduction_flag_review(normalized_item_field(item, DEDUCTION_FIELD_ALIASES["duplicate_risk"])):
+        terms.append("duplicate-risk review")
+    if kind == "unsupported":
+        terms.append("official source support")
+    terms.extend(item_alias_conflict_details(item, DEDUCTION_FIELD_ALIASES))
+    return terms or ["accountant review"]
+
+
+def deduction_flag_review(value: Any) -> bool:
+    parsed = phone_bool(value)
+    if parsed is False or is_missing(value):
+        return False
+    if parsed is True:
+        return True
+    if contains_unknown(value):
+        return True
+    if deduction_flag_negative(value):
+        return False
+    return has_meaningful_value(value)
+
+
+def deduction_flag_negative(value: Any) -> bool:
+    if deduction_flag_partial_value(value):
+        return False
+    normalized = re.sub(r"[^a-z0-9]+", " ", display_value(value).lower()).strip()
+    return bool(
+        re.search(
+            r"\b(not|no|never|without)\b.*\b(reimburs|employer|paid|provided|gst|bas|duplicate|risk|overlap)\w*\b",
+            normalized,
+        )
+        or re.search(r"\b(no|not)\s+(gst|bas|duplicate|risk|overlap)\w*\b", normalized)
+    )
+
+
+def deduction_flag_partial_value(value: Any) -> bool:
+    return partial_negative_context_value(value, r"(reimburs|employer|paid|provided)\w*")
+
+
+def partial_negative_context_value(value: Any, review_context: str) -> bool:
+    normalized = re.sub(r"[^a-z0-9]+", " ", display_value(value).lower()).strip()
+    partial_context = r"(partial|partly|partially|some|not\s+fully|not\s+all)"
+    return bool(
+        re.search(rf"\b{partial_context}\b.*\b{review_context}\b", normalized)
+        or re.search(rf"\b{review_context}\b.*\b{partial_context}\b", normalized)
+    )
+
+
+def review_flag_review(value: Any) -> bool:
+    parsed = phone_bool(value)
+    if parsed is False or is_missing(value):
+        return False
+    if parsed is True:
+        return True
+    if contains_unknown(value):
+        return True
+    if review_flag_negative(value):
+        return False
+    return has_meaningful_value(value)
+
+
+def review_flag_negative(value: Any) -> bool:
+    if review_flag_partial_value(value):
+        return False
+    normalized = re.sub(r"[^a-z0-9]+", " ", display_value(value).lower()).strip()
+    return bool(
+        re.search(r"\b(no|not|never|without)\b.*\b(review|cap|division|293|eligibility|eligible)\b", normalized)
+        or re.search(r"\b(no|not)\s+(review|cap|division|293|eligibility|eligible)\b", normalized)
+    )
+
+
+def review_flag_partial_value(value: Any) -> bool:
+    return partial_negative_context_value(value, r"(review|cap|division|293|eligibility|eligible)\w*")
+
+
+def deduction_private_use_review(item: Dict[str, Any], kind: str) -> bool:
+    if kind in {"gift", "tax_affairs"}:
+        return False
+    work_use = normalized_item_field(item, DEDUCTION_FIELD_ALIASES["work_use_percent"])
+    private_use = normalized_item_field(item, DEDUCTION_FIELD_ALIASES["private_use_percent"])
+    split = normalized_item_field(item, DEDUCTION_FIELD_ALIASES["work_private_split"])
+    if not is_missing(work_use) or not is_missing(private_use) or not is_missing(split):
+        work_use_percent = phone_percent_value(work_use)
+        work_use_review = not is_missing(work_use) and (work_use_percent is None or work_use_percent < 100)
+        private_use_percent = phone_percent_value(private_use)
+        private_use_review = not is_missing(private_use) and (
+            contains_unknown(private_use)
+            or (private_use_percent is not None and private_use_percent > 0)
+            or (private_use_percent is None and not deduction_private_use_negative(private_use) and deduction_flag_review(private_use))
+        )
+        split_review = not is_missing(split) and contains_unknown(split) or (
+            not is_missing(split) and not deduction_private_use_negative(split) and deduction_flag_review(split)
+        )
+        return (
+            contains_unknown(work_use)
+            or work_use_review
+            or private_use_review
+            or split_review
+        )
+    return kind in {"self_education", "travel", "tools_assets"}
+
+
+def deduction_private_use_negative(value: Any) -> bool:
+    if phone_bool(value) is False:
+        return True
+    if is_missing(value) or contains_unknown(value):
+        return False
+    percent = phone_percent_value(value)
+    if percent is not None:
+        return percent <= 0
+    normalized = re.sub(r"[^a-z0-9]+", " ", display_value(value).lower()).strip()
+    return bool(
+        re.search(r"\b(no|not|without|zero)\b.*\b(private|personal|non work|nonwork|mixed)\b", normalized)
+        or re.search(r"\b(work only|only work|wholly work|100 percent work|100 work)\b", normalized)
+    )
+
+
+def deduction_sources(kind: str, item: Dict[str, Any], answers: Dict[str, Any]) -> List[str]:
+    sources = {
+        "gift": [ATO_GIFTS_DONATIONS_SOURCE],
+        "tax_affairs": [ATO_TAX_AFFAIRS_SOURCE],
+        "income_protection": [ATO_INVESTMENTS_INSURANCE_SUPER_SOURCE],
+        "self_education": [ATO_SELF_EDUCATION_SOURCE, ATO_WORK_RELATED_DEDUCTIONS_SOURCE],
+        "union_professional": [ATO_MEMBERSHIPS_FEES_SOURCE, ATO_WORK_RELATED_DEDUCTIONS_SOURCE],
+        "travel": [ATO_CAR_TRANSPORT_TRAVEL_SOURCE, ATO_CAR_EXPENSES_SOURCE, ATO_PUBLIC_TRANSPORT_SOURCE, ATO_TRAVEL_RECORDS_SOURCE],
+        "tools_assets": [ATO_TOOLS_EQUIPMENT_SOURCE, ATO_ASSET_SOURCE, ATO_ASSET_300_OR_LESS_SOURCE, ATO_ASSET_OVER_300_SOURCE],
+    }.get(kind, [ATO_WORK_RELATED_DEDUCTIONS_SOURCE])
+    if deduction_flag_review(normalized_item_field(item, DEDUCTION_FIELD_ALIASES["gst_bas_interaction"])):
+        sources = [*sources, ATO_GST_CREDITS_SOURCE, ATO_TAX_INVOICES_SOURCE]
+    return sources
+
+
+def deduction_tab_text(kind: str, terms: List[str]) -> str:
+    label = DEDUCTION_KIND_LABELS.get(kind, "Unsupported/other deduction")
+    return f"{label} stays prep-only; " + ", ".join(terms) + "."
+
+
+def deduction_evidence_rows(items: List[Dict[str, Any]], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for index, item in enumerate(items, start=1):
+        if not has_meaningful_value(item):
+            continue
+        kind = deduction_kind(item)
+        terms = deduction_review_terms(item, kind)
+        if terms and terms != ["accountant review"]:
+            rows.append(
+                guide_row(
+                    f"DED-EVID-{len(rows) + 1}",
+                    deduction_ato_area(kind),
+                    "Deduction evidence required",
+                    f"{deduction_question(item, kind)}: {', '.join(terms)}",
+                    "Deduction rows remain prep-only until receipts, payment source, private-use split, duplicate-risk, GST/BAS overlap, and source support are reviewed.",
+                    "Evidence",
+                    deduction_sources(kind, item, answers),
+                )
+            )
+    return rows
+
+
+def personal_super_contribution_rows(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for index, item in enumerate(items, start=1):
+        if not has_meaningful_value(item):
+            continue
+        gaps = personal_super_contribution_review_terms(item)
+        rows.append(
+            guide_row(
+                f"SUPER-DED-{index}",
+                "D12 Personal super contributions",
+                "Personal super contribution deduction prep",
+                personal_super_contribution_answer_text(item),
+                "Personal super contribution deductions need contribution records, valid notice of intent, fund acknowledgement, cap review, and Division 293 review before manual copy.",
+                "Accountant review",
+                ATO_PERSONAL_SUPER_DEDUCTION_SOURCES,
+                tab_text="Personal super deduction prep-only; " + ", ".join(gaps) + ".",
+            )
+        )
+    return rows
+
+
+def personal_super_contribution_answer_text(item: Dict[str, Any]) -> str:
+    amount = nonnegative_money_value(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["amount"]))
+    intended = nonnegative_money_value(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["intended_deduction_amount"]))
+    text = (
+        f"fund {display_value(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES['fund']))}; "
+        f"member {display_value(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES['member']))}; "
+        f"date {display_value(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES['contribution_date']))}; "
+        f"contribution {money_text(amount)}; notice {display_value(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES['notice_of_intent']))}; "
+        f"fund acknowledgement {display_value(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES['fund_acknowledgement']))}; "
+        f"intended deduction {money_text(intended)}; cap review {display_value(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES['concessional_cap_review']))}; "
+        f"Division 293 review {display_value(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES['division_293_review']))}; "
+        f"notes {display_value(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES['notes']))}"
+    )
+    conflicts = item_alias_conflict_text(item, SUPER_CONTRIBUTION_FIELD_ALIASES)
+    return f"{text}; alias conflicts {conflicts}" if conflicts else text
+
+
+def personal_super_contribution_subject(item: Dict[str, Any]) -> str:
+    for field in ("fund", "notes", "member"):
+        value = display_value(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES[field]))
+        if value:
+            return value
+    return "Personal super contribution"
+
+
+def personal_super_contribution_review_terms(item: Dict[str, Any]) -> List[str]:
+    terms: List[str] = []
+    amount_value = normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["amount"])
+    intended_value = normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["intended_deduction_amount"])
+    if amount_malformed(amount_value) or nonnegative_money_value(amount_value) is None:
+        terms.append("contribution amount evidence")
+    if amount_malformed(intended_value) or nonnegative_money_value(intended_value) is None:
+        terms.append("intended deduction amount evidence")
+    contribution_date = normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["contribution_date"])
+    for field, label in (
+        ("fund", "fund details"),
+        ("member", "member details"),
+        ("notice_of_intent", "notice of intent"),
+        ("fund_acknowledgement", "fund acknowledgement"),
+    ):
+        if evidence_missing(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES[field])):
+            terms.append(label)
+    if evidence_missing(contribution_date) or parse_iso_date(contribution_date) is None:
+        terms.append("contribution date")
+    if review_flag_review(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["concessional_cap_review"])):
+        terms.append("concessional cap review")
+    if review_flag_review(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["division_293_review"])):
+        terms.append("Division 293 review")
+    if deduction_flag_review(normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["notes"])):
+        terms.append("free-form note review")
+    terms.extend(item_alias_conflict_details(item, SUPER_CONTRIBUTION_FIELD_ALIASES))
+    return terms or ["cap and notice review"]
+
+
+def personal_super_contribution_evidence_rows(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for item in items:
+        if not has_meaningful_value(item):
+            continue
+        terms = personal_super_contribution_review_terms(item)
+        if terms and terms != ["cap and notice review"]:
+            rows.append(
+                guide_row(
+                    f"SUPER-DED-EVID-{len(rows) + 1}",
+                    "D12 Personal super contributions",
+                    "Personal super contribution evidence required",
+                    f"{personal_super_contribution_subject(item)}: {', '.join(terms)}",
+                    "Personal super contribution deduction prep remains blocked until notice, acknowledgement, contribution amount/date, cap, and Division 293 facts are reviewed.",
+                    "Evidence",
+                    ATO_PERSONAL_SUPER_DEDUCTION_SOURCES,
+                )
+            )
+    return rows
+
+
+def offset_rows(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for index, item in enumerate(items, start=1):
+        if not has_meaningful_value(item):
+            continue
+        kind = offset_kind(item)
+        gaps = offset_review_terms(item, kind)
+        rows.append(
+            guide_row(
+                f"OFFSET-{index}",
+                offset_ato_area(kind),
+                "Individual offset routing",
+                offset_answer_text(item, kind),
+                "Offset rows are routing only. Eligibility, amount, income tests, remote-zone facts, spouse/dependant facts, and super offset details stay under accountant review.",
+                "Accountant review",
+                offset_sources(kind),
+                tab_text=f"{offset_label(kind)} offset routing; " + ", ".join(gaps) + ".",
+            )
+        )
+    return rows
+
+
+def offset_kind(item: Dict[str, Any]) -> str:
+    value = display_value(normalized_item_field(item, OFFSET_FIELD_ALIASES["kind"])).lower()
+    normalized = re.sub(r"[^a-z0-9]+", " ", value).strip()
+    if "spouse" in normalized:
+        return "spouse"
+    if "zone" in normalized or "remote" in normalized:
+        return "zone_remote"
+    if "super" in normalized:
+        return "super"
+    if normalized:
+        return "other"
+    return "unsupported"
+
+
+def offset_label(kind: str) -> str:
+    return {
+        "spouse": "Spouse",
+        "super": "Super",
+        "zone_remote": "Zone/remote",
+        "other": "Other",
+    }.get(kind, "Unsupported")
+
+
+def offset_ato_area(kind: str) -> str:
+    return "Tax offsets" if kind != "super" else "Tax offsets / super"
+
+
+def offset_answer_text(item: Dict[str, Any], kind: str) -> str:
+    amount = nonnegative_money_value(normalized_item_field(item, OFFSET_FIELD_ALIASES["amount"]))
+    text = (
+        f"type {offset_label(kind)}; raw type {display_value(normalized_item_field(item, OFFSET_FIELD_ALIASES['kind']))}; "
+        f"claim {display_value(normalized_item_field(item, OFFSET_FIELD_ALIASES['claim']))}; "
+        f"amount {money_text(amount)}; evidence {display_value(normalized_item_field(item, OFFSET_FIELD_ALIASES['evidence']))}; "
+        f"review signal {display_value(normalized_item_field(item, OFFSET_FIELD_ALIASES['review_signal']))}"
+    )
+    conflicts = item_alias_conflict_text(item, OFFSET_FIELD_ALIASES)
+    return f"{text}; alias conflicts {conflicts}" if conflicts else text
+
+
+def offset_subject(item: Dict[str, Any], kind: str) -> str:
+    for field in ("kind", "review_signal", "evidence"):
+        value = display_value(normalized_item_field(item, OFFSET_FIELD_ALIASES[field]))
+        if value:
+            return value
+    return offset_label(kind)
+
+
+def offset_review_terms(item: Dict[str, Any], kind: str) -> List[str]:
+    terms: List[str] = []
+    claim = normalized_item_field(item, OFFSET_FIELD_ALIASES["claim"])
+    amount = normalized_item_field(item, OFFSET_FIELD_ALIASES["amount"])
+    claim_false = offset_claim_false(claim)
+    review_offset_facts = not claim_false and (
+        kind != "unsupported"
+        or deduction_flag_review(claim)
+        or not is_missing(amount)
+        or not is_missing(normalized_item_field(item, OFFSET_FIELD_ALIASES["evidence"]))
+        or not is_missing(normalized_item_field(item, OFFSET_FIELD_ALIASES["review_signal"]))
+    )
+    if kind == "unsupported":
+        terms.append("offset type required")
+    if kind == "other":
+        terms.append("official offset support")
+    if review_offset_facts and (amount_malformed(amount) or nonnegative_money_value(amount) is None):
+        terms.append("offset amount evidence")
+    if review_offset_facts and evidence_missing(normalized_item_field(item, OFFSET_FIELD_ALIASES["evidence"])):
+        terms.append("eligibility evidence")
+    if review_offset_facts and review_flag_review(normalized_item_field(item, OFFSET_FIELD_ALIASES["review_signal"])):
+        terms.append("eligibility review")
+    terms.extend(item_alias_conflict_details(item, OFFSET_FIELD_ALIASES))
+    return terms or ["accountant review"]
+
+
+def offset_claim_false(value: Any) -> bool:
+    if phone_bool(value) is False:
+        return True
+    if is_missing(value) or contains_unknown(value):
+        return False
+    if offset_claim_partial_value(value):
+        return False
+    normalized = re.sub(r"[^a-z0-9]+", " ", display_value(value).lower()).strip()
+    return bool(
+        re.search(r"\b(not|no|never)\b.*\b(claim|claiming|claimed|apply|applying|applied|eligible|entitled|entitlement)\b", normalized)
+        or re.search(r"\b(ineligible|unentitled)\b", normalized)
+    )
+
+
+def offset_claim_partial_value(value: Any) -> bool:
+    return partial_negative_context_value(
+        value,
+        r"(claim|claiming|claimed|apply|applying|applied|eligible|entitled|entitlement)\w*",
+    )
+
+
+def offset_sources(kind: str) -> List[str]:
+    if kind == "super":
+        return ATO_SUPER_OFFSET_SOURCES
+    return ATO_OFFSET_SOURCES
+
+
+def offset_evidence_rows(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for item in items:
+        if not has_meaningful_value(item):
+            continue
+        kind = offset_kind(item)
+        terms = offset_review_terms(item, kind)
+        if terms and terms != ["accountant review"]:
+            rows.append(
+                guide_row(
+                    f"OFFSET-EVID-{len(rows) + 1}",
+                    offset_ato_area(kind),
+                    "Offset evidence required",
+                    f"{offset_subject(item, kind)}: {', '.join(terms)}",
+                    "Offset routing remains prep-only until eligibility, evidence, income-test, and amount facts are reviewed.",
+                    "Evidence",
+                    offset_sources(kind),
+                )
+            )
+    return rows
 
 
 PHONE_NESTED_KEYS = ("phone", "phone_deduction", "mobile_phone", "mobile")

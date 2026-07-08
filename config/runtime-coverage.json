@@ -5,14 +5,15 @@
     {
       "id": "employment-deductions",
       "title": "Employment deductions",
-      "runtime_status": "triage_only",
+      "runtime_status": "structured",
       "source_skills": ["employment-deductions"],
-      "source_concepts": ["work-related", "deduction", "allowance", "tools", "travel", "education", "meals"],
-      "runtime_functions": ["base_items", "phone_rows", "asset_rows"],
-      "tests": ["RuntimeCoverageTests", "PhoneDeductionWorkflowTests"],
+      "source_ids": ["ato-fb4dd1d0ad9f", "ato-79041d92aa02", "ato-273acc8ca62a", "ato-8a65daaa6790", "ato-f6519ad88614", "ato-9944fe00c716", "ato-37bfaebaee6a", "ato-82327abab0b1", "ato-3c0a2b7ba025"],
+      "source_concepts": ["work-related", "deduction", "allowance", "tools", "travel", "education", "gifts", "donations", "tax affairs", "income protection", "memberships"],
+      "runtime_functions": ["deduction_answers", "deduction_rows", "deduction_evidence_rows", "phone_rows", "asset_rows"],
+      "tests": ["RuntimeCoverageTests", "IndividualDeductionOffsetWorkflowTests", "PhoneDeductionWorkflowTests"],
       "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/employment-deductions/references/rules.md"],
       "issue": "#70",
-      "notes": "Phone is structured in #111; other employee deduction types remain explicit triage/review until child workflows land."
+      "notes": "Prep-only itemized deduction rows cover common source-backed individual deduction types with evidence, reimbursement, employer-paid/provided, work/private split, GST/BAS, duplicate-risk, and source provenance. Final treatment stays Accountant review."
     },
     {
       "id": "phone-deductions",
@@ -90,14 +91,28 @@
     {
       "id": "super-contribution-deductions",
       "title": "Personal super contribution deductions",
-      "runtime_status": "source_only",
+      "runtime_status": "structured",
       "source_skills": ["superannuation"],
+      "source_ids": ["ato-7e22b51d6a8f", "ato-7a4e177e27fa", "ato-c73788d863d9"],
       "source_concepts": ["personal-super-contributions", "notice of intent", "concessional-contributions", "super"],
-      "runtime_functions": [],
-      "tests": ["RuntimeCoverageTests"],
+      "runtime_functions": ["personal_super_contribution_answers", "personal_super_contribution_rows", "personal_super_contribution_evidence_rows"],
+      "tests": ["RuntimeCoverageTests", "IndividualDeductionOffsetWorkflowTests"],
       "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/superannuation/references/rules.md"],
       "issue": "#70",
-      "notes": "Source-backed but not structured. Must not be described as runtime-supported until a child workflow lands."
+      "notes": "Prep-only personal super contribution deduction rows collect fund/member/date/amount, notice of intent, fund acknowledgement, intended deduction amount, cap review, and Division 293 signals."
+    },
+    {
+      "id": "individual-offset-routing",
+      "title": "Individual offset routing",
+      "runtime_status": "structured",
+      "source_skills": ["employment-deductions", "superannuation"],
+      "source_ids": ["ato-77cc5fde845a", "ato-8b8ed5d471d0"],
+      "source_concepts": ["tax offsets", "spouse", "super", "zone", "remote"],
+      "runtime_functions": ["offset_answers", "offset_rows", "offset_evidence_rows"],
+      "tests": ["RuntimeCoverageTests", "IndividualDeductionOffsetWorkflowTests"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/individual-return/SKILL.md", "skills/employment-deductions/references/rules.md"],
+      "issue": "#70",
+      "notes": "Offset handling is routing only. Spouse/super/zone/remote/other offset facts stay Accountant review with eligibility and amount evidence queues."
     },
     {
       "id": "government-payments",

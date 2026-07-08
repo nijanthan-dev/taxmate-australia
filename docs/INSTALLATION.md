@@ -50,7 +50,7 @@ The installed plugin exposes TaxMate runtime tools for:
 - `taxpack`
 - `validate`
 
-The individual-return HTML guide includes the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, PAYG rows, investment rows, CGT schedule and item rows, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, source URLs, checked-at dates, and source/provenance appendix.
+The individual-return HTML guide includes the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, PAYG rows, investment rows, deduction/super/offset rows, CGT schedule and item rows, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, source URLs, checked-at dates, and source/provenance appendix.
 
 ## Optional Guidance-Only Skills
 

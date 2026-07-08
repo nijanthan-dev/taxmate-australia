@@ -1296,8 +1296,10 @@ def runtime_coverage_audit_command_ready(root: str) -> bool:
     if not isinstance(sources, list):
         return False
     by_id = {item.get("id"): item for item in concepts if isinstance(item, dict)}
+    deductions = by_id.get("employment-deductions")
     phone = by_id.get("phone-deductions")
     super_contributions = by_id.get("super-contribution-deductions")
+    offsets = by_id.get("individual-offset-routing")
     try:
         mcp_server = Path(root, "mcp", "server.cjs").read_text(encoding="utf-8")
     except OSError:
@@ -1307,9 +1309,20 @@ def runtime_coverage_audit_command_ready(root: str) -> bool:
         and phone.get("runtime_status") == "structured"
         and phone.get("source_count", 0) > 0
         and not taxmate_coverage.source_pin_errors(sources, phone)
+        and isinstance(deductions, dict)
+        and deductions.get("runtime_status") == "structured"
+        and deductions.get("source_count", 0) > 0
+        and not taxmate_coverage.source_pin_errors(sources, deductions)
         and isinstance(super_contributions, dict)
-        and super_contributions.get("runtime_status") == "source_only"
+        and super_contributions.get("runtime_status") == "structured"
+        and super_contributions.get("source_count", 0) > 0
+        and not taxmate_coverage.source_pin_errors(sources, super_contributions)
+        and isinstance(offsets, dict)
+        and offsets.get("runtime_status") == "structured"
+        and offsets.get("source_count", 0) > 0
+        and not taxmate_coverage.source_pin_errors(sources, offsets)
         and bool(super_contributions.get("issue"))
+        and bool(offsets.get("issue"))
         and '"coverage",' in mcp_server
     )
 
