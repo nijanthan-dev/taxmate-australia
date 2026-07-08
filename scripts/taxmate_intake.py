@@ -3335,6 +3335,14 @@ PHONE_EMPLOYER_PROVIDED_MARKERS = (
     "work phone",
     "company phone",
 )
+PHONE_EMPLOYER_MARKERS = (
+    *PHONE_EMPLOYER_REIMBURSED_MARKERS,
+    *PHONE_EMPLOYER_PAID_MARKERS,
+    *PHONE_EMPLOYER_PROVIDED_MARKERS,
+)
+PHONE_TEXT_NEGATION_PATTERN = (
+    r"(no|not|never|without|dont|don t|didnt|didn t|did not|n a|not applicable)"
+)
 PHONE_METADATA_KEYS = {
     "context",
     "paid_by_user",
@@ -3903,16 +3911,39 @@ def phone_flag_text(value: Any) -> str:
     return re.sub(r"[^a-z0-9]+", " ", display_value(value).strip().lower()).strip()
 
 
-def phone_text_has_negated_marker(normalized: str, markers: tuple[str, ...]) -> bool:
+def phone_text_has_affirmed_marker(normalized: str, markers: tuple[str, ...]) -> bool:
     return any(
-        re.search(rf"\b(no|not|never|without|dont|don t|didnt|didn t|did not)\b(?:\s+\w+){{0,4}}\s+\b{marker}\b", normalized)
-        or re.search(rf"\b{marker}\b(?:\s+\w+){{0,4}}\s+\b(no|not|never|without|n a|not applicable)\b", normalized)
+        not phone_marker_match_negated(normalized, marker, match)
         for marker in markers
+        for match in re.finditer(rf"\b{marker}\b", normalized)
     )
 
 
-def phone_text_has_marker(normalized: str, markers: tuple[str, ...]) -> bool:
-    return any(re.search(rf"\b{marker}\b", normalized) for marker in markers)
+def phone_marker_match_negated(normalized: str, marker: str, match: re.Match[str]) -> bool:
+    lead = normalized[: match.start()]
+    leading = re.search(
+        rf"\b{PHONE_TEXT_NEGATION_PATTERN}\b(?P<target>(?:\s+\w+){{0,4}})\s*$",
+        lead,
+    )
+    if leading:
+        if phone_negation_targets_other_employer_marker(leading.group("target"), marker):
+            return False
+        return True
+    tail = normalized[match.end() :]
+    trailing = re.match(rf"(?:\s+\w+){{0,4}}\s+\b{PHONE_TEXT_NEGATION_PATTERN}\b", tail)
+    if not trailing:
+        return False
+    negated_target = tail[trailing.end() :]
+    return not phone_negation_targets_other_employer_marker(negated_target, marker)
+
+
+def phone_negation_targets_other_employer_marker(text_value: str, current_marker: str) -> bool:
+    for marker in PHONE_EMPLOYER_MARKERS:
+        if marker == current_marker:
+            continue
+        if re.search(rf"^\s*(?:\w+\s+){{0,3}}\b{marker}\b", text_value):
+            return True
+    return False
 
 
 def phone_user_paid_false(value: Any) -> bool:
@@ -3924,11 +3955,11 @@ def phone_user_paid_false(value: Any) -> bool:
         return False
     if re.match(r"^(no|n|false|off|unchecked)\b", normalized):
         return True
-    if not normalized or phone_text_has_negated_marker(normalized, ("reimburs\\w*", "employer paid", "paid by employer", "provided")):
+    if not normalized:
         return False
     if re.search(r"\b(not|never|did not|dont|don t|didnt|didn t)\b(?:\s+\w+){0,3}\s+\b(pay|paid)\b", normalized):
         return True
-    return phone_text_has_marker(normalized, ("reimburs\\w*", "employer paid", "paid by employer", "provided by employer", "company provided"))
+    return phone_text_has_affirmed_marker(normalized, ("reimburs\\w*", "employer paid", "paid by employer", "provided by employer", "company provided"))
 
 
 def phone_user_paid_unanswered_text(normalized: str) -> bool:
@@ -3954,7 +3985,7 @@ def phone_employer_flag_true(value: Any, markers: tuple[str, ...]) -> bool:
     if parsed is not None:
         return parsed is True
     normalized = phone_flag_text(value)
-    return bool(normalized) and not phone_text_has_negated_marker(normalized, markers) and phone_text_has_marker(normalized, markers)
+    return bool(normalized) and phone_text_has_affirmed_marker(normalized, markers)
 
 
 def phone_employee_excluded(raw: Dict[str, Any]) -> List[str]:

@@ -15617,6 +15617,22 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
 
                 self.assertIn(f"blocked: {reason}", plan["answer"])
 
+    def test_employee_exclusion_mixed_negation_keeps_positive_marker(self) -> None:
+        cases = [
+            ("paid_by_user", "paid by employer not reimbursed", "not paid by user"),
+            ("paid_by_user", "not reimbursed but paid by employer", "not paid by user"),
+            ("employer_paid", "paid by employer, not reimbursed", "employer paid"),
+            ("employer_paid", "not reimbursed but company paid", "employer paid"),
+            ("employer_reimbursed", "reimbursed by employer, not paid by employer", "employer reimbursed"),
+            ("employer_provided", "company provided phone, not reimbursed", "employer provided"),
+        ]
+        for field, value, reason in cases:
+            with self.subTest(field=field, value=value):
+                payload = taxmate_intake.answers_to_pack_payload(self.phone_payload(**{field: value}))
+                plan = next(item for item in payload["items"] if item["number"] == "PHONE-PLAN")
+
+                self.assertIn(f"blocked: {reason}", plan["answer"])
+
     def test_employee_exclusion_negated_text_variants_do_not_block_phone_rows(self) -> None:
         cases = [
             ("paid_by_user", "no answer"),
@@ -15633,8 +15649,11 @@ class PhoneDeductionWorkflowTests(unittest.TestCase):
             ("paid_by_user", "no value"),
             ("paid_by_user", "no field value"),
             ("employer_reimbursed", "not reimbursed by employer"),
+            ("employer_reimbursed", "reimbursed by employer no"),
             ("employer_paid", "employer did not pay"),
+            ("employer_paid", "paid by employer no"),
             ("employer_provided", "not provided by employer"),
+            ("employer_provided", "provided by employer no"),
         ]
         for field, value in cases:
             with self.subTest(field=field):
