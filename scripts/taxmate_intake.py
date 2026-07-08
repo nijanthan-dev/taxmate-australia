@@ -1282,6 +1282,19 @@ PAYG_SOURCES = [
 ATO_WFH_FIXED_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/fixed-rate-method"
 ATO_WFH_ACTUAL_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/actual-cost-method"
 ATO_ASSET_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work"
+ATO_PHONE_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/mobile-phone-mobile-internet-and-other-devices"
+ATO_HOME_PHONE_INTERNET_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/home-phone-and-internet-expenses"
+ATO_ASSET_300_OR_LESS_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work/assets-costing-300-dollars-or-less"
+ATO_ASSET_OVER_300_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work/assets-costing-more-than-300-dollars"
+ATO_PHONE_SOURCES = [
+    ATO_PHONE_SOURCE,
+    ATO_HOME_PHONE_INTERNET_SOURCE,
+    ATO_WFH_FIXED_SOURCE,
+    ATO_WFH_ACTUAL_SOURCE,
+    ATO_ASSET_SOURCE,
+    ATO_ASSET_300_OR_LESS_SOURCE,
+    ATO_ASSET_OVER_300_SOURCE,
+]
 ATO_BAS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas"
 ATO_GST_CREDITS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/claiming-gst-credits"
 ATO_TAX_INVOICES_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/tax-invoices"
@@ -1574,6 +1587,7 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("gst_collected", "BAS", "GST collected", "BAS 1A", False),
         QuestionSpec("gst_credits", "BAS", "GST credits", "BAS 1B", False),
         QuestionSpec("employee_deductions", "Deductions", "Employee deductions", "D1-D10 deductions", False),
+        QuestionSpec("phone", "Deductions", "Phone plan, data, and device facts", "D5 Other work-related expenses", False),
         QuestionSpec("wfh_work_pattern", "WFH", "WFH work pattern", "D5 Other work-related expenses", False),
         QuestionSpec("wfh_records", "WFH", "WFH records held", "D5 Other work-related expenses", False),
         QuestionSpec("asset_items", "Assets", "Work assets such as monitor/laptop", "D5 Other work-related expenses", False),
@@ -1787,6 +1801,41 @@ def sample_answers() -> Dict[str, Any]:
         "gst_collected": 818.18,
         "gst_credits": 140,
         "employee_deductions": [{"label": "Union fees", "amount": 0, "evidence": "unknown"}],
+        "phone": {
+            "context": "employee",
+            "paid_by_user": True,
+            "employer_reimbursed": False,
+            "employer_paid": False,
+            "employer_provided": False,
+            "wfh_method": "actual-cost",
+            "device": {
+                "description": "Example phone",
+                "cost": 1100,
+                "purchase_date": "2025-07-01",
+                "work_use_percent": 40,
+                "receipt": "held",
+                "method_preference": "prime-cost",
+                "effective_life_years": 3,
+                "insurance_amount": 0,
+            },
+            "plan": {
+                "monthly_cost": 65,
+                "months_claimed": 11,
+                "itemised_bill": True,
+                "representative_period_start": "2025-08-01",
+                "representative_period_end": "2025-08-28",
+                "work_use_percent": 20,
+                "basis": "call-count",
+                "bills": "held",
+                "log": "held",
+            },
+            "incidental": {
+                "claim_amount": 0,
+                "work_calls": 0,
+                "work_texts": 0,
+                "basic_records": "held",
+            },
+        },
         "wfh": {
             "state": "VIC",
             "start": "2025-07-01",
@@ -1870,6 +1919,8 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     bas_items = bas_rows(answers) if has_bas_inputs(answers) else []
     missing_items = missing_fact_rows(answers)
     evidence_items = evidence_rows(answers)
+    phone = phone_answers(answers)
+    items.extend(phone_rows(phone, answers))
     items.extend(wfh_rows(wfh_answers(answers)))
     items.extend(asset_rows(asset_answers(answers)))
     items.extend(complex_payment_rows(complex_payment_answers(answers)))
@@ -1901,10 +1952,15 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     cgt = cgt_answers(answers)
     has_payg_items = bool(payg_item_values(payg.get("items")))
     has_cgt = has_cgt_inputs(cgt)
+    has_phone = has_phone_inputs(phone_answers(answers))
     abn = abn_summary(answers) if has_abn_inputs(answers) else {}
     bas = bas_summary(answers) if has_bas_inputs(answers) else {}
     for spec in question_specs():
         value = investment_base_item_value(spec.key, answers, investment)
+        if spec.key == "phone" and (
+            has_phone or isinstance(answers.get("phone"), dict) or ("phone" in answers and phone_freeform_absent(answers.get("phone")))
+        ):
+            continue
         if spec.key in ("payg_gross", "payg_withheld", "main_occupation") and has_payg_items:
             continue
         if spec.key in REVIEWABLE_PAYG_FIELDS and has_payg_items:
@@ -3154,11 +3210,32 @@ def parse_gst_registration(value: Any) -> Optional[bool]:
         return False
     if contains_unknown(value):
         return None
-    canonical = text(value).strip().lower()
-    if canonical in {"yes", "y", "true", "registered", "gst registered"}:
-        return True
-    if canonical in {"no", "n", "false", "not registered", "not gst registered"}:
+    canonical = re.sub(r"[^a-z0-9]+", " ", text(value).strip().lower()).strip()
+    negation = r"(not|no|without|isn\s+t|isnt|is\s+not)"
+    negative_patterns = (
+        rf"\b{negation}\b(?:\s+\w+){{0,3}}\s+gst\b(?:\s+\w+){{0,3}}\s+registered\b",
+        rf"\b{negation}\b(?:\s+\w+){{0,3}}\s+registered\b(?:\s+\w+){{0,3}}\s+gst\b",
+        rf"\bgst\b(?:\s+\w+){{0,3}}\s+{negation}\b(?:\s+\w+){{0,3}}\s+registered\b",
+        rf"\bregistered\b(?:\s+\w+){{0,3}}\s+{negation}\b(?:\s+\w+){{0,3}}\s+gst\b",
+        r"\b(no|false)\b(?:\s+\w+){0,3}\s+gst\b",
+        r"\bgst\b(?:\s+\w+){0,3}\s+(no|false)\b",
+    )
+    negative_registration = canonical in {"no", "n", "false", "not registered", "not gst registered"} or any(
+        re.search(pattern, canonical) for pattern in negative_patterns
+    )
+    if negative_registration:
         return False
+    positive_patterns = (
+        r"\bgst\b(?:\s+\w+){0,3}\s+registered\b",
+        r"\bregistered\b(?:\s+\w+){0,3}\s+gst\b",
+        r"\b(yes|true)\b(?:\s+\w+){0,3}\s+gst\b",
+        r"\bgst\b(?:\s+\w+){0,3}\s+(yes|true)\b",
+    )
+    positive_registration = canonical in {"yes", "y", "true", "registered", "gst registered"} or any(
+        re.search(pattern, canonical) for pattern in positive_patterns
+    )
+    if positive_registration:
+        return True
     return None
 
 
@@ -3175,6 +3252,7 @@ def evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     wfh = answers.get("wfh", {})
     if isinstance(wfh, dict) and contains_unknown(wfh.get("records")):
         rows.append(evidence_row("WFH records", "D5 WFH", "Diary, timesheet, roster, or similar records"))
+    rows.extend(phone_evidence_rows(phone_answers(answers), answers))
     rows.extend(investment_evidence_rows(investment_answers(answers), answers))
     rows.extend(payg_evidence_rows(payg_answers(answers), answers))
     rows.extend(abn_business_evidence_rows(answers))
@@ -3185,6 +3263,922 @@ def evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def evidence_row(number: Any, area: str, evidence: str) -> Dict[str, Any]:
     return guide_row(number, area, "Evidence required", evidence, "Draft value remains not copy-ready until evidence is confirmed.", "Evidence", ATO_INDIVIDUAL_SOURCE)
+
+
+PHONE_NESTED_KEYS = ("phone", "phone_deduction", "mobile_phone", "mobile")
+PHONE_FIELD_ALIASES = {
+    "context": ("phone_context", "phone_work_context"),
+    "paid_by_user": ("phone_paid_by_user", "phone_user_paid"),
+    "employer_reimbursed": ("phone_employer_reimbursed", "phone_reimbursed"),
+    "employer_paid": ("phone_employer_paid",),
+    "employer_provided": ("phone_employer_provided", "employer_provided_phone"),
+    "gst_registered": ("phone_gst_registered", "phone_gst_registration_status"),
+    "gst_registration_date": ("phone_gst_registration_date",),
+    "wfh_method": (
+        "phone_wfh_method",
+        "wfh_method",
+        "work_from_home_method",
+        "claim_method",
+        "deduction_method",
+        "calculation_method",
+    ),
+}
+PHONE_LOCAL_WFH_NESTED_KEYS = ("wfh", "work_from_home", "work_from_home_pattern")
+PHONE_WFH_NESTED_KEYS = ("wfh", "wfh_work_pattern")
+PHONE_WFH_METHOD_ALIASES = (
+    "method",
+    "wfh_method",
+    "work_from_home_method",
+    "claim_method",
+    "deduction_method",
+    "calculation_method",
+    "method_preference",
+)
+PHONE_WFH_METHOD_METADATA_KEYS = (
+    "method",
+    "wfh_method",
+    "work_from_home_method",
+    "claim_method",
+    "deduction_method",
+    "calculation_method",
+)
+PHONE_GST_STATUS_KEYS = (
+    "gst_registered",
+    "gst_registration_status",
+    "registered",
+    "phone_gst_registered",
+    "phone_gst_registration_status",
+)
+PHONE_GST_DATE_KEYS = (
+    "gst_registration_date",
+    "registered_from",
+    "registration_date",
+    "phone_gst_registration_date",
+)
+PHONE_EMPLOYER_REIMBURSED_MARKERS = ("reimburs\\w*", "refund\\w*", "paid back")
+PHONE_EMPLOYER_PAID_MARKERS = (
+    "employer paid",
+    "paid by employer",
+    "company paid",
+    "work paid",
+    "paid by work",
+    "employer covers",
+    "company covers",
+    "work covers",
+)
+PHONE_EMPLOYER_PROVIDED_MARKERS = (
+    "employer provided",
+    "provided by employer",
+    "company provided",
+    "provided by work",
+    "issued by employer",
+    "issued by work",
+    "work phone",
+    "company phone",
+)
+PHONE_EMPLOYER_MARKERS = (
+    *PHONE_EMPLOYER_REIMBURSED_MARKERS,
+    *PHONE_EMPLOYER_PAID_MARKERS,
+    *PHONE_EMPLOYER_PROVIDED_MARKERS,
+)
+PHONE_EMPLOYER_MARKER_GROUPS = (
+    ("reimbursed", PHONE_EMPLOYER_REIMBURSED_MARKERS),
+    ("paid", PHONE_EMPLOYER_PAID_MARKERS),
+    ("provided", PHONE_EMPLOYER_PROVIDED_MARKERS),
+)
+PHONE_TEXT_NEGATION_PATTERN = (
+    r"(no|not|never|without|dont|don t|didnt|didn t|did not|n a|not applicable)"
+)
+PHONE_METADATA_KEYS = {
+    "context",
+    "paid_by_user",
+    "employer_reimbursed",
+    "employer_paid",
+    "employer_provided",
+    *PHONE_LOCAL_WFH_NESTED_KEYS,
+    *PHONE_WFH_METHOD_METADATA_KEYS,
+    *PHONE_GST_STATUS_KEYS,
+    *PHONE_GST_DATE_KEYS,
+    "wfh_method",
+}
+PHONE_OPT_OUT_KEYS = {
+    "claim",
+    "claimed",
+    "claiming",
+    "deduction",
+    "expense",
+    "expenses",
+    "cost",
+    "costs",
+    "freeform",
+}
+PHONE_NEGATIVE_OPT_OUT_KEYS = {"no_claim", "no_deduction", "not_claiming"}
+PHONE_DEVICE_ALIASES = {
+    "description": ("description", "phone_device_description", "phone_description"),
+    "cost": ("cost", "phone_device_cost", "phone_cost"),
+    "purchase_date": ("purchase_date", "phone_purchase_date", "phone_device_purchase_date"),
+    "work_use_percent": ("work_use_percent", "phone_device_work_use_percent", "phone_work_use_percent"),
+    "method_preference": ("method_preference", "phone_depreciation_method", "phone_method_preference"),
+    "effective_life_years": ("effective_life_years", "phone_effective_life_years"),
+    "receipt": ("receipt", "phone_device_receipt", "phone_receipt"),
+    "insurance_amount": ("insurance_amount", "phone_insurance_amount", "phone_device_insurance"),
+    "set_or_substantially_identical": ("set_or_substantially_identical", "phone_set_or_substantially_identical", "phone_set_rule"),
+    "more_than_50_percent_work_use": ("more_than_50_percent_work_use", "phone_more_than_50_percent_work_use"),
+    "work_use_percent_changed": ("work_use_percent_changed", "phone_work_use_percent_changed", "phone_changed_use"),
+}
+PHONE_PLAN_ALIASES = {
+    "monthly_cost": ("monthly_cost", "phone_plan_monthly_cost", "phone_monthly_cost", "mobile_plan_amount"),
+    "months_claimed": ("months_claimed", "phone_plan_months_claimed", "phone_months_claimed", "mobile_plan_months"),
+    "itemised_bill": ("itemised_bill", "phone_itemised_bill", "phone_plan_itemised_bill"),
+    "prepaid": ("prepaid", "phone_prepaid", "phone_plan_prepaid"),
+    "representative_period_start": ("representative_period_start", "phone_representative_period_start", "phone_4_week_start"),
+    "representative_period_end": ("representative_period_end", "phone_representative_period_end", "phone_4_week_end"),
+    "work_use_percent": ("work_use_percent", "phone_plan_work_use_percent", "phone_data_work_use_percent"),
+    "basis": ("basis", "phone_plan_basis", "phone_work_use_basis"),
+    "bills": ("bills", "phone_bills", "phone_plan_bills"),
+    "log": ("log", "phone_log", "phone_4_week_record", "phone_calendar"),
+}
+PHONE_INCIDENTAL_ALIASES = {
+    "claim_amount": ("claim_amount", "phone_incidental_claim_amount", "phone_incidental_amount"),
+    "work_calls": ("work_calls", "phone_incidental_work_calls", "phone_work_calls"),
+    "work_texts": ("work_texts", "phone_incidental_work_texts", "phone_work_texts"),
+    "basic_records": ("basic_records", "phone_incidental_basic_records", "phone_basic_records"),
+}
+PHONE_DEVICE_SIGNAL_KEYS = set(PHONE_DEVICE_ALIASES).difference({"work_use_percent"})
+PHONE_PLAN_SIGNAL_KEYS = set(PHONE_PLAN_ALIASES).difference({"work_use_percent"})
+PHONE_INCIDENTAL_SIGNAL_KEYS = set(PHONE_INCIDENTAL_ALIASES)
+PHONE_NESTED_ALIAS_GROUPS = (
+    PHONE_FIELD_ALIASES,
+    PHONE_DEVICE_ALIASES,
+    PHONE_PLAN_ALIASES,
+    PHONE_INCIDENTAL_ALIASES,
+)
+
+
+def phone_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
+    raw: Dict[str, Any] = {}
+    for key in PHONE_NESTED_KEYS:
+        value = answers.get(key)
+        if isinstance(value, dict):
+            raw.update(phone_normalized_nested_raw(value))
+        elif key in answers and not is_missing(value) and not phone_freeform_absent(value):
+            raw.setdefault("freeform", value)
+    for target, aliases in PHONE_FIELD_ALIASES.items():
+        value = first_alias_value(answers, aliases)
+        if value is not None:
+            raw[target] = value
+    wfh_method = phone_preferred_wfh_method(
+        raw.get("wfh_method"),
+        phone_local_wfh_method(raw),
+        phone_nested_wfh_method(answers),
+    )
+    if wfh_method is not None:
+        raw["wfh_method"] = wfh_method
+    raw["device"] = phone_child_answers(raw.get("device"), raw, answers, PHONE_DEVICE_ALIASES, PHONE_DEVICE_SIGNAL_KEYS)
+    raw["plan"] = phone_child_answers(raw.get("plan"), raw, answers, PHONE_PLAN_ALIASES, PHONE_PLAN_SIGNAL_KEYS)
+    raw["incidental"] = phone_child_answers(raw.get("incidental"), raw, answers, PHONE_INCIDENTAL_ALIASES, PHONE_INCIDENTAL_SIGNAL_KEYS)
+    if not has_phone_inputs(raw):
+        return {}
+    if is_missing(raw.get("context")) and (has_abn_inputs(answers) or has_bas_inputs(answers)):
+        raw["context"] = "employee" if phone_context_is_employee(display_value(raw.get("freeform"))) else "abn"
+    return raw
+
+
+def phone_preferred_wfh_method(*values: Any) -> Any:
+    candidates = [value for value in values if value is not None and not is_missing(value)]
+    for value in candidates:
+        if phone_wfh_fixed_rate_value(value):
+            return value
+    return candidates[0] if candidates else None
+
+
+def phone_local_wfh_method(raw: Dict[str, Any]) -> Any:
+    values = [
+        raw.get(alias)
+        for alias in PHONE_WFH_METHOD_ALIASES
+        if alias in raw and not is_missing(raw.get(alias))
+    ]
+    for key in PHONE_LOCAL_WFH_NESTED_KEYS:
+        nested = raw.get(key)
+        if not isinstance(nested, dict):
+            continue
+        values.extend(
+            nested.get(alias)
+            for alias in PHONE_WFH_METHOD_ALIASES
+            if alias in nested and not is_missing(nested.get(alias))
+        )
+    return phone_preferred_wfh_method(*values)
+
+
+def phone_nested_wfh_method(answers: Dict[str, Any]) -> Any:
+    for key in PHONE_WFH_NESTED_KEYS:
+        raw = answers.get(key)
+        if not isinstance(raw, dict):
+            continue
+        value = first_alias_value(raw, PHONE_WFH_METHOD_ALIASES)
+        if value is not None:
+            return value
+    return None
+
+
+def phone_normalized_nested_raw(raw: Dict[str, Any]) -> Dict[str, Any]:
+    result: Dict[str, Any] = {}
+    freeform_parts: List[str] = []
+    for key, value in raw.items():
+        normalized_key = str(key).strip().lower()
+        if normalized_key in PHONE_OPT_OUT_KEYS and phone_freeform_absent(value):
+            continue
+        if normalized_key in PHONE_NEGATIVE_OPT_OUT_KEYS:
+            if phone_bool(value) is True:
+                continue
+            if phone_bool(value) is False or is_missing(value):
+                continue
+        if not phone_nested_known_field(normalized_key):
+            if phone_freeform_present(value):
+                freeform_parts.append(f"{normalized_key} {display_value(value)}")
+            continue
+        result[key] = value
+    if freeform_parts:
+        existing = ""
+        if phone_freeform_present(result.get("freeform")):
+            existing = display_value(result.get("freeform"))
+        result["freeform"] = "; ".join(part for part in (existing, *freeform_parts) if part)
+    return result
+
+
+def phone_nested_known_field(key: str) -> bool:
+    if key in {"device", "plan", "incidental", "freeform", *PHONE_METADATA_KEYS}:
+        return True
+    return any(
+        key == target or key in aliases
+        for aliases_by_target in PHONE_NESTED_ALIAS_GROUPS
+        for target, aliases in aliases_by_target.items()
+    )
+
+
+def phone_child_answers(
+    raw_child: Any,
+    nested_phone: Dict[str, Any],
+    answers: Dict[str, Any],
+    aliases: Dict[str, tuple[str, ...]],
+    signal_keys: set[str],
+) -> Dict[str, Any]:
+    child = phone_nested_answers(raw_child, nested_phone, aliases)
+    child = phone_nested_answers(child, answers, aliases)
+    if not any(has_meaningful_value(child.get(key)) for key in signal_keys):
+        return {}
+    return child
+
+
+def phone_nested_answers(raw: Any, answers: Dict[str, Any], aliases: Dict[str, tuple[str, ...]]) -> Dict[str, Any]:
+    result = dict(raw) if isinstance(raw, dict) else {}
+    for target, keys in aliases.items():
+        value = first_alias_value(answers, keys)
+        if value is not None and (target not in result or is_missing(result.get(target))):
+            result[target] = value
+    return result
+
+
+def first_alias_value(values: Dict[str, Any], keys: tuple[str, ...]) -> Any:
+    for key in keys:
+        if key in values and not is_missing(values.get(key)):
+            return values.get(key)
+    return None
+
+
+def has_phone_inputs(raw: Dict[str, Any]) -> bool:
+    if not isinstance(raw, dict):
+        return False
+    return any(
+        phone_freeform_present(value) if key == "freeform" else has_meaningful_value(value)
+        for key, value in raw.items()
+        if key not in {*PHONE_METADATA_KEYS, "device", "plan", "incidental"}
+    ) or any(has_meaningful_value(raw.get(key)) for key in ("device", "plan", "incidental"))
+
+
+def phone_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if not has_phone_inputs(raw):
+        return []
+    rows = [phone_overview_row(raw, answers)]
+    rows.extend(phone_plan_rows(raw, answers))
+    rows.extend(phone_device_rows(raw, answers))
+    rows.extend(phone_incidental_rows(raw, answers))
+    return rows
+
+
+def phone_overview_row(raw: Dict[str, Any], answers: Dict[str, Any]) -> Dict[str, Any]:
+    context = phone_context(raw, answers)
+    flags = phone_blocking_terms(raw)
+    if phone_abn_context(raw, answers):
+        flags.append("ABN/GST/BAS review path")
+    if phone_wfh_fixed_rate(raw):
+        flags.append("WFH fixed-rate blocks separate phone/data")
+    if not flags:
+        flags.append("employee D5 prep-only review")
+    freeform = display_value(raw.get("freeform"))
+    freeform_text = f"; free-form facts {freeform}" if freeform else ""
+    return guide_row(
+        "PHONE",
+        "Phone deduction overview",
+        "Phone plan, data, and device prep path",
+        f"context {context}; paid by user {display_value(raw.get('paid_by_user'))}; employer reimbursed {display_value(raw.get('employer_reimbursed'))}; employer paid {display_value(raw.get('employer_paid'))}; employer provided {display_value(raw.get('employer_provided'))}; WFH method {display_value(raw.get('wfh_method'))}{freeform_text}",
+        "Phone facts are prep-only. Employer-paid/reimbursed/provided, mixed-use, WFH fixed-rate, ABN/GST/BAS, and depreciation facts stay blocked or under accountant review.",
+        "Accountant review",
+        phone_sources(raw, answers),
+        tab_text="Phone overview: " + ", ".join(flags) + ".",
+    )
+
+
+def phone_plan_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    plan = raw.get("plan") if isinstance(raw.get("plan"), dict) else {}
+    if not has_meaningful_value(plan):
+        return []
+    monthly = phone_nonnegative_money_value(plan.get("monthly_cost"))
+    months = phone_months_claimed_value(plan.get("months_claimed"))
+    work_use = phone_percent_value(plan.get("work_use_percent"))
+    candidate = None if monthly is None or months is None or work_use is None else round(monthly * months * work_use / 100, 2)
+    itemised = phone_bool(plan.get("itemised_bill"))
+    blocked = phone_plan_blocked(raw)
+    evidence_gap = phone_plan_evidence_gap(plan)
+    status = "Evidence" if evidence_gap or candidate is None else "Accountant review"
+    if blocked:
+        status = "Accountant review"
+        candidate_text = "blocked"
+    else:
+        candidate_text = money_text(candidate)
+    answer = (
+        f"monthly {money_text(monthly)}; months {money_text(months)}; itemised {display_value(plan.get('itemised_bill'))}; "
+        f"prepaid {display_value(plan.get('prepaid'))}; representative period {display_value(plan.get('representative_period_start'))} to {display_value(plan.get('representative_period_end'))}; "
+        f"work use {percent_text(work_use)}; basis {display_value(plan.get('basis'))}; candidate {candidate_text}; bills {display_value(plan.get('bills'))}; log {display_value(plan.get('log'))}"
+    )
+    if blocked:
+        answer = f"{answer}; blocked: {', '.join(blocked)}"
+    elif itemised is False:
+        answer = f"{answer}; non-itemised/prepaid requires representative 4-week work/private record"
+    return [
+        guide_row(
+            "PHONE-PLAN",
+            "D5 Other work-related expenses" if not phone_abn_context(raw, answers) else "ABN/GST/BAS phone review",
+            "Phone plan/data",
+            answer,
+            "Phone plan/data needs user-paid cost, work-use basis, bill/payment evidence, and 4-week support. WFH fixed-rate blocks a separate phone/data candidate.",
+            status,
+            phone_sources(raw, answers),
+            tab_text=phone_plan_tab_text(blocked, evidence_gap),
+        )
+    ]
+
+
+def phone_device_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    device = raw.get("device") if isinstance(raw.get("device"), dict) else {}
+    if not has_meaningful_value(device):
+        return []
+    cost = phone_nonnegative_money_value(device.get("cost"))
+    work_use = phone_percent_value(device.get("work_use_percent"))
+    work_amount = None if cost is None or work_use is None else round(cost * work_use / 100, 2)
+    blocked = phone_device_blocked(raw)
+    evidence_gap = phone_device_evidence_gap(device)
+    immediate_candidate = phone_under_300_candidate(device, cost, work_use)
+    if blocked:
+        status = "Accountant review"
+        treatment = "blocked: " + ", ".join(blocked)
+    elif cost is None or work_use is None or evidence_gap:
+        status = "Evidence"
+        treatment = "evidence needed before method review"
+    elif cost > 300:
+        status = "Accountant review"
+        treatment = "decline-in-value review; not full immediate claim"
+    elif immediate_candidate:
+        status = "Accountant review"
+        treatment = "immediate deduction candidate if source-backed conditions and evidence hold"
+    else:
+        status = "Evidence"
+        treatment = "under-300 conditions incomplete; no immediate candidate yet"
+    answer = (
+        f"{display_value(device.get('description')) or 'phone'}; cost {money_text(cost)}; purchase date {display_value(device.get('purchase_date'))}; "
+        f"work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; receipt {display_value(device.get('receipt'))}; "
+        f"method {display_value(device.get('method_preference'))}; effective life {display_value(device.get('effective_life_years'))}; "
+        f"set/substantially-identical {display_value(device.get('set_or_substantially_identical'))}; changed-use facts {display_value(device.get('work_use_percent_changed'))}; {treatment}"
+    )
+    rows = [
+        guide_row(
+            "PHONE-DEVICE",
+            "D5 Other work-related expenses" if not phone_abn_context(raw, answers) else "ABN/GST/BAS phone review",
+            "Phone handset/device",
+            answer,
+            "Phone device costs need purchase evidence, work/private apportionment, $300 threshold checks, set/substantially-identical checks, and depreciation method review.",
+            status,
+            phone_sources(raw, answers),
+            tab_text=phone_device_tab_text(blocked, evidence_gap, cost),
+        )
+    ]
+    if "insurance_amount" in device:
+        insurance = phone_nonnegative_money_value(device.get("insurance_amount"))
+        insurance_work = None if insurance is None or work_use is None else round(insurance * work_use / 100, 2)
+        insurance_status = "Evidence" if insurance is None or evidence_missing(device.get("receipt")) else "Accountant review"
+        insurance_answer = f"insurance {money_text(insurance)}; work use {percent_text(work_use)}; work portion {money_text(insurance_work)}; evidence {display_value(device.get('receipt'))}"
+        insurance_tab = "Phone insurance needs evidence and private-use apportionment."
+        if blocked:
+            insurance_status = "Accountant review"
+            insurance_answer = f"{insurance_answer}; blocked: {', '.join(blocked)}"
+            insurance_tab = "Phone insurance blocked: " + ", ".join(blocked) + "."
+        rows.append(
+            guide_row(
+                "PHONE-INS",
+                "D5 Other work-related expenses" if not phone_abn_context(raw, answers) else "ABN/GST/BAS phone review",
+                "Phone insurance",
+                insurance_answer,
+                "Phone insurance is only a prep-only work-related portion where the user paid it, evidence exists, and private use is apportioned.",
+                insurance_status,
+                phone_sources(raw, answers),
+                tab_text=insurance_tab,
+            )
+        )
+    return rows
+
+
+def phone_incidental_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    incidental = raw.get("incidental") if isinstance(raw.get("incidental"), dict) else {}
+    if not has_meaningful_value(incidental):
+        return []
+    supplied = phone_nonnegative_money_value(incidental.get("claim_amount"))
+    raw_calls = phone_nonnegative_money_value(incidental.get("work_calls"))
+    raw_texts = phone_nonnegative_money_value(incidental.get("work_texts"))
+    missing_usage = supplied is None and (raw_calls is None or raw_texts is None)
+    calculated = None if missing_usage else round((raw_calls or 0) * 0.75 + (raw_texts or 0) * 0.10, 2)
+    amount = supplied if supplied is not None else calculated
+    blocked = phone_plan_blocked(raw)
+    evidence_gap = evidence_missing(incidental.get("basic_records")) or missing_usage
+    over_limit = amount is not None and amount > 50
+    status = "Accountant review"
+    if evidence_gap or amount is None or over_limit:
+        status = "Evidence"
+    if blocked:
+        status = "Accountant review"
+    answer = (
+        f"claim {money_text(amount)}; supplied {money_text(supplied)}; work calls {money_text(raw_calls)}; work texts {money_text(raw_texts)}; "
+        f"basic records {display_value(incidental.get('basic_records'))}; rate basis 0.75 per work mobile call and 0.10 per work text"
+    )
+    if blocked:
+        answer = f"{answer}; blocked: {', '.join(blocked)}"
+    elif over_limit:
+        answer = f"{answer}; over $50 incidental threshold needs detailed phone-plan evidence"
+    tab_text = "Incidental phone use needs basic records and fixed-rate double-dip review."
+    if blocked:
+        tab_text = "Incidental phone use blocked: " + ", ".join(blocked) + "."
+    return [
+        guide_row(
+            "PHONE-INC",
+            "D5 Other work-related expenses" if not phone_abn_context(raw, answers) else "ABN/GST/BAS phone review",
+            "Incidental phone use",
+            answer,
+            "Incidental phone/data claims of $50 or less can use basic records, but WFH fixed-rate still blocks a separate phone/data claim.",
+            status,
+            phone_sources(raw, answers),
+            tab_text=tab_text,
+        )
+    ]
+
+
+def phone_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if not has_phone_inputs(raw):
+        return []
+    rows: List[Dict[str, Any]] = []
+    plan = raw.get("plan") if isinstance(raw.get("plan"), dict) else {}
+    device = raw.get("device") if isinstance(raw.get("device"), dict) else {}
+    incidental = raw.get("incidental") if isinstance(raw.get("incidental"), dict) else {}
+    if has_meaningful_value(plan):
+        if evidence_missing(plan.get("bills")):
+            rows.append(phone_evidence_row(len(rows) + 1, "Phone bills or prepaid receipts", raw, answers))
+        if evidence_missing(plan.get("log")) or is_missing(plan.get("representative_period_start")) or is_missing(plan.get("representative_period_end")):
+            rows.append(phone_evidence_row(len(rows) + 1, "4-week phone work/private usage log, diary, or calendar", raw, answers))
+    if has_meaningful_value(device) and evidence_missing(device.get("receipt")):
+        rows.append(phone_evidence_row(len(rows) + 1, "Phone handset receipt or tax invoice", raw, answers))
+    if has_meaningful_value(incidental) and evidence_missing(incidental.get("basic_records")):
+        rows.append(phone_evidence_row(len(rows) + 1, "Incidental phone basic records", raw, answers))
+    if (
+        has_meaningful_value(incidental)
+        and phone_nonnegative_money_value(incidental.get("claim_amount")) is None
+        and (
+            phone_nonnegative_money_value(incidental.get("work_calls")) is None
+            or phone_nonnegative_money_value(incidental.get("work_texts")) is None
+        )
+    ):
+        rows.append(phone_evidence_row(len(rows) + 1, "Incidental phone call/text counts or supplied claim amount", raw, answers))
+    if has_meaningful_value(raw.get("freeform")):
+        rows.append(phone_evidence_row(len(rows) + 1, "Structured phone cost, work-use, and evidence details for free-form phone fact", raw, answers))
+    if phone_abn_context(raw, answers) and phone_gst_registered(raw, answers):
+        rows.append(phone_evidence_row(len(rows) + 1, "GST tax invoice and GST-credit basis for phone costs", raw, answers))
+    elif phone_abn_context(raw, answers) and phone_gst_registration_unknown(raw, answers):
+        rows.append(phone_evidence_row(len(rows) + 1, "GST registration status for phone GST-credit review", raw, answers))
+    return rows
+
+
+def phone_evidence_row(index: int, evidence: str, raw: Dict[str, Any], answers: Dict[str, Any]) -> Dict[str, Any]:
+    return guide_row(
+        f"PHONE-EVID-{index}",
+        "Phone deduction evidence",
+        "Phone evidence required",
+        evidence,
+        "Phone rows stay prep-only until bills, receipts, records, and review facts are confirmed.",
+        "Evidence",
+        phone_sources(raw, answers),
+    )
+
+
+def phone_context(raw: Dict[str, Any], answers: Dict[str, Any]) -> str:
+    context = display_value(raw.get("context")).strip().lower()
+    if context:
+        return context
+    if phone_context_is_abn(display_value(raw.get("freeform")).strip().lower()):
+        return "abn"
+    return "abn" if has_abn_inputs(answers) or has_bas_inputs(answers) else "employee"
+
+
+def phone_abn_context(raw: Dict[str, Any], answers: Dict[str, Any]) -> bool:
+    context = phone_context(raw, answers)
+    if context:
+        return phone_context_is_abn(context)
+    return has_abn_inputs(answers) or has_bas_inputs(answers)
+
+
+def phone_context_is_abn(value: str) -> bool:
+    normalized = re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+    if phone_context_has_negated_abn(normalized):
+        return False
+    if phone_context_has_business_uncertainty(normalized):
+        return False
+    tokens = set(normalized.split())
+    if value in {"abn", "business", "sole trader", "sole-trader", "both"}:
+        return True
+    return (
+        "abn" in tokens
+        or "business" in tokens
+        or {"sole", "trader"}.issubset(tokens)
+        or {"self", "employed"}.issubset(tokens)
+    )
+
+
+def phone_context_has_negated_abn(normalized: str) -> bool:
+    business_context = r"(abn|business|sole\s+trader|self\s+employed)"
+    return bool(
+        re.search(rf"\b(not|no|without)\b(?:\s+\w+){{0,3}}\s+(a\s+|an\s+)?\b{business_context}\b", normalized)
+        or re.search(rf"\bnon\s+{business_context}\b", normalized)
+    )
+
+
+def phone_context_has_business_uncertainty(normalized: str) -> bool:
+    if re.search(r"\b(not sure|unsure|uncertain|maybe|possibly|whether|question)\b", normalized):
+        return True
+    tokens = set(normalized.split())
+    business_terms = {"abn", "business", "sole", "trader", "self", "employed"}
+    return "if" in tokens and bool(tokens.intersection(business_terms))
+
+
+def phone_context_is_employee(value: str) -> bool:
+    normalized = re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+    tokens = set(normalized.split())
+    if phone_context_is_abn(value):
+        return False
+    if phone_context_has_business_uncertainty(normalized) and "only" not in tokens:
+        return False
+    return bool(normalized) and (
+        phone_context_has_negated_abn(normalized)
+        or "employee" in tokens
+    )
+
+
+def phone_freeform_present(value: Any) -> bool:
+    return not is_missing(value) and not phone_freeform_absent(value)
+
+
+def phone_freeform_absent(value: Any) -> bool:
+    if value is False:
+        return True
+    lowered = display_value(value).strip().lower()
+    if lowered in {"no", "none", "false", "not applicable", "n/a", "no phone claim", "no phone deduction", "no mobile claim"}:
+        return True
+    normalized = re.sub(r"[^a-z0-9]+", " ", lowered).strip()
+    if re.search(r"\b(not sure|unsure|uncertain|whether|can i|could i|no idea|unknown|question)\b", normalized):
+        return False
+    if phone_freeform_mixed_use(normalized):
+        return False
+    subject = r"(phone|mobile|internet|device|handset)"
+    claim_word = r"(claim|claimed|claiming|deduction|expense|expenses|cost|costs)"
+    no_word = r"no(?!\s+idea)"
+    opt_out_patterns = (
+        rf"\b({no_word}|without)\b.*\b{subject}\b.*\b{claim_word}\b",
+        rf"\b({no_word}|without)\b.*\b{claim_word}\b.*\b{subject}\b",
+        rf"\b(dont|don t|do not|didnt|didn t|did not|not going to|not gonna|not planning to)\b.*\b{claim_word}\b.*\b{subject}\b",
+        rf"\bnot\s+(claim|claimed|claiming|deducting)\b.*\b{subject}\b",
+        rf"\b{subject}\b.*\b{claim_word}\b.*\b(none|nil|zero)\b",
+        rf"\b{subject}\b.*\b(not|never)\b.*\b(claimed|claiming|used)\b",
+        rf"\b{subject}\b.*\b(not|never)\b.*\b(deductible|allowed|allowable)\b",
+        rf"\bnot eligible\b.*\b{subject}\b.*\b{claim_word}\b",
+        rf"\b{subject}\b.*\b{claim_word}\b.*\bnot eligible\b",
+        rf"\b{subject}\b.*\b{claim_word}\b.*\b(not allowed|not allowable)\b",
+    )
+    if any(re.search(pattern, normalized) for pattern in opt_out_patterns):
+        return True
+    return False
+
+
+def phone_freeform_mixed_use(normalized: str) -> bool:
+    subject = r"(phone|mobile|internet|device|handset)"
+    work_context = r"(work|business|employment|job)"
+    exclusive = r"(only|exclusively|solely|wholly|100)"
+    return bool(
+        re.search(r"\bmixed\s+use\b|\bmixed\s+business\s+and\s+private\b", normalized)
+        or re.search(r"\b(private|personal)\s+use\b", normalized)
+        or re.search(r"\b(partly|partially)\s+(private|personal|work|business)\b", normalized)
+        or re.search(rf"\b{subject}\b.*\bnot\b.*\bused\b.*\b{exclusive}\b.*\b{work_context}\b", normalized)
+        or re.search(rf"\b{subject}\b.*\bnot\b.*\b{exclusive}\b.*\b{work_context}\b", normalized)
+        or re.search(rf"\bnot\b.*\b{exclusive}\b.*\b{work_context}\b.*\b{subject}\b", normalized)
+    )
+
+
+def phone_gst_registered(raw: Dict[str, Any], answers: Dict[str, Any]) -> bool:
+    return parse_gst_registration(phone_gst_registration_value(raw, answers)) is True
+
+
+def phone_gst_registration_unknown(raw: Dict[str, Any], answers: Dict[str, Any]) -> bool:
+    value = phone_gst_registration_value(raw, answers)
+    return is_missing(value) or parse_gst_registration(value) is None
+
+
+def phone_gst_registration_value(raw: Dict[str, Any], answers: Dict[str, Any]) -> Any:
+    gst = first_alias_value(raw, PHONE_GST_STATUS_KEYS)
+    if is_missing(gst):
+        return bas_gst_registration_answer(answers)
+    return gst
+
+
+def phone_bool(value: Any) -> Optional[bool]:
+    if isinstance(value, bool):
+        return value
+    if is_missing(value) or contains_unknown(value):
+        return None
+    lowered = text(value).strip().lower()
+    if lowered in {"yes", "y", "true", "1", "on", "checked", "held", "itemised", "itemized"}:
+        return True
+    if lowered in {"no", "n", "false", "0", "off", "unchecked", "none", "not applicable", "n/a", "non-itemised", "non-itemized"}:
+        return False
+    return None
+
+
+def phone_wfh_fixed_rate(raw: Dict[str, Any]) -> bool:
+    return phone_wfh_fixed_rate_value(raw.get("wfh_method"))
+
+
+def phone_wfh_fixed_rate_value(value: Any) -> bool:
+    method = display_value(value).strip().lower()
+    normalized = re.sub(r"[^a-z0-9]+", " ", method.replace("_", " ").replace("-", " ")).strip()
+    if "?" in method:
+        return False
+    if re.search(r"\b(not sure|unsure|uncertain|maybe|possibly|whether|if|no idea|unknown)\b", normalized):
+        return False
+    negative_patterns = (
+        r"\b(not|no|without|dont|don t|didnt|didn t|did not)\b.*\bfixed\b.*\brate\b",
+        r"\bfixed\b.*\brate\b.*\b(n a|not applicable)\b",
+        r"\bfixed\b.*\brate\b.*\b(no|n|false|off|unchecked)\b",
+        r"\bfixed\b.*\brate\b.*\b(not|never)\b.*\b(used|claimed|claiming|applicable|selected|chosen|elected|opted)\b",
+        r"\binstead\b.*\bof\b.*\bfixed\b.*\brate\b",
+        r"\brather\b.*\bthan\b.*\bfixed\b.*\brate\b",
+        r"\b(not|no|without|dont|don t|didnt|didn t|did not)\b.*\b(70 cents?|70c per|70 c per)\b",
+        r"\b(70 cents?|70c per|70 c per)\b.*\b(n a|not applicable)\b",
+        r"\b(70 cents?|70c|70 c|70c per|70 c per)\b.*\b(no|n|false|off|unchecked)\b",
+        r"\b(70 cents?|70c per|70 c per)\b.*\b(not|never)\b.*\b(used|claimed|claiming|applicable|selected|chosen|elected|opted)\b",
+    )
+    if any(re.search(pattern, normalized) for pattern in negative_patterns):
+        return False
+    if "70" in normalized and ("cent" in normalized or "c per" in normalized or re.search(r"\b70\s*c\b", normalized)):
+        return True
+    return normalized in {"fixed", "fixed rate", "fixed rate method"} or ("fixed" in normalized and "rate" in normalized)
+
+
+def phone_flag_text(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", display_value(value).strip().lower()).strip()
+
+
+def phone_text_has_affirmed_marker(normalized: str, markers: tuple[str, ...]) -> bool:
+    return any(
+        not phone_marker_match_negated(normalized, marker, match)
+        for marker in markers
+        for match in re.finditer(rf"\b{marker}\b", normalized)
+    )
+
+
+def phone_marker_match_negated(normalized: str, marker: str, match: re.Match[str]) -> bool:
+    lead = normalized[: match.start()]
+    leading = re.search(
+        rf"\b{PHONE_TEXT_NEGATION_PATTERN}\b(?P<target>(?:\s+\w+){{0,4}})\s*$",
+        lead,
+    )
+    if leading:
+        if phone_negation_targets_other_employer_marker(leading.group("target"), marker):
+            return False
+        return True
+    tail = normalized[match.end() :]
+    trailing = re.match(rf"(?:\s+\w+){{0,4}}\s+\b{PHONE_TEXT_NEGATION_PATTERN}\b", tail)
+    if not trailing:
+        return False
+    negated_target = tail[trailing.end() :]
+    return not phone_negation_targets_other_employer_marker(negated_target, marker)
+
+
+def phone_negation_targets_other_employer_marker(text_value: str, current_marker: str) -> bool:
+    current_kind = phone_employer_marker_kind(current_marker)
+    for marker in PHONE_EMPLOYER_MARKERS:
+        if marker == current_marker:
+            continue
+        if re.search(rf"^\s*(?:\w+\s+){{0,3}}\b{marker}\b", text_value):
+            return phone_employer_marker_kind(marker) != current_kind
+    return False
+
+
+def phone_employer_marker_kind(marker: str) -> str:
+    for kind, markers in PHONE_EMPLOYER_MARKER_GROUPS:
+        if marker in markers:
+            return kind
+    return marker
+
+
+def phone_user_paid_false(value: Any) -> bool:
+    parsed = phone_bool(value)
+    if parsed is not None:
+        return parsed is False
+    normalized = phone_flag_text(value)
+    if phone_user_paid_unanswered_text(normalized):
+        return False
+    if re.match(r"^(no|n|false|off|unchecked)\b", normalized):
+        return True
+    if not normalized:
+        return False
+    if re.search(r"\b(not|never|did not|dont|don t|didnt|didn t)\b(?:\s+\w+){0,3}\s+\b(pay|paid)\b", normalized):
+        return True
+    return phone_text_has_affirmed_marker(normalized, PHONE_EMPLOYER_MARKERS)
+
+
+def phone_user_paid_unanswered_text(normalized: str) -> bool:
+    if not re.match(r"^no\b", normalized):
+        return False
+    missing_markers = (
+        "answer",
+        "response",
+        "reply",
+        "information",
+        "info",
+        "detail",
+        "details",
+        "data",
+        "value",
+        "confirmation",
+    )
+    return any(re.search(rf"\b{marker}\b", normalized) for marker in missing_markers)
+
+
+def phone_employer_flag_true(value: Any, markers: tuple[str, ...]) -> bool:
+    parsed = phone_bool(value)
+    if parsed is not None:
+        return parsed is True
+    normalized = phone_flag_text(value)
+    return bool(normalized) and phone_text_has_affirmed_marker(normalized, markers)
+
+
+def phone_employee_excluded(raw: Dict[str, Any]) -> List[str]:
+    terms: List[str] = []
+    if phone_user_paid_false(raw.get("paid_by_user")):
+        terms.append("not paid by user")
+    if phone_employer_flag_true(raw.get("employer_reimbursed"), PHONE_EMPLOYER_REIMBURSED_MARKERS):
+        terms.append("employer reimbursed")
+    if phone_employer_flag_true(raw.get("employer_paid"), PHONE_EMPLOYER_PAID_MARKERS):
+        terms.append("employer paid")
+    if phone_employer_flag_true(raw.get("employer_provided"), PHONE_EMPLOYER_PROVIDED_MARKERS):
+        terms.append("employer provided")
+    return terms
+
+
+def phone_blocking_terms(raw: Dict[str, Any]) -> List[str]:
+    terms = phone_employee_excluded(raw)
+    if phone_wfh_fixed_rate(raw):
+        terms.append("WFH fixed-rate double-dip")
+    return terms
+
+
+def phone_plan_blocked(raw: Dict[str, Any]) -> List[str]:
+    terms = phone_employee_excluded(raw)
+    if phone_wfh_fixed_rate(raw):
+        terms.append("WFH fixed-rate covers phone/data")
+    return terms
+
+
+def phone_device_blocked(raw: Dict[str, Any]) -> List[str]:
+    return phone_employee_excluded(raw)
+
+
+def phone_plan_evidence_gap(plan: Dict[str, Any]) -> bool:
+    itemised = phone_bool(plan.get("itemised_bill"))
+    if (
+        phone_nonnegative_money_value(plan.get("monthly_cost")) is None
+        or phone_months_claimed_value(plan.get("months_claimed")) is None
+    ):
+        return True
+    if phone_percent_value(plan.get("work_use_percent")) is None:
+        return True
+    if evidence_missing(plan.get("bills")):
+        return True
+    if itemised is False or phone_bool(plan.get("prepaid")) is True:
+        return evidence_missing(plan.get("log"))
+    return is_missing(plan.get("representative_period_start")) or is_missing(plan.get("representative_period_end")) or evidence_missing(plan.get("log"))
+
+
+def phone_device_evidence_gap(device: Dict[str, Any]) -> bool:
+    return (
+        phone_nonnegative_money_value(device.get("cost")) is None
+        or phone_percent_value(device.get("work_use_percent")) is None
+        or evidence_missing(device.get("receipt"))
+    )
+
+
+def phone_under_300_candidate(device: Dict[str, Any], cost: Optional[float], work_use: Optional[float]) -> bool:
+    if cost is None or work_use is None or cost > 300 or work_use <= 50:
+        return False
+    set_rule = phone_bool(device.get("set_or_substantially_identical"))
+    more_than_half = phone_bool(device.get("more_than_50_percent_work_use"))
+    return set_rule is False and (more_than_half is True or work_use > 50)
+
+
+def phone_percent_value(value: Any) -> Optional[float]:
+    parsed = None
+    had_percent_suffix = False
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        for suffix in ("%", " percent", " per cent"):
+            if lowered.endswith(suffix):
+                had_percent_suffix = True
+                parsed = safe_money_value(lowered[: -len(suffix)].strip())
+                break
+    if parsed is None:
+        parsed = safe_money_value(value)
+    if isinstance(value, str) and not had_percent_suffix and parsed is not None and 0 < parsed < 1:
+        return None
+    if parsed is None or parsed < 0 or parsed > 100:
+        return None
+    return parsed
+
+
+def phone_nonnegative_money_value(value: Any) -> Optional[float]:
+    parsed = safe_money_value(value)
+    if parsed is None:
+        parsed = phone_number_with_unit_value(value)
+    if parsed is None or parsed < 0:
+        return None
+    return parsed
+
+
+def phone_number_with_unit_value(value: Any) -> Optional[float]:
+    if not isinstance(value, str):
+        return None
+    lowered = value.strip().lower()
+    unit_pattern = r"(\$|\baud\b|\bdollars?\b|\bper month\b|\bmonthly\b|\bmonths?\b|\bcalls?\b|\btexts?\b)"
+    if not re.search(unit_pattern, lowered):
+        return None
+    match = re.search(r"-?\d+(?:\.\d+)?", lowered.replace(",", ""))
+    if not match:
+        return None
+    return float(match.group(0))
+
+
+def phone_months_claimed_value(value: Any) -> Optional[float]:
+    parsed = phone_nonnegative_money_value(value)
+    if parsed is None or parsed > 12:
+        return None
+    return parsed
+
+
+def phone_plan_tab_text(blocked: List[str], evidence_gap: bool) -> str:
+    if blocked:
+        return "Phone plan blocked: " + ", ".join(blocked) + "."
+    if evidence_gap:
+        return "Phone plan needs bills and 4-week work/private records."
+    return "Phone plan candidate stays prep-only and needs accountant review before manual copy."
+
+
+def phone_device_tab_text(blocked: List[str], evidence_gap: bool, cost: Optional[float]) -> str:
+    if blocked:
+        return "Phone device blocked: " + ", ".join(blocked) + "."
+    if evidence_gap:
+        return "Phone device needs receipt, cost, and work-use evidence."
+    if cost is not None and cost > 300:
+        return "Phone over $300 needs decline-in-value method/effective-life accountant review."
+    return "Phone $300 or less needs set/substantially-identical and work-use review."
+
+
+def phone_sources(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[str]:
+    sources = list(ATO_PHONE_SOURCES)
+    if phone_abn_context(raw, answers):
+        sources.extend([ATO_BUSINESS_DEPRECIATING_ASSETS_SOURCE, ATO_GST_CREDITS_SOURCE, ATO_TAX_INVOICES_SOURCE])
+    return sources
 
 
 def abn_business_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:

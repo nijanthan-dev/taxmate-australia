@@ -13,6 +13,7 @@ from typing import List
 
 COMMANDS = {
     "calc": "taxmate_calc.py",
+    "coverage": "taxmate_coverage.py",
     "finance": "taxmate_finance.py",
     "intake": "taxmate_intake.py",
     "refresh": "taxmate_refresh.py",
@@ -23,7 +24,7 @@ COMMANDS = {
 }
 
 CALLER_CWD_COMMANDS = {"calc", "finance", "intake", "taxpack"}
-ROOT_CWD_COMMANDS = {"refresh", "review-guardrails", "skills", "validate"}
+ROOT_CWD_COMMANDS = {"coverage", "refresh", "review-guardrails", "skills", "validate"}
 
 
 def _find_repo_root(start: Path) -> Path:

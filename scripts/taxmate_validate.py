@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import atodata
 import skillgen
 import taxmate_calc
+import taxmate_coverage
 import taxmate_finance
 import taxmate_refresh
 import taxmate_skills
@@ -30,6 +31,7 @@ RESERVED_SKILL_PREFIXES = ("claude", "anthropic")
 CODEX_MCP_SERVER_REQUIRED_FRAGMENTS = [
     "taxmate_run",
     "render_individual_html",
+    '"coverage",',
     '["command", "cwd"]',
     '["output_path", "cwd"]',
     '["answers_path", "output_path", "cwd"]',
@@ -401,6 +403,9 @@ def add_source_coverage_checks(
     add("bank_account_investment_source_routed", bank_account_investment_source_routed(coverage), "")
     add("home_business_sources_routed", home_business_sources_routed(coverage), "")
     add("source_record_count", len(registry.records) >= 290, str(len(registry.records)))
+    ok, runtime_coverage_errors = taxmate_coverage.validate_manifest(Path(root))
+    add("runtime_coverage_manifest_valid", ok, "; ".join(runtime_coverage_errors))
+    add("runtime_coverage_audit_command_ready", runtime_coverage_audit_command_ready(root), "")
     add("source_scope_present", bool(registry.scope), "")
     add("scope_summary_exists", file_exists(os.path.join(data_dir, "SCOPE_SUMMARY.md")), "")
     add("readme_exists", file_exists(os.path.join(data_dir, "README.md")), "")
@@ -1273,6 +1278,40 @@ def home_business_sources_routed(coverage: skillgen.SourceCoverage) -> bool:
         if "abn-business" not in entry.skills:
             return False
     return matched > 0
+
+
+def runtime_coverage_audit_command_ready(root: str) -> bool:
+    try:
+        payload = taxmate_coverage.audit_payload(Path(root))
+    except Exception:
+        return False
+    concepts = payload.get("concepts")
+    if not isinstance(concepts, list):
+        return False
+    try:
+        coverage = taxmate_coverage.load_source_coverage(Path(root))
+    except Exception:
+        return False
+    sources = coverage.get("sources", [])
+    if not isinstance(sources, list):
+        return False
+    by_id = {item.get("id"): item for item in concepts if isinstance(item, dict)}
+    phone = by_id.get("phone-deductions")
+    super_contributions = by_id.get("super-contribution-deductions")
+    try:
+        mcp_server = Path(root, "mcp", "server.cjs").read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return (
+        isinstance(phone, dict)
+        and phone.get("runtime_status") == "structured"
+        and phone.get("source_count", 0) > 0
+        and not taxmate_coverage.source_pin_errors(sources, phone)
+        and isinstance(super_contributions, dict)
+        and super_contributions.get("runtime_status") == "source_only"
+        and bool(super_contributions.get("issue"))
+        and '"coverage",' in mcp_server
+    )
 
 
 def source_matches_per_skill(

@@ -31,7 +31,27 @@ For sole-trader ABN prep, collect ABN, business name, activity, start/end dates,
 
 For BAS worksheet prep, collect BAS period and coverage, 1A GST collected, 1B GST credits, GST-free sales, input-taxed sales, adjustments, PAYG instalments or withholding where relevant, accounting basis, GST registration status/date, and tax invoice evidence. Missing invoices, unknown basis, mixed/private-use GST credits, and BAS uncertainty stay visible; TaxMate does not lodge, finalise, or fill official BAS forms.
 
+For phone deductions, collect employee/ABN/both context, whether the user paid, employer paid/reimbursed/provided flags, WFH fixed-rate versus actual-cost method, phone plan amount/months/itemised status/4-week basis/work-use percent, handset cost/date/work-use/receipt, incidental-use facts, changed work-use facts, phone insurance, ABN/GST status, and tax invoice facts where relevant. WFH fixed-rate blocks separate phone/data candidates. Employer-paid, reimbursed, or provided costs are blocked. Missing or unknown ABN phone GST status stays visible as Evidence. Preserve free-form and unknown nested phone facts instead of blank rows. ABN/GST/BAS, mixed-use, over-$300 decline-in-value, effective-life/method, and set/substantially-identical facts stay `Accountant review`.
+
 For general non-crypto/non-rental CGT event prep, collect top-level facts or itemized event rows with event type, asset description, owner or ownership share, acquisition date, disposal date, proceeds, cost base, incidental costs, losses, current-year and carried-forward capital loss facts, records, discount claim, discount timing or review signals, foreign-resident discount signals, main residence claim facts, ownership and occupancy periods, rental/business use, absence-period signals, spouse/partner main-residence conflict signals, property record evidence, rental-property overlap signals, small-business CGT concession claim status, concession type, business asset and active asset signals, entity/affiliate/connected entity facts, retirement exemption, rollover, 15-year exemption, 50% active asset reduction, business/private use, and concession evidence. Explicit no-CGT answers skip only when no CGT facts exist. No-CGT plus facts, missing loss records, unknown carried-forward losses, discount uncertainty, foreign-resident discount signals, missing records, unknown or malformed dates or amounts, ownership uncertainty, active asset uncertainty, concession type uncertainty, entity/affiliate/connected entity facts, item/top-level conflicts, partial item totals, and review flags stay visible in Evidence or `Accountant review`. TaxMate may reconcile supplied event totals to item totals as prep evidence only; it does not work out capital gain/loss amounts, apply discount treatment, determine main residence treatment, or work out small-business concession amounts.
+
+## Runtime Coverage Matrix
+
+`./scripts/taxmate coverage audit` compares verified ATO source topics with runtime functions, tests, docs, and linked issues. Source metadata is not treated as structured runtime support unless the manifest says so.
+
+| Topic | Runtime status | Notes |
+| --- | --- | --- |
+| Phone plan/data/device/incidental use | Structured | Dedicated rows, WFH fixed-rate block, evidence queue, ABN/GST/BAS review routing. |
+| WFH fixed-rate | Structured | 2025-26 calendar helper with records/method review. |
+| CGT, crypto, rental, investment workflows | Structured | Review-first rows with source provenance; no final treatment. |
+| Employment deductions other than phone | Triage-only | Generic/source-backed facts stay Evidence or `Accountant review`; #70 tracks detail. |
+| WFH actual-cost and occupancy | Review-only | Actual-cost comparison and occupancy/main-residence risk stay review-first. |
+| ABN categories | Triage-only | Summary/category worksheet exists; complex categories stay review-first. |
+| GST/BAS special topics | Triage-only | Core worksheet exists; WET/LCT/fuel tax/reverse charge/groups/time limits/cancellation stay review-only. |
+| Private health, Medicare, spouse, dependants | Review-only | Shallow intake only; #71 tracks statement/tier/detail workflow. |
+| Personal super contribution deductions | Source-only | Source-backed, not runtime-structured; #70 tracks workflow. |
+| Government payments | Review-only | Generic field visible only; detailed payment-type workflow remains open. |
+| FBT/RFBA | Triage-only | RFBA preserved from PAYG; no FBT calculation. |
 
 ## Plugin Runtime Path
 
@@ -67,6 +87,7 @@ The plugin runtime can also run the underlying `intake` command family through T
 ./scripts/taxmate intake individual \
   --answers /tmp/taxmate-answers.json \
   --output /tmp/taxmate-guide.html
+./scripts/taxmate coverage audit
 ```
 
 Open the HTML in a browser and print or save as PDF. The guide keeps the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, PAYG income statement rows, itemized investment income rows, CGT schedule and item rows, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, source URLs, checked-at dates, and source/provenance appendix visible.

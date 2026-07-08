@@ -34,6 +34,7 @@ MARKETPLACE_ADD_PREFIX = "codex plugin marketplace add "
 LOCAL_MARKETPLACE_ADD_COMMAND = "codex plugin marketplace add ."
 LOCAL_PLUGIN_ADD_COMMAND = "codex plugin add taxmate-australia@{name}"
 PLUGIN_MCP_REQUIRED_FRAGMENTS = [
+    '"coverage",',
     '["command", "cwd"]',
     '["output_path", "cwd"]',
     '["answers_path", "output_path", "cwd"]',
@@ -136,6 +137,11 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
         "PR #53 intake",
         INDIVIDUAL_INTAKE_CONTRACT,
         "Individual intake must keep missing, malformed, unparseable, or nested unknown answers as Evidence/review, require literal boolean AI confirmation while preserving review-like extraction metadata, keep BAS values as review, use taxpayer state plus state-wide holidays only for supported WFH income years/date ranges, route limited/regional/partial-day public holidays to Evidence, keep unknown WFH parser inputs and incomplete records out of calculated candidates, avoid stale checked-at literals, and keep mixed-use assets under review.",
+    ),
+    ReviewPattern(
+        "Issues #111/#112 phone intake",
+        INDIVIDUAL_INTAKE_CONTRACT,
+        "Phone intake must apply negation before positive GST and employer-marker matches, group same-concept paid/reimbursed/provided markers, preserve mixed-use and unknown nested phone fields as visible free-form Evidence, request GST-status evidence for missing or unknown ABN phone GST facts, and avoid blank phone rows from metadata-only inputs.",
     ),
     ReviewPattern(
         "PR #55 ESS intake",
@@ -447,6 +453,17 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "\"expense_total\": (\"expenses\",)",
                 "ABN_AMOUNT_SIGNAL_KEYS = {",
                 "BAS_AMOUNT_SIGNAL_KEYS = set(BAS_AMOUNT_FIELDS).union(",
+                "PHONE_EMPLOYER_MARKER_GROUPS = (",
+                "PHONE_NESTED_ALIAS_GROUPS = (",
+                "def phone_normalized_nested_raw(",
+                "def phone_nested_known_field(",
+                "def phone_freeform_mixed_use(",
+                "def phone_text_has_affirmed_marker(",
+                "def phone_marker_match_negated(",
+                "def phone_gst_registration_unknown(",
+                "return is_missing(value) or parse_gst_registration(value) is None",
+                "def phone_user_paid_false(",
+                "return phone_text_has_affirmed_marker(normalized, PHONE_EMPLOYER_MARKERS)",
                 "def abn_amount_signal_key(",
                 "def bas_amount_signal_key(",
                 "def alias_answer_value(",
