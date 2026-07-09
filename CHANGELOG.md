@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.2](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.19.1...v0.19.2) (2026-07-09)
+
+
+### Bug Fixes
+
+* remove macos ci ([99ab4d0](https://github.com/nijanthan-dev/taxmate-australia/commit/99ab4d095da50ab6af62cc7d7faa84319455a68d))
+
 ## [0.19.1](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.19.0...v0.19.1) (2026-07-09)
 
 
