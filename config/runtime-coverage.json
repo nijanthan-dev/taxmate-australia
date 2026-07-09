@@ -79,14 +79,15 @@
     {
       "id": "private-health-medicare-spouse-dependants",
       "title": "Private health, Medicare, spouse, dependants",
-      "runtime_status": "review_only",
+      "runtime_status": "structured",
       "source_skills": ["private-health-medicare"],
+      "source_ids": ["ato-33a006afaddd", "ato-3aea64d5fad8", "ato-53b20854d6fb", "ato-6c536ed6d9ac", "ato-6c86d5e34fe1", "ato-92c78bc815df", "ato-cadde338173c"],
       "source_concepts": ["private health", "Medicare levy", "Medicare levy surcharge", "spouse", "dependants"],
-      "runtime_functions": ["base_items", "evidence_rows"],
-      "tests": ["test_private_health_classifies_before_income"],
-      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/private-health-medicare/references/rules.md"],
+      "runtime_functions": ["private_health_medicare_answers", "has_private_health_medicare_inputs", "private_health_statement_answers", "private_health_medicare_rows", "private_health_statement_rows", "private_health_medicare_evidence_rows"],
+      "tests": ["RuntimeCoverageTests", "PrivateHealthMedicareWorkflowTests"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/individual-return/SKILL.md", "skills/private-health-medicare/references/rules.md"],
       "issue": "#71",
-      "notes": "Shallow intake only; statement/tier/detail workflow remains child issue #71."
+      "notes": "Prep-only structured rows cover spouse periods and income-test facts, dependant details, Medicare levy reduction/exemption review, MLS cover/tier/family signals, and itemized private health statements. Missing evidence, partial-year cover, conflicts, and final treatment stay Evidence or Accountant review."
     },
     {
       "id": "super-contribution-deductions",

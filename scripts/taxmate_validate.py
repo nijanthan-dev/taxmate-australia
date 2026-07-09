@@ -1298,6 +1298,7 @@ def runtime_coverage_audit_command_ready(root: str) -> bool:
     by_id = {item.get("id"): item for item in concepts if isinstance(item, dict)}
     deductions = by_id.get("employment-deductions")
     phone = by_id.get("phone-deductions")
+    private_health_medicare = by_id.get("private-health-medicare-spouse-dependants")
     super_contributions = by_id.get("super-contribution-deductions")
     offsets = by_id.get("individual-offset-routing")
     try:
@@ -1313,6 +1314,11 @@ def runtime_coverage_audit_command_ready(root: str) -> bool:
         and deductions.get("runtime_status") == "structured"
         and deductions.get("source_count", 0) > 0
         and not taxmate_coverage.source_pin_errors(sources, deductions)
+        and isinstance(private_health_medicare, dict)
+        and private_health_medicare.get("runtime_status") == "structured"
+        and private_health_medicare.get("source_count", 0) > 0
+        and not taxmate_coverage.source_pin_errors(sources, private_health_medicare)
+        and private_health_medicare.get("issue") == "#71"
         and isinstance(super_contributions, dict)
         and super_contributions.get("runtime_status") == "structured"
         and super_contributions.get("source_count", 0) > 0
@@ -2622,6 +2628,9 @@ def taxpack_guide_html_contract() -> bool:
         "hide-tabs",
         "only-review",
         "only-evidence",
+        '<button type="button" class="tab',
+        '<span class="tab-text">',
+        "event.key==='Enter'||event.key===' '",
         "Tax items and review flags",
         "ATO-aligned manual copy worksheet",
         "<th>Source</th>",
@@ -2690,7 +2699,7 @@ def taxpack_guide_html_contract() -> bool:
     duplicate_anchors = re.findall(r'<td data-anchor="([^"]+)"', duplicate_body)
     duplicate_targets = [
         target
-        for target in re.findall(r'<div class="tab [^"]+" data-target="([^"]+)"', duplicate_body)
+        for target in re.findall(r'<button type="button" class="tab [^"]+" data-target="([^"]+)"', duplicate_body)
         if target.startswith("row-")
     ]
     source_url = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/records-you-need-to-keep"
@@ -2852,7 +2861,7 @@ def taxpack_guide_html_contract() -> bool:
     blank_review_ok = (
         blank_review.tab_text == "Row R2: Accountant review."
         and "<li>Row R2: Accountant review.</li>" in blank_review_body
-        and "<p>Row R2: Accountant review.</p>" in blank_review_body
+        and '<span class="tab-text">Row R2: Accountant review.</span>' in blank_review_body
     )
     direct_blank = taxmate_taxpack.GuideItem(
         number="R3",
@@ -2878,7 +2887,7 @@ def taxpack_guide_html_contract() -> bool:
     )
     direct_blank_ok = (
         "<li>Row R3: Accountant review.</li>" in direct_blank_body
-        and "<p>Row R3: Accountant review.</p>" in direct_blank_body
+        and '<span class="tab-text">Row R3: Accountant review.</span>' in direct_blank_body
     )
     direct_conflict = taxmate_taxpack.GuideItem(
         number="R4",
@@ -3029,7 +3038,7 @@ def taxpack_guide_html_contract() -> bool:
         and "<td>0</td>" in falsey_body
         and "<td>false</td>" in falsey_body
         and "<b>0</b>" in falsey_body
-        and "<p>0</p>" in falsey_body
+        and '<span class="tab-text">0</span>' in falsey_body
         and "Checked 0" in falsey_body
         and '<span class="source-url">false</span>' in falsey_body
     )
@@ -3090,7 +3099,7 @@ def taxpack_guide_html_contract() -> bool:
         and "<td>false</td>" in direct_falsey_body
         and '<span class="source-url">0</span>' in direct_falsey_body
         and "<b>0</b>" in direct_falsey_body
-        and "<p>0</p>" in direct_falsey_body
+        and '<span class="tab-text">0</span>' in direct_falsey_body
         and "Checked 0" in direct_falsey_body
         and 'data-anchor="row-1-0"' in direct_falsey_body
     )

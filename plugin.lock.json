@@ -84,7 +84,7 @@
         "type": "local",
         "path": "skills/individual-return"
       },
-      "integrity": "sha256:d8ce4465043069b1d4ce5f32382eac097cb178f2433b934c6a06696f656ace0d"
+      "integrity": "sha256:dcde4e167d97b267f42af7cf71d5f33183102d859cdab1e52a0d267b80fc551a"
     },
     {
       "id": "taxmate-australia-payg-employer",
@@ -102,7 +102,7 @@
         "type": "local",
         "path": "skills/private-health-medicare"
       },
-      "integrity": "sha256:ceb354e8b45ba030db7f75648d062ac674e0f453292baec4efdb2536cffd5a17"
+      "integrity": "sha256:f4cd7471ed364e24d87573bf3f44833dfc7947428e9d3402def6a15060873fae"
     },
     {
       "id": "taxmate-australia-property-rental-cgt",

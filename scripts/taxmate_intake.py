@@ -4,12 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import calendar
 import json
 import math
 import re
 import sys
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
@@ -191,6 +192,25 @@ REVIEWABLE_INVESTMENT_FIELDS = (
     "investment_dividend_items",
     "investment_distribution_items",
     "trust_distribution_items",
+)
+MEDICARE_PRIVATE_HEALTH_BASE_FIELDS = frozenset(
+    {
+        "spouse_had",
+        "dependant_children",
+        "private_health_cover",
+        "private_health_medicare",
+        "medicare_private_health",
+        "private_health",
+        "private_health_statements",
+        "private_health_statement",
+        "medicare_levy",
+        "medicare_levy_surcharge",
+        "mls",
+        "spouse",
+        "spouse_details",
+        "dependants",
+        "dependant_details",
+    }
 )
 COMPLEX_PAYMENT_STATEMENT_FLAT_FIELDS = (
     "etp_statement",
@@ -1281,6 +1301,24 @@ LIMITED_PUBLIC_HOLIDAYS_BY_STATE = {
     "WA": {"2025-09-29"},
 }
 ATO_INDIVIDUAL_SOURCE = "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-instructions-2026"
+ATO_PRIVATE_HEALTH_STATEMENT_SOURCE = "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/your-private-health-insurance-statement"
+ATO_PRIVATE_HEALTH_REBATE_CLAIM_SOURCE = "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/claiming-the-private-health-insurance-rebate"
+ATO_MEDICARE_LEVY_SOURCE = "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy"
+ATO_MLS_RETURN_SOURCE = "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge/medicare-levy-surcharge-and-your-tax-return"
+ATO_MLS_THRESHOLDS_SOURCE = "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge/medicare-levy-surcharge-income-thresholds-and-rates"
+ATO_MLS_FAMILY_DEPENDANTS_SOURCE = "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge/family-and-dependants-for-medicare-levy-surcharge-purposes"
+ATO_MLS_PAYING_SOURCE = "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge/paying-the-medicare-levy-surcharge"
+ATO_PRIVATE_HEALTH_STATEMENT_SOURCES = [
+    ATO_PRIVATE_HEALTH_STATEMENT_SOURCE,
+    ATO_PRIVATE_HEALTH_REBATE_CLAIM_SOURCE,
+]
+ATO_MEDICARE_LEVY_SOURCES = [ATO_MEDICARE_LEVY_SOURCE]
+ATO_MLS_SOURCES = [ATO_MLS_RETURN_SOURCE, ATO_MLS_THRESHOLDS_SOURCE, ATO_MLS_PAYING_SOURCE]
+ATO_SPOUSE_DEPENDANT_SOURCES = [
+    ATO_MLS_FAMILY_DEPENDANTS_SOURCE,
+    ATO_MLS_RETURN_SOURCE,
+    ATO_MLS_THRESHOLDS_SOURCE,
+]
 ATO_PAYG_EMPLOYMENT_INCOME_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/employment-income"
 PAYG_SOURCES = [
     ATO_PAYG_EMPLOYMENT_INCOME_SOURCE,
@@ -1511,6 +1549,12 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("spouse_had", "Spouse", "Had spouse during income year?", "Spouse details"),
         QuestionSpec("dependant_children", "Spouse", "Dependent children/students count", "IT8 / M1"),
         QuestionSpec("private_health_cover", "Private health", "Private hospital cover?", "M2 / Private health insurance policy details"),
+        QuestionSpec("private_health_medicare", "Private health", "Private health, Medicare, spouse, and dependant details", "M1 / M2 / Private health insurance policy details", False),
+        QuestionSpec("private_health_statements", "Private health", "Private health insurance statement rows", "Private health insurance policy details", False),
+        QuestionSpec("medicare_levy", "Medicare", "Medicare levy reduction or exemption facts", "M1 Medicare levy reduction or exemption", False),
+        QuestionSpec("medicare_levy_surcharge", "Medicare", "Medicare levy surcharge review facts", "M2 Medicare levy surcharge", False),
+        QuestionSpec("spouse_details", "Spouse", "Spouse period and income-test facts", "Spouse details", False),
+        QuestionSpec("dependant_details", "Dependants", "Dependant child or student facts", "M1 / M2 dependants", False),
         QuestionSpec("payg_gross", "PAYG", "Salary or wages gross income", "1 Salary or wages", False),
         QuestionSpec("payg_withheld", "PAYG", "Salary or wages tax withheld", "1 Salary or wages", False),
         QuestionSpec("main_occupation", "PAYG", "Main salary and wage occupation", "1 Salary or wages", False),
@@ -1660,9 +1704,73 @@ def sample_answers() -> Dict[str, Any]:
         "under_18": False,
         "final_return": False,
         "tfn_present": True,
-        "spouse_had": True,
-        "dependant_children": 0,
-        "private_health_cover": "partial year; statement not confirmed",
+        "private_health_medicare": {
+            "private_health_cover": True,
+            "cover_period_start": "2025-07-01",
+            "cover_period_end": "2026-06-30",
+            "days_covered": 365,
+            "statements": [
+                {
+                    "insurer": "Example Health Fund",
+                    "membership_id": "SYNTHETIC-001",
+                    "benefit_code": "30",
+                    "premiums_eligible_for_rebate": 1800,
+                    "rebate_received": 450,
+                    "tax_claim_code": "C",
+                    "days_covered": 274,
+                    "period_start": "2025-07-01",
+                    "period_end": "2026-03-31",
+                    "evidence": "private health statement held",
+                },
+                {
+                    "insurer": "Example Health Fund",
+                    "membership_id": "SYNTHETIC-001",
+                    "benefit_code": "31",
+                    "premiums_eligible_for_rebate": 600,
+                    "rebate_received": 150,
+                    "tax_claim_code": "C",
+                    "days_covered": 91,
+                    "period_start": "2026-04-01",
+                    "period_end": "2026-06-30",
+                    "evidence": "private health statement held",
+                }
+            ],
+            "medicare_levy": {
+                "reduction": False,
+                "exemption": False,
+                "evidence": "Medicare levy review facts supplied",
+            },
+            "mls": {
+                "review": True,
+                "income_for_surcharge": 120000,
+                "income_tier": "user-supplied review signal",
+                "appropriate_hospital_cover": True,
+                "hospital_cover_days": 365,
+                "evidence": "hospital cover period confirmed from policy records",
+            },
+            "spouse": {
+                "had_spouse": True,
+                "period_start": "2025-07-01",
+                "period_end": "2026-06-30",
+                "income_for_tests": 65000,
+                "income_evidence": "spouse return summary held",
+            },
+            "dependant_count": 1,
+            "dependants": [
+                {
+                    "name": "Synthetic dependant",
+                    "type": "full-time student",
+                    "student": True,
+                    "age": 20,
+                    "period_start": "2025-07-01",
+                    "period_end": "2026-06-30",
+                    "maintained": True,
+                    "income_for_tests": 0,
+                    "shared_care": False,
+                    "evidence": "student enrolment and maintenance records held",
+                }
+            ],
+        },
         "payg_gross": 120000,
         "payg_withheld": 31000,
         "main_occupation": "Software engineer",
@@ -1982,10 +2090,26 @@ def read_json(path: str) -> Dict[str, Any]:
 
 def missing_required_answers(answers: Dict[str, Any]) -> List[QuestionSpec]:
     missing: List[QuestionSpec] = []
+    private_health_medicare = private_health_medicare_answers(answers)
     for spec in question_specs():
-        if spec.required and is_missing(answers.get(spec.key)):
+        value = answers.get(spec.key)
+        if spec.key in {"spouse_had", "dependant_children", "private_health_cover"} and is_missing(value):
+            value = private_health_medicare_required_answer(private_health_medicare, spec.key)
+        if spec.required and is_missing(value):
             missing.append(spec)
     return missing
+
+
+def private_health_medicare_required_answer(raw: Dict[str, Any], key: str) -> Any:
+    if key == "spouse_had":
+        return normalized_item_field(raw.get("spouse", {}), SPOUSE_FIELD_ALIASES["had_spouse"])
+    if key == "private_health_cover":
+        return normalized_item_field(raw.get("private_health", {}), PRIVATE_HEALTH_FIELD_ALIASES["covered"])
+    dependant_count = normalized_item_field(raw.get("dependant_summary", {}), DEPENDANT_SUMMARY_FIELD_ALIASES["count"])
+    if not is_missing(dependant_count):
+        return dependant_count
+    dependants = raw.get("dependants", [])
+    return dependants if isinstance(dependants, list) and dependants else None
 
 
 def is_missing(value: Any) -> bool:
@@ -2015,12 +2139,14 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     deductions = deduction_answers(answers)
     personal_super_contributions = personal_super_contribution_answers(answers)
     offsets = offset_answers(answers)
-    items = base_items(answers)
+    private_health_medicare = private_health_medicare_answers(answers)
+    items = base_items(answers, private_health_medicare)
     extracted_values = extraction_rows(answers.get("extracted_values", []))
     abn_items = abn_rows(answers) if has_abn_inputs(answers) else []
     bas_items = bas_rows(answers) if has_bas_inputs(answers) else []
     missing_items = missing_fact_rows(answers)
-    evidence_items = evidence_rows(answers)
+    evidence_items = evidence_rows(answers, private_health_medicare)
+    items.extend(private_health_medicare_rows(private_health_medicare))
     items.extend(deduction_rows(deductions, answers))
     items.extend(personal_super_contribution_rows(personal_super_contributions))
     items.extend(offset_rows(offsets))
@@ -2050,7 +2176,10 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+def base_items(
+    answers: Dict[str, Any],
+    private_health_medicare: Optional[Dict[str, Any]] = None,
+) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     investment = investment_answers(answers)
     payg = payg_answers(answers)
@@ -2094,10 +2223,14 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     has_payg_items = bool(payg_item_values(payg.get("items")))
     has_cgt = has_cgt_inputs(cgt)
     has_phone = has_phone_inputs(phone_answers(answers))
+    private_health_medicare = private_health_medicare or private_health_medicare_answers(answers)
+    has_private_health_medicare = has_private_health_medicare_inputs(private_health_medicare)
     abn = abn_summary(answers) if has_abn_inputs(answers) else {}
     bas = bas_summary(answers) if has_bas_inputs(answers) else {}
     for spec in question_specs():
         value = investment_base_item_value(spec.key, answers, investment)
+        if has_private_health_medicare and spec.key in MEDICARE_PRIVATE_HEALTH_BASE_FIELDS:
+            continue
         if spec.key in structured_deduction_fields:
             continue
         if spec.key in structured_super_contribution_fields:
@@ -2385,6 +2518,14 @@ def field_has_structured_item_answers(
 
 
 def base_item_sources(key: str) -> Any:
+    if key in {"private_health", "private_health_cover", "private_health_medicare", "private_health_statements", "private_health_statement"}:
+        return ATO_PRIVATE_HEALTH_STATEMENT_SOURCES
+    if key == "medicare_levy":
+        return ATO_MEDICARE_LEVY_SOURCES
+    if key in {"medicare_levy_surcharge", "mls"}:
+        return ATO_MLS_SOURCES
+    if key in {"spouse_had", "spouse", "spouse_details", "dependant_children", "dependants", "dependant_details"}:
+        return ATO_SPOUSE_DEPENDANT_SOURCES
     if key in DEDUCTION_NESTED_KEYS:
         return ATO_DEDUCTION_SOURCES
     if key in SUPER_CONTRIBUTION_NESTED_KEYS:
@@ -3217,6 +3358,8 @@ def supplied_item_total_conflict(explicit_total: Optional[float], items: List[Di
 def evidence_missing(value: Any) -> bool:
     if isinstance(value, bool):
         return not value
+    if isinstance(value, (int, float)) and value == 0:
+        return True
     if is_missing(value) or contains_unknown(value):
         return True
     if isinstance(value, list):
@@ -3224,7 +3367,9 @@ def evidence_missing(value: Any) -> bool:
     if isinstance(value, dict):
         return not value or any(evidence_missing(item) for item in value.values())
     lowered = text(value).strip().lower()
-    return explicit_evidence_denial_value(value) or lowered in {
+    uncertain = re.search(r"\b(maybe|perhaps|probably|possibly|unclear|unsure|not sure|pending|awaiting)\b", lowered) is not None
+    requested = re.search(r"\b(statement|document|record|records|evidence)\s+(?:has been\s+)?requested\b", lowered) is not None
+    return uncertain or requested or explicit_evidence_denial_value(value) or lowered in {
         "no",
         "n",
         "false",
@@ -3232,6 +3377,7 @@ def evidence_missing(value: Any) -> bool:
         "n/a",
         "na",
         "not applicable",
+        "0",
         "not held",
         "not available",
         "not sent",
@@ -3749,10 +3895,13 @@ def parse_gst_registration(value: Any) -> Optional[bool]:
     return None
 
 
-def evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+def evidence_rows(
+    answers: Dict[str, Any],
+    private_health_medicare: Optional[Dict[str, Any]] = None,
+) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
-    if contains_unknown(answers.get("private_health_cover")):
-        rows.append(evidence_row("Private health statement", "M2 / Private health", "Insurer statement or policy details"))
+    private_health_medicare = private_health_medicare or private_health_medicare_answers(answers)
+    rows.extend(private_health_medicare_evidence_rows(private_health_medicare))
     asset_items = answers.get("assets", [])
     if not isinstance(asset_items, list):
         asset_items = []
@@ -3776,6 +3925,331 @@ def evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def evidence_row(number: Any, area: str, evidence: str) -> Dict[str, Any]:
     return guide_row(number, area, "Evidence required", evidence, "Draft value remains not copy-ready until evidence is confirmed.", "Evidence", ATO_INDIVIDUAL_SOURCE)
+
+
+PRIVATE_HEALTH_MEDICARE_NESTED_KEYS = (
+    "private_health_medicare",
+    "medicare_private_health",
+)
+PRIVATE_HEALTH_SECTION_KEYS = ("private_health", "private_health_insurance")
+MEDICARE_SECTION_KEYS = ("medicare",)
+PRIVATE_HEALTH_STATEMENT_KEYS = (
+    "statements",
+    "statement_rows",
+    "private_health_statements",
+    "private_health_statement",
+    "private_health_insurance_statements",
+    "policy_lines",
+    "policies",
+)
+PRIVATE_HEALTH_STATEMENT_ITEM_KEYS = ("items", "rows", "lines")
+PRIVATE_HEALTH_GLOBAL_STATEMENT_KEYS = (
+    "private_health_statements",
+    "private_health_statement",
+    "private_health_insurance_statements",
+)
+MEDICARE_LEVY_SECTION_KEYS = ("medicare_levy", "levy")
+MLS_SECTION_KEYS = ("medicare_levy_surcharge", "mls", "surcharge")
+SPOUSE_SECTION_KEYS = ("spouse", "spouse_details")
+DEPENDANT_SECTION_KEYS = (
+    "dependants",
+    "dependents",
+    "dependant_details",
+    "dependent_details",
+    "dependent_children",
+    "dependant_students",
+)
+PRIVATE_HEALTH_FIELD_ALIASES = {
+    "covered": (
+        "covered",
+        "cover",
+        "private_health_cover",
+        "private_hospital_cover",
+        "hospital_cover",
+        "appropriate_hospital_cover",
+    ),
+    "period_start": (
+        "cover_period_start",
+        "period_start",
+        "cover_start",
+        "start_date",
+        "private_health_cover_start",
+    ),
+    "period_end": (
+        "cover_period_end",
+        "period_end",
+        "cover_end",
+        "end_date",
+        "private_health_cover_end",
+    ),
+    "period": ("cover_period", "period", "period_covered", "private_health_cover_period"),
+    "days_covered": ("days_covered", "hospital_cover_days", "cover_days", "private_health_days_covered"),
+    "evidence": (
+        "cover_evidence",
+        "evidence",
+        "policy_evidence",
+        "records",
+        "private_health_cover_evidence",
+    ),
+    "notes": ("notes", "note", "details", "freeform", "comments", "private_health_notes"),
+    "source_urls": ("source_urls", "source_url", "sources", "private_health_source_urls"),
+    "checked_at": ("checked_at", "source_checked_at", "private_health_checked_at"),
+}
+PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES = {
+    "insurer": (
+        "insurer",
+        "fund",
+        "health_fund",
+        "insurer_name",
+        "fund_name",
+        "private_health_insurer",
+        "private_health_fund",
+    ),
+    "membership_id": (
+        "membership_id",
+        "membership_number",
+        "policy_id",
+        "policy_number",
+        "policy",
+        "identifier",
+        "private_health_membership_id",
+        "private_health_membership_number",
+        "private_health_policy_id",
+        "private_health_policy_number",
+    ),
+    "benefit_code": ("benefit_code", "benefit", "benefit_label", "label_l", "private_health_benefit_code"),
+    "premiums_eligible_for_rebate": (
+        "premiums_eligible_for_rebate",
+        "premiums_eligible",
+        "eligible_premiums",
+        "premium",
+        "premiums",
+        "label_j",
+        "private_health_premiums_eligible_for_rebate",
+    ),
+    "rebate_received": (
+        "rebate_received",
+        "government_rebate_received",
+        "australian_government_rebate_received",
+        "rebate",
+        "label_k",
+        "private_health_rebate_received",
+    ),
+    "tax_claim_code": ("tax_claim_code", "claim_code", "tax_code", "private_health_tax_claim_code"),
+    "days_covered": (
+        "days_covered",
+        "hospital_cover_days",
+        "cover_days",
+        "private_health_days_covered",
+        "private_health_statement_days_covered",
+    ),
+    "period_start": (
+        "period_start",
+        "cover_period_start",
+        "start_date",
+        "private_health_statement_period_start",
+    ),
+    "period_end": (
+        "period_end",
+        "cover_period_end",
+        "end_date",
+        "private_health_statement_period_end",
+    ),
+    "period": ("period", "period_covered", "cover_period", "private_health_statement_period"),
+    "evidence": (
+        "evidence",
+        "statement_evidence",
+        "statement",
+        "record",
+        "records",
+        "document",
+        "private_health_statement_evidence",
+    ),
+    "notes": ("notes", "note", "details", "freeform", "comments"),
+    "source_urls": ("source_urls", "source_url", "sources"),
+    "checked_at": ("checked_at", "source_checked_at"),
+}
+MEDICARE_LEVY_FIELD_ALIASES = {
+    "reduction": ("reduction", "reduction_signal", "medicare_levy_reduction", "levy_reduction"),
+    "exemption": ("exemption", "exemption_signal", "medicare_levy_exemption", "levy_exemption"),
+    "exemption_category": ("exemption_category", "category", "medicare_levy_exemption_category"),
+    "full_exemption_days": ("full_exemption_days", "full_levy_exemption_days"),
+    "half_exemption_days": ("half_exemption_days", "half_levy_exemption_days"),
+    "evidence": (
+        "evidence",
+        "levy_evidence",
+        "medicare_levy_evidence",
+        "exemption_evidence",
+        "reduction_evidence",
+        "records",
+    ),
+    "notes": ("notes", "note", "details", "freeform", "comments"),
+    "source_urls": ("source_urls", "source_url", "sources"),
+    "checked_at": ("checked_at", "source_checked_at"),
+}
+MLS_FIELD_ALIASES = {
+    "review": ("review", "review_signal", "mls_review", "surcharge_review"),
+    "income_for_surcharge": (
+        "income_for_surcharge",
+        "mls_income",
+        "income_for_mls",
+        "surcharge_income",
+        "mls_income_for_surcharge",
+    ),
+    "income_tier": ("income_tier", "mls_income_tier", "tier", "surcharge_tier"),
+    "appropriate_hospital_cover": (
+        "appropriate_hospital_cover",
+        "hospital_cover",
+        "private_hospital_cover",
+        "covered",
+        "mls_appropriate_hospital_cover",
+    ),
+    "hospital_cover_days": ("hospital_cover_days", "days_covered", "cover_days", "mls_hospital_cover_days"),
+    "days_not_liable": ("days_not_liable", "days_no_surcharge", "mls_exemption_days", "mls_days_not_liable"),
+    "period_start": ("period_start", "cover_period_start", "start_date"),
+    "period_end": ("period_end", "cover_period_end", "end_date"),
+    "period": ("period", "cover_period", "period_covered"),
+    "evidence": ("evidence", "mls_evidence", "cover_evidence", "records"),
+    "notes": ("notes", "note", "details", "freeform", "comments"),
+    "source_urls": ("source_urls", "source_url", "sources"),
+    "checked_at": ("checked_at", "source_checked_at"),
+}
+SPOUSE_FIELD_ALIASES = {
+    "had_spouse": ("had_spouse", "spouse_had", "has_spouse"),
+    "period_start": ("period_start", "spouse_period_start", "start_date", "spouse_start"),
+    "period_end": ("period_end", "spouse_period_end", "end_date", "spouse_end"),
+    "period": ("period", "spouse_period", "relationship_period"),
+    "income_for_tests": (
+        "income_for_tests",
+        "spouse_income_for_tests",
+        "spouse_income_test",
+        "spouse_taxable_income",
+        "taxable_income",
+    ),
+    "reportable_fringe_benefits": ("reportable_fringe_benefits", "spouse_reportable_fringe_benefits"),
+    "reportable_super": ("reportable_super", "spouse_reportable_super", "reportable_super_contributions"),
+    "net_investment_loss": ("net_investment_loss", "spouse_net_investment_loss"),
+    "income_evidence": ("income_evidence", "spouse_income_evidence", "evidence", "records"),
+    "notes": ("notes", "note", "details", "freeform", "comments"),
+    "source_urls": ("source_urls", "source_url", "sources"),
+    "checked_at": ("checked_at", "source_checked_at"),
+}
+DEPENDANT_SUMMARY_FIELD_ALIASES = {
+    "count": (
+        "count",
+        "dependant_count",
+        "dependent_count",
+        "dependant_children",
+        "dependent_children_count",
+    ),
+    "notes": ("notes", "note", "details", "freeform", "comments"),
+    "source_urls": ("source_urls", "source_url", "sources"),
+    "checked_at": ("checked_at", "source_checked_at"),
+}
+DEPENDANT_FIELD_ALIASES = {
+    "name": ("name", "label", "dependant", "dependent"),
+    "type": ("type", "kind", "category", "dependant_type", "dependent_type"),
+    "age": ("age", "age_at_year_end"),
+    "student": ("student", "is_student", "full_time_student"),
+    "period_start": ("period_start", "maintained_from", "start_date"),
+    "period_end": ("period_end", "maintained_to", "end_date"),
+    "period": ("period", "maintenance_period"),
+    "maintained": ("maintained", "financially_maintained", "maintenance"),
+    "income_for_tests": ("income_for_tests", "adjusted_taxable_income", "income", "dependant_income"),
+    "shared_care": ("shared_care", "shared_care_percentage"),
+    "evidence": ("evidence", "student_evidence", "maintenance_evidence", "records"),
+    "notes": ("notes", "note", "details", "freeform", "comments"),
+    "source_urls": ("source_urls", "source_url", "sources"),
+    "checked_at": ("checked_at", "source_checked_at"),
+}
+
+PRIVATE_HEALTH_STATEMENT_FLAT_FIELD_ALIASES = {
+    field: tuple(alias for alias in aliases if alias.startswith("private_health_"))
+    for field, aliases in PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES.items()
+}
+MEDICARE_LEVY_FLAT_FIELD_ALIASES = {
+    "reduction": ("medicare_levy_reduction", "levy_reduction"),
+    "exemption": ("medicare_levy_exemption", "levy_exemption"),
+    "exemption_category": ("medicare_levy_exemption_category",),
+    "full_exemption_days": ("full_levy_exemption_days",),
+    "half_exemption_days": ("half_levy_exemption_days",),
+    "evidence": ("levy_evidence", "medicare_levy_evidence", "exemption_evidence", "reduction_evidence"),
+}
+MLS_FLAT_FIELD_ALIASES = {
+    "review": ("mls_review", "surcharge_review"),
+    "income_for_surcharge": ("mls_income", "income_for_mls", "surcharge_income", "mls_income_for_surcharge"),
+    "income_tier": ("mls_income_tier", "surcharge_tier"),
+    "appropriate_hospital_cover": ("appropriate_hospital_cover",),
+    "hospital_cover_days": ("mls_hospital_cover_days",),
+    "days_not_liable": ("days_no_surcharge", "mls_exemption_days"),
+    "evidence": ("mls_evidence",),
+}
+SPOUSE_FLAT_FIELD_ALIASES = {
+    "had_spouse": ("spouse_had", "has_spouse"),
+    "period_start": ("spouse_period_start", "spouse_start"),
+    "period_end": ("spouse_period_end", "spouse_end"),
+    "period": ("spouse_period", "relationship_period"),
+    "income_for_tests": ("spouse_income_for_tests", "spouse_income_test", "spouse_taxable_income"),
+    "reportable_fringe_benefits": ("spouse_reportable_fringe_benefits",),
+    "reportable_super": ("spouse_reportable_super",),
+    "net_investment_loss": ("spouse_net_investment_loss",),
+    "income_evidence": ("spouse_income_evidence",),
+}
+DEPENDANT_SUMMARY_FLAT_FIELD_ALIASES = {
+    "count": (
+        "dependant_count",
+        "dependent_count",
+        "dependant_children",
+        "dependent_children_count",
+    ),
+}
+PRIVATE_HEALTH_WORKFLOW_NOTE_KEYS = ("notes", "note", "details", "freeform", "comments")
+PRIVATE_HEALTH_WORKFLOW_METADATA_KEYS = ("source_urls", "source_url", "sources", "checked_at", "source_checked_at")
+PRIVATE_HEALTH_MEDICARE_FLAT_FIELD_ALIASES = {
+    "private_health": PRIVATE_HEALTH_FIELD_ALIASES,
+    "statement": PRIVATE_HEALTH_STATEMENT_FLAT_FIELD_ALIASES,
+    "medicare_levy": MEDICARE_LEVY_FLAT_FIELD_ALIASES,
+    "mls": {
+        **MLS_FLAT_FIELD_ALIASES,
+        "appropriate_hospital_cover": ("mls_appropriate_hospital_cover",),
+        "days_not_liable": ("mls_exemption_days", "mls_days_not_liable"),
+    },
+    "spouse": SPOUSE_FLAT_FIELD_ALIASES,
+    "dependant_summary": DEPENDANT_SUMMARY_FLAT_FIELD_ALIASES,
+}
+PRIVATE_HEALTH_GLOBAL_FLAT_FIELD_ALIASES = {
+    "private_health": {
+        "covered": ("private_health_cover", "private_hospital_cover"),
+        "period_start": ("private_health_cover_start",),
+        "period_end": ("private_health_cover_end",),
+        "period": ("private_health_cover_period",),
+        "days_covered": ("private_health_days_covered",),
+        "evidence": ("private_health_cover_evidence",),
+        "notes": ("private_health_notes",),
+        "source_urls": ("private_health_source_urls",),
+        "checked_at": ("private_health_checked_at",),
+    },
+    "statement": PRIVATE_HEALTH_STATEMENT_FLAT_FIELD_ALIASES,
+    "medicare_levy": MEDICARE_LEVY_FLAT_FIELD_ALIASES,
+    "mls": MLS_FLAT_FIELD_ALIASES,
+    "spouse": {
+        **SPOUSE_FLAT_FIELD_ALIASES,
+        "period": ("spouse_period",),
+    },
+    "dependant_summary": DEPENDANT_SUMMARY_FLAT_FIELD_ALIASES,
+}
+PRIVATE_HEALTH_SUPPORTED_BENEFIT_CODES = frozenset({"30", "31", "35", "36", "40", "41"})
+PRIVATE_HEALTH_FULL_YEAR_VALUES = frozenset(
+    {
+        "full year",
+        "whole year",
+        "all year",
+        "income year",
+        "full income year",
+        "whole income year",
+        "entire income year",
+    }
+)
 
 
 DEDUCTION_NESTED_KEYS = ("deductions", "individual_deductions", "employee_deductions")
@@ -3827,12 +4301,26 @@ OFFSET_FIELD_ALIASES = {
     "review_signal": ("review_signal", "review", "eligibility", "notes"),
 }
 FALSE_CONCRETE_ALIAS_GROUPS = (
+    PRIVATE_HEALTH_FIELD_ALIASES["evidence"],
+    PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["evidence"],
+    MEDICARE_LEVY_FIELD_ALIASES["evidence"],
+    MLS_FIELD_ALIASES["evidence"],
+    SPOUSE_FIELD_ALIASES["income_evidence"],
+    DEPENDANT_FIELD_ALIASES["evidence"],
     DEDUCTION_FIELD_ALIASES["evidence"],
     SUPER_CONTRIBUTION_FIELD_ALIASES["notice_of_intent"],
     SUPER_CONTRIBUTION_FIELD_ALIASES["fund_acknowledgement"],
     OFFSET_FIELD_ALIASES["evidence"],
 )
 BOOLEAN_FALSE_CONCRETE_ALIAS_GROUPS = (
+    PRIVATE_HEALTH_FIELD_ALIASES["covered"],
+    MEDICARE_LEVY_FIELD_ALIASES["reduction"],
+    MEDICARE_LEVY_FIELD_ALIASES["exemption"],
+    MLS_FIELD_ALIASES["review"],
+    MLS_FIELD_ALIASES["appropriate_hospital_cover"],
+    SPOUSE_FIELD_ALIASES["had_spouse"],
+    DEPENDANT_FIELD_ALIASES["student"],
+    DEPENDANT_FIELD_ALIASES["maintained"],
     DEDUCTION_FIELD_ALIASES["reimbursed"],
     DEDUCTION_FIELD_ALIASES["employer_paid"],
     DEDUCTION_FIELD_ALIASES["employer_provided"],
@@ -3848,6 +4336,17 @@ AMOUNT_ONLY_FALSE_ITEM_KEYS = tuple(
     dict.fromkeys(
         (
             *DEDUCTION_FIELD_ALIASES["amount"],
+            *PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["premiums_eligible_for_rebate"],
+            *PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["rebate_received"],
+            *MEDICARE_LEVY_FIELD_ALIASES["full_exemption_days"],
+            *MEDICARE_LEVY_FIELD_ALIASES["half_exemption_days"],
+            *MLS_FIELD_ALIASES["income_for_surcharge"],
+            *MLS_FIELD_ALIASES["hospital_cover_days"],
+            *MLS_FIELD_ALIASES["days_not_liable"],
+            *SPOUSE_FIELD_ALIASES["income_for_tests"],
+            *DEPENDANT_SUMMARY_FIELD_ALIASES["count"],
+            *DEPENDANT_FIELD_ALIASES["age"],
+            *DEPENDANT_FIELD_ALIASES["income_for_tests"],
             *SUPER_CONTRIBUTION_FIELD_ALIASES["amount"],
             *SUPER_CONTRIBUTION_FIELD_ALIASES["intended_deduction_amount"],
             *OFFSET_FIELD_ALIASES["amount"],
@@ -3958,7 +4457,15 @@ def explicit_evidence_denial_value(value: Any) -> bool:
     return bool(
         re.search(rf"\b(no|without|missing)\b(?:\s+\w+){{0,3}}\s+\b{evidence_context}\b", normalized)
         or re.search(
-            rf"\b{evidence_context}\b(?:\s+\w+){{0,3}}\s+\b(missing|not held|not available|not sent|not lodged|not received|not acknowledged|not confirmed)\b",
+            rf"\b(?:do|does|did)\s+not\s+(?:currently\s+)?(?:have|hold|receive|retain|possess)\b(?:\s+\w+){{0,3}}\s+\b{evidence_context}\b",
+            normalized,
+        )
+        or re.search(
+            rf"\b(?:(?:don|doesn|didn)\s+t|dont|doesnt|didnt)\s+(?:currently\s+)?(?:have|hold|receive|retain|possess)\b(?:\s+\w+){{0,3}}\s+\b{evidence_context}\b",
+            normalized,
+        )
+        or re.search(
+            rf"\b{evidence_context}\b(?:\s+\w+){{0,3}}\s+\b(missing|not held|not available|not sent|not supplied|not provided|not lodged|not received|not acknowledged|not confirmed)\b",
             normalized,
         )
     )
@@ -3979,8 +4486,30 @@ def normalized_item_field(item: Dict[str, Any], aliases: tuple[str, ...]) -> Any
     return None
 
 
-ITEM_ALIAS_AMOUNT_FIELDS = frozenset({"amount", "intended_deduction_amount"})
-ITEM_ALIAS_EVIDENCE_FIELDS = frozenset({"evidence", "notice_of_intent", "fund_acknowledgement"})
+ITEM_ALIAS_AMOUNT_FIELDS = frozenset(
+    {
+        "amount",
+        "intended_deduction_amount",
+        "premiums_eligible_for_rebate",
+        "rebate_received",
+        "full_exemption_days",
+        "half_exemption_days",
+        "income_for_surcharge",
+        "hospital_cover_days",
+        "days_not_liable",
+        "income_for_tests",
+        "count",
+        "age",
+    }
+)
+ITEM_ALIAS_EVIDENCE_FIELDS = frozenset(
+    {
+        "evidence",
+        "income_evidence",
+        "notice_of_intent",
+        "fund_acknowledgement",
+    }
+)
 ITEM_ALIAS_BOOLEAN_FIELDS = frozenset(
     {
         "reimbursed",
@@ -3993,6 +4522,14 @@ ITEM_ALIAS_BOOLEAN_FIELDS = frozenset(
         "division_293_review",
         "claim",
         "review_signal",
+        "covered",
+        "reduction",
+        "exemption",
+        "review",
+        "appropriate_hospital_cover",
+        "had_spouse",
+        "student",
+        "maintained",
     }
 )
 
@@ -4047,6 +4584,2188 @@ def item_alias_conflict_details(item: Dict[str, Any], field_aliases: Dict[str, t
 
 def item_alias_conflict_text(item: Dict[str, Any], field_aliases: Dict[str, tuple[str, ...]]) -> str:
     return "; ".join(item_alias_conflict_details(item, field_aliases))
+
+
+def private_health_medicare_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
+    roots: List[Dict[str, Any]] = []
+    notes: List[Any] = []
+    for value in private_health_key_values(answers, PRIVATE_HEALTH_MEDICARE_NESTED_KEYS):
+        roots.extend(private_health_collection_entries(value))
+        notes.extend(private_health_collection_notes(value))
+
+    record_groups: Dict[str, List[Dict[str, Any]]] = {
+        "private_health": [],
+        "medicare_levy": [],
+        "mls": [],
+        "spouse": [],
+        "dependant_summary": [],
+    }
+    root_known_keys = private_health_root_known_keys()
+    for root in roots:
+        private_health_append_record_groups(root, record_groups, global_scope=False)
+        notes.extend(private_health_workflow_notes(root))
+        medicare = root.get("medicare")
+        if isinstance(medicare, dict):
+            private_health_append_medicare_groups(medicare, record_groups)
+            wrapper_unknown = private_health_medicare_wrapper_unknown(medicare)
+            if wrapper_unknown:
+                notes.append({"medicare": wrapper_unknown})
+        unknown = private_health_unknown_values(root, root_known_keys)
+        if unknown:
+            notes.append(unknown)
+
+    private_health_append_record_groups(answers, record_groups, global_scope=True)
+
+    medicare = answers.get("medicare")
+    if isinstance(medicare, dict):
+        private_health_append_medicare_groups(medicare, record_groups)
+        unknown = private_health_medicare_wrapper_unknown(medicare)
+        if unknown:
+            notes.append({"medicare": unknown})
+    elif private_health_freeform_value(medicare):
+        notes.append({"medicare": medicare})
+
+    result = {
+        "private_health": private_health_merge_records(
+            record_groups["private_health"],
+            PRIVATE_HEALTH_FIELD_ALIASES,
+        ),
+        "statements": private_health_statement_answers(answers),
+        "medicare_levy": private_health_merge_records(
+            record_groups["medicare_levy"],
+            MEDICARE_LEVY_FIELD_ALIASES,
+        ),
+        "mls": private_health_merge_records(record_groups["mls"], MLS_FIELD_ALIASES),
+        "spouse": private_health_merge_records(record_groups["spouse"], SPOUSE_FIELD_ALIASES),
+        "dependant_summary": private_health_merge_records(
+            record_groups["dependant_summary"],
+            DEPENDANT_SUMMARY_FIELD_ALIASES,
+        ),
+        "dependants": private_health_dependant_answers(answers),
+        "notes": private_health_unique_values(notes),
+    }
+    result["private_health_cover"] = normalized_item_field(
+        result["private_health"],
+        PRIVATE_HEALTH_FIELD_ALIASES["covered"],
+    )
+    result["spouse_had"] = normalized_item_field(result["spouse"], SPOUSE_FIELD_ALIASES["had_spouse"])
+    result["dependant_children"] = normalized_item_field(
+        result["dependant_summary"],
+        DEPENDANT_SUMMARY_FIELD_ALIASES["count"],
+    )
+    income_year = text(answers.get("income_year"), DEFAULT_INCOME_YEAR)
+    result["income_year"] = income_year
+    for key in ("private_health", "medicare_levy", "mls", "spouse", "dependant_summary"):
+        record = result.get(key)
+        if isinstance(record, dict):
+            record["_income_year"] = income_year
+    for key in ("statements", "dependants"):
+        for record in result.get(key, []):
+            if isinstance(record, dict):
+                record["_income_year"] = income_year
+    statement_notes = [
+        *private_health_statement_collection_notes(answers),
+        *private_health_explicit_statement_notes(answers),
+    ]
+    if private_health_cover_bool(result["private_health_cover"]) is False:
+        statement_notes = [
+            value
+            for value in statement_notes
+            if value != {"private_health_statement": False}
+        ]
+    result["notes"] = private_health_unique_values([*result["notes"], *statement_notes])
+    return result
+
+
+def private_health_key_values(record: Dict[str, Any], keys: tuple[str, ...]) -> List[Any]:
+    return [record[key] for key in keys if key in record]
+
+
+def private_health_collection_entries(value: Any) -> List[Dict[str, Any]]:
+    if isinstance(value, dict):
+        return [value] if has_meaningful_value(value) else []
+    if not isinstance(value, list):
+        return []
+    rows: List[Dict[str, Any]] = []
+    for item in value:
+        rows.extend(private_health_collection_entries(item))
+    return rows
+
+
+def private_health_collection_notes(value: Any) -> List[Any]:
+    if isinstance(value, list):
+        notes: List[Any] = []
+        for item in value:
+            if not isinstance(item, (dict, list)) and private_health_freeform_value(item):
+                notes.append(item)
+        return notes
+    if not isinstance(value, dict) and private_health_freeform_value(value):
+        return [value]
+    return []
+
+
+def private_health_nested_records(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for value in private_health_key_values(answers, PRIVATE_HEALTH_MEDICARE_NESTED_KEYS):
+        rows.extend(private_health_collection_entries(value))
+    return rows
+
+
+def private_health_input_records(
+    answers: Dict[str, Any],
+) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    parent_records = [answers, *private_health_nested_records(answers)]
+    private_health_sections: List[Dict[str, Any]] = []
+    for record in parent_records:
+        for value in private_health_key_values(record, PRIVATE_HEALTH_SECTION_KEYS):
+            private_health_sections.extend(private_health_collection_entries(value))
+    return parent_records, private_health_sections
+
+
+def private_health_append_record_groups(
+    record: Dict[str, Any],
+    groups: Dict[str, List[Dict[str, Any]]],
+    *,
+    global_scope: bool,
+) -> None:
+    sections = (
+        ("private_health", PRIVATE_HEALTH_SECTION_KEYS, PRIVATE_HEALTH_FIELD_ALIASES),
+        ("medicare_levy", MEDICARE_LEVY_SECTION_KEYS, MEDICARE_LEVY_FIELD_ALIASES),
+        ("mls", MLS_SECTION_KEYS, MLS_FIELD_ALIASES),
+        ("spouse", SPOUSE_SECTION_KEYS, SPOUSE_FIELD_ALIASES),
+    )
+    for name, section_keys, field_aliases in sections:
+        groups[name].extend(private_health_section_records(record, section_keys, field_aliases))
+    private_health_append_flat_record_groups(
+        record,
+        groups,
+        ("private_health", "medicare_levy", "mls", "spouse", "dependant_summary"),
+        global_scope=global_scope,
+    )
+    groups["dependant_summary"].extend(private_health_dependant_summary_records(record))
+    for value in private_health_key_values(record, PRIVATE_HEALTH_SECTION_KEYS):
+        for section in private_health_collection_entries(value):
+            private_health_append_embedded_groups(section, groups)
+
+
+def private_health_append_flat_record_groups(
+    record: Dict[str, Any],
+    groups: Dict[str, List[Dict[str, Any]]],
+    names: tuple[str, ...],
+    *,
+    global_scope: bool = False,
+) -> None:
+    for name in names:
+        subset = private_health_flat_alias_subset(record, name, global_scope=global_scope)
+        if subset:
+            groups[name].append(subset)
+
+
+def private_health_append_embedded_groups(
+    record: Dict[str, Any],
+    groups: Dict[str, List[Dict[str, Any]]],
+) -> None:
+    private_health_append_flat_record_groups(
+        record,
+        groups,
+        ("medicare_levy", "mls", "spouse", "dependant_summary"),
+    )
+    for name, section_keys, field_aliases in (
+        ("medicare_levy", MEDICARE_LEVY_SECTION_KEYS, MEDICARE_LEVY_FIELD_ALIASES),
+        ("mls", MLS_SECTION_KEYS, MLS_FIELD_ALIASES),
+        ("spouse", SPOUSE_SECTION_KEYS, SPOUSE_FIELD_ALIASES),
+    ):
+        groups[name].extend(private_health_section_records(record, section_keys, field_aliases))
+    groups["dependant_summary"].extend(private_health_dependant_summary_records(record))
+
+
+def private_health_append_medicare_groups(
+    record: Dict[str, Any],
+    groups: Dict[str, List[Dict[str, Any]]],
+) -> None:
+    groups["medicare_levy"].extend(
+        private_health_section_records(record, MEDICARE_LEVY_SECTION_KEYS, MEDICARE_LEVY_FIELD_ALIASES)
+    )
+    groups["mls"].extend(private_health_section_records(record, MLS_SECTION_KEYS, MLS_FIELD_ALIASES))
+    private_health_append_flat_record_groups(record, groups, ("medicare_levy", "mls"))
+
+
+def private_health_medicare_wrapper_unknown(record: Dict[str, Any]) -> Dict[str, Any]:
+    known = (
+        set(MEDICARE_LEVY_SECTION_KEYS)
+        | set(MLS_SECTION_KEYS)
+        | private_health_alias_set(MEDICARE_LEVY_FLAT_FIELD_ALIASES)
+        | private_health_alias_set(MLS_FLAT_FIELD_ALIASES)
+    )
+    return private_health_unknown_values(record, known)
+
+
+def private_health_section_records(
+    record: Dict[str, Any],
+    section_keys: tuple[str, ...],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    excluded_child_keys = (
+        set(PRIVATE_HEALTH_STATEMENT_KEYS)
+        | set(MEDICARE_LEVY_SECTION_KEYS)
+        | set(MLS_SECTION_KEYS)
+        | set(SPOUSE_SECTION_KEYS)
+        | set(DEPENDANT_SECTION_KEYS)
+    )
+    current_aliases = private_health_alias_set(field_aliases)
+    cross_flat_aliases = private_health_all_flat_aliases().difference(current_aliases)
+    if field_aliases is PRIVATE_HEALTH_FIELD_ALIASES:
+        cross_flat_aliases.update(
+            private_health_alias_set(PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES).difference(current_aliases)
+        )
+    for key in section_keys:
+        value = record.get(key)
+        records = private_health_collection_entries(value)
+        for child in records:
+            section = {
+                child_key: child_value
+                for child_key, child_value in child.items()
+                if child_key not in excluded_child_keys and child_key not in cross_flat_aliases
+            }
+            if has_meaningful_value(section):
+                rows.append(section)
+        if records:
+            continue
+        if value is False and section_keys in (PRIVATE_HEALTH_SECTION_KEYS, SPOUSE_SECTION_KEYS):
+            scalar_key = private_health_section_scalar_key(section_keys)
+            rows.append({scalar_key: False})
+        elif private_health_freeform_value(value):
+            scalar_key = private_health_section_scalar_key(section_keys)
+            rows.append({scalar_key: value})
+    return rows
+
+
+def private_health_section_scalar_key(section_keys: tuple[str, ...]) -> str:
+    if section_keys == PRIVATE_HEALTH_SECTION_KEYS:
+        return "private_health_cover"
+    if section_keys == SPOUSE_SECTION_KEYS:
+        return "spouse_had"
+    return "notes"
+
+
+def private_health_alias_set(field_aliases: Dict[str, tuple[str, ...]]) -> set[str]:
+    return set(item_alias_keys(field_aliases))
+
+
+def private_health_alias_subset(
+    record: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> Dict[str, Any]:
+    aliases = private_health_alias_set(field_aliases)
+    return {
+        key: value
+        for key, value in record.items()
+        if key in aliases and (has_meaningful_value(value) or value is False)
+    }
+
+
+def private_health_flat_alias_subset(
+    record: Dict[str, Any],
+    section: str,
+    *,
+    global_scope: bool = False,
+) -> Dict[str, Any]:
+    aliases_by_section = (
+        PRIVATE_HEALTH_GLOBAL_FLAT_FIELD_ALIASES
+        if global_scope
+        else PRIVATE_HEALTH_MEDICARE_FLAT_FIELD_ALIASES
+    )
+    field_aliases = aliases_by_section[section]
+    return private_health_alias_subset(record, field_aliases)
+
+
+def private_health_all_flat_aliases() -> set[str]:
+    aliases: set[str] = set()
+    for aliases_by_section in (
+        PRIVATE_HEALTH_MEDICARE_FLAT_FIELD_ALIASES,
+        PRIVATE_HEALTH_GLOBAL_FLAT_FIELD_ALIASES,
+    ):
+        for field_aliases in aliases_by_section.values():
+            aliases.update(private_health_alias_set(field_aliases))
+    return aliases
+
+
+def private_health_workflow_notes(record: Dict[str, Any]) -> List[Any]:
+    return private_health_unique_values(
+        [
+            record[key]
+            for key in PRIVATE_HEALTH_WORKFLOW_NOTE_KEYS
+            if key in record and private_health_freeform_value(record[key])
+        ]
+    )
+
+
+def private_health_root_known_keys() -> set[str]:
+    return (
+        set(PRIVATE_HEALTH_SECTION_KEYS)
+        | set(PRIVATE_HEALTH_STATEMENT_KEYS)
+        | set(MEDICARE_SECTION_KEYS)
+        | set(MEDICARE_LEVY_SECTION_KEYS)
+        | set(MLS_SECTION_KEYS)
+        | set(SPOUSE_SECTION_KEYS)
+        | set(DEPENDANT_SECTION_KEYS)
+        | private_health_all_flat_aliases()
+        | set(PRIVATE_HEALTH_WORKFLOW_NOTE_KEYS)
+        | set(PRIVATE_HEALTH_WORKFLOW_METADATA_KEYS)
+    )
+
+
+def private_health_unknown_values(record: Dict[str, Any], known_keys: set[str]) -> Dict[str, Any]:
+    return {
+        key: value
+        for key, value in record.items()
+        if key not in known_keys and not key.startswith("_") and (has_meaningful_value(value) or value is False)
+    }
+
+
+def private_health_merge_records(
+    records: List[Dict[str, Any]],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> Dict[str, Any]:
+    merged: Dict[str, Any] = {}
+    conflicts: List[str] = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        for key, value in record.items():
+            if is_missing(value):
+                continue
+            if key not in merged:
+                merged[key] = value
+                continue
+            existing = merged[key]
+            field = private_health_field_for_alias(key, field_aliases)
+            if field == "source_urls":
+                merged[key] = private_health_merge_provenance_values(existing, value)
+                continue
+            if private_health_values_equivalent(key, existing, value, field_aliases):
+                continue
+            if private_health_placeholder_value(existing) and private_health_concrete_value(key, value, field_aliases):
+                merged[key] = value
+                continue
+            if private_health_placeholder_value(value) and private_health_concrete_value(key, existing, field_aliases):
+                continue
+            conflicts.append(f"{key} {display_value(existing)} vs {display_value(value)}")
+    if conflicts:
+        merged["_source_conflicts"] = private_health_unique_values(conflicts)
+    return merged
+
+
+def private_health_merge_provenance_values(left: Any, right: Any) -> List[Any]:
+    values: List[Any] = []
+    for value in (left, right):
+        values.extend(value if isinstance(value, list) else [value])
+    return private_health_unique_values(values)
+
+
+def private_health_values_equivalent(
+    key: str,
+    left: Any,
+    right: Any,
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> bool:
+    field = private_health_field_for_alias(key, field_aliases)
+    if field in {"source_urls", "notes"} or isinstance(left, (dict, list)) or isinstance(right, (dict, list)):
+        return json.dumps(left, sort_keys=True, default=str) == json.dumps(right, sort_keys=True, default=str)
+    return item_alias_conflict_key(field, left) == item_alias_conflict_key(field, right)
+
+
+def private_health_field_for_alias(key: str, field_aliases: Dict[str, tuple[str, ...]]) -> str:
+    for field, aliases in field_aliases.items():
+        if key in aliases:
+            return field
+    return key
+
+
+def private_health_placeholder_value(value: Any) -> bool:
+    return is_missing(value) or (contains_unknown(value) and not explicit_evidence_denial_value(value))
+
+
+def private_health_concrete_value(
+    key: str,
+    value: Any,
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> bool:
+    field = private_health_field_for_alias(key, field_aliases)
+    false_is_concrete = field in ITEM_ALIAS_BOOLEAN_FIELDS or field in ITEM_ALIAS_EVIDENCE_FIELDS
+    return concrete_item_alias_value(value, false_is_concrete=false_is_concrete)
+
+
+def private_health_statement_answers(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    parent_records, private_health_sections = private_health_input_records(answers)
+
+    raw_groups: List[Any] = []
+    for record in parent_records:
+        keys = PRIVATE_HEALTH_GLOBAL_STATEMENT_KEYS if record is answers else PRIVATE_HEALTH_STATEMENT_KEYS
+        raw_groups.extend(private_health_key_values(record, keys))
+    for record in private_health_sections:
+        raw_groups.extend(private_health_key_values(record, PRIVATE_HEALTH_STATEMENT_KEYS))
+
+    for record in parent_records:
+        flat_statement = private_health_explicit_statement_subset(record)
+        if flat_statement:
+            raw_groups.append(flat_statement)
+    for record in private_health_sections:
+        flat_statement = private_health_alias_subset(record, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES)
+        if private_health_statement_identity_signal(flat_statement):
+            raw_groups.append(flat_statement)
+            continue
+        prefixed_statement = private_health_explicit_statement_subset(record)
+        if prefixed_statement:
+            raw_groups.append(prefixed_statement)
+
+    normalized_groups = [private_health_statement_entries(value) for value in raw_groups]
+    normalized_groups = [group for group in normalized_groups if group]
+    return private_health_merge_item_groups(normalized_groups, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES)
+
+
+def private_health_explicit_statement_subset(record: Dict[str, Any]) -> Dict[str, Any]:
+    subset = private_health_flat_alias_subset(record, "statement")
+    if private_health_statement_identity_signal(subset):
+        return subset
+    explicit = {
+        key: value
+        for key, value in subset.items()
+        if key.startswith("private_health_statement_")
+    }
+    return explicit if private_health_statement_record_has_signal(explicit) else {}
+
+
+def private_health_statement_entries(value: Any) -> List[Dict[str, Any]]:
+    if isinstance(value, list):
+        rows: List[Dict[str, Any]] = []
+        for item in value:
+            rows.extend(private_health_statement_entries(item))
+        return rows
+    if isinstance(value, dict):
+        nested_rows: List[Dict[str, Any]] = []
+        nested_keys = (*PRIVATE_HEALTH_STATEMENT_KEYS, *PRIVATE_HEALTH_STATEMENT_ITEM_KEYS)
+        for key in nested_keys:
+            if key in value:
+                nested_rows.extend(private_health_statement_entries(value.get(key)))
+        parent = {key: item for key, item in value.items() if key not in nested_keys}
+        if any(key in value for key in nested_keys):
+            inherited = private_health_statement_wrapper_details(parent)
+            if inherited:
+                nested_rows = [
+                    private_health_merge_records([inherited, row], PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES)
+                    for row in nested_rows
+                ]
+            return nested_rows
+        statement_signal = private_health_statement_record_has_signal(parent)
+        if not statement_signal and any(
+            explicit_evidence_denial_value(item) and private_health_statement_context(item)
+            for item in parent.values()
+        ):
+            return []
+        if statement_signal:
+            nested_rows.append(parent)
+        return nested_rows
+    return []
+
+
+def private_health_statement_record_has_signal(record: Any) -> bool:
+    if private_health_statement_identity_signal(record):
+        return True
+    if not isinstance(record, dict):
+        return False
+    for field in ("days_covered", "period_start", "period_end", "period"):
+        value = normalized_item_field(record, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES[field])
+        if not is_missing(value) and (has_meaningful_value(value) or value is False):
+            return True
+    return False
+
+
+def private_health_statement_identity_signal(record: Any) -> bool:
+    if not isinstance(record, dict):
+        return False
+    for field in (
+        "insurer",
+        "membership_id",
+        "benefit_code",
+        "premiums_eligible_for_rebate",
+        "rebate_received",
+        "tax_claim_code",
+    ):
+        value = normalized_item_field(record, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES[field])
+        if not is_missing(value) and (has_meaningful_value(value) or value is False):
+            return True
+    return False
+
+
+def private_health_statement_wrapper_details(record: Dict[str, Any]) -> Dict[str, Any]:
+    inherited_aliases = {
+        field: PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES[field]
+        for field in ("insurer", "membership_id", "evidence", "notes", "source_urls", "checked_at")
+    }
+    inherited = private_health_alias_subset(record, inherited_aliases)
+    for alias in PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["evidence"]:
+        if alias in inherited and explicit_evidence_denial_value(inherited[alias]):
+            inherited.pop(alias)
+    return inherited
+
+
+def private_health_statement_collection_notes(answers: Dict[str, Any]) -> List[Any]:
+    parent_records, private_health_sections = private_health_input_records(answers)
+    notes: List[Any] = []
+    for record in [*parent_records, *private_health_sections]:
+        keys = PRIVATE_HEALTH_GLOBAL_STATEMENT_KEYS if record is answers else PRIVATE_HEALTH_STATEMENT_KEYS
+        for value in private_health_key_values(record, keys):
+            notes.extend(
+                {"private_health_statement": detail}
+                for detail in private_health_statement_supplemental_values(value)
+            )
+    return private_health_unique_values(notes)
+
+
+def private_health_explicit_statement_notes(answers: Dict[str, Any]) -> List[Any]:
+    parent_records, private_health_sections = private_health_input_records(answers)
+    notes: List[Any] = []
+    for record in [*parent_records, *private_health_sections]:
+        subset = {
+            key: value
+            for key, value in private_health_flat_alias_subset(record, "statement").items()
+            if key.startswith("private_health_statement_")
+        }
+        if not subset or private_health_statement_record_has_signal(subset):
+            continue
+        details = {
+            key: value
+            for key, value in subset.items()
+            if private_health_field_for_alias(key, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES)
+            not in {"source_urls", "checked_at"}
+        }
+        if details:
+            notes.append({"private_health_statement": details})
+    return private_health_unique_values(notes)
+
+
+def private_health_statement_supplemental_values(value: Any) -> List[Any]:
+    if isinstance(value, list):
+        notes: List[Any] = []
+        for item in value:
+            notes.extend(private_health_statement_supplemental_values(item))
+        return notes
+    if isinstance(value, dict):
+        notes: List[Any] = []
+        nested_keys = (*PRIVATE_HEALTH_STATEMENT_KEYS, *PRIVATE_HEALTH_STATEMENT_ITEM_KEYS)
+        nested_values = [value[key] for key in nested_keys if key in value]
+        for nested_value in nested_values:
+            notes.extend(private_health_statement_supplemental_values(nested_value))
+        parent = {key: item for key, item in value.items() if key not in nested_keys}
+        metadata = set(PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["source_urls"]) | set(
+            PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["checked_at"]
+        )
+        if not nested_values:
+            represented = set(parent) if private_health_statement_record_has_signal(parent) else set()
+        elif any(private_health_statement_entries(item) for item in nested_values):
+            represented = set(private_health_statement_wrapper_details(parent))
+        else:
+            represented = set()
+        details = {
+            key: item
+            for key, item in parent.items()
+            if key not in metadata
+            and key not in represented
+            and (has_meaningful_value(item) or item is False)
+        }
+        if details:
+            notes.append(details)
+        return notes
+    if value is False or private_health_freeform_value(value):
+        return [value]
+    return []
+
+
+def private_health_merge_item_groups(
+    groups: List[List[Dict[str, Any]]],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> List[Dict[str, Any]]:
+    if not groups:
+        return []
+    merged = [dict(item) for item in groups[0]]
+    for group in groups[1:]:
+        for index, item in enumerate(group):
+            matching_index = private_health_matching_item_index(merged, item, field_aliases)
+            if matching_index == -1:
+                merged.append(dict(item))
+            elif matching_index is not None:
+                merged[matching_index] = private_health_merge_records(
+                    [merged[matching_index], item],
+                    field_aliases,
+                )
+            elif index < len(merged) and private_health_items_compatible(merged[index], item, field_aliases):
+                merged[index] = private_health_merge_records([merged[index], item], field_aliases)
+            else:
+                merged.append(dict(item))
+    return merged
+
+
+def private_health_matching_item_index(
+    rows: List[Dict[str, Any]],
+    item: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> Optional[int]:
+    identity_fields = (
+        ("insurer", 1),
+        ("membership_id", 3),
+        ("benefit_code", 1),
+        ("period_start", 1),
+        ("period_end", 1),
+    )
+    if field_aliases is DEPENDANT_FIELD_ALIASES:
+        identity_fields = (("name", 3), ("period_start", 1), ("period_end", 1))
+    best: List[int] = []
+    best_score = 0
+    for index, row in enumerate(rows):
+        if not private_health_items_compatible(row, item, field_aliases):
+            continue
+        score = 0
+        for field, weight in identity_fields:
+            if field not in field_aliases:
+                continue
+            left = normalized_item_field(row, field_aliases[field])
+            right = normalized_item_field(item, field_aliases[field])
+            if is_missing(left) or is_missing(right):
+                continue
+            if private_health_values_equivalent(field, left, right, {field: field_aliases[field]}):
+                score += weight
+        if score >= 2 and score > best_score:
+            best = [index]
+            best_score = score
+        elif score >= 2 and score == best_score:
+            best.append(index)
+    if len(best) == 1:
+        return best[0]
+    return -1 if best else None
+
+
+def private_health_items_compatible(
+    left: Dict[str, Any],
+    right: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> bool:
+    metadata_aliases = set(field_aliases.get("source_urls", ())) | set(
+        field_aliases.get("checked_at", ())
+    )
+    filtered_left = {key: value for key, value in left.items() if key not in metadata_aliases}
+    filtered_right = {key: value for key, value in right.items() if key not in metadata_aliases}
+    merged = private_health_merge_records([filtered_left, filtered_right], field_aliases)
+    return not private_health_record_conflicts(merged, field_aliases)
+
+
+def private_health_dependant_answers(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    raw_groups: List[Any] = []
+    parent_records, private_health_sections = private_health_input_records(answers)
+    for record in [*parent_records, *private_health_sections]:
+        for value in private_health_key_values(record, DEPENDANT_SECTION_KEYS):
+            if private_health_dependant_item_container(value):
+                raw_groups.append(value)
+    normalized_groups = [private_health_dependant_entries(value) for value in raw_groups]
+    normalized_groups = [group for group in normalized_groups if group]
+    return private_health_merge_item_groups(normalized_groups, DEPENDANT_FIELD_ALIASES)
+
+
+def private_health_dependant_item_container(value: Any) -> bool:
+    if isinstance(value, list):
+        return True
+    if not isinstance(value, dict):
+        return False
+    if any(key in value for key in ("items", "children", "students", "dependants", "dependents")):
+        return True
+    if private_health_dependant_denial_value(value):
+        return False
+    return private_health_dependant_record_has_signal(value)
+
+
+def private_health_dependant_entries(value: Any) -> List[Dict[str, Any]]:
+    if isinstance(value, list):
+        rows: List[Dict[str, Any]] = []
+        for item in value:
+            rows.extend(private_health_dependant_entries(item))
+        return rows
+    if isinstance(value, dict):
+        rows: List[Dict[str, Any]] = []
+        item_keys = ("items", "children", "students", "dependants", "dependents")
+        for key in item_keys:
+            if key in value:
+                rows.extend(private_health_dependant_entries(value.get(key)))
+        container = any(key in value for key in item_keys)
+        excluded = set(DEPENDANT_SUMMARY_FIELD_ALIASES["count"])
+        parent = {
+            key: item
+            for key, item in value.items()
+            if key not in set(item_keys) and key not in excluded
+        }
+        if container:
+            inherited = private_health_dependant_wrapper_details(parent)
+            if inherited:
+                rows = [
+                    private_health_merge_records([inherited, row], DEPENDANT_FIELD_ALIASES)
+                    for row in rows
+                ]
+            return rows
+        if private_health_dependant_denial_value(parent):
+            return []
+        if private_health_dependant_record_has_signal(parent):
+            rows.append(parent)
+        return rows
+    if not private_health_freeform_value(value):
+        return []
+    return [{"notes": value}]
+
+
+def private_health_dependant_record_has_signal(record: Any) -> bool:
+    if not isinstance(record, dict):
+        return False
+    for field, aliases in DEPENDANT_FIELD_ALIASES.items():
+        if field in {"evidence", "notes", "source_urls", "checked_at"}:
+            continue
+        value = normalized_item_field(record, aliases)
+        if not is_missing(value) and (has_meaningful_value(value) or value is False):
+            return True
+    return False
+
+
+def private_health_dependant_wrapper_details(record: Dict[str, Any]) -> Dict[str, Any]:
+    inherited_aliases = {
+        field: DEPENDANT_FIELD_ALIASES[field]
+        for field in ("evidence", "notes", "source_urls", "checked_at")
+    }
+    return private_health_alias_subset(record, inherited_aliases)
+
+
+def private_health_dependant_denial_value(value: Any) -> bool:
+    if isinstance(value, dict):
+        candidates = [value.get(key) for key in ("status", "count", "notes", "note", "details") if key in value]
+        return any(private_health_dependant_denial_value(item) for item in candidates)
+    if value is False or value == 0:
+        return True
+    if not isinstance(value, str):
+        return False
+    normalized = re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+    return bool(re.search(r"\b(?:no|zero|without)\s+(?:dependants?|dependents?|children|students)\b", normalized))
+
+
+def private_health_dependant_summary_records(record: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    direct = private_health_flat_alias_subset(record, "dependant_summary")
+    if direct:
+        rows.append(direct)
+    for value in private_health_key_values(record, DEPENDANT_SECTION_KEYS):
+        if isinstance(value, dict):
+            if private_health_dependant_denial_value(value):
+                rows.append({"count": 0, "notes": display_value(value)})
+                continue
+            subset = private_health_alias_subset(value, DEPENDANT_SUMMARY_FIELD_ALIASES)
+            if private_health_summary_substantive(subset):
+                rows.append(subset)
+            continue
+        if isinstance(value, list) or value is False or is_missing(value):
+            continue
+        parsed = private_health_count_value(value)
+        if parsed is not None:
+            rows.append({"count": value})
+        elif private_health_freeform_value(value):
+            rows.append({"count": value})
+    return rows
+
+
+def private_health_summary_substantive(record: Any) -> bool:
+    if not isinstance(record, dict):
+        return False
+    count = normalized_item_field(record, DEPENDANT_SUMMARY_FIELD_ALIASES["count"])
+    notes = normalized_item_field(record, DEPENDANT_SUMMARY_FIELD_ALIASES["notes"])
+    return not is_missing(count) or private_health_freeform_value(notes)
+
+
+def private_health_count_value(value: Any) -> Optional[int]:
+    if isinstance(value, dict):
+        value = normalized_item_field(value, DEPENDANT_SUMMARY_FIELD_ALIASES["count"])
+    return private_health_nonnegative_integer(value)
+
+
+def private_health_freeform_value(value: Any) -> bool:
+    if is_missing(value) or value is False:
+        return False
+    if isinstance(value, str) and not contains_unknown(value):
+        normalized = re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+        if normalized in {"n a", "na", "not applicable", "none"}:
+            return False
+    return has_meaningful_value(value)
+
+
+def private_health_statement_context(value: Any) -> bool:
+    lowered = display_value(value).lower()
+    return any(term in lowered for term in ("statement", "document", "record", "evidence", "policy line"))
+
+
+def private_health_unique_values(values: List[Any]) -> List[Any]:
+    rows: List[Any] = []
+    seen: set[str] = set()
+    for value in values:
+        if not has_meaningful_value(value) and value is not False:
+            continue
+        key = json.dumps(value, sort_keys=True, default=str)
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append(value)
+    return rows
+
+
+def has_private_health_medicare_inputs(raw: Dict[str, Any]) -> bool:
+    private_health = raw.get("private_health", {})
+    spouse = raw.get("spouse", {})
+    dependant_summary = raw.get("dependant_summary", {})
+    levy = raw.get("medicare_levy", {})
+    mls = raw.get("mls", {})
+    if private_health_core_record_has_inputs(private_health):
+        return True
+    if private_health_spouse_record_has_inputs(spouse):
+        return True
+    if private_health_dependant_summary_has_inputs(dependant_summary):
+        return True
+    if raw.get("statements") or raw.get("dependants") or raw.get("notes"):
+        return True
+    if private_health_levy_record_has_inputs(levy):
+        return True
+    return private_health_mls_record_has_inputs(mls)
+
+
+def private_health_core_record_has_inputs(record: Any) -> bool:
+    if not isinstance(record, dict):
+        return False
+    covered = normalized_item_field(record, PRIVATE_HEALTH_FIELD_ALIASES["covered"])
+    if covered is False or private_health_cover_bool(covered) is not None or contains_unknown(covered):
+        return True
+    return private_health_record_nonfalse_inputs(record, PRIVATE_HEALTH_FIELD_ALIASES, {"covered"})
+
+
+def private_health_spouse_record_has_inputs(record: Any) -> bool:
+    if not isinstance(record, dict):
+        return False
+    had_spouse = normalized_item_field(record, SPOUSE_FIELD_ALIASES["had_spouse"])
+    if had_spouse is False or private_health_spouse_bool(had_spouse) is not None or contains_unknown(had_spouse):
+        return True
+    return private_health_record_nonfalse_inputs(record, SPOUSE_FIELD_ALIASES, {"had_spouse"})
+
+
+def private_health_dependant_summary_has_inputs(record: Any) -> bool:
+    if not isinstance(record, dict):
+        return False
+    count = normalized_item_field(record, DEPENDANT_SUMMARY_FIELD_ALIASES["count"])
+    return not is_missing(count) or private_health_record_nonfalse_inputs(
+        record,
+        DEPENDANT_SUMMARY_FIELD_ALIASES,
+        set(),
+    )
+
+
+def private_health_levy_record_has_inputs(record: Any) -> bool:
+    return private_health_record_nonfalse_inputs(record, MEDICARE_LEVY_FIELD_ALIASES, {"reduction", "exemption"})
+
+
+def private_health_mls_record_has_inputs(record: Any) -> bool:
+    if not isinstance(record, dict):
+        return False
+    cover = normalized_item_field(record, MLS_FIELD_ALIASES["appropriate_hospital_cover"])
+    if cover is False or private_health_cover_bool(cover) is not None or contains_unknown(cover):
+        return True
+    return private_health_record_nonfalse_inputs(record, MLS_FIELD_ALIASES, {"review"})
+
+
+def private_health_mls_has_context(
+    raw: Any,
+    private_health: Any,
+    workflow: Dict[str, Any],
+) -> bool:
+    return (
+        private_health_mls_record_has_inputs(raw)
+        or private_health_core_record_has_inputs(private_health)
+        or private_health_spouse_record_has_inputs(workflow.get("spouse", {}))
+        or private_health_dependant_summary_has_inputs(workflow.get("dependant_summary", {}))
+        or bool(workflow.get("dependants"))
+    )
+
+
+def private_health_record_nonfalse_inputs(
+    record: Any,
+    field_aliases: Dict[str, tuple[str, ...]],
+    ignored_false_fields: set[str],
+) -> bool:
+    if not isinstance(record, dict):
+        return False
+    for field, aliases in field_aliases.items():
+        if field in {"source_urls", "checked_at"}:
+            continue
+        value = normalized_item_field(record, aliases)
+        if is_missing(value):
+            continue
+        if field == "notes":
+            if private_health_freeform_value(value):
+                return True
+            continue
+        if field in ignored_false_fields and phone_bool(value) is False:
+            continue
+        if has_meaningful_value(value) or value is False:
+            return True
+    return bool(record.get("_source_conflicts")) or bool(
+        private_health_unknown_values(record, private_health_alias_set(field_aliases))
+    )
+
+
+def private_health_record_has_metadata(record: Any) -> bool:
+    if not isinstance(record, dict):
+        return False
+    return any(
+        not is_missing(normalized_item_field(record, PRIVATE_HEALTH_FIELD_ALIASES[field]))
+        for field in ("source_urls", "checked_at")
+    )
+
+
+def private_health_overview_context(
+    raw: Dict[str, Any],
+) -> tuple[Dict[str, Any], List[Dict[str, Any]], Dict[str, Any], bool]:
+    private_health = raw.get("private_health", {})
+    private_health = private_health if isinstance(private_health, dict) else {}
+    statements = raw.get("statements", [])
+    statements = statements if isinstance(statements, list) else []
+    notes = raw.get("notes")
+    overview = dict(private_health)
+    if notes:
+        overview["supplemental_notes"] = notes
+    active = bool(
+        private_health_core_record_has_inputs(private_health)
+        or private_health_record_has_metadata(private_health)
+        or statements
+        or notes
+    )
+    return private_health, statements, overview, active
+
+
+def private_health_medicare_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if not has_private_health_medicare_inputs(raw):
+        return []
+    rows: List[Dict[str, Any]] = []
+    private_health, statements, overview, overview_active = private_health_overview_context(raw)
+    if overview_active:
+        rows.append(private_health_overview_row(overview, statements))
+        rows.extend(private_health_statement_rows(statements))
+    levy_row = medicare_levy_row(raw.get("medicare_levy", {}))
+    if levy_row is not None:
+        rows.append(levy_row)
+    mls_row = mls_review_row(raw.get("mls", {}), private_health, raw)
+    if mls_row is not None:
+        rows.append(mls_row)
+    spouse_row = spouse_review_row(raw.get("spouse", {}))
+    if spouse_row is not None:
+        rows.append(spouse_row)
+    rows.extend(dependant_rows(raw.get("dependant_summary", {}), raw.get("dependants", [])))
+    return rows
+
+
+def private_health_overview_row(
+    raw: Dict[str, Any],
+    statements: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    fields = PRIVATE_HEALTH_FIELD_ALIASES
+    answer = (
+        f"Private hospital cover {private_health_bool_field_text(raw, fields['covered'])}; "
+        f"period {private_health_period_text(raw, fields)}; "
+        f"days covered {private_health_field_text(raw, fields['days_covered'])}; "
+        f"cover evidence {private_health_field_text(raw, fields['evidence'])}; "
+        f"statement rows {len(statements)}"
+    )
+    answer = private_health_append_record_details(answer, raw, fields)
+    gaps = private_health_overview_gaps(raw, statements)
+    return guide_row(
+        "PHI-OVERVIEW",
+        "M2 / Private health insurance policy details",
+        "Private hospital cover review",
+        answer,
+        "Private hospital cover and policy periods are prep facts only. Confirm statement and cover "
+        "evidence before accountant review; no levy, surcharge, or rebate is worked out.",
+        "Accountant review",
+        private_health_row_sources(raw, [*ATO_PRIVATE_HEALTH_STATEMENT_SOURCES, *ATO_MLS_SOURCES]),
+        tab_text=private_health_review_tab("Private hospital cover", gaps),
+    )
+
+
+def private_health_statement_rows(raw: Any) -> List[Dict[str, Any]]:
+    items = raw.get("statements", []) if isinstance(raw, dict) else raw
+    if not isinstance(items, list):
+        return []
+    fields = PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES
+    rows: List[Dict[str, Any]] = []
+    for index, item in enumerate(items, start=1):
+        if not isinstance(item, dict) or not has_meaningful_value(item):
+            continue
+        answer = (
+            f"Insurer/fund {private_health_field_text(item, fields['insurer'])}; "
+            f"policy/membership {private_health_field_text(item, fields['membership_id'])}; "
+            f"benefit code {private_health_field_text(item, fields['benefit_code'])}; "
+            "premiums eligible for rebate "
+            f"{private_health_amount_field_text(item, fields['premiums_eligible_for_rebate'])}; "
+            f"rebate received {private_health_amount_field_text(item, fields['rebate_received'])}; "
+            f"tax claim code {private_health_field_text(item, fields['tax_claim_code'])}; "
+            f"days covered {private_health_field_text(item, fields['days_covered'])}; "
+            f"period {private_health_period_text(item, fields)}; "
+            f"statement evidence {private_health_field_text(item, fields['evidence'])}"
+        )
+        answer = private_health_append_record_details(answer, item, fields)
+        gaps = private_health_statement_gaps(item)
+        rows.append(
+            guide_row(
+                f"PHI-STMT-{index}",
+                "Private health insurance policy details",
+                "Private health insurance statement line",
+                answer,
+                "Keep each insurer statement line separate with its evidence and source provenance. "
+                "This is prep-only and does not calculate or decide a rebate.",
+                "Accountant review",
+                private_health_row_sources(item, ATO_PRIVATE_HEALTH_STATEMENT_SOURCES),
+                tab_text=private_health_review_tab(f"Private health statement {index}", gaps),
+            )
+        )
+    return rows
+
+
+def medicare_levy_row(raw: Any) -> Optional[Dict[str, Any]]:
+    if not private_health_levy_record_has_inputs(raw):
+        return None
+    fields = MEDICARE_LEVY_FIELD_ALIASES
+    answer = (
+        f"Reduction signal {private_health_bool_field_text(raw, fields['reduction'])}; "
+        f"exemption signal {private_health_bool_field_text(raw, fields['exemption'])}; "
+        f"exemption category {private_health_field_text(raw, fields['exemption_category'])}; "
+        f"full exemption days {private_health_field_text(raw, fields['full_exemption_days'])}; "
+        f"half exemption days {private_health_field_text(raw, fields['half_exemption_days'])}; "
+        f"evidence {private_health_field_text(raw, fields['evidence'])}"
+    )
+    answer = private_health_append_record_details(answer, raw, fields)
+    gaps = medicare_levy_gaps(raw)
+    return guide_row(
+        "MEDICARE-LEVY",
+        "M1 Medicare levy reduction or exemption",
+        "Medicare levy reduction and exemption review",
+        answer,
+        "Collect reduction and exemption signals and evidence for accountant review. TaxMate does "
+        "not determine eligibility or calculate the Medicare levy.",
+        "Accountant review",
+        private_health_row_sources(raw, ATO_MEDICARE_LEVY_SOURCES),
+        tab_text=private_health_review_tab("Medicare levy", gaps),
+    )
+
+
+def mls_review_row(
+    raw: Any,
+    private_health: Dict[str, Any],
+    workflow: Dict[str, Any],
+) -> Optional[Dict[str, Any]]:
+    if not private_health_mls_has_context(raw, private_health, workflow):
+        return None
+    effective = private_health_effective_mls_record(raw, private_health)
+    fields = MLS_FIELD_ALIASES
+    answer = (
+        f"Review signal {private_health_bool_field_text(effective, fields['review'])}; "
+        "income for surcharge "
+        f"{private_health_amount_field_text(effective, fields['income_for_surcharge'])}; "
+        f"income tier signal {private_health_field_text(effective, fields['income_tier'])}; "
+        "appropriate hospital cover "
+        f"{private_health_bool_field_text(effective, fields['appropriate_hospital_cover'])}; "
+        f"hospital cover days {private_health_field_text(effective, fields['hospital_cover_days'])}; "
+        f"days not liable {private_health_field_text(effective, fields['days_not_liable'])}; "
+        f"period {private_health_period_text(effective, fields)}; "
+        f"evidence {private_health_field_text(effective, fields['evidence'])}"
+    )
+    answer = private_health_append_record_details(answer, effective, fields)
+    gaps = mls_review_gaps(effective)
+    return guide_row(
+        "MLS-REVIEW",
+        "M2 Medicare levy surcharge",
+        "Medicare levy surcharge review",
+        answer,
+        "Keep cover periods, income-tier signals, spouse/family context, and uncertainty visible for "
+        "accountant review. TaxMate does not determine or calculate the surcharge.",
+        "Accountant review",
+        private_health_row_sources(effective, ATO_MLS_SOURCES),
+        tab_text=private_health_review_tab("Medicare levy surcharge", gaps),
+    )
+
+
+def spouse_review_row(raw: Any) -> Optional[Dict[str, Any]]:
+    if not private_health_spouse_record_has_inputs(raw):
+        return None
+    fields = SPOUSE_FIELD_ALIASES
+    answer = (
+        f"Had spouse {private_health_bool_field_text(raw, fields['had_spouse'])}; "
+        f"period {private_health_period_text(raw, fields)}; "
+        f"income for tests {private_health_amount_field_text(raw, fields['income_for_tests'])}; "
+        "reportable fringe benefits "
+        f"{private_health_amount_field_text(raw, fields['reportable_fringe_benefits'])}; "
+        f"reportable super {private_health_amount_field_text(raw, fields['reportable_super'])}; "
+        f"net investment loss {private_health_amount_field_text(raw, fields['net_investment_loss'])}; "
+        f"income evidence {private_health_field_text(raw, fields['income_evidence'])}"
+    )
+    answer = private_health_append_record_details(answer, raw, fields)
+    gaps = spouse_review_gaps(raw)
+    return guide_row(
+        "SPOUSE-REVIEW",
+        "Spouse details / M1 / M2",
+        "Spouse period and income-test review",
+        answer,
+        "Spouse period and income-test facts remain prep-only and need source-backed accountant review.",
+        "Accountant review",
+        private_health_row_sources(raw, ATO_SPOUSE_DEPENDANT_SOURCES),
+        tab_text=private_health_review_tab("Spouse facts", gaps),
+    )
+
+
+def dependant_rows(summary: Any, items: Any) -> List[Dict[str, Any]]:
+    summary = summary if isinstance(summary, dict) else {}
+    items = items if isinstance(items, list) else []
+    rows: List[Dict[str, Any]] = []
+    if private_health_dependant_summary_has_inputs(summary) or items:
+        summary_fields = DEPENDANT_SUMMARY_FIELD_ALIASES
+        count = private_health_field_text(summary, summary_fields["count"])
+        answer = f"Dependent children/students count {count}; item rows {len(items)}"
+        answer = private_health_append_record_details(answer, summary, DEPENDANT_SUMMARY_FIELD_ALIASES)
+        rows.append(
+            guide_row(
+                "DEPENDANT-SUMMARY",
+                "IT8 / M1 / M2 dependants",
+                "Dependant child and student summary",
+                answer,
+                "Keep the supplied count and child/student detail aligned for accountant review; "
+                "TaxMate does not decide dependant status.",
+                "Accountant review",
+                private_health_row_sources(summary, ATO_SPOUSE_DEPENDANT_SOURCES),
+                tab_text=private_health_review_tab("Dependant summary", dependant_summary_gaps(summary, items)),
+            )
+        )
+    for index, item in enumerate(items, start=1):
+        if not isinstance(item, dict) or not has_meaningful_value(item):
+            continue
+        fields = DEPENDANT_FIELD_ALIASES
+        answer = (
+            f"Name {private_health_field_text(item, fields['name'])}; "
+            f"type {private_health_field_text(item, fields['type'])}; "
+            f"age {private_health_field_text(item, fields['age'])}; "
+            f"student {private_health_bool_field_text(item, fields['student'])}; "
+            f"period {private_health_period_text(item, fields)}; "
+            f"maintained {private_health_bool_field_text(item, fields['maintained'])}; "
+            f"income for tests {private_health_amount_field_text(item, fields['income_for_tests'])}; "
+            f"shared care {private_health_field_text(item, fields['shared_care'])}; "
+            f"evidence {private_health_field_text(item, fields['evidence'])}"
+        )
+        answer = private_health_append_record_details(answer, item, fields)
+        rows.append(
+            guide_row(
+                f"DEPENDANT-{index}",
+                "M1 / M2 dependant child or student",
+                "Dependant child or student review",
+                answer,
+                "Dependant and student facts remain prep-only. Confirm maintenance, period, student, "
+                "income-test, and evidence facts with an accountant.",
+                "Accountant review",
+                private_health_row_sources(item, ATO_SPOUSE_DEPENDANT_SOURCES),
+                tab_text=private_health_review_tab(f"Dependant {index}", dependant_item_gaps(item)),
+            )
+        )
+    return rows
+
+
+def private_health_medicare_evidence_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if not has_private_health_medicare_inputs(raw):
+        return []
+    entries: List[tuple[str, str, str, List[str]]] = []
+    private_health, statements, overview, overview_active = private_health_overview_context(raw)
+    if overview_active:
+        entries.extend(
+            private_health_evidence_entries(
+                "Private hospital cover",
+                "M2 / Private health insurance policy details",
+                private_health_overview_gaps(overview, statements),
+                private_health_row_sources(overview, [*ATO_PRIVATE_HEALTH_STATEMENT_SOURCES, *ATO_MLS_SOURCES]),
+            )
+        )
+    for index, item in enumerate(statements, start=1):
+        entries.extend(
+            private_health_evidence_entries(
+                f"Private health statement {index}",
+                "Private health insurance policy details",
+                private_health_statement_gaps(item),
+                private_health_row_sources(item, ATO_PRIVATE_HEALTH_STATEMENT_SOURCES),
+            )
+        )
+    levy = raw.get("medicare_levy", {})
+    if private_health_levy_record_has_inputs(levy):
+        entries.extend(
+            private_health_evidence_entries(
+                "Medicare levy",
+                "M1 Medicare levy reduction or exemption",
+                medicare_levy_gaps(levy),
+                private_health_row_sources(levy, ATO_MEDICARE_LEVY_SOURCES),
+            )
+        )
+    mls = raw.get("mls", {})
+    if private_health_mls_has_context(mls, private_health, raw):
+        effective_mls = private_health_effective_mls_record(mls, private_health)
+        entries.extend(
+            private_health_evidence_entries(
+                "Medicare levy surcharge",
+                "M2 Medicare levy surcharge",
+                mls_review_gaps(effective_mls),
+                private_health_row_sources(effective_mls, ATO_MLS_SOURCES),
+            )
+        )
+    spouse = raw.get("spouse", {})
+    if private_health_spouse_record_has_inputs(spouse):
+        entries.extend(
+            private_health_evidence_entries(
+                "Spouse",
+                "Spouse details / M1 / M2",
+                spouse_review_gaps(spouse),
+                private_health_row_sources(spouse, ATO_SPOUSE_DEPENDANT_SOURCES),
+            )
+        )
+    summary = raw.get("dependant_summary", {})
+    dependants = raw.get("dependants", [])
+    if private_health_dependant_summary_has_inputs(summary) or dependants:
+        entries.extend(
+            private_health_evidence_entries(
+                "Dependant summary",
+                "IT8 / M1 / M2 dependants",
+                dependant_summary_gaps(summary, dependants),
+                private_health_row_sources(summary, ATO_SPOUSE_DEPENDANT_SOURCES),
+            )
+        )
+    for index, item in enumerate(dependants, start=1):
+        entries.extend(
+            private_health_evidence_entries(
+                f"Dependant {index}",
+                "M1 / M2 dependant child or student",
+                dependant_item_gaps(item),
+                private_health_row_sources(item, ATO_SPOUSE_DEPENDANT_SOURCES),
+            )
+        )
+
+    rows: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+    for subject, area, gap, sources in entries:
+        key = f"{subject}|{area}|{gap}|{'|'.join(sources)}"
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append(private_health_evidence_row(len(rows) + 1, subject, area, gap, sources))
+    return rows
+
+
+def private_health_effective_mls_record(raw: Any, private_health: Dict[str, Any]) -> Dict[str, Any]:
+    local = raw if isinstance(raw, dict) else {}
+    return private_health_merge_records(
+        [
+            {
+                "_income_year": private_health.get("_income_year"),
+                "appropriate_hospital_cover": normalized_item_field(
+                    private_health,
+                    PRIVATE_HEALTH_FIELD_ALIASES["covered"],
+                ),
+                "cover_period_start": normalized_item_field(
+                    private_health,
+                    PRIVATE_HEALTH_FIELD_ALIASES["period_start"],
+                ),
+                "cover_period_end": normalized_item_field(
+                    private_health,
+                    PRIVATE_HEALTH_FIELD_ALIASES["period_end"],
+                ),
+                "cover_period": normalized_item_field(private_health, PRIVATE_HEALTH_FIELD_ALIASES["period"]),
+                "hospital_cover_days": normalized_item_field(
+                    private_health,
+                    PRIVATE_HEALTH_FIELD_ALIASES["days_covered"],
+                ),
+                "cover_evidence": normalized_item_field(
+                    private_health,
+                    PRIVATE_HEALTH_FIELD_ALIASES["evidence"],
+                ),
+            },
+            local,
+        ],
+        MLS_FIELD_ALIASES,
+    )
+
+
+def private_health_evidence_entries(
+    subject: str,
+    area: str,
+    gaps: List[str],
+    sources: List[str],
+) -> List[tuple[str, str, str, List[str]]]:
+    return [(subject, area, gap, sources) for gap in gaps]
+
+
+def private_health_evidence_row(
+    index: int,
+    subject: str,
+    area: str,
+    gap: str,
+    sources: List[str],
+) -> Dict[str, Any]:
+    return guide_row(
+        f"PHI-EVID-{index}",
+        area,
+        "Evidence required",
+        f"{subject}: {gap}",
+        "The supplied fact remains prep-only and unresolved until the missing or conflicting evidence is reviewed.",
+        "Evidence",
+        sources,
+        tab_text=f"{subject} needs {gap} before accountant review.",
+    )
+
+
+def private_health_overview_gaps(
+    raw: Dict[str, Any],
+    statements: List[Dict[str, Any]],
+) -> List[str]:
+    gaps: List[str] = []
+    covered_raw = normalized_item_field(raw, PRIVATE_HEALTH_FIELD_ALIASES["covered"])
+    covered = private_health_cover_bool(covered_raw)
+    if covered is None:
+        gaps.append("confirm private hospital cover status")
+    if covered is True and not statements:
+        gaps.append("missing private health statement")
+    if covered is True and evidence_missing(normalized_item_field(raw, PRIVATE_HEALTH_FIELD_ALIASES["evidence"])):
+        if not any(
+            not evidence_missing(normalized_item_field(item, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["evidence"]))
+            for item in statements
+        ):
+            gaps.append("confirm private hospital cover evidence")
+    if covered is True:
+        if private_health_partial_text(covered_raw):
+            gaps.append("confirm partial-year private hospital cover")
+        gaps.extend(
+            private_health_period_gaps(
+                raw,
+                PRIVATE_HEALTH_FIELD_ALIASES,
+                "private hospital cover period",
+                required=True,
+                partial_is_gap=True,
+            )
+        )
+        days = normalized_item_field(raw, PRIVATE_HEALTH_FIELD_ALIASES["days_covered"])
+        if private_health_day_count(days) == 0:
+            gaps.append("cover is true but days covered is 0")
+        gaps.extend(private_health_statement_collection_gaps(raw, statements))
+    if covered is False:
+        if statements:
+            gaps.append("no-cover answer conflicts with supplied private health statement lines")
+        days = normalized_item_field(raw, PRIVATE_HEALTH_FIELD_ALIASES["days_covered"])
+        parsed_days = private_health_day_count(days)
+        if parsed_days is not None and parsed_days > 0:
+            gaps.append("no-cover answer conflicts with positive days covered")
+    gaps.extend(private_health_record_gaps(raw, PRIVATE_HEALTH_FIELD_ALIASES))
+    return private_health_unique_text(gaps)
+
+
+def private_health_statement_gaps(item: Any) -> List[str]:
+    if not isinstance(item, dict):
+        return ["confirm private health statement details"]
+    gaps: List[str] = []
+    if private_health_field_missing(item, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["insurer"]):
+        gaps.append("confirm insurer or health fund")
+    benefit_code = normalized_item_field(item, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["benefit_code"])
+    if not private_health_benefit_code_valid(benefit_code):
+        gaps.append(f"confirm benefit code ({private_health_raw_text(benefit_code)})")
+    premiums = normalized_item_field(
+        item,
+        PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["premiums_eligible_for_rebate"],
+    )
+    if private_health_amount_needs_evidence(premiums):
+        gaps.append(f"confirm premium amount ({private_health_raw_text(premiums)})")
+    rebate = normalized_item_field(item, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["rebate_received"])
+    if private_health_amount_needs_evidence(rebate):
+        gaps.append(f"confirm rebate amount ({private_health_raw_text(rebate)})")
+    tax_claim_code = normalized_item_field(item, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["tax_claim_code"])
+    if not private_health_tax_claim_code_valid(tax_claim_code):
+        gaps.append(f"confirm tax claim code ({private_health_raw_text(tax_claim_code)})")
+    statement_evidence = normalized_item_field(item, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["evidence"])
+    if evidence_missing(statement_evidence):
+        gaps.append(f"confirm statement evidence ({private_health_raw_text(statement_evidence)})")
+    gaps.extend(
+        private_health_period_gaps(
+            item,
+            PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES,
+            "statement cover period",
+            required=True,
+            partial_is_gap=False,
+        )
+    )
+    gaps.extend(private_health_record_gaps(item, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES))
+    return private_health_unique_text(gaps)
+
+
+def medicare_levy_gaps(raw: Dict[str, Any]) -> List[str]:
+    gaps: List[str] = []
+    reduction_raw = normalized_item_field(raw, MEDICARE_LEVY_FIELD_ALIASES["reduction"])
+    exemption_raw = normalized_item_field(raw, MEDICARE_LEVY_FIELD_ALIASES["exemption"])
+    reduction = private_health_flag_bool(reduction_raw)
+    exemption = private_health_flag_bool(exemption_raw)
+    if not is_missing(reduction_raw) and reduction is None:
+        gaps.append("resolve Medicare levy reduction uncertainty")
+    if not is_missing(exemption_raw) and exemption is None:
+        gaps.append("resolve Medicare levy exemption uncertainty")
+    evidence = normalized_item_field(raw, MEDICARE_LEVY_FIELD_ALIASES["evidence"])
+    if (reduction is True or exemption is True or contains_unknown(reduction_raw) or contains_unknown(exemption_raw)) and evidence_missing(evidence):
+        gaps.append("confirm Medicare levy reduction or exemption evidence")
+    if exemption is True:
+        category = normalized_item_field(raw, MEDICARE_LEVY_FIELD_ALIASES["exemption_category"])
+        if is_missing(category) or contains_unknown(category):
+            gaps.append("confirm Medicare levy exemption category")
+        full_days = normalized_item_field(raw, MEDICARE_LEVY_FIELD_ALIASES["full_exemption_days"])
+        half_days = normalized_item_field(raw, MEDICARE_LEVY_FIELD_ALIASES["half_exemption_days"])
+        if is_missing(full_days) and is_missing(half_days):
+            gaps.append("confirm full or half exemption days")
+    if exemption is False:
+        if not is_missing(normalized_item_field(raw, MEDICARE_LEVY_FIELD_ALIASES["exemption_category"])):
+            gaps.append("no-exemption answer conflicts with an exemption category")
+        if any(
+            (private_health_day_count(normalized_item_field(raw, MEDICARE_LEVY_FIELD_ALIASES[field])) or 0) > 0
+            for field in ("full_exemption_days", "half_exemption_days")
+        ):
+            gaps.append("no-exemption answer conflicts with exemption days")
+    for field, label in (
+        ("full_exemption_days", "full exemption days"),
+        ("half_exemption_days", "half exemption days"),
+    ):
+        value = normalized_item_field(raw, MEDICARE_LEVY_FIELD_ALIASES[field])
+        if not is_missing(value) and private_health_day_count(value) is None:
+            gaps.append(f"confirm {label} ({private_health_raw_text(value)})")
+    full_days = private_health_day_count(
+        normalized_item_field(raw, MEDICARE_LEVY_FIELD_ALIASES["full_exemption_days"])
+    )
+    half_days = private_health_day_count(
+        normalized_item_field(raw, MEDICARE_LEVY_FIELD_ALIASES["half_exemption_days"])
+    )
+    supplied_days = [value for value in (full_days, half_days) if value is not None]
+    if supplied_days and sum(supplied_days) > private_health_income_year_day_limit(raw):
+        gaps.append("full and half exemption days exceed the income year")
+    gaps.extend(private_health_record_gaps(raw, MEDICARE_LEVY_FIELD_ALIASES))
+    return private_health_unique_text(gaps)
+
+
+def mls_review_gaps(raw: Dict[str, Any]) -> List[str]:
+    gaps: List[str] = []
+    review_raw = normalized_item_field(raw, MLS_FIELD_ALIASES["review"])
+    cover_raw = normalized_item_field(raw, MLS_FIELD_ALIASES["appropriate_hospital_cover"])
+    cover = private_health_cover_bool(cover_raw)
+    income = normalized_item_field(raw, MLS_FIELD_ALIASES["income_for_surcharge"])
+    tier = normalized_item_field(raw, MLS_FIELD_ALIASES["income_tier"])
+    review = private_health_flag_bool(review_raw)
+    if not is_missing(review_raw) and review is None:
+        gaps.append("resolve Medicare levy surcharge review uncertainty")
+    if cover is None:
+        gaps.append("confirm appropriate private patient hospital cover")
+    if not is_missing(income) and private_health_amount_needs_evidence(income):
+        gaps.append(f"confirm surcharge income amount ({private_health_raw_text(income)})")
+    if not is_missing(tier) and not private_health_mls_tier_valid(tier):
+        gaps.append(f"confirm Medicare levy surcharge income tier ({private_health_raw_text(tier)})")
+    if cover is False and (is_missing(income) or private_health_amount_needs_evidence(income)) and (
+        is_missing(tier) or contains_unknown(tier)
+    ):
+        gaps.append("confirm Medicare levy surcharge income or tier facts")
+    if cover is True:
+        if private_health_partial_text(cover_raw):
+            gaps.append("confirm partial-year appropriate hospital cover")
+        gaps.extend(
+            private_health_period_gaps(
+                raw,
+                MLS_FIELD_ALIASES,
+                "hospital cover period",
+                required=True,
+                partial_is_gap=True,
+            )
+        )
+        days = normalized_item_field(raw, MLS_FIELD_ALIASES["hospital_cover_days"])
+        if private_health_day_count(days) == 0:
+            gaps.append("hospital cover is true but cover days is 0")
+    if cover is False:
+        days = normalized_item_field(raw, MLS_FIELD_ALIASES["hospital_cover_days"])
+        parsed_days = private_health_day_count(days)
+        if parsed_days is not None and parsed_days > 0:
+            gaps.append("no-cover answer conflicts with positive hospital cover days")
+    days_not_liable = normalized_item_field(raw, MLS_FIELD_ALIASES["days_not_liable"])
+    if not is_missing(days_not_liable) and private_health_day_count(days_not_liable) is None:
+        gaps.append(f"confirm days not liable ({private_health_raw_text(days_not_liable)})")
+    cover_days = private_health_day_count(
+        normalized_item_field(raw, MLS_FIELD_ALIASES["hospital_cover_days"])
+    )
+    not_liable_days = private_health_day_count(days_not_liable)
+    supplied_days = [value for value in (cover_days, not_liable_days) if value is not None]
+    if supplied_days and sum(supplied_days) > private_health_income_year_day_limit(raw):
+        gaps.append("hospital cover days and days not liable exceed the income year")
+    evidence = normalized_item_field(raw, MLS_FIELD_ALIASES["evidence"])
+    if (
+        (not is_missing(review_raw) and review is None)
+        or cover is None
+        or private_health_partial_text(cover_raw)
+        or private_health_partial_period(raw, MLS_FIELD_ALIASES)
+    ) and evidence_missing(evidence):
+        gaps.append("confirm Medicare levy surcharge cover evidence")
+    gaps.extend(private_health_record_gaps(raw, MLS_FIELD_ALIASES))
+    return private_health_unique_text(gaps)
+
+
+def spouse_review_gaps(raw: Dict[str, Any]) -> List[str]:
+    gaps: List[str] = []
+    had_raw = normalized_item_field(raw, SPOUSE_FIELD_ALIASES["had_spouse"])
+    had_spouse = private_health_spouse_bool(had_raw)
+    if had_spouse is False:
+        if private_health_record_has_field_inputs(raw, SPOUSE_FIELD_ALIASES, {"had_spouse"}):
+            gaps.append("no-spouse answer conflicts with supplied spouse period or income facts")
+        gaps.extend(private_health_record_gaps(raw, SPOUSE_FIELD_ALIASES))
+        return private_health_unique_text(gaps)
+    if had_spouse is None:
+        gaps.append("confirm whether taxpayer had a spouse")
+    gaps.extend(
+        private_health_period_gaps(
+            raw,
+            SPOUSE_FIELD_ALIASES,
+            "spouse period",
+            required=True,
+            partial_is_gap=False,
+        )
+    )
+    income = normalized_item_field(raw, SPOUSE_FIELD_ALIASES["income_for_tests"])
+    if private_health_amount_needs_evidence(income):
+        gaps.append(f"confirm spouse income for tests ({private_health_raw_text(income)})")
+    income_evidence = normalized_item_field(raw, SPOUSE_FIELD_ALIASES["income_evidence"])
+    if evidence_missing(income_evidence):
+        gaps.append(f"confirm spouse income evidence ({private_health_raw_text(income_evidence)})")
+    for field, label in (
+        ("reportable_fringe_benefits", "spouse reportable fringe benefits"),
+        ("reportable_super", "spouse reportable super"),
+        ("net_investment_loss", "spouse net investment loss"),
+    ):
+        value = normalized_item_field(raw, SPOUSE_FIELD_ALIASES[field])
+        if not is_missing(value) and private_health_amount_needs_evidence(value):
+            gaps.append(f"confirm {label} ({private_health_raw_text(value)})")
+    gaps.extend(private_health_record_gaps(raw, SPOUSE_FIELD_ALIASES))
+    return private_health_unique_text(gaps)
+
+
+def dependant_summary_gaps(summary: Dict[str, Any], items: List[Dict[str, Any]]) -> List[str]:
+    gaps: List[str] = []
+    count_raw = normalized_item_field(summary, DEPENDANT_SUMMARY_FIELD_ALIASES["count"])
+    count = private_health_nonnegative_integer(count_raw)
+    if count is None:
+        gaps.append(f"confirm dependant count ({private_health_raw_text(count_raw)})")
+    elif count > 0 and not items:
+        gaps.append("confirm dependant or student details")
+    elif items and count != len(items):
+        gaps.append(f"reconcile dependant count {count} with {len(items)} item rows")
+    gaps.extend(private_health_record_gaps(summary, DEPENDANT_SUMMARY_FIELD_ALIASES))
+    return private_health_unique_text(gaps)
+
+
+def dependant_item_gaps(item: Dict[str, Any]) -> List[str]:
+    gaps: List[str] = []
+    dependant_type = normalized_item_field(item, DEPENDANT_FIELD_ALIASES["type"])
+    if private_health_field_missing(item, DEPENDANT_FIELD_ALIASES["type"]):
+        gaps.append("confirm dependant child or student type")
+    elif not private_health_dependant_type_valid(dependant_type):
+        gaps.append(f"confirm dependant child or student type ({private_health_raw_text(dependant_type)})")
+    student = normalized_item_field(item, DEPENDANT_FIELD_ALIASES["student"])
+    student_flag = private_health_flag_bool(student)
+    if student_flag is None:
+        gaps.append("confirm dependant student status")
+    age = normalized_item_field(item, DEPENDANT_FIELD_ALIASES["age"])
+    if not is_missing(age) and private_health_nonnegative_integer(age) is None:
+        gaps.append(f"confirm dependant age ({private_health_raw_text(age)})")
+    gaps.extend(
+        private_health_period_gaps(
+            item,
+            DEPENDANT_FIELD_ALIASES,
+            "dependant maintenance period",
+            required=True,
+            partial_is_gap=False,
+        )
+    )
+    evidence = normalized_item_field(item, DEPENDANT_FIELD_ALIASES["evidence"])
+    if evidence_missing(evidence):
+        gaps.append(f"confirm dependant or student evidence ({private_health_raw_text(evidence)})")
+    income = normalized_item_field(item, DEPENDANT_FIELD_ALIASES["income_for_tests"])
+    if is_missing(income) and (student_flag is True or "student" in str(dependant_type).lower()):
+        gaps.append("confirm dependant student income for tests")
+    elif not is_missing(income) and private_health_amount_needs_evidence(income):
+        gaps.append(f"confirm dependant income for tests ({private_health_raw_text(income)})")
+    maintained = normalized_item_field(item, DEPENDANT_FIELD_ALIASES["maintained"])
+    if private_health_flag_bool(maintained) is None:
+        gaps.append("confirm dependant maintenance status")
+    shared_care = normalized_item_field(item, DEPENDANT_FIELD_ALIASES["shared_care"])
+    if not is_missing(shared_care) and not private_health_shared_care_valid(shared_care):
+        gaps.append(f"confirm shared care ({private_health_raw_text(shared_care)})")
+    gaps.extend(private_health_record_gaps(item, DEPENDANT_FIELD_ALIASES))
+    return private_health_unique_text(gaps)
+
+
+def private_health_period_gaps(
+    raw: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+    label: str,
+    *,
+    required: bool,
+    partial_is_gap: bool,
+) -> List[str]:
+    gaps: List[str] = []
+    income_year = raw.get("_income_year")
+    income_year_bounds = private_health_income_year_bounds(income_year)
+    income_year_days = private_health_income_year_day_limit(raw)
+    start = normalized_item_field(raw, field_aliases["period_start"])
+    end = normalized_item_field(raw, field_aliases["period_end"])
+    period = normalized_item_field(raw, field_aliases["period"])
+    days_alias = "days_covered" if "days_covered" in field_aliases else "hospital_cover_days"
+    days = normalized_item_field(raw, field_aliases[days_alias]) if days_alias in field_aliases else None
+    span_days: Optional[int] = None
+    explicit_interval: Optional[tuple[date, date]] = None
+    period_interval = private_health_period_interval(period, income_year)
+    if not is_missing(start) or not is_missing(end):
+        start_date = parse_iso_date(start) if not is_missing(start) else None
+        end_date = parse_iso_date(end) if not is_missing(end) else None
+        if start_date is None or end_date is None:
+            gaps.append(f"confirm {label} dates ({private_health_raw_text(start)} to {private_health_raw_text(end)})")
+        elif start_date > end_date:
+            gaps.append(f"confirm {label} date order ({start} to {end})")
+        else:
+            explicit_interval = (start_date, end_date)
+            span_days = (end_date - start_date).days + 1
+            if partial_is_gap and span_days < income_year_days:
+                gaps.append(f"confirm partial-year {label}")
+        if not is_missing(period):
+            if contains_unknown(period) or not private_health_period_value_supported(period):
+                gaps.append(f"confirm {label} ({private_health_raw_text(period)})")
+            elif period_interval is not None and explicit_interval is not None and period_interval != explicit_interval:
+                gaps.append(f"reconcile {label} dates with supplied period ({private_health_raw_text(period)})")
+    elif is_missing(period):
+        if required and is_missing(days):
+            gaps.append(f"confirm {label}")
+    elif contains_unknown(period):
+        gaps.append(f"confirm {label} ({private_health_raw_text(period)})")
+    elif not private_health_period_value_supported(period):
+        gaps.append(f"confirm {label} ({private_health_raw_text(period)})")
+    else:
+        if period_interval is not None:
+            span_days = (period_interval[1] - period_interval[0]).days + 1
+        if partial_is_gap and private_health_partial_text(period):
+            gaps.append(f"confirm partial-year {label}")
+    for interval in (explicit_interval, period_interval):
+        if interval is None or income_year_bounds is None:
+            continue
+        if interval[0] < income_year_bounds[0] or interval[1] > income_year_bounds[1]:
+            gaps.append(f"{label} dates are outside requested income year {private_health_raw_text(income_year)}")
+    if not is_missing(days):
+        parsed_days = private_health_day_count(days)
+        if parsed_days is None:
+            gaps.append(f"confirm {label} days ({private_health_raw_text(days)})")
+        elif parsed_days > income_year_days:
+            gaps.append(f"{label} days exceed requested income year ({parsed_days} > {income_year_days})")
+        elif span_days is not None and parsed_days != span_days:
+            gaps.append(f"reconcile {label} dates ({span_days} days) with supplied days ({parsed_days})")
+        elif partial_is_gap and 0 < parsed_days < income_year_days:
+            gaps.append(f"confirm partial-year {label} ({parsed_days} days)")
+    return private_health_unique_text(gaps)
+
+
+def private_health_statement_collection_gaps(
+    overview: Dict[str, Any],
+    statements: List[Dict[str, Any]],
+) -> List[str]:
+    if not statements:
+        return []
+    intervals: List[tuple[date, date]] = []
+    day_counts: List[int] = []
+    for item in statements:
+        interval = private_health_record_interval(item, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES)
+        if interval is not None:
+            intervals.append(interval)
+        days = private_health_day_count(
+            normalized_item_field(item, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["days_covered"])
+        )
+        if days is not None:
+            day_counts.append(days)
+    overview_interval = private_health_record_interval(overview, PRIVATE_HEALTH_FIELD_ALIASES)
+    overview_days = private_health_day_count(
+        normalized_item_field(overview, PRIVATE_HEALTH_FIELD_ALIASES["days_covered"])
+    )
+    expected_days = (
+        (overview_interval[1] - overview_interval[0]).days + 1
+        if overview_interval is not None
+        else overview_days
+    )
+    income_year_days = private_health_income_year_day_limit(overview)
+    if intervals:
+        if len(intervals) != len(statements):
+            return ["reconcile statement-line cover periods with the private hospital cover period"]
+        relationship_gap = private_health_interval_relationship_gap(intervals)
+        if relationship_gap:
+            return [relationship_gap]
+        union_days = private_health_interval_days(intervals)
+        if overview_interval is not None:
+            first = min(start for start, _ in intervals)
+            last = max(end for _, end in intervals)
+            if last < overview_interval[0] or first > overview_interval[1]:
+                return ["statement-line dates are outside the supplied income year"]
+            if first < overview_interval[0] or last > overview_interval[1]:
+                return ["statement-line dates fall outside the overview private hospital cover period"]
+            if first != overview_interval[0] or last != overview_interval[1]:
+                return ["reconcile statement-line dates with the supplied private hospital cover period"]
+        if expected_days is not None and union_days != expected_days:
+            return ["reconcile statement-line cover periods with the private hospital cover period"]
+        if expected_days is None and union_days != income_year_days:
+            return ["reconcile statement-line cover periods with the private hospital cover period"]
+        return []
+    if day_counts:
+        total_days = sum(day_counts)
+        target_days = expected_days if expected_days is not None else income_year_days
+        if total_days != target_days:
+            return ["reconcile statement-line cover days with the private hospital cover period"]
+    return []
+
+
+def private_health_interval_relationship_gap(intervals: List[tuple[date, date]]) -> str:
+    ordered = sorted(intervals)
+    previous_end: Optional[date] = None
+    for start, end in ordered:
+        if previous_end is not None:
+            if start <= previous_end:
+                return "statement-line cover periods overlap"
+            if start > previous_end + timedelta(days=1):
+                return "statement-line cover periods have a gap"
+        previous_end = max(previous_end, end) if previous_end is not None else end
+    return ""
+
+
+def private_health_record_interval(
+    raw: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> Optional[tuple[date, date]]:
+    start = normalized_item_field(raw, field_aliases["period_start"])
+    end = normalized_item_field(raw, field_aliases["period_end"])
+    if is_missing(start) or is_missing(end):
+        return private_health_period_interval(
+            normalized_item_field(raw, field_aliases["period"]),
+            raw.get("_income_year"),
+        )
+    start_date = parse_iso_date(start)
+    end_date = parse_iso_date(end)
+    if start_date is None or end_date is None or start_date > end_date:
+        return None
+    return start_date, end_date
+
+
+def private_health_income_year_bounds(value: Any) -> Optional[tuple[date, date]]:
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip().replace("–", "-").replace("—", "-")
+    match = re.fullmatch(r"(20\d{2})\s*[-/]\s*(\d{2}|20\d{2})", normalized)
+    if match is None:
+        return None
+    start_year = int(match.group(1))
+    end_text = match.group(2)
+    end_year = int(end_text) if len(end_text) == 4 else (start_year // 100) * 100 + int(end_text)
+    if end_year != start_year + 1:
+        return None
+    return date(start_year, 7, 1), date(end_year, 6, 30)
+
+
+def private_health_income_year_day_limit(raw: Any) -> int:
+    income_year = raw.get("_income_year") if isinstance(raw, dict) else raw
+    bounds = private_health_income_year_bounds(income_year)
+    return (bounds[1] - bounds[0]).days + 1 if bounds is not None else 366
+
+
+def private_health_period_interval(
+    value: Any,
+    income_year: Any,
+) -> Optional[tuple[date, date]]:
+    if not isinstance(value, str):
+        return None
+    normalized = re.sub(r"\s+", " ", value.strip().lower())
+    interval = private_health_parse_text_period(normalized)
+    if interval is not None:
+        return interval
+    interval = private_health_income_year_bounds(normalized)
+    if interval is not None:
+        return interval
+    if normalized in PRIVATE_HEALTH_FULL_YEAR_VALUES:
+        return private_health_income_year_bounds(income_year)
+    return None
+
+
+def private_health_interval_days(intervals: List[tuple[date, date]]) -> int:
+    total = 0
+    current_start: Optional[date] = None
+    current_end: Optional[date] = None
+    for start, end in sorted(intervals):
+        if current_start is None or current_end is None:
+            current_start, current_end = start, end
+        elif start <= current_end + timedelta(days=1):
+            current_end = max(current_end, end)
+        else:
+            total += (current_end - current_start).days + 1
+            current_start, current_end = start, end
+    if current_start is not None and current_end is not None:
+        total += (current_end - current_start).days + 1
+    return total
+
+
+def private_health_period_value_supported(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    normalized = re.sub(r"\s+", " ", value.strip().lower())
+    if private_health_partial_text(normalized):
+        return True
+    if normalized in PRIVATE_HEALTH_FULL_YEAR_VALUES:
+        return True
+    if private_health_income_year_bounds(normalized) is not None:
+        return True
+    return private_health_parse_text_period(normalized) is not None
+
+
+def private_health_parse_text_period(value: str) -> Optional[tuple[date, date]]:
+    parts = re.split(r"\s+(?:to|through|until)\s+", value.strip(), maxsplit=1)
+    if len(parts) != 2:
+        return None
+    start = private_health_parse_period_endpoint(parts[0], end=False)
+    end = private_health_parse_period_endpoint(parts[1], end=True)
+    if start is None or end is None or start > end:
+        return None
+    return start, end
+
+
+def private_health_parse_period_endpoint(value: str, *, end: bool) -> Optional[date]:
+    value = value.strip()
+    parsed = parse_iso_date(value)
+    if parsed is not None:
+        return parsed
+    for fmt in ("%d %B %Y", "%d %b %Y"):
+        try:
+            return datetime.strptime(value, fmt).date()
+        except ValueError:
+            pass
+    for fmt in ("%B %Y", "%b %Y"):
+        try:
+            parsed_month = datetime.strptime(value, fmt).date()
+        except ValueError:
+            continue
+        day = calendar.monthrange(parsed_month.year, parsed_month.month)[1] if end else 1
+        return date(parsed_month.year, parsed_month.month, day)
+    return None
+
+
+def private_health_record_has_field_inputs(
+    raw: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+    excluded: set[str],
+) -> bool:
+    for field, aliases in field_aliases.items():
+        if field in excluded or field in {"notes", "source_urls", "checked_at"}:
+            continue
+        value = normalized_item_field(raw, aliases)
+        if not is_missing(value) and (has_meaningful_value(value) or value is False):
+            return True
+    return False
+
+
+def private_health_mls_tier_valid(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    parsed = private_health_nonnegative_integer(value)
+    if parsed is not None:
+        return parsed <= 3
+    normalized = re.sub(r"[^a-z0-9]+", " ", str(value).lower()).strip()
+    if normalized in {"base", "base tier"} or re.fullmatch(r"tier\s*[0-3]", normalized):
+        return True
+    return "review" in normalized and any(term in normalized for term in ("income", "supplied", "threshold"))
+
+
+def private_health_dependant_type_valid(value: Any) -> bool:
+    if not isinstance(value, str) or contains_unknown(value):
+        return False
+    normalized = re.sub(r"[^a-z]+", " ", value.lower()).strip()
+    return any(term in normalized.split() for term in ("child", "student", "dependant", "dependent"))
+
+
+def private_health_shared_care_valid(value: Any) -> bool:
+    if private_health_flag_bool(value) is not None:
+        return True
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    try:
+        parsed = float(str(value).strip().rstrip("%"))
+    except ValueError:
+        parsed = math.nan
+    if math.isfinite(parsed):
+        return 0 <= parsed <= 100
+    normalized = re.sub(r"[^a-z]+", " ", str(value).lower()).strip()
+    return "shared care" in normalized
+
+
+def private_health_partial_period(raw: Dict[str, Any], field_aliases: Dict[str, tuple[str, ...]]) -> bool:
+    period = normalized_item_field(raw, field_aliases["period"])
+    if private_health_partial_text(period):
+        return True
+    days_alias = "days_covered" if "days_covered" in field_aliases else "hospital_cover_days"
+    days = normalized_item_field(raw, field_aliases[days_alias]) if days_alias in field_aliases else None
+    parsed_days = private_health_day_count(days)
+    return parsed_days is not None and 0 < parsed_days < private_health_income_year_day_limit(raw)
+
+
+def private_health_partial_text(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    normalized = value.lower()
+    return any(term in normalized for term in ("partial", "part year", "part-year", "some of the year"))
+
+
+def private_health_record_gaps(
+    raw: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> List[str]:
+    gaps: List[str] = []
+    conflicts = private_health_record_conflicts(raw, field_aliases)
+    if conflicts:
+        gaps.append(f"resolve alias conflict: {conflicts}")
+    unknown = private_health_unknown_values(raw, private_health_alias_set(field_aliases))
+    if unknown:
+        gaps.append(f"review supplemental facts {display_value(unknown)}")
+    return gaps
+
+
+def private_health_record_conflicts(
+    raw: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> str:
+    conflict_aliases = {
+        field: aliases
+        for field, aliases in field_aliases.items()
+        if field != "source_urls"
+    }
+    details = item_alias_conflict_details(raw, conflict_aliases)
+    source_conflicts = raw.get("_source_conflicts")
+    if isinstance(source_conflicts, list):
+        details.extend(display_value(value) for value in source_conflicts if display_value(value))
+    return "; ".join(private_health_unique_text(details))
+
+
+def private_health_append_record_details(
+    answer: str,
+    raw: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> str:
+    parts: List[str] = []
+    notes = normalized_item_field(raw, field_aliases.get("notes", ()))
+    if not is_missing(notes):
+        parts.append(f"notes {display_value(notes)}")
+    source_urls = normalized_item_field(raw, field_aliases.get("source_urls", ()))
+    if not is_missing(source_urls):
+        parts.append(f"supplied source URLs {display_value(source_urls)}")
+    checked_at = private_health_alias_values(raw, field_aliases.get("checked_at", ()))
+    if checked_at:
+        parts.append(f"supplied checked at {display_value(checked_at)}")
+    unknown = private_health_unknown_values(raw, private_health_alias_set(field_aliases))
+    if unknown:
+        parts.append(f"supplemental facts {display_value(unknown)}")
+    conflicts = private_health_record_conflicts(raw, field_aliases)
+    if conflicts:
+        parts.append(f"alias conflicts {conflicts}")
+    return f"{answer}; {'; '.join(parts)}" if parts else answer
+
+
+def private_health_alias_values(raw: Dict[str, Any], aliases: tuple[str, ...]) -> List[Any]:
+    values: List[Any] = []
+    for alias in aliases:
+        if alias not in raw or is_missing(raw[alias]):
+            continue
+        value = raw[alias]
+        values.extend(value if isinstance(value, list) else [value])
+    return private_health_unique_values(values)
+
+
+def private_health_row_sources(raw: Any, official_sources: List[str]) -> List[str]:
+    sources = list(official_sources)
+    if isinstance(raw, dict):
+        sources.extend(private_health_provenance_urls(raw))
+    return list(dict.fromkeys(sources))
+
+
+def private_health_provenance_urls(raw: Dict[str, Any]) -> List[str]:
+    aliases: List[str] = []
+    for field_aliases in (
+        PRIVATE_HEALTH_FIELD_ALIASES,
+        PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES,
+        MEDICARE_LEVY_FIELD_ALIASES,
+        MLS_FIELD_ALIASES,
+        SPOUSE_FIELD_ALIASES,
+        DEPENDANT_SUMMARY_FIELD_ALIASES,
+        DEPENDANT_FIELD_ALIASES,
+    ):
+        aliases.extend(field_aliases.get("source_urls", ()))
+    sources: List[str] = []
+    for key in dict.fromkeys(aliases):
+        if key not in raw:
+            continue
+        value = raw[key]
+        values = value if isinstance(value, list) else [value]
+        sources.extend(
+            item.strip()
+            for item in values
+            if isinstance(item, str) and item.strip().startswith(("https://", "http://"))
+        )
+    return list(dict.fromkeys(sources))
+
+
+def private_health_field_text(raw: Dict[str, Any], aliases: tuple[str, ...]) -> str:
+    return private_health_raw_text(normalized_item_field(raw, aliases))
+
+
+def private_health_amount_field_text(raw: Dict[str, Any], aliases: tuple[str, ...]) -> str:
+    return private_health_amount_text(normalized_item_field(raw, aliases))
+
+
+def private_health_bool_field_text(raw: Dict[str, Any], aliases: tuple[str, ...]) -> str:
+    return private_health_bool_text(normalized_item_field(raw, aliases))
+
+
+def private_health_raw_text(value: Any) -> str:
+    return display_value(value) if not is_missing(value) else "unknown"
+
+
+def private_health_amount_text(value: Any) -> str:
+    amount = safe_money_value(value)
+    return f"{amount:.2f}" if amount is not None else private_health_raw_text(value)
+
+
+def private_health_period_text(raw: Dict[str, Any], field_aliases: Dict[str, tuple[str, ...]]) -> str:
+    period = normalized_item_field(raw, field_aliases["period"])
+    start = normalized_item_field(raw, field_aliases["period_start"])
+    end = normalized_item_field(raw, field_aliases["period_end"])
+    if not is_missing(start) or not is_missing(end):
+        return f"{private_health_raw_text(start)} to {private_health_raw_text(end)}"
+    return private_health_raw_text(period)
+
+
+def private_health_bool_text(value: Any) -> str:
+    parsed = private_health_flag_bool(value)
+    if parsed is True:
+        return "true"
+    if parsed is False:
+        return "false"
+    return private_health_raw_text(value)
+
+
+def private_health_cover_bool(value: Any) -> Optional[bool]:
+    if contains_unknown(value):
+        return None
+    parsed = phone_bool(value)
+    if parsed is not None:
+        return parsed
+    if not isinstance(value, str):
+        return None
+    normalized = re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+    cover = r"(?:private\s+)?(?:hospital|health)?\s*(?:insurance|cover|covered|policy)"
+    if re.search(rf"\b(?:no|without)\s+(?:gaps?|breaks?|interruptions?)\b(?:\s+\w+){{0,4}}\s+\b{cover}\b", normalized):
+        return True
+    if private_health_partial_text(normalized):
+        return True
+    if re.search(rf"\b(no|not|without|never)\b(?:\s+\w+){{0,4}}\s+\b{cover}\b", normalized):
+        return False
+    if re.search(rf"\b(have|had|has|with|yes|full|appropriate)\b(?:\s+\w+){{0,4}}\s+\b{cover}\b", normalized):
+        return True
+    return None
+
+
+def private_health_spouse_bool(value: Any) -> Optional[bool]:
+    if contains_unknown(value):
+        return None
+    parsed = phone_bool(value)
+    if parsed is not None:
+        return parsed
+    if not isinstance(value, str):
+        return None
+    normalized = re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+    if re.search(r"\b(no longer|separated|part year|part of the year)\b(?:\s+\w+){0,4}\s+\b(spouse|partner)\b", normalized):
+        return None
+    if re.search(r"\b(no|not|without|never)\b(?:\s+\w+){0,3}\s+\b(spouse|partner)\b", normalized):
+        return False
+    if re.search(r"\b(have|had|has|with|yes)\b(?:\s+\w+){0,3}\s+\b(spouse|partner)\b", normalized):
+        return True
+    return None
+
+
+def private_health_flag_bool(value: Any) -> Optional[bool]:
+    if contains_unknown(value):
+        return None
+    return phone_bool(value)
+
+
+def private_health_amount_needs_evidence(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return True
+    amount = safe_money_value(value)
+    return amount is None or amount < 0
+
+
+def private_health_day_count(value: Any) -> Optional[int]:
+    parsed = private_health_nonnegative_integer(value)
+    if parsed is None or parsed > 366:
+        return None
+    return parsed
+
+
+def private_health_nonnegative_integer(value: Any) -> Optional[int]:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return None
+    try:
+        parsed = float(str(value).strip())
+    except ValueError:
+        return None
+    if not math.isfinite(parsed) or parsed < 0 or not parsed.is_integer():
+        return None
+    return int(parsed)
+
+
+def private_health_benefit_code_valid(value: Any) -> bool:
+    if is_missing(value) or contains_unknown(value) or isinstance(value, bool):
+        return False
+    return str(value).strip() in PRIVATE_HEALTH_SUPPORTED_BENEFIT_CODES
+
+
+def private_health_tax_claim_code_valid(value: Any) -> bool:
+    if is_missing(value) or contains_unknown(value) or isinstance(value, bool):
+        return False
+    return str(value).strip().upper() in {"A", "B", "C", "D", "E", "F"}
+
+
+def private_health_field_missing(raw: Dict[str, Any], aliases: tuple[str, ...]) -> bool:
+    value = normalized_item_field(raw, aliases)
+    return is_missing(value) or contains_unknown(value)
+
+
+def private_health_review_tab(subject: str, gaps: List[str]) -> str:
+    if gaps:
+        return f"{subject} stays accountant review and needs {', '.join(gaps)}."
+    return f"{subject} stays source-backed accountant review; no levy, surcharge, or rebate is calculated."
+
+
+def private_health_unique_text(values: List[str]) -> List[str]:
+    return list(dict.fromkeys(value for value in values if value))
 
 
 def deduction_rows(items: List[Dict[str, Any]], answers: Dict[str, Any]) -> List[Dict[str, Any]]:

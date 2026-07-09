@@ -8,6 +8,11 @@ Collect records before classifying anything as `Claim candidate`.
 - GST registration and creditable-purpose evidence where relevant
 - CGT acquisition, disposal, proceeds, cost-base, and adjustment records where relevant
 - logbooks, diaries, rosters, timesheets, or usage records where relevant
+- private health statement or pre-fill record for each statement line, including health insurer ID, membership number, premiums eligible for rebate, rebate received, benefit code, and cover days
+- private hospital cover start/end dates or supplied cover-day evidence, including partial-year or no-cover periods
+- supplied tax claim code support and any spouse-share or policy-period facts relied on
+- spouse period and income-test evidence plus dependant child or student facts
+- Medicare levy exemption or reduction evidence and Medicare levy surcharge income, family, and hospital-cover evidence
 
 Missing or altered evidence means `Insufficient evidence` or `Accountant review`, never a confirmed claim.
 

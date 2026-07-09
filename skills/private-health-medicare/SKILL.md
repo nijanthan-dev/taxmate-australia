@@ -61,3 +61,9 @@ Use for private health and Medicare levy questions. Do not use for deductibility
 - dates acquired, used, paid, received, and disposed
 - records held and missing evidence
 - prior claims, reimbursements, and duplicate-risk factors
+- one row for each private health statement line, including health insurer or fund, membership or policy identifier, benefit code, premiums eligible for rebate, rebate received, tax claim code, cover days or period, and statement evidence
+- private hospital cover status and full-year, partial-year, or no-cover periods
+- Medicare levy exemption or reduction signals and supporting evidence
+- Medicare levy surcharge income, tier, hospital-cover, spouse, and family review signals without calculating a surcharge
+- spouse period and spouse income-test facts plus dependant child or student facts
+- row-specific source URLs, checked-at provenance, evidence gaps, and Accountant review routing

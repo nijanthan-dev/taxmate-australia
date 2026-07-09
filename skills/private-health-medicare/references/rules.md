@@ -115,6 +115,12 @@ These are conservative topic summaries from official sources, not copied ATO pag
 - Do not claim source-backed treatment from metadata-only sources without explicit validation.
 
 ## Accountant-review boundaries
+Private health, Medicare levy, spouse, and dependant handling is structured through the individual-return runtime and remains review-first and prep-only. Keep each private health statement line separate. Collect health insurer or fund, membership or policy identifier, benefit code, premiums eligible for rebate, rebate received, tax claim code, cover days or period, and statement evidence. Also collect private hospital cover status, Medicare levy exemption or reduction signals, Medicare levy surcharge income or tier signals, spouse period and income-test facts, and dependant child or student facts.
+
+Missing or unknown statements, missing statement-line fields, no-cover or partial-year cover, malformed amounts or dates, unsupported benefit or tax claim codes, Medicare levy exemption or reduction ambiguity, Medicare levy surcharge uncertainty, and spouse or dependant uncertainty stay Evidence or `Accountant review`. Preserve source URLs, checked-at dates, free-form or unknown sibling facts, explicit evidence denials, and valid falsey values such as `false` spouse, `false` cover, `0` dependants, and supplied `0` premium, rebate, or cover-day amounts. Supplied zero or unsupported benefit and tax claim codes stay visible but remain Evidence or `Accountant review`; preservation does not make a code valid.
+
+Completed statement, Medicare levy, surcharge, spouse, and dependant rows stay `Accountant review`. Do not calculate the Medicare levy, Medicare levy surcharge, private health rebate, tax claim code, or final entitlement. Do not fill an official ATO form, lodge, or call the output final or copy-ready.
+
 - thresholds
 - family status
 - dependants

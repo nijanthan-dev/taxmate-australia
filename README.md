@@ -55,6 +55,7 @@ The current individual-return handoff includes:
 - intake summary and AI extraction confirmation table;
 - individual return field guide;
 - primary and secondary PAYG income statement rows with payer, ABN, occupation, gross, withholding, allowances, RFBA, RESC, lump sum labels, statement evidence, and aggregate reconciliation;
+- itemized private health statement lines with insurer or fund, membership or policy identifier, benefit code, premiums eligible for rebate, rebate received, tax claim code, cover days or period, statement evidence, and row-specific provenance, plus Medicare levy/surcharge, spouse, and dependant review rows;
 - itemized investment income rows for bank interest, dividends/franking, managed fund/ETF/AMIT distributions, and trust distribution routing;
 - general CGT event schedule and itemized non-crypto/non-rental CGT event rows with records, current-year and carried-forward loss facts, discount, foreign-resident discount, main residence, and small-business CGT concession review signals, source provenance, reconciliation prompts, and amount-not-worked-out wording;
 - itemized deduction rows for gifts/donations, tax affairs costs, income protection, self-education, union/professional fees, work travel/car/public transport, tools/equipment/assets, personal super contribution deduction prep, and offset routing, all with evidence and review queues;
@@ -71,13 +72,13 @@ Example guide from synthetic sample data. Shows the overview, prep boundary, man
 
 ![Example TaxMate Australia manual-copy worksheet for synthetic John Doe data](assets/readme/taxmate-guide-john-doe-worksheet.png)
 
-The lower handoff preview shows itemized deduction and personal-super rows with accountant-review tabs and row-level provenance. The generated HTML also includes offset routing, ABN prep, BAS worksheet, missing facts, evidence queue, accountant-review queue, and source/provenance appendix.
+The lower handoff preview shows itemized private health statement plus Medicare levy and surcharge review rows with accountant-review tabs and row-level provenance. The generated HTML also includes spouse and dependant review, investment, deduction, super and offset prep, ABN prep, BAS worksheet, missing facts, evidence queue, accountant-review queue, and source/provenance appendix.
 
 The sample data is synthetic. Screenshot maintenance is a contributor task documented in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## What It Does
 
-- Helps users prepare PAYG income statements, ABN/sole-trader facts, GST/BAS facts, investment statements, general CGT event and main residence exemption claim facts, rental property facts, crypto events, deductions, superannuation, private health, offsets, and other individual-return material.
+- Helps users prepare PAYG income statements, itemized private health statement and Medicare/spouse/dependant review facts, ABN/sole-trader facts, GST/BAS facts, investment statements, general CGT event and main residence exemption claim facts, rental property facts, crypto events, deductions, superannuation, offsets, and other individual-return material.
 - Keeps missing-evidence prompts, review queues, source-backed notes, and conservative `Accountant review` flags visible.
 - Keeps source URLs, checked-at dates, source coverage checks, and generated topic skills visible.
 - Audits verified source coverage against runtime/docs/tests status with `./scripts/taxmate coverage audit`.
@@ -115,6 +116,10 @@ Use the taxmate-australia-individual-return skill to prepare investment income r
 ```
 
 ```text
+Use the taxmate-australia-private-health-medicare skill to prepare separate private health statement lines from my insurer details, membership number, benefit codes, premiums eligible for rebate, rebate received, tax claim codes, cover days or periods, and statement evidence. Keep Medicare levy exemption or reduction signals, Medicare levy surcharge review facts, spouse periods and income-test facts, dependant child or student facts, missing evidence, false/zero values, source URLs, and checked-at dates visible. Do not calculate levy, surcharge, rebate, tax claim code, or final entitlement.
+```
+
+```text
 Use the taxmate-australia-individual-return skill to prepare itemized deduction rows from my gifts, tax agent fees, income protection, self-education, union fees, work travel, tools/assets, personal super contribution deduction facts, and offset signals. Keep receipts, reimbursements, employer-paid/provided flags, work/private splits, GST/BAS overlap, duplicate-risk, notice of intent, fund acknowledgement, cap/Division 293 review, and source provenance visible.
 ```
 
@@ -145,7 +150,7 @@ Use the installed TaxMate Australia plugin to prepare the print-first individual
 ```
 
 ```text
-I have a reviewed answers file. Use TaxMate to create the prep-only HTML handoff with the AI confirmation table, PAYG rows, investment rows, deduction/super/offset rows, CGT schedule and item rows, detailed ABN prep, BAS worksheet, review queues, and source/provenance appendix.
+I have a reviewed answers file. Use TaxMate to create the prep-only HTML handoff with the AI confirmation table, PAYG rows, private health statement and Medicare/spouse/dependant review rows, investment rows, deduction/super/offset rows, CGT schedule and item rows, detailed ABN prep, BAS worksheet, review queues, and source/provenance appendix.
 ```
 
 If you are using `npx skills` guidance only, the agent can build the checklist, review prompts, manual-copy guidance, and source-backed review flags in chat. Rendering the HTML file needs the plugin runtime.

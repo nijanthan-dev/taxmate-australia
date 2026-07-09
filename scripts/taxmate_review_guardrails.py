@@ -16,6 +16,7 @@ from typing import Callable, Iterable, List
 ROOT_MARKER = os.path.join(".codex-plugin", "plugin.json")
 TAXPACK_OUTPUT_LAYER = "taxpack_output_layer_contract"
 INDIVIDUAL_INTAKE_CONTRACT = "individual_intake_contract"
+PRIVATE_HEALTH_MEDICARE_CONTRACT = "private_health_medicare_contract"
 ATO_FETCH_BOUNDARY = "ato_fetch_boundary"
 GENERATED_ARTIFACT_CONTRACT = "generated_artifact_contract"
 FINANCE_JSON_WIRE_CONTRACT = "finance_json_wire_contract"
@@ -72,6 +73,45 @@ DEVELOPER_ONLY_PUBLIC_DOC_TERMS = [
     "claude plugin list",
 ]
 DEVELOPER_ONLY_PUBLIC_DOC_PATTERNS = []
+PRIVATE_HEALTH_MEDICARE_RUNTIME_FUNCTIONS = (
+    "private_health_medicare_answers",
+    "has_private_health_medicare_inputs",
+    "private_health_statement_answers",
+    "private_health_medicare_rows",
+    "private_health_statement_rows",
+    "private_health_medicare_evidence_rows",
+)
+PRIVATE_HEALTH_MEDICARE_SOURCE_BINDINGS = (
+    ("ATO_PRIVATE_HEALTH_STATEMENT_SOURCE", "ato-53b20854d6fb"),
+    ("ATO_PRIVATE_HEALTH_REBATE_CLAIM_SOURCE", "ato-3aea64d5fad8"),
+    ("ATO_MEDICARE_LEVY_SOURCE", "ato-6c86d5e34fe1"),
+    ("ATO_MLS_RETURN_SOURCE", "ato-6c536ed6d9ac"),
+    ("ATO_MLS_THRESHOLDS_SOURCE", "ato-92c78bc815df"),
+    ("ATO_MLS_FAMILY_DEPENDANTS_SOURCE", "ato-33a006afaddd"),
+    ("ATO_MLS_PAYING_SOURCE", "ato-cadde338173c"),
+)
+PRIVATE_HEALTH_MEDICARE_SOURCE_IDS = tuple(
+    sorted(source_id for _, source_id in PRIVATE_HEALTH_MEDICARE_SOURCE_BINDINGS)
+)
+PRIVATE_HEALTH_MEDICARE_TESTS = (
+    "RuntimeCoverageTests",
+    "PrivateHealthMedicareWorkflowTests",
+)
+PRIVATE_HEALTH_MEDICARE_DOCS = (
+    "docs/INDIVIDUAL_RETURN_PREP.md",
+    "skills/individual-return/SKILL.md",
+    "skills/private-health-medicare/references/rules.md",
+)
+PRIVATE_HEALTH_MEDICARE_ISOLATION_SYMBOLS = (
+    "PRIVATE_HEALTH_MEDICARE_FLAT_FIELD_ALIASES",
+    "private_health_flat_alias_subset",
+    "PRIVATE_HEALTH_SUPPORTED_BENEFIT_CODES",
+)
+PRIVATE_HEALTH_MEDICARE_TYPED_HELPERS = (
+    ("private_health_collection_entries", "List[Dict[str, Any]]"),
+    ("private_health_count_value", "Optional[int]"),
+    ("private_health_provenance_urls", "List[str]"),
+)
 
 
 @dataclass
@@ -227,6 +267,11 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
         "Issue #70 deduction/offset intake",
         INDIVIDUAL_INTAKE_CONTRACT,
         "Deduction, personal-super, and offset intake must keep source provenance specific to the row kind, gate GST/BAS sources on the deduction row's GST/BAS signal rather than global BAS inputs, match short deduction routing tokens such as car as whole words, classify software/tool items before broad licence/membership matches, surface offset evidence gaps when claim is omitted, uncertain, or only a supported offset type is supplied but suppress them for boolean or phrase-based negative claims, derive false-only structured placeholders from field alias maps including numeric 0 false defaults while preserving false flags attached to core facts, ignore boolean false amount-only placeholders while preserving zero amount rows, skip natural-language no-op scalar item entries and top-level scalar no-op aliases before row creation, keep partial reimbursement/employer-paid/provided and partial offset eligibility/review phrases in evidence instead of treating them as clean negatives, prefer concrete aliases over earlier unknown or serialized-false placeholders, compare 0/1 amount aliases as money rather than booleans, compare equivalent evidence/NOI/ack denials and boolean aliases by field-aware canonical meaning including negative boolean phrases, suppress negative review phrases before evidence gating, treat explicit document/evidence denials and false evidence/NOI/ack values as concrete facts, preserve false aliases in conflicting boolean alias groups, validate malformed personal-super contribution dates before clearing evidence, surface conflicting concrete aliases in row and evidence text, preserve scalar/free-form facts beside structured rows, inside mixed lists, in nested parent notes, under item alias keys beside item arrays, in note-only containers, in supplemental note dictionaries, in recognized item-level notes, in unrecognized dictionaries, in unrecognized/partially recognized dict list items, in partially recognized dictionaries with unknown sibling keys, and in recognized parent-level aliases beside nested item arrays across all deduction/super/offset alias groups without letting raw notes satisfy evidence/NOI/ack fields, keep receipt/statement/NOI/acknowledgement denials including bare not-sent/not-acknowledged and denial-only super NOI/ack wording in evidence queues, and keep recognized direct-item aliases such as description with their amount/evidence fields intact while keeping super-specific offset sources off spouse, zone/remote, other, unsupported, and scalar generic offset fallback rows while preserving them for super offset rows.",
+    ),
+    ReviewPattern(
+        "Issue #71 private health/Medicare intake",
+        PRIVATE_HEALTH_MEDICARE_CONTRACT,
+        "Private-health and Medicare intake must isolate namespaced flat aliases so generic keys from unrelated workflows never leak into this workflow; preserve direct, flat, nested, itemized, mixed scalar/dict, sibling, unknown, zero, and false values; distinguish explicit no/false and no-statement/not-held/not-supplied/not-received/missing/without denial variants from uncertainty; preserve each insurer statement and dependant as a distinct line; suppress metadata-only, empty, no-op, and default-false containers; validate supported benefit and tax-claim codes, amounts, dates, day ranges, counts, reconciliation, and contradictions; union every valid supplied provenance URL with only the matching verified statement, levy, MLS, and family/dependant sources; keep missing statements, partial-year cover, malformed periods, spouse/dependant uncertainty, levy exemption/reduction ambiguity, and MLS uncertainty in Evidence or Accountant review; and remain prep-only without final levy, surcharge, rebate, or lodgment advice.",
     ),
     ReviewPattern(
         "Release guardrails",
@@ -2230,6 +2275,134 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     return findings
 
 
+def check_private_health_medicare_contract(root: Path) -> List[Finding]:
+    intake = read(root, "scripts/taxmate_intake.py")
+    findings = fail_if_missing(
+        PRIVATE_HEALTH_MEDICARE_CONTRACT,
+        intake,
+        [
+            *(f"def {name}(" for name in PRIVATE_HEALTH_MEDICARE_RUNTIME_FUNCTIONS),
+            *(f"def {name}(" for name, _ in PRIVATE_HEALTH_MEDICARE_TYPED_HELPERS),
+            "PRIVATE_HEALTH_MEDICARE_FLAT_FIELD_ALIASES = {",
+            "def private_health_flat_alias_subset(",
+            "PRIVATE_HEALTH_SUPPORTED_BENEFIT_CODES = frozenset(",
+            "ATO_PRIVATE_HEALTH_STATEMENT_SOURCE =",
+            "ATO_PRIVATE_HEALTH_REBATE_CLAIM_SOURCE =",
+            "ATO_MEDICARE_LEVY_SOURCE =",
+            "ATO_MLS_RETURN_SOURCE =",
+            "ATO_MLS_THRESHOLDS_SOURCE =",
+            "ATO_MLS_FAMILY_DEPENDANTS_SOURCE =",
+            "ATO_MLS_PAYING_SOURCE =",
+            "ATO_PRIVATE_HEALTH_STATEMENT_SOURCES = [",
+            "ATO_MEDICARE_LEVY_SOURCES = [",
+            "ATO_MLS_SOURCES = [",
+            "ATO_SPOUSE_DEPENDANT_SOURCES = [",
+            "items.extend(private_health_medicare_rows(private_health_medicare))",
+            "rows.extend(private_health_medicare_evidence_rows(private_health_medicare))",
+        ],
+    )
+    for name in PRIVATE_HEALTH_MEDICARE_RUNTIME_FUNCTIONS:
+        if f"def {name}(" in intake and intake.count(f"{name}(") < 2:
+            findings.append(Finding(PRIVATE_HEALTH_MEDICARE_CONTRACT, f"runtime function not wired: {name}"))
+    for symbol in PRIVATE_HEALTH_MEDICARE_ISOLATION_SYMBOLS:
+        if symbol in intake and intake.count(symbol) < 2:
+            findings.append(Finding(PRIVATE_HEALTH_MEDICARE_CONTRACT, f"isolation symbol not wired: {symbol}"))
+    for name, return_type in PRIVATE_HEALTH_MEDICARE_TYPED_HELPERS:
+        if f"def {name}(" not in intake:
+            continue
+        signature = re.search(
+            rf"^def {re.escape(name)}\(.*?\)\s*->\s*{re.escape(return_type)}:",
+            intake,
+            re.DOTALL | re.MULTILINE,
+        )
+        if signature is None:
+            findings.append(
+                Finding(
+                    PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                    f"typed helper must return {return_type}: {name}",
+                )
+            )
+        if intake.count(f"{name}(") < 2:
+            findings.append(Finding(PRIVATE_HEALTH_MEDICARE_CONTRACT, f"typed helper not wired: {name}"))
+    mls_sources = re.search(r"ATO_MLS_SOURCES\s*=\s*\[(.*?)\]", intake, re.DOTALL)
+    if mls_sources is None or "ATO_MLS_PAYING_SOURCE" not in mls_sources.group(1):
+        findings.append(Finding(PRIVATE_HEALTH_MEDICARE_CONTRACT, "MLS paying source missing from ATO_MLS_SOURCES"))
+
+    try:
+        manifest = json.loads(read(root, "config/runtime-coverage.json"))
+    except (OSError, json.JSONDecodeError) as exc:
+        findings.append(Finding(PRIVATE_HEALTH_MEDICARE_CONTRACT, f"runtime coverage unreadable: {exc}"))
+        return findings
+    concepts = manifest.get("concepts")
+    if not isinstance(concepts, list):
+        findings.append(Finding(PRIVATE_HEALTH_MEDICARE_CONTRACT, "runtime coverage concepts must be a list"))
+        return findings
+    concept = next(
+        (
+            item
+            for item in concepts
+            if isinstance(item, dict) and item.get("id") == "private-health-medicare-spouse-dependants"
+        ),
+        None,
+    )
+    if concept is None:
+        findings.append(Finding(PRIVATE_HEALTH_MEDICARE_CONTRACT, "missing runtime coverage concept"))
+        return findings
+    try:
+        source_coverage = json.loads(read(root, "data/ato_knowledge_base/source_coverage.json"))
+    except (OSError, json.JSONDecodeError) as exc:
+        findings.append(Finding(PRIVATE_HEALTH_MEDICARE_CONTRACT, f"source coverage unreadable: {exc}"))
+        return findings
+    sources = source_coverage.get("sources")
+    if not isinstance(sources, list):
+        findings.append(Finding(PRIVATE_HEALTH_MEDICARE_CONTRACT, "source coverage sources must be a list"))
+        return findings
+    sources_by_id = {
+        str(source.get("source_id", "")): source
+        for source in sources
+        if isinstance(source, dict) and source.get("status") == "verified"
+    }
+    for constant_name, source_id in PRIVATE_HEALTH_MEDICARE_SOURCE_BINDINGS:
+        match = re.search(rf'^{re.escape(constant_name)}\s*=\s*"([^"]+)"', intake, re.MULTILINE)
+        if match is None:
+            continue
+        source = sources_by_id.get(source_id)
+        if source is None:
+            findings.append(
+                Finding(
+                    PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                    f"verified source binding missing: {constant_name} -> {source_id}",
+                )
+            )
+            continue
+        source_urls = {str(source.get("canonical_url", "")), str(source.get("original_url", ""))}
+        if match.group(1) not in source_urls:
+            findings.append(
+                Finding(
+                    PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                    f"runtime source binding mismatch: {constant_name} -> {source_id}",
+                )
+            )
+    expected_fields = {
+        "runtime_status": "structured",
+        "source_skills": ["private-health-medicare"],
+        "source_ids": list(PRIVATE_HEALTH_MEDICARE_SOURCE_IDS),
+        "runtime_functions": list(PRIVATE_HEALTH_MEDICARE_RUNTIME_FUNCTIONS),
+        "tests": list(PRIVATE_HEALTH_MEDICARE_TESTS),
+        "docs": list(PRIVATE_HEALTH_MEDICARE_DOCS),
+        "issue": "#71",
+    }
+    for field, expected in expected_fields.items():
+        if concept.get(field) != expected:
+            findings.append(
+                Finding(
+                    PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                    f"runtime coverage {field} must be {expected!r}",
+                )
+            )
+    return findings
+
+
 def check_fetch_boundary(root: Path) -> List[Finding]:
     text = read(root, "scripts/atodata.py")
     findings: List[Finding] = []
@@ -2853,6 +3026,7 @@ def render_review_patterns(fmt: str) -> str:
 CHECKS: List[Callable[[Path], List[Finding]]] = [
     check_taxpack_output_layer,
     check_individual_intake_contract,
+    check_private_health_medicare_contract,
     check_fetch_boundary,
     check_generated_artifact_contract,
     check_finance_and_calc_wire_contract,
