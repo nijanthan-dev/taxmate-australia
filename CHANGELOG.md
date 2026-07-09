@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.1](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.19.0...v0.19.1) (2026-07-09)
+
+
+### Bug Fixes
+
+* update discovery metadata ([26182a6](https://github.com/nijanthan-dev/taxmate-australia/commit/26182a6bf538cd35d982ccf427df14bb1a712a0c))
+
 ## [0.19.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.18.1...v0.19.0) (2026-07-08)
 
 
