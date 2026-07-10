@@ -33,6 +33,17 @@ SKILL_GUARDRAIL_NEEDLES = [
 ]
 PUBLIC_SKILL_PREFIX = "taxmate-australia"
 
+DESTINATION_INSTRUCTION_SOURCES = {
+    "ato-f99c3a4ad079": "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/medicare-and-private-health-insurance/private-health-insurance",
+    "ato-2a2cf8a8c462": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/medicare-levy-questions-m1-m2-individual-tax-return-2026/private-health-insurance-policy-details-2026",
+    "ato-4cedc9f93767": "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/medicare-and-private-health-insurance/medicare-levy-reduction-or-exemption",
+    "ato-39155fe09d00": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/medicare-levy-questions-m1-m2-individual-tax-return-2026/m1-medicare-levy-reduction-or-exemption-2026",
+    "ato-836a84c52e60": "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/medicare-and-private-health-insurance/medicare-levy-surcharge",
+    "ato-b8cc03014dc1": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/medicare-levy-questions-m1-m2-individual-tax-return-2026/m2-medicare-levy-surcharge-2026",
+    "ato-815a889d0a59": "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/other-mytax-instructions-including-spouse-details-and-income-tests/spouse-details",
+    "ato-29a73bbec8f5": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/spouse-details-married-or-de-facto-2026",
+}
+
 # Statuses
 StatusVerified = "verified"
 StatusMetadataOnly = "metadata_only"
@@ -717,6 +728,11 @@ def Generate(opts: Union[Options, dict]) -> GenerationReport:
     return GenerationReport(generated_at=checked_at, sources=report_sources)
 
 
+def destinationInstructionSource(rec: atodata.SourceRecord) -> bool:
+    canonical = canonicalURL(firstNonEmpty(rec.final_url, rec.url))
+    return DESTINATION_INSTRUCTION_SOURCES.get(sourceID(rec.url, canonical)) == canonical
+
+
 def syncRegistryWithVerifiedSources(registry: atodata.SourceRegistry, sources: List[Source]) -> None:
     by_id: Dict[str, atodata.SourceRecord] = {}
     for rec in registry.records:
@@ -856,7 +872,7 @@ def _build(
             src.assigned_skill = topic_match.slug
             src.assignment_reason = "topic match + verified source content"
             grouped.setdefault(topic_match.slug, []).append(src)
-            if record_text != "":
+            if record_text != "" and not destinationInstructionSource(rec):
                 values.setdefault(topic_match.slug, []).extend(detectValues(topic_match.slug, record_text, src))
         elif preserved_verified and preserved_skill:
             src.status = StatusVerified
@@ -915,6 +931,10 @@ def writeOutputLayers(root: str) -> None:
         body += "- Preserve `Accountant review` flags.\n"
         body += "- If input fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.\n"
         body += "- If explanation fields are blank, review queues must fall back to row number/status instead of rendering blank review items.\n"
+        body += "- Preserve the runtime-owned handoff action, destination or explicit non-entry/review wording, labelled facts, explanation, and provenance for every row and queue item.\n"
+        body += "- Preserve the seven runtime actions: enter reviewed value, answer guided question, retain evidence, resolve before entry, accountant handoff only, not entered directly, and destination requires review.\n"
+        body += "- Do not infer destinations from row names, broad topic URLs, source coverage alone, or unverified target labels; missing, malformed, conflicting, unsupported, or stale mappings fail closed.\n"
+        body += "- Mixed rows need field-level actions or safe row separation so one destination is not implied for unrelated facts.\n"
         body += "- Preserve valid falsey output values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.\n"
         body += "- Fixes from independent review must cover parsed input, file-backed data, direct renderer/workbook-row paths, generated artifacts, tests, validator, and documentation and instruction validation rules before another review is requested.\n"
         body += "- Falsey output fixes must cover metadata, row fields, list fields, provenance, fallback labels, anchors, and direct constructors.\n"
@@ -971,17 +991,39 @@ def skillMarkdown(topic_obj: Topic) -> str:
         "- Refuse requests to submit, lodge, file, transmit, finalise, or send prepared material to the ATO.",
         "- Do not present outputs as lodging-ready advice.",
         "",
-        "## Output states",
+        "## Runtime handoff contract",
         "",
-        "- Supported record",
-        "- Claim candidate",
-        "- Not claimable",
-        "- Insufficient evidence",
-        "- Accountant review",
-        "",
-        "## Required facts",
-        "",
+        "- When the full runtime creates an HTML handoff, the runtime owns each atomic fact's action, destination, explanation, and provenance. Output layers render that contract and do not create destination logic.",
+        "- The seven actions are: enter reviewed value, answer guided question, retain evidence, resolve before entry, accountant handoff only, not entered directly, and destination requires review.",
+        "- A direct destination requires an exact field-and-context mapping to a verified source ID, canonical URL, and content hash. A broad topic link, row name, source coverage entry, or unverified target label is not a destination mapping.",
+        "- Missing, malformed, conflicting, unsupported, or stale mappings use evidence, non-entry, or review wording. `Accountant review` overrides entry-ready wording.",
+        "- Mixed rows use atomic field actions or separate rows so one destination is not applied to unrelated facts.",
     ]
+    if topic_obj.slug == "private-health-medicare":
+        lines.extend(
+            [
+                "- Private health statement routes depend on the supplied tax claim code: A, B, and C can map the code and J/K/L fields in myTax and paper after review; D is read-only in myTax and maps the code and J/K/L fields on paper; E maps the code but not J/K/L in myTax and maps the code and J/K/L fields on paper; F maps the code but J/K/L are not entered in either channel.",
+                "- Medicare levy M1 maps the guided myTax exemption-category question and supported full/half exemption day fields; paper mapping is limited to verified labels V and W, while the generic paper category question requires review. An explicit no-exemption answer with no category or day values makes those detail fields not entered directly; supplied category or positive-day conflicts require review.",
+                "- Medicare levy surcharge M2 maps question E only from an explicit local answer to whether the user and all dependants had an appropriate level of private patient hospital cover for the full income year. A true answer also requires 365 supplied cover days, an explicit appropriate-cover signal, and no period conflict. Days not liable can map to paper label A only after an explicit No at E; myTax may skip its days field after the income check, so that channel keeps conditional review wording. E Yes makes the days field non-entry, and missing or conflicting E context requires review.",
+                "- The had-spouse question has a verified myTax destination. The generic paper had-spouse destination and spouse income aggregates require review unless an exact mapping is added.",
+                "- These mappings prepare questions and reviewed values only. They do not calculate a levy, surcharge, rebate, entitlement, or final tax.",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "## Output states",
+            "",
+            "- Supported record",
+            "- Claim candidate",
+            "- Not claimable",
+            "- Insufficient evidence",
+            "- Accountant review",
+            "",
+            "## Required facts",
+            "",
+        ]
+    )
     facts = [
         "income year or effective period",
         "taxpayer/entity and ownership",
@@ -1123,11 +1165,15 @@ def rulesMarkdown(topic_obj: Topic, sources: List[Source]) -> str:
     if topic_obj.slug == "private-health-medicare":
         lines.extend(
             [
-                "Private health, Medicare levy, spouse, and dependant handling is structured through the individual-return runtime and remains review-first and prep-only. Keep each private health statement line separate. Collect health insurer or fund, membership or policy identifier, benefit code, premiums eligible for rebate, rebate received, tax claim code, cover days or period, and statement evidence. Also collect private hospital cover status, Medicare levy exemption or reduction signals, Medicare levy surcharge income or tier signals, spouse period and income-test facts, and dependant child or student facts.",
+                "Private health, Medicare levy, spouse, and dependant handling is structured through the individual-return runtime and remains review-first and prep-only. Keep each private health statement line separate and each supplied value as an atomic labelled fact. Collect health insurer or fund, membership or policy identifier, benefit code, premiums eligible for rebate, rebate received, tax claim code, cover days or period, and statement evidence. Also collect private hospital cover status, Medicare levy exemption or reduction signals, Medicare levy surcharge income or tier signals, spouse period and income-test facts, and dependant child or student facts.",
                 "",
                 "Missing or unknown statements, missing statement-line fields, no-cover or partial-year cover, malformed amounts or dates, unsupported benefit or tax claim codes, Medicare levy exemption or reduction ambiguity, Medicare levy surcharge uncertainty, and spouse or dependant uncertainty stay Evidence or `Accountant review`. Recursively exclude blank or no-op note and metadata containers before alias merge or rendering so they cannot create rows, shadow concrete aliases, or appear as supplemental facts; preserve every real sibling in a mixed container. Normalize explicit dependant collection or count denials to integer 0 before collection filtering, and keep denial-plus-positive count or item conflicts visible. Treat temporal, partial, mixed, or qualified-negative cover wording as review input before categorical no-cover classification. Carry matching valid source URLs and checked-at dates onto the review row whenever supplemental facts survive. Preserve source URLs, checked-at dates, free-form or unknown sibling facts, explicit evidence denials, and valid falsey values such as `false` spouse, `false` cover, `0` dependants, and supplied `0` premium, rebate, or cover-day amounts. Supplied zero or unsupported benefit and tax claim codes stay visible but remain Evidence or `Accountant review`; preservation does not make a code valid.",
                 "",
-                "Completed statement, Medicare levy, surcharge, spouse, and dependant rows stay `Accountant review`. Do not calculate the Medicare levy, Medicare levy surcharge, private health rebate, tax claim code, or final entitlement. Do not fill an official ATO form, lodge, or call the output final or copy-ready.",
+                "Direct private-health destinations require a supported tax claim code. For codes A, B, and C, the code and J/K/L fields can map to verified myTax and paper locations after review. Code D is read-only in myTax and maps the code and J/K/L fields on paper. Code E maps the code but not J/K/L in myTax and maps the code and J/K/L fields on paper. Code F maps the code while J/K/L are not entered in myTax or paper. Insurer identifiers, membership identifiers, cover periods, and evidence remain supporting or non-entry facts.",
+                "",
+                "For M1, the runtime may map the verified myTax exemption-category question plus supported full and half exemption day fields. Paper mapping is limited to verified labels V and W; the generic paper category question requires review. False-plus-category or positive-day conflicts, true-plus-no-positive-day conflicts, and invalid totals require review. For M2, question E requires an explicit local answer to whether the user and all dependants had an appropriate level of private patient hospital cover for the full income year. A true answer also requires 365 supplied cover days, an explicit appropriate-cover signal, and no period conflict. Days not liable can map to paper label A only after an explicit No at E; myTax may skip its days field after the income check, so that channel keeps conditional review wording. E Yes makes the days field non-entry, and missing or conflicting E context requires review. The had-spouse question has a verified myTax destination; the generic paper had-spouse destination and spouse income aggregates require review.",
+                "",
+                "Completed statement, Medicare levy, surcharge, spouse, and dependant rows stay `Accountant review`; a verified destination supplies context but never weakens that action. Do not calculate the Medicare levy, Medicare levy surcharge, private health rebate, tax claim code, or final entitlement. Do not fill an official ATO form, lodge, or call the output final or entry-ready.",
                 "",
             ]
         )
@@ -1204,6 +1250,8 @@ def assignTopic(rec: atodata.SourceRecord, text: str) -> tuple[Topic, int]:
         ("shares-funds-and-trusts", "shares-etfs-managed-funds"),
         ("property-and-capital-gains-tax", "property-rental-cgt"),
         ("residential-rental-properties", "property-rental-cgt"),
+        ("mytax-instructions/2026/other-mytax-instructions-including-spouse-details-and-income-tests/spouse-details", "private-health-medicare"),
+        ("individual-tax-return-2026-instructions/spouse-details-married-or-de-facto-2026", "private-health-medicare"),
         ("medicare-and-private-health-insurance", "private-health-medicare"),
         ("super-for-individuals-and-families", "superannuation"),
         ("super-for-employers", "superannuation"),

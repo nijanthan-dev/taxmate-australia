@@ -51,7 +51,7 @@ Read `references/rules.md` before building an intake or handoff.
 ## Hard Safety Boundary
 
 - Never lodge, file, submit, transmit, or finalise any return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency.
-- Produce preparation output only: missing facts, evidence requests, copy guidance, review flags, and an HTML handoff when a full runtime is available.
+- Produce preparation output only: missing facts, evidence requests, manual-copy handoff guidance with the structured action contract, review flags, and an HTML handoff when a full runtime is available.
 - Do not call any output file lodgment-ready, filing-ready, submit-ready, or final.
 - Keep `Accountant review` flags visible.
 - Do not auto-use AI-extracted values. Show the value, document, page or context, confidence, and target label; use it only after the user confirms it.
@@ -64,7 +64,7 @@ Read `references/rules.md` before building an intake or handoff.
 | Topic-specific tax treatment | Route to the installed TaxMate Australia topic skill. |
 | Missing or unknown facts | Keep a missing-facts or evidence queue item visible. |
 | Full runtime is available | Use it only for deterministic handoff rendering after review. |
-| Manual-copy handoff | Use manual-copy handoff guidance; use full runtime for HTML handoff generation when a full runtime is available. |
+| Manual-copy handoff guidance | Use the structured action contract; use full runtime for HTML handoff generation when it is available. |
 
 ## Common Mistakes
 
@@ -133,4 +133,8 @@ Do not fully handle company, trust, partnership, full supplementary, complete CG
 
 ## Output Contract
 
-When full runtime execution is available, the final handoff is HTML only. It must include prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, PAYG income statement rows, itemized private health statement and Medicare/spouse/dependant review rows, deduction/super/offset rows, phone plan/device/incidental rows where supplied, itemized investment income rows, CGT schedule and item rows, ABN prep, BAS worksheet, missing facts, evidence queue, accountant-review queue, and source/provenance appendix.
+When full runtime execution is available, the final handoff is HTML only. It must include the prep-only boundary, intake summary, AI extraction confirmation cards, action-card context index, atomic labelled facts, next actions, verified destinations or explicit non-entry/review wording, explanations, PAYG income statement rows, itemized private health and Medicare/spouse/dependant rows, deduction/super/offset rows, phone plan/device/incidental rows where supplied, itemized investment income rows, CGT schedule and item rows, ABN prep, BAS worksheet, missing-fact/evidence/accountant-review queues, and row-associated provenance.
+
+The runtime owns the seven actions: enter reviewed value, answer guided question, retain evidence, resolve before entry, accountant handoff only, not entered directly, and destination requires review. Output layers render this contract. They do not infer destinations from row names, broad topic URLs, source coverage, or unverified AI target labels. Direct destinations require an exact field-and-context mapping to a verified source ID, canonical URL, and content hash. Missing, malformed, conflicting, unsupported, or stale mapping state retains evidence, non-entry, or review wording. `Accountant review` overrides entry-ready wording.
+
+Private-health routes depend on the supplied tax claim code. A/B/C can map the code and J/K/L fields in myTax and paper after review. D is read-only in myTax and maps the code and J/K/L fields on paper. E maps the code but not J/K/L in myTax and maps the code and J/K/L fields on paper. F maps the code while J/K/L are not entered in either channel. M1 maps supported myTax category/full-day/half-day questions and paper labels V/W; the generic paper category question requires review. M2 question E requires an explicit local answer to whether the user and all dependants had an appropriate level of private patient hospital cover for the full income year. A true answer also requires 365 supplied cover days, an explicit appropriate-cover signal, and no period conflict. Days not liable can map to paper label A only after an explicit No at E; myTax may skip its days field after the income check, so that channel retains conditional review wording. E Yes makes the days field non-entry, and missing or conflicting E context requires review. The had-spouse answer maps to a verified myTax question; its generic paper destination and spouse income aggregates require review. These routes do not calculate levy, surcharge, rebate, entitlement, or final tax.

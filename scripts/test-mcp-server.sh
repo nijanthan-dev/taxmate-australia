@@ -153,7 +153,7 @@ if (fs.existsSync(path.join(root, "relative-answers.json")) || fs.existsSync(pat
 }
 
 const guide = fs.readFileSync(guidePath, "utf8");
-for (const token of ["Self-prepared HTML guide", "Accountant review", "Manual copy only"]) {
+for (const token of ["Self-prepared HTML guide", "Accountant review", "Return fields and next actions"]) {
   if (!guide.includes(token)) fail(`HTML guide missing ${token}`);
 }
 NODE

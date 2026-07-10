@@ -1839,6 +1839,38 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-29a73bbec8f5",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/spouse-details-married-or-de-facto-2026",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/spouse-details-married-or-de-facto-2026",
+      "source_title": "Spouse details \u2013 married or de facto 2026",
+      "source_last_updated": "2026-05-30T01:50:00.000+00:00",
+      "checked_at": "2026-07-10T06:27:48Z",
+      "content_hash": "29f2101f9c146bcfd111bd457799c3eb049a6a725b4362175ea4abb4670c99fe",
+      "status": "verified",
+      "skills": [
+        "private-health-medicare"
+      ],
+      "references": [
+        "skills/private-health-medicare/references/rules.md",
+        "skills/private-health-medicare/references/sources.json"
+      ],
+      "covered_concepts": [
+        "MLS",
+        "Medicare",
+        "health statement",
+        "medicare",
+        "medicare-levy",
+        "medicare-levy-surcharge",
+        "private health",
+        "private-health-insurance",
+        "private-health-insurance-rebate",
+        "rebate"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
       "source_id": "ato-29aa57e52c7a",
       "original_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work/keeping-records-for-depreciating-assets",
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work/keeping-records-for-depreciating-assets",
@@ -1869,6 +1901,38 @@
         "travel",
         "wages",
         "work-related"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-2a2cf8a8c462",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/medicare-levy-questions-m1-m2-individual-tax-return-2026/private-health-insurance-policy-details-2026",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/medicare-levy-questions-m1-m2-individual-tax-return-2026/private-health-insurance-policy-details-2026",
+      "source_title": "Private health insurance policy details 2026",
+      "source_last_updated": "2026-05-30T02:16:00.000+00:00",
+      "checked_at": "2026-07-10T06:27:17Z",
+      "content_hash": "38a3018c329e8c1e168a6b169a35530c730f89f1a199bc834e81488003117cc6",
+      "status": "verified",
+      "skills": [
+        "private-health-medicare"
+      ],
+      "references": [
+        "skills/private-health-medicare/references/rules.md",
+        "skills/private-health-medicare/references/sources.json"
+      ],
+      "covered_concepts": [
+        "MLS",
+        "Medicare",
+        "health statement",
+        "medicare",
+        "medicare-levy",
+        "medicare-levy-surcharge",
+        "private health",
+        "private-health-insurance",
+        "private-health-insurance-rebate",
+        "rebate"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",
@@ -2845,6 +2909,38 @@
         "shares",
         "similar-investments",
         "trust-non-assessable"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-39155fe09d00",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/medicare-levy-questions-m1-m2-individual-tax-return-2026/m1-medicare-levy-reduction-or-exemption-2026",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/medicare-levy-questions-m1-m2-individual-tax-return-2026/m1-medicare-levy-reduction-or-exemption-2026",
+      "source_title": "M1 Medicare levy reduction or exemption 2026",
+      "source_last_updated": "2026-05-30T02:15:00.000+00:00",
+      "checked_at": "2026-07-10T06:27:17Z",
+      "content_hash": "272598694ee4ca50ee47cef9b8130dbd93a7c16dbcdb868aedeeaed5abc752b7",
+      "status": "verified",
+      "skills": [
+        "private-health-medicare"
+      ],
+      "references": [
+        "skills/private-health-medicare/references/rules.md",
+        "skills/private-health-medicare/references/sources.json"
+      ],
+      "covered_concepts": [
+        "MLS",
+        "Medicare",
+        "health statement",
+        "medicare",
+        "medicare-levy",
+        "medicare-levy-surcharge",
+        "private health",
+        "private-health-insurance",
+        "private-health-insurance-rebate",
+        "rebate"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",
@@ -3855,6 +3951,38 @@
         "shares",
         "similar-investments",
         "trust-non-assessable"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-4cedc9f93767",
+      "original_url": "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/medicare-and-private-health-insurance/medicare-levy-reduction-or-exemption",
+      "canonical_url": "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/medicare-and-private-health-insurance/medicare-levy-reduction-or-exemption",
+      "source_title": "myTax 2026 Medicare levy reduction or exemption",
+      "source_last_updated": "2026-07-01T14:00:00.000+00:00",
+      "checked_at": "2026-07-10T06:27:17Z",
+      "content_hash": "2c7c4e2623459a338d146c41899f7a3b5ad5f2ea70c1b95640d950e9cad6d23c",
+      "status": "verified",
+      "skills": [
+        "private-health-medicare"
+      ],
+      "references": [
+        "skills/private-health-medicare/references/rules.md",
+        "skills/private-health-medicare/references/sources.json"
+      ],
+      "covered_concepts": [
+        "MLS",
+        "Medicare",
+        "health statement",
+        "medicare",
+        "medicare-levy",
+        "medicare-levy-surcharge",
+        "private health",
+        "private-health-insurance",
+        "private-health-insurance-rebate",
+        "rebate"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",
@@ -6066,6 +6194,38 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-815a889d0a59",
+      "original_url": "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/other-mytax-instructions-including-spouse-details-and-income-tests/spouse-details",
+      "canonical_url": "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/other-mytax-instructions-including-spouse-details-and-income-tests/spouse-details",
+      "source_title": "myTax 2026 Spouse details",
+      "source_last_updated": "2026-05-31T22:39:00.000+00:00",
+      "checked_at": "2026-07-10T06:27:18Z",
+      "content_hash": "ea256593bfa3b5d30a4cc742970e6a88d02c9645ccb2db497ae4b1e35728d016",
+      "status": "verified",
+      "skills": [
+        "private-health-medicare"
+      ],
+      "references": [
+        "skills/private-health-medicare/references/rules.md",
+        "skills/private-health-medicare/references/sources.json"
+      ],
+      "covered_concepts": [
+        "MLS",
+        "Medicare",
+        "health statement",
+        "medicare",
+        "medicare-levy",
+        "medicare-levy-surcharge",
+        "private health",
+        "private-health-insurance",
+        "private-health-insurance-rebate",
+        "rebate"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
       "source_id": "ato-82327abab0b1",
       "original_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work",
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work",
@@ -6170,6 +6330,38 @@
         "non-commercial",
         "personal-services-income",
         "sole trader"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-836a84c52e60",
+      "original_url": "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/medicare-and-private-health-insurance/medicare-levy-surcharge",
+      "canonical_url": "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/medicare-and-private-health-insurance/medicare-levy-surcharge",
+      "source_title": "myTax 2026 Medicare levy surcharge",
+      "source_last_updated": "2026-05-31T22:22:00.000+00:00",
+      "checked_at": "2026-07-10T06:27:18Z",
+      "content_hash": "ef48900dec7c99657f728f1751f49f83fd3eea6ff5d9401476cffc5554874f24",
+      "status": "verified",
+      "skills": [
+        "private-health-medicare"
+      ],
+      "references": [
+        "skills/private-health-medicare/references/rules.md",
+        "skills/private-health-medicare/references/sources.json"
+      ],
+      "covered_concepts": [
+        "MLS",
+        "Medicare",
+        "health statement",
+        "medicare",
+        "medicare-levy",
+        "medicare-levy-surcharge",
+        "private health",
+        "private-health-insurance",
+        "private-health-insurance-rebate",
+        "rebate"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",
@@ -7952,7 +8144,7 @@
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/claiming-deductions",
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
-      "checked_at": "2026-07-05T01:52:00Z",
+      "checked_at": "2026-07-10T06:27:48Z",
       "content_hash": "",
       "status": "duplicate",
       "skills": [],
@@ -8094,6 +8286,38 @@
         "non-commercial",
         "personal-services-income",
         "sole trader"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-b8cc03014dc1",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/medicare-levy-questions-m1-m2-individual-tax-return-2026/m2-medicare-levy-surcharge-2026",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/medicare-levy-questions-m1-m2-individual-tax-return-2026/m2-medicare-levy-surcharge-2026",
+      "source_title": "M2 Medicare levy surcharge 2026",
+      "source_last_updated": "2026-05-30T02:15:00.000+00:00",
+      "checked_at": "2026-07-10T06:27:18Z",
+      "content_hash": "b604f09774f9a6ee18e63d98afa7fee9e678cb6f7429b1f71fba9a5a0797c163",
+      "status": "verified",
+      "skills": [
+        "private-health-medicare"
+      ],
+      "references": [
+        "skills/private-health-medicare/references/rules.md",
+        "skills/private-health-medicare/references/sources.json"
+      ],
+      "covered_concepts": [
+        "MLS",
+        "Medicare",
+        "health statement",
+        "medicare",
+        "medicare-levy",
+        "medicare-levy-surcharge",
+        "private health",
+        "private-health-insurance",
+        "private-health-insurance-rebate",
+        "rebate"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",
@@ -10689,6 +10913,38 @@
         "tax invoice",
         "tax-invoices",
         "when-to-charge-gst"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-f99c3a4ad079",
+      "original_url": "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/medicare-and-private-health-insurance/private-health-insurance",
+      "canonical_url": "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/medicare-and-private-health-insurance/private-health-insurance",
+      "source_title": "myTax 2026 Private health insurance",
+      "source_last_updated": "2026-05-31T22:33:00.000+00:00",
+      "checked_at": "2026-07-10T06:27:17Z",
+      "content_hash": "da3592fbaa5668af33905a526362d13a976695834084d0d0f8b7bbc405e4d1d1",
+      "status": "verified",
+      "skills": [
+        "private-health-medicare"
+      ],
+      "references": [
+        "skills/private-health-medicare/references/rules.md",
+        "skills/private-health-medicare/references/sources.json"
+      ],
+      "covered_concepts": [
+        "MLS",
+        "Medicare",
+        "health statement",
+        "medicare",
+        "medicare-levy",
+        "medicare-levy-surcharge",
+        "private health",
+        "private-health-insurance",
+        "private-health-insurance-rebate",
+        "rebate"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",

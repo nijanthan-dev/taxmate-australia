@@ -95,11 +95,15 @@ def output_docs_readme_fixture(extra: str = "") -> str:
         "The plugin runtime produces a print-first HTML handoff\n"
         "custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable\n"
         "manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff\n"
-        "AI extraction confirmation table\n"
-        "individual return field guide\n"
+        "Each worksheet card shows the supplied facts as labelled bullets\n"
+        "exact verified myTax/paper destination or explicit non-entry/review wording\n"
+        "The runtime-owned handoff taxonomy is\n"
+        "Output layers render this contract and do not infer destinations\n"
+        "intake summary and AI extraction confirmation\n"
+        "individual return action cards with labelled fact bullets\n"
         "ABN prep section and BAS worksheet\n"
         "missing facts queue, evidence queue, and accountant-review queue\n"
-        "source/provenance appendix\n"
+        "row-associated supporting provenance and verified destination-mapping sources\n"
         "The sample data is synthetic\n"
         "Screenshot maintenance is a contributor task documented in [docs/DEVELOPMENT.md]\n"
         + extra
@@ -149,7 +153,15 @@ def output_docs_surface_fixture(extra: str = "") -> str:
         "not final tax advice\n"
         "not fileable\n"
         "manually copy reviewed values\n"
-        "AI extraction confirmation table\n"
+        "action-card context index\n"
+        "labelled fact bullets\n"
+        "verified myTax/paper destinations or explicit non-entry/review wording\n"
+        "row-associated provenance\n"
+        "Every worksheet row and queue item uses the same runtime-owned handoff contract\n"
+        "labelled supplied facts\n"
+        "verified destination or explicit non-entry/review wording\n"
+        "Output layers render that contract and do not infer destinations\n"
+        "The seven handoff actions are\n"
         "missing facts queue\n"
         "evidence queue\n"
         "evidence gaps\n"
@@ -263,6 +275,45 @@ class PngCropTests(unittest.TestCase):
 class ReviewGuardrailTests(unittest.TestCase):
     def test_review_guardrails_pass_current_repo(self) -> None:
         self.assertEqual([], taxmate_review_guardrails.run(ROOT))
+
+    def test_handoff_guardrail_rejects_renderer_mapping_and_stale_source_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel in (
+                "scripts/taxmate_handoff.py",
+                "scripts/taxmate_intake.py",
+                "scripts/taxmate_taxpack.py",
+                "scripts/taxmate_validate.py",
+                "config/handoff-destinations.json",
+                "data/ato_knowledge_base/source_coverage.json",
+                "data/ato_knowledge_base/source_registry.json",
+                "tests/test_handoff_contract.py",
+            ):
+                destination = root / rel
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ROOT / rel, destination)
+
+            taxpack_path = root / "scripts/taxmate_taxpack.py"
+            taxpack_path.write_text(
+                taxpack_path.read_text(encoding="utf-8") + "\n# phi-premiums-j\n",
+                encoding="utf-8",
+            )
+            manifest_path = root / "config/handoff-destinations.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["destinations"]["phi-premiums-j"]["mytax"]["content_hash"] = "0" * 64
+            unrelated = manifest["destinations"]["m1-full-days-v"]["paper"]
+            manifest["destinations"]["phi-premiums-j"]["paper"].update(
+                source_id=unrelated["source_id"],
+                content_hash=unrelated["content_hash"],
+            )
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+            findings = taxmate_review_guardrails.check_handoff_contract(root)
+
+        details = [finding.detail for finding in findings]
+        self.assertTrue(any("output layer contains destination mapping identifiers" in detail for detail in details))
+        self.assertTrue(any("coverage hash mismatch" in detail for detail in details))
+        self.assertTrue(any("source is unrelated to the verified destination" in detail for detail in details))
 
     def test_private_health_guardrail_rejects_verified_but_wrong_source_binding(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -693,7 +744,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             "def text_value(): pass\n"
             "def source_urls(): pass\n"
             "def render_provenance(): pass\n"
-            "def is_review_like_key(): pass\n"
+            "taxmate_handoff.effective_status_kind()\n"
             "def effective_status_kind(): pass\n"
             "def effective_tab_kind(): pass\n"
             "def review_text(): pass\n"
@@ -708,8 +759,9 @@ class ReviewGuardrailTests(unittest.TestCase):
 
         findings = taxmate_review_guardrails.check_taxpack_output_layer_text(text)
 
-        self.assertTrue(any("def rendered_tab_items(" in finding.detail for finding in findings))
-        self.assertTrue(any("queue_item_text" in finding.detail for finding in findings))
+        self.assertTrue(any("taxmate_handoff.normalize_row_contract(" in finding.detail for finding in findings))
+        self.assertTrue(any("def build_render_rows(" in finding.detail for finding in findings))
+        self.assertTrue(any("def render_review_queue(rows: List[RenderRow])" in finding.detail for finding in findings))
         self.assertTrue(any("data.abn_items" in finding.detail for finding in findings))
         self.assertTrue(any("data.bas_items" in finding.detail for finding in findings))
 
@@ -1234,12 +1286,18 @@ class ReviewGuardrailTests(unittest.TestCase):
                 "print-first HTML handoff\ncustom preparation aid\nnot an ATO form\n"
                 "not lodgment software\nnot final tax advice\nnot fileable\n"
                 "manually copy reviewed values\nmissing facts\nevidence gaps\nAccountant review\n"
-                "source/provenance appendix\n"
+                "source/provenance appendix\naction-card context index\nlabelled fact bullets\n"
+                "verified myTax/paper destinations or explicit non-entry/review wording\n"
+                "row-associated provenance\n"
             )
             good_prep = (
                 "prep-only\nmanual-copy handoff\ndoes not lodge\nPlugin Runtime Path\n"
                 "Node.js 20+ for the MCP launcher\nOpen the HTML\n"
-                "prep-only boundary\nmanual-copy warning\nAI extraction confirmation table\nsource/provenance appendix\n"
+                "prep-only boundary\nmanual-copy warning\nsource/provenance appendix\n"
+                "Every worksheet row and queue item uses the same runtime-owned handoff contract\n"
+                "labelled supplied facts\nverified destination or explicit non-entry/review wording\n"
+                "Output layers render that contract and do not infer destinations\n"
+                "The seven handoff actions are\n"
             )
             (root / "README.md").write_text(readme, encoding="utf-8")
             (docs / "INSTALLATION.md").write_text("Plugin Install\n", encoding="utf-8")
@@ -2754,8 +2812,13 @@ class IndividualIntakeTests(unittest.TestCase):
         html = taxmate_taxpack.render_html(data)
 
         self.assertIn("Managed fund/ETF/AMIT distribution statement item", html)
-        self.assertIn("foreign components false", html)
+        self.assertIn(
+            '<span class="fact-label">Foreign components</span><span class="fact-value">false</span>',
+            html,
+        )
         self.assertIn("Trust distribution routing for individual beneficiary", html)
+        self.assertIn("Accountant handoff only", html)
+        self.assertIn("Destination requires review", html)
         self.assertIn(taxmate_intake.INVESTMENT_SOURCES[0], html)
 
     def test_complex_payment_workflows_render_statement_backed_review(self) -> None:
@@ -2939,10 +3002,15 @@ class IndividualIntakeTests(unittest.TestCase):
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
 
-        self.assertIn("Employment termination payments", body)
-        self.assertIn("Lump sum payment in arrears", body)
-        self.assertIn("Superannuation lump sum or income stream", body)
-        self.assertIn("ETP needs source-backed accountant review.", body)
+        self.assertIn("ETP payment summary workflow", body)
+        self.assertIn("Lump sum in arrears workflow", body)
+        self.assertIn("Super lump sum or income stream workflow", body)
+        self.assertIn(
+            '<span class="fact-label">Taxable component</span><span class="fact-value">12000</span>',
+            body,
+        )
+        self.assertIn("Accountant handoff only", body)
+        self.assertIn("Destination requires review", body)
         self.assertNotIn("lodgment-ready", body)
 
     def test_complex_payment_sources_are_registered_and_covered(self) -> None:
@@ -3919,9 +3987,13 @@ class IndividualIntakeTests(unittest.TestCase):
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
 
-        self.assertIn("Foreign and worldwide income", body)
-        self.assertIn("Foreign income needs source-backed accountant review.", body)
-        self.assertIn("foreign tax paid 0.00", body)
+        self.assertIn("Foreign income, residency, and tax offset workflow", body)
+        self.assertIn(
+            '<span class="fact-label">Prepared foreign tax paid total</span><span class="fact-value">0.0</span>',
+            body,
+        )
+        self.assertIn("Accountant handoff only", body)
+        self.assertIn("Destination requires review", body)
         self.assertNotIn("lodgment-ready", body)
 
     def test_foreign_income_sources_are_registered_and_covered(self) -> None:
@@ -4092,11 +4164,17 @@ class IndividualIntakeTests(unittest.TestCase):
 
     def test_psi_review_row_appears_in_html_pack(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        row = next(item for item in payload["items"] if item["number"] == "PSI")
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
 
         self.assertIn("Personal services income", body)
-        self.assertIn("PSI tests, attribution, deductions, and structure stay accountant review before manual copy.", body)
-        self.assertIn("80% test false", body)
+        self.assertIn(
+            "PSI tests, attribution, deductions, and structure require accountant review before entry.",
+            row["tab_text"],
+        )
+        self.assertIn("Accountant handoff only", body)
+        self.assertIn("Destination requires review", body)
+        self.assertIn("80% test false", row["answer"])
         self.assertNotIn("lodgment-ready", body)
 
     def test_psi_sources_are_registered_and_covered(self) -> None:
@@ -5406,14 +5484,17 @@ class IndividualIntakeTests(unittest.TestCase):
 
     def test_crypto_review_row_appears_in_html_pack(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
 
         self.assertIn("Crypto asset investments", body)
         self.assertIn(
-            "Crypto disposals, swaps, exchanges, conversions, rewards, transfers, wallet records, and cost base stay accountant review before manual copy.",
-            body,
+            "Crypto disposals, swaps, exchanges, conversions, rewards, transfers, wallet records, and cost base require accountant review before entry.",
+            row["tab_text"],
         )
-        self.assertIn("business use false", body)
+        self.assertIn("Accountant handoff only", body)
+        self.assertIn("Destination requires review", body)
+        self.assertIn("business use false", row["answer"])
         self.assertNotIn("lodgment-ready", body)
 
     def test_crypto_sources_are_registered_and_covered(self) -> None:
@@ -7396,17 +7477,29 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("per-property rental evidence", row["tab_text"])
         self.assertIn("private-use apportionment evidence", row["tab_text"])
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
-        self.assertIn("<b>Accountant review queue:</b>", body)
-        self.assertIn("Rental property worksheet needs", body)
-        self.assertIn("stays accountant review", body)
+        self.assertIn("<h3>Accountant review queue</h3>", body)
+        self.assertIn(
+            '<span class="fact-label">Rental property item 1 - Address</span><span class="fact-value">Unit 1</span>',
+            body,
+        )
+        self.assertIn(
+            '<span class="fact-label">Rental property item 2 - Address</span><span class="fact-value">Holiday unit</span>',
+            body,
+        )
+        self.assertIn("Accountant handoff only", body)
+        self.assertIn("Destination requires review", body)
 
     def test_rental_property_review_row_appears_in_html_pack(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
 
-        self.assertIn("Rental property worksheet", body)
-        self.assertIn("Rental property worksheet stays accountant review", body)
-        self.assertIn("net rental loss review", body)
+        self.assertIn("Rental income, interest, repairs/capital, private use, depreciation, and net loss review", body)
+        self.assertIn(
+            '<span class="fact-label">Private use</span><span class="fact-value">true</span>',
+            body,
+        )
+        self.assertIn("Accountant handoff only", body)
+        self.assertIn("Destination requires review", body)
         self.assertNotIn("lodgment-ready", body)
 
     def test_rental_property_sources_are_registered_and_covered(self) -> None:
@@ -7720,7 +7813,7 @@ class IndividualIntakeTests(unittest.TestCase):
             (
                 "CRYPTO-CGT",
                 {"crypto": {**complete_crypto, "rewards_income": "no staking rewards"}},
-                "accountant review before manual copy",
+                "accountant review before entry",
                 "no staking rewards",
             ),
             (
@@ -9564,12 +9657,16 @@ class IndividualIntakeTests(unittest.TestCase):
 
     def test_payg_html_pack_shows_provenance_and_review_queue(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        row = next(item for item in payload["items"] if item["number"] == "PAYG-1")
+        reconciliation = next(item for item in payload["items"] if item["number"] == "PAYG-RECON")
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
 
         self.assertIn("PAYG income statement item", body)
-        self.assertIn("PAYG statement stays accountant review before manual copy.", body)
+        self.assertIn("PAYG statement requires accountant review before entry.", row["tab_text"])
+        self.assertIn("Accountant handoff only", body)
+        self.assertIn("Destination requires review", body)
         self.assertIn("https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/employment-income", body)
-        self.assertIn("PAYG statement totals reconcile to supplied aggregates", body)
+        self.assertIn("PAYG statement totals reconcile to supplied aggregates", reconciliation["tab_text"])
         self.assertNotIn("lodgment-ready", body)
 
     def test_payg_sources_are_registered_and_covered(self) -> None:
@@ -9598,16 +9695,21 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("No-PAYG plus facts", rules)
         self.assertIn("`0` withheld", rules)
         self.assertIn("direct alias conflicts", rules)
-        self.assertIn("PAYG income statement rows", docs)
+        self.assertIn("For PAYG salary and wages prep", docs)
+        self.assertIn("collect each income statement by payer", docs)
         self.assertIn("primary and secondary PAYG income statement rows", readme)
 
     def test_ess_review_row_appears_in_html_pack(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
 
-        self.assertIn("Employee share schemes", body)
-        self.assertIn("ESS discounts need statement-backed accountant review.", body)
-        self.assertIn("foreign-source discount 300.00", body)
+        self.assertIn("ESS statement and discount workflow", body)
+        self.assertIn(
+            '<span class="fact-label">Prepared foreign-source discount total</span><span class="fact-value">300.0</span>',
+            body,
+        )
+        self.assertIn("Accountant handoff only", body)
+        self.assertIn("Destination requires review", body)
         self.assertNotIn("lodgment-ready", body)
 
     def test_ess_sources_are_registered_and_covered(self) -> None:
@@ -9721,15 +9823,17 @@ class IndividualIntakeTests(unittest.TestCase):
         data = taxmate_taxpack.load_guide_payload(payload)
         body = taxmate_taxpack.render_html(data)
 
-        self.assertIn("AI extraction confirmation table", body)
+        self.assertIn("<h2>AI extraction confirmation</h2>", body)
         self.assertIn("PAYG gross", body)
         self.assertIn("<span class=\"status gap\">Evidence</span>", body)
+        self.assertIn("Resolve before entry", body)
+        self.assertIn("Destination requires review", body)
 
     def test_ai_extracted_values_require_literal_true_confirmation(self) -> None:
         rows = taxmate_intake.extraction_rows(
             [
                 {"field": "gross", "value": "100", "confirmed": "false"},
-                {"field": "tax", "value": "30", "confirmed": True},
+                {"field": "tax", "value": "30", "confirmed": True, "document": "income statement"},
             ]
         )
 
@@ -10291,7 +10395,15 @@ class IndividualIntakeTests(unittest.TestCase):
 
             self.assertEqual(0, result)
             body = output_path.read_text(encoding="utf-8")
-            self.assertIn("unknown hours; fixed-rate candidate unknown", body)
+            self.assertIn(
+                '<span class="fact-label">Work-from-home hours</span><span class="fact-value">unknown</span>',
+                body,
+            )
+            self.assertIn(
+                '<span class="fact-label">Prepared fixed-rate candidate</span><span class="fact-value">unknown</span>',
+                body,
+            )
+            self.assertIn("Resolve before entry", body)
             self.assertNotIn("0.00 hours; fixed-rate candidate 0.00", body)
 
     def test_wfh_unknown_hours_remain_evidence(self) -> None:
@@ -10342,7 +10454,17 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("unknown hours; fixed-rate candidate unknown", rows[0]["answer"])
 
     def test_intake_rows_use_generation_checked_at(self) -> None:
-        row = taxmate_intake.guide_row("N", "Area", "Question", "Answer", "Why", "Used", "https://example.test")
+        row = taxmate_intake.guide_row(
+            "N",
+            "Area",
+            "Question",
+            "Answer",
+            "Why",
+            "Used",
+            "https://example.test",
+            row_kind="external-row",
+            facts=[{"key": "answer", "label": "Question", "value": "Answer"}],
+        )
 
         self.assertEqual(taxmate_intake.generation_checked_at(), row["checked_at"])
 
@@ -10743,16 +10865,18 @@ class IndividualIntakeTests(unittest.TestCase):
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
 
-        self.assertIn("Manual copy only", body)
-        self.assertIn("AI extraction confirmation table", body)
-        self.assertIn("ABN prep section", body)
-        self.assertIn("BAS worksheet", body)
-        self.assertIn("Missing facts queue", body)
+        self.assertIn("Manual review required", body)
+        self.assertIn("AI extraction confirmation", body)
+        self.assertIn("ABN preparation", body)
+        self.assertIn("BAS preparation", body)
         self.assertIn("Evidence queue", body)
+        self.assertIn("Review-required queue", body)
         self.assertIn("Source/provenance appendix", body)
         self.assertNotIn("lodgment-ready", body)
         self.assertNotIn("Prepared by " + "TaxMate", body)
-        self.assertIn("<b>Evidence queue</b>", body)
+        self.assertIn("<h2>Evidence queue</h2>", body)
+        self.assertIn('class="queue-action"', body)
+        self.assertIn('class="queue-destination"', body)
         self.assertNotIn("<b>Row Private health statement Evidence</b>", body)
 
     def test_extended_review_rows_appear_in_tabs_and_queue(self) -> None:
@@ -10765,10 +10889,15 @@ class IndividualIntakeTests(unittest.TestCase):
         payload = taxmate_intake.answers_to_pack_payload(answers)
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
 
-        self.assertIn('data-target="row-201-ABN"', body)
-        self.assertIn('data-target="row-301-BAS"', body)
-        self.assertIn("ABN prep only", body)
-        self.assertIn("BAS prep only. No BAS lodgment support.", body)
+        self.assertIn('href="#row-abn-1-ABN"', body)
+        self.assertIn('href="#row-bas-1-BAS"', body)
+        self.assertIn('id="row-abn-1-ABN"', body)
+        self.assertIn('id="row-bas-1-BAS"', body)
+        self.assertIn("Sole-trader ABN profile, income, expenses, and review routing", body)
+        self.assertIn("GST/BAS prep worksheet labels and evidence", body)
+        self.assertIn("Accountant handoff only", body)
+        self.assertIn("Destination requires review", body)
+        self.assertNotIn("lodgment-ready", body)
 
     def test_deep_abn_profile_preserves_nested_falsey_and_review_flags(self) -> None:
         rows = taxmate_intake.abn_rows(
@@ -12830,7 +12959,7 @@ class TaxpackGuideTests(unittest.TestCase):
             taxmate_taxpack.load_guide_data(None).generated_date,
         )
 
-    def test_sample_guide_matches_approved_tab_contract(self) -> None:
+    def test_sample_guide_matches_handoff_card_contract(self) -> None:
         data = taxmate_taxpack.load_guide_data(None)
 
         body = taxmate_taxpack.render_html(data)
@@ -12839,50 +12968,37 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("Prepared by user", body)
         self.assertIn("Not an ATO form", body)
         self.assertIn("Not fileable", body)
-        self.assertIn("Prep boundary", body)
-        self.assertIn("--bg:#e9eef4", body)
-        self.assertIn("background:#fff0f1", body)
-        self.assertIn("background:#eef5ff", body)
-        self.assertIn("background:#effbf4", body)
-        self.assertIn("background:#fff7dc", body)
-        self.assertIn("left:-64px", body)
-        self.assertIn(".table th,.table td{overflow-wrap:anywhere;word-break:break-word}", body)
-        self.assertIn(".table th:nth-child(1),.table td:nth-child(1){width:9%;padding-left:4px", body)
-        self.assertIn(".status{display:block;width:100%;min-width:0;max-width:100%", body)
-        self.assertIn(".tab{border:0;border-left:10px solid currentColor;font:inherit;text-align:left}", body)
-        self.assertIn('<span class="tab-text">', body)
-        self.assertNotRegex(body, r'<button[^>]*class="tab[^"]*"[^>]*>.*?<p>')
-        self.assertIn("@media screen and (max-width:720px)", body)
-        self.assertIn(".book{display:block;width:100%;margin:0}", body)
-        self.assertIn(".watermark{display:none}", body)
-        self.assertIn(".table{min-width:700px}", body)
-        self.assertIn("top:auto!important", body)
-        self.assertIn("event.key==='Enter'||event.key===' '", body)
-        self.assertIn("spotlight-target", body)
-        self.assertIn("show all tabs", body.lower())
-        self.assertIn("hide tabs", body.lower())
-        self.assertIn("Tax items and review flags", body)
-        self.assertIn("ATO-aligned manual copy worksheet", body)
-        self.assertIn("<th>Source</th>", body)
+        self.assertIn("Preparation aid only", body)
+        self.assertIn("--bg:#eef2f6", body)
+        self.assertIn('class="handoff-card', body)
+        self.assertIn('class="fact-list"', body)
+        self.assertIn("Next action", body)
+        self.assertIn("Where it belongs", body)
+        self.assertIn("Destination requires review", body)
+        self.assertIn("Supporting source", body)
+        self.assertIn("Source/provenance appendix", body)
+        self.assertNotIn('<span class="tab-text">', body)
+        self.assertIn("@media screen and (max-width:520px)", body)
+        self.assertNotIn("min-width:700px", body.replace(" ", ""))
+        self.assertIn("break-inside:avoid-page", body.replace(" ", ""))
+        self.assertIn("Show all", body)
+        self.assertIn("Accountant review", body)
+        self.assertIn("Return fields and next actions", body)
         self.assertIn("source-url", body)
         self.assertIn("Checked 2026-06-23T09:04:57Z", body)
-        self.assertNotIn("Deductions and review flags", body)
-        self.assertNotIn("ATO-aligned deduction worksheet", body)
-        self.assertNotIn("target-dot", body)
-        self.assertNotIn("border-radius:50%", body)
-        self.assertNotIn("Global warning", body)
+        self.assertNotIn("<table", body)
         self.assertNotIn("Prepared by " + "TaxMate", body)
 
-    def test_guide_tabs_resolve_to_existing_anchors(self) -> None:
+    def test_guide_context_links_resolve_to_existing_anchors(self) -> None:
         data = taxmate_taxpack.load_guide_data(None)
         body = taxmate_taxpack.render_html(data)
-        targets = set(re.findall(r'data-target="([^"]+)"', body))
-        anchors = set(re.findall(r'data-anchor="([^"]+)"', body))
+        targets = set(re.findall(r'href="#(row-[^"]+)"', body))
+        anchors = set(re.findall(r'id="(row-[^"]+)"', body))
 
         self.assertTrue(targets)
         self.assertEqual(set(), targets - anchors)
-        self.assertIn("function findTarget", body)
-        self.assertNotIn("querySelector('[data-anchor=\"'+tab.dataset.target", body)
+        self.assertEqual(set(), anchors - targets)
+        self.assertNotIn("querySelector('[data-anchor=\"'+", body)
 
     def test_guide_does_not_query_user_controlled_anchor_selectors(self) -> None:
         item = taxmate_taxpack.guide_item(
@@ -12905,10 +13021,9 @@ class TaxpackGuideTests(unittest.TestCase):
 
         body = taxmate_taxpack.render_html(data)
 
-        self.assertIn('data-anchor="row-1-D&quot;1"', body)
-        self.assertIn('data-target="row-1-D&quot;1"', body)
-        self.assertIn("findTarget(spread,tab.dataset.target)", body)
-        self.assertNotIn("tab.dataset.target+'", body)
+        self.assertIn('id="row-main-1-D-1"', body)
+        self.assertIn('href="#row-main-1-D-1"', body)
+        self.assertNotIn("querySelector('[data-anchor=", body)
 
     def test_guide_anchors_stay_unique_for_duplicate_item_numbers(self) -> None:
         item_payload = {
@@ -12931,15 +13046,13 @@ class TaxpackGuideTests(unittest.TestCase):
         )
 
         body = taxmate_taxpack.render_html(data)
-        row_anchors = re.findall(r'<td data-anchor="([^"]+)"', body)
-        row_targets = [
-            target
-            for target in re.findall(r'<button type="button" class="tab [^"]+" data-target="([^"]+)"', body)
-            if target.startswith("row-")
-        ]
+        row_anchors = re.findall(r'<article class="handoff-card[^"]*" id="([^"]+)"', body)
+        context_index = re.search(r'<details class="context-index">[\s\S]*?</details>', body)
+        self.assertIsNotNone(context_index)
+        row_targets = re.findall(r'href="#([^"]+)"', context_index.group(0))
 
-        self.assertEqual(["row-1-D1", "row-2-D1"], row_anchors)
-        self.assertEqual(["row-1-D1", "row-2-D1"], row_targets)
+        self.assertEqual(["row-main-1-D1", "row-main-2-D1"], row_anchors)
+        self.assertEqual(["row-main-1-D1", "row-main-2-D1"], row_targets)
         self.assertEqual(len(row_anchors), len(set(row_anchors)))
 
     def test_custom_guide_input_escapes_values_and_shortens_status(self) -> None:
@@ -12999,9 +13112,16 @@ class TaxpackGuideTests(unittest.TestCase):
 
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
 
-        self.assertIn("<td>AI1</td><td></td><td></td><td>gross</td><td>100</td><td></td><td></td><td><span class=\"status gap\">Evidence</span></td>", body)
-        self.assertIn("<td>AI2</td><td></td><td></td><td>tax</td><td>30</td><td></td><td></td><td><span class=\"status used\">Used</span></td>", body)
-        self.assertIn("<td>AI3</td><td></td><td></td><td>review</td><td>x</td><td></td><td></td><td><span class=\"status review-badge\">Accountant review</span></td>", body)
+        self.assertIn('id="row-ai-1-AI1"', body)
+        self.assertIn('<span class="fact-value">100</span>', body)
+        self.assertIn('<span class="status gap">Evidence</span>', body)
+        self.assertIn('id="row-ai-2-AI2"', body)
+        self.assertIn('<span class="fact-value">30</span>', body)
+        self.assertIn('<span class="status gap">Evidence</span>', body)
+        self.assertIn('id="row-ai-3-AI3"', body)
+        self.assertIn('<span class="fact-value">x</span>', body)
+        self.assertIn('<span class="status review-badge">Accountant review</span>', body)
+        self.assertIn("Destination requires review", body)
 
     def test_malformed_taxpack_sections_remain_visible_review_rows(self) -> None:
         payload = {
@@ -13025,8 +13145,8 @@ class TaxpackGuideTests(unittest.TestCase):
 
         self.assertIn("Malformed missing_facts input", body)
         self.assertIn("Malformed evidence_items-1 input", body)
-        self.assertIn("class=\"tab red review\"", body)
-        self.assertIn("(Accountant review)", body)
+        self.assertIn('class="handoff-card status-review"', body)
+        self.assertIn('<span class="status review-badge">Accountant review</span>', body)
         self.assertNotIn("No items supplied.", body)
 
     def test_malformed_taxpack_extraction_input_stays_review(self) -> None:
@@ -13050,6 +13170,7 @@ class TaxpackGuideTests(unittest.TestCase):
 
         self.assertIn("AI-MALFORMED-1", body)
         self.assertIn("Malformed AI extraction input", body)
+        self.assertIn('id="row-ai-1-AI-MALFORMED-1"', body)
         self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
 
     def test_guide_preserves_source_provenance(self) -> None:
@@ -13082,6 +13203,8 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn(f'<span class="source-url">{second_url}</span>', body)
         self.assertIn('<span class="checked-at">Checked 2026-06-28T00:00:00Z</span>', body)
         self.assertEqual(1, body.count(f'<span class="source-url">{source_url}</span>'))
+        self.assertIn('href="#row-main-1-9"', body)
+        self.assertIn('<span class="source-id">Source 1</span>', body)
 
     def test_guide_preserves_skipped_statuses(self) -> None:
         payload = {
@@ -13112,8 +13235,8 @@ class TaxpackGuideTests(unittest.TestCase):
         body = taxmate_taxpack.render_html(data)
 
         self.assertIn("<span class=\"status skipped\">N/A skipped</span>", body)
-        self.assertIn("class=\"tab grey\"", body)
-        self.assertIn("No review-only items supplied.", body)
+        self.assertIn("class=\"context-link tab grey\"", body)
+        self.assertNotIn('class="review-callout"', body)
         self.assertNotIn("<span class=\"status review-badge\">", body)
 
     def test_guide_defaults_unknown_status_labels_to_review(self) -> None:
@@ -13138,7 +13261,8 @@ class TaxpackGuideTests(unittest.TestCase):
         body = taxmate_taxpack.render_html(data)
 
         self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
-        self.assertIn("Unknown status needs review.", body)
+        self.assertIn("Freeform status should not look final.", body)
+        self.assertIn("Accountant handoff only", body)
         self.assertNotIn(">Claimable<", body)
 
     def test_guide_review_status_wins_over_stale_kind_fields(self) -> None:
@@ -13178,12 +13302,16 @@ class TaxpackGuideTests(unittest.TestCase):
                     self.assertEqual("review", item.status_kind)
                     self.assertEqual("review", item.tab_kind)
                     self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
-                    self.assertIn("class=\"tab red review\"", body)
+                    self.assertIn("class=\"context-link tab red\"", body)
                     self.assertIn('<ul class="review-list">', body)
                     self.assertIn(
-                        "<li>Conflicting status fields require accountant review.</li>",
+                        'href="#row-main-1-12">12 - Conflicting reviewed row?</a>',
                         body,
                     )
+                    self.assertIn('data-review-required="true"', body)
+                    self.assertIn("Accountant handoff only", body)
+                    self.assertIn("Destination requires review", body)
+                    self.assertNotIn("Conflicting status fields require accountant review.", body)
                     for downgraded_badge in downgraded_badges:
                         self.assertNotIn(downgraded_badge, body)
 
@@ -13212,7 +13340,9 @@ class TaxpackGuideTests(unittest.TestCase):
                 )
                 self.assertEqual("review", item.status_kind)
                 self.assertEqual("review", item.tab_kind)
-                self.assertIn("<li>One field still requires accountant review.</li>", body)
+                self.assertIn('href="#row-main-1-12">12 - Split reviewed row?</a>', body)
+                self.assertIn('data-review-required="true"', body)
+                self.assertIn("Accountant handoff only", body)
 
         review_like_labels = [
             "Accountant review required",
@@ -13247,7 +13377,8 @@ class TaxpackGuideTests(unittest.TestCase):
                 self.assertEqual("review", item.status_kind)
                 self.assertEqual("review", item.tab_kind)
                 self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
-                self.assertIn("<li>Review-like label requires accountant review.</li>", body)
+                self.assertIn('href="#row-main-1-12">12 - Review-like label?</a>', body)
+                self.assertIn('data-review-required="true"', body)
 
         blank_review = taxmate_taxpack.guide_item(
             {
@@ -13269,8 +13400,9 @@ class TaxpackGuideTests(unittest.TestCase):
             )
         )
         self.assertEqual("Row 13: Accountant review.", blank_review.tab_text)
-        self.assertIn("<li>Row 13: Accountant review.</li>", body)
-        self.assertIn('<span class="tab-text">Row 13: Accountant review.</span>', body)
+        self.assertIn('href="#row-main-1-13">13 - Blank review explanation?</a>', body)
+        self.assertIn("Accountant handoff only", body)
+        self.assertNotIn('<span class="tab-text">', body)
 
         blank_queue = taxmate_taxpack.GuideItem(
             number="Q1",
@@ -13295,8 +13427,9 @@ class TaxpackGuideTests(unittest.TestCase):
                 missing_facts=[blank_queue],
             )
         )
-        self.assertIn('<li data-anchor="row-401-Q1">Row Q1: Evidence.</li>', queue_body)
-        self.assertNotIn("<li>:  (Evidence)</li>", queue_body)
+        self.assertIn('id="row-missing-1-Q1"', queue_body)
+        self.assertIn("Row Q1: Evidence.", queue_body)
+        self.assertIn("Resolve before entry", queue_body)
 
         direct_blank = taxmate_taxpack.GuideItem(
             number="14",
@@ -13320,8 +13453,9 @@ class TaxpackGuideTests(unittest.TestCase):
                 items=[direct_blank],
             )
         )
-        self.assertIn("<li>Row 14: Accountant review.</li>", body)
-        self.assertIn('<span class="tab-text">Row 14: Accountant review.</span>', body)
+        self.assertIn('href="#row-main-1-14">14 - Direct blank review?</a>', body)
+        self.assertIn("Accountant handoff only", body)
+        self.assertNotIn('<span class="tab-text">', body)
 
         direct_conflict = taxmate_taxpack.GuideItem(
             number="15",
@@ -13346,8 +13480,9 @@ class TaxpackGuideTests(unittest.TestCase):
             )
         )
         self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
-        self.assertIn("class=\"tab red review\"", body)
-        self.assertIn("<li>Row 15: Accountant review.</li>", body)
+        self.assertIn("class=\"context-link tab red\"", body)
+        self.assertIn('href="#row-main-1-15">15 - Direct conflicting review?</a>', body)
+        self.assertIn('data-review-required="true"', body)
 
     def test_extended_review_rows_appear_in_tabs_and_review_queue(self) -> None:
         missing_review = taxmate_taxpack.guide_item(
@@ -13382,14 +13517,14 @@ class TaxpackGuideTests(unittest.TestCase):
             )
         )
 
-        self.assertIn('data-target="row-401-MISS-1"', body)
-        self.assertIn('data-target="row-501-EVID-1"', body)
-        self.assertIn('data-anchor="row-401-MISS-1"', body)
-        self.assertIn('data-anchor="row-501-EVID-1"', body)
-        self.assertIn("Missing WFH pattern requires accountant review.", body)
-        self.assertIn("Evidence gap requires accountant review.", body)
-        self.assertIn("<li>Missing WFH pattern requires accountant review.</li>", body)
-        self.assertIn("<li>Evidence gap requires accountant review.</li>", body)
+        self.assertIn('href="#row-missing-1-MISS-1"', body)
+        self.assertIn('href="#row-evidence-1-EVID-1"', body)
+        self.assertIn('data-anchor="row-missing-1-MISS-1"', body)
+        self.assertIn('data-anchor="row-evidence-1-EVID-1"', body)
+        self.assertIn("MISS-1 - Confirm WFH pattern", body)
+        self.assertIn("EVID-1 - Receipt gap", body)
+        self.assertEqual(2, body.count('class="queue-item"'))
+        self.assertEqual(2, body.count('data-action-kind="accountant-handoff-only"'))
         self.assertNotIn("Missing WFH pattern requires accountant review.; Evidence gap", body)
 
     def test_false_tab_text_uses_fallback_without_polluting_review_queue(self) -> None:
@@ -13413,8 +13548,9 @@ class TaxpackGuideTests(unittest.TestCase):
             )
         )
 
-        self.assertIn('<span class="tab-text">Row ABN: Accountant review.</span>', body)
-        self.assertIn("<li>Row ABN: Accountant review.</li>", body)
+        self.assertIn('href="#row-main-1-ABN">ABN - Sole-trader ABN prep</a>', body)
+        self.assertIn("Accountant handoff only", body)
+        self.assertNotIn('<span class="tab-text">', body)
         self.assertNotIn('<span class="tab-text">false</span>', body)
         self.assertNotIn("<li>false</li>", body)
 
@@ -13478,10 +13614,11 @@ class TaxpackGuideTests(unittest.TestCase):
                 items=[item],
             )
         )
-        self.assertIn("<td>0</td>", body)
-        self.assertIn("<td>false</td>", body)
-        self.assertIn("<b>0</b>", body)
-        self.assertIn('<span class="tab-text">0</span>', body)
+        self.assertIn('<span class="row-number">0</span>', body)
+        self.assertIn("<h3>false</h3>", body)
+        self.assertIn('<span class="fact-value">0</span>', body)
+        self.assertIn("<h4>Why this action</h4><p>0</p>", body)
+        self.assertNotIn('<span class="tab-text">', body)
         self.assertIn("Checked 0", body)
         self.assertIn("<span class=\"source-url\">false</span>", body)
 
@@ -13537,13 +13674,14 @@ class TaxpackGuideTests(unittest.TestCase):
                 items=[direct],
             )
         )
-        self.assertIn("<td>0</td>", body)
-        self.assertIn("<td>false</td>", body)
+        self.assertIn('<span class="row-number">0</span>', body)
+        self.assertIn("<h3>false</h3>", body)
+        self.assertIn('<span class="fact-value">0</span>', body)
         self.assertIn("<span class=\"source-url\">0</span>", body)
-        self.assertIn("<b>0</b>", body)
-        self.assertIn('<span class="tab-text">0</span>', body)
+        self.assertIn("<h4>Why this action</h4><p>0</p>", body)
+        self.assertNotIn('<span class="tab-text">', body)
         self.assertIn("Checked 0", body)
-        self.assertIn("data-anchor=\"row-1-0\"", body)
+        self.assertIn("data-anchor=\"row-main-1-0\"", body)
 
         direct_blank = taxmate_taxpack.GuideItem(
             number=False,
@@ -13568,7 +13706,7 @@ class TaxpackGuideTests(unittest.TestCase):
             )
         )
         self.assertIn("Row false: Accountant review.", body)
-        self.assertIn("data-anchor=\"row-1-false\"", body)
+        self.assertIn("data-anchor=\"row-main-1-false\"", body)
 
     def test_guide_rejects_forbidden_visible_taxpack_language(self) -> None:
         data = taxmate_taxpack.load_guide_data(None)
@@ -13777,8 +13915,13 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertEqual("Evidence", row["status"])
         self.assertEqual("review", row["tab_kind"])
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
-        self.assertIn("<b>Accountant review queue:</b>", body)
-        self.assertIn("CGT event needs CGT records and stays accountant review for mixed, private, or business use", body)
+        self.assertIn("<h3>Accountant review queue</h3>", body)
+        self.assertIn(
+            '<span class="fact-label">Business use</span><span class="fact-value">true</span>',
+            body,
+        )
+        self.assertIn("Accountant handoff only", body)
+        self.assertIn("Destination requires review", body)
         self.assertIn("CGT records", body)
 
     def test_cgt_ambiguous_review_flag_stays_evidence(self) -> None:
@@ -14939,7 +15082,12 @@ class CgtIntakeTests(unittest.TestCase):
         self.assertIn("CGT-EVENT-1", body)
         self.assertIn("Mixed-use shares", body)
         self.assertIn("acquisition or disposal date evidence", body)
-        self.assertIn("mixed, private, or business use", body)
+        self.assertIn(
+            '<span class="fact-label">Business use</span><span class="fact-value">true</span>',
+            body,
+        )
+        self.assertIn("Accountant handoff only", body)
+        self.assertIn("Destination requires review", body)
         self.assertIn("No capital gain or loss amount is worked out.", body)
         self.assertIn("https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-events", body)
         self.assertIn("Checked ", body)
@@ -14983,11 +15131,24 @@ class CgtIntakeTests(unittest.TestCase):
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
 
         self.assertIn("CGT-SCHEDULE", body)
-        self.assertIn("current-year losses 0.00", body)
-        self.assertIn("carried-forward losses 0.00", body)
-        self.assertIn("discount claim true", body)
-        self.assertIn("foreign resident discount true", body)
-        self.assertIn("discount timing or residency signals", body)
+        self.assertIn(
+            '<span class="fact-label">Current-year losses supplied</span><span class="fact-value">0</span>',
+            body,
+        )
+        self.assertIn(
+            '<span class="fact-label">Carried-forward losses supplied</span><span class="fact-value">0</span>',
+            body,
+        )
+        self.assertIn(
+            '<span class="fact-label">Discount claim</span><span class="fact-value">true</span>',
+            body,
+        )
+        self.assertIn(
+            '<span class="fact-label">Foreign resident discount</span><span class="fact-value">true</span>',
+            body,
+        )
+        self.assertIn("Accountant handoff only", body)
+        self.assertIn("Destination requires review", body)
         self.assertIn("No capital gain or loss amount is worked out.", body)
         self.assertIn(taxmate_intake.ATO_CGT_LOSS_SOURCE, body)
         self.assertIn(taxmate_intake.ATO_CGT_DISCOUNT_SOURCE, body)
@@ -15627,8 +15788,16 @@ class SmallBusinessCgtConcessionWorkflowTests(unittest.TestCase):
         row = next(item for item in payload["items"] if item["number"] == "CGT-SCHEDULE")
 
         self.assertIn("CGT-SCHEDULE", body)
-        self.assertIn("small business CGT concession review", body)
-        self.assertIn("15-year exemption true", body)
+        self.assertIn(
+            '<span class="fact-label">Small business concession type</span><span class="fact-value">15-year exemption</span>',
+            body,
+        )
+        self.assertIn(
+            '<span class="fact-label">15-year exemption</span><span class="fact-value">true</span>',
+            body,
+        )
+        self.assertIn("Accountant handoff only", body)
+        self.assertIn("Destination requires review", body)
         self.assertIn(taxmate_intake.ATO_CGT_SMALL_BUSINESS_15_YEAR_SOURCE, body)
         self.assertNotRegex((row["answer"] + " " + row["tab_text"]).lower(), r"\b(eligible|final|claimable|lodgment-ready|calculated)\b")
 

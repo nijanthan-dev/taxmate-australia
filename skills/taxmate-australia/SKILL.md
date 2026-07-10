@@ -37,7 +37,7 @@ Use this entry skill when the user asks generally for TaxMate Australia or when 
 
 Prefer the most specific installed skill:
 
-- `taxmate-australia-individual-return`: V1 individual return intake, PAYG, ESS, ETP, lump sum in arrears, super income, foreign income, PSI, crypto CGT, rental property worksheet, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and manual-copy handoff guidance; use the full runtime for HTML handoff generation.
+- `taxmate-australia-individual-return`: V1 individual return intake, PAYG, ESS, ETP, lump sum in arrears, super income, foreign income, PSI, crypto CGT, rental property worksheet, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and manual-copy handoff guidance with the structured action contract; use the full runtime for HTML handoff generation.
 - `taxmate-australia-employment-deductions`: employee work expenses other than dedicated WFH questions.
 - `taxmate-australia-work-from-home`: employee WFH fixed-rate, actual-cost, equipment, and records.
 - `taxmate-australia-abn-business`: ABN, sole trader, business income/expenses, pre-revenue, hobby, PSI, and non-commercial losses.
@@ -65,11 +65,14 @@ If the required topic skill is not installed, do not decide the tax treatment. S
 6. Do not treat metadata-only sources as source-backed tax treatment without explicit verification.
 7. Preserve every `Accountant review` flag.
    If fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
-8. Keep output-layer review queues and side tabs visible; use row number/status fallback when explanation fields are missing.
+8. Keep output-layer review queues and context links visible; use row number/status fallback when explanation fields are missing.
 9. Preserve valid falsey output values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.
-10. Keep source URLs and effective periods visible.
-11. Do not guess when sources conflict, facts are incomplete, or verification fails.
-12. Refuse any request to submit, lodge, file, transmit, or finalise material with the ATO or a government agency.
+10. When the full runtime creates a handoff, preserve each atomic fact's labelled value, action, destination or explicit non-entry/review wording, explanation, and provenance.
+11. Use only the runtime-owned actions: enter reviewed value, answer guided question, retain evidence, resolve before entry, accountant handoff only, not entered directly, and destination requires review.
+12. Require an exact field-and-context mapping to a verified source ID, canonical URL, and content hash before showing a direct destination. Output layers must not infer one.
+13. Keep source URLs and effective periods visible.
+14. Do not guess when sources conflict, facts are incomplete, or verification fails.
+15. Refuse any request to submit, lodge, file, transmit, or finalise material with the ATO or a government agency.
 
 ## Mandatory Accountant Review
 
@@ -84,6 +87,8 @@ Mark ambiguous, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-co
 - Preserve generated current values only when their source URL and content hash match an assigned verified source; refresh preserved value metadata from the current source row.
 - Do not publish volatile values from metadata-only sources.
 - Keep wrapper help on `./scripts/taxmate ...`; internal `taxmate_*.py` script names must not appear.
+- Keep destination logic in the runtime. Output layers may render the handoff contract but must not derive destinations from row names, broad topic URLs, source coverage, or unverified target labels.
+- Keep mixed rows atomic or split them so one destination is not applied to unrelated facts. Missing, malformed, conflicting, unsupported, or stale mappings must keep evidence, non-entry, or review wording.
 - After independent review feedback, scan the same failure pattern across parser paths, direct renderer/workbook-row paths, generated artifacts, plugin lock, tests, validator, publication checks, and documentation and instruction validation rules before requesting another Codex review.
 - For output-layer falsey fixes, cover top-level metadata, row fields, source URL lists, checked-at provenance, fallback labels, anchors, and direct constructors.
 - Do not replace the complete Codex plugin with portable skills only.

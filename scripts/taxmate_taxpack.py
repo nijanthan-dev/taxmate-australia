@@ -6,11 +6,14 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import re
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+import taxmate_handoff
 
 
 DEFAULT_INCOME_YEAR = "2025-26"
@@ -21,23 +24,6 @@ FORBIDDEN_VISIBLE_PHRASES = [
     "submit this guide",
     "submit this PDF",
 ]
-ANSWER_STATUS_KEYS = {"answer", "answer-used", "used", "green"}
-ATO_STATUS_KEYS = {"ato", "ato-label", "label", "blue"}
-EVIDENCE_STATUS_KEYS = {"evidence", "evidence-needed", "missing-evidence", "yellow"}
-REVIEW_STATUS_KEYS = {"review", "accountant-review", "red"}
-SKIPPED_STATUS_KEYS = {
-    "skipped",
-    "skip",
-    "n/a",
-    "na",
-    "n-a",
-    "n/a-skipped",
-    "not-applicable",
-    "grey",
-    "gray",
-}
-
-
 @dataclass
 class GuideItem:
     number: Any
@@ -52,6 +38,9 @@ class GuideItem:
     tab_title: Any
     tab_text: Any
     tab_kind: Any
+    row_kind: Any = "external-row"
+    facts: List[Dict[str, Any]] = field(default_factory=list)
+    handoff: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -67,10 +56,31 @@ class GuideData:
     evidence_items: List[GuideItem] = field(default_factory=list)
 
 
+@dataclass
+class RenderRow:
+    section: str
+    section_title: str
+    ordinal: int
+    item: GuideItem
+    anchor: str
+    contract: Dict[str, Any]
+
+
+@dataclass
+class SourceGroup:
+    anchor: str
+    label: str
+    url: str
+    titles: List[str] = field(default_factory=list)
+    checked_at: List[str] = field(default_factory=list)
+    roles: List[str] = field(default_factory=list)
+    rows: List[RenderRow] = field(default_factory=list)
+
+
 def sample_payload() -> Dict[str, Any]:
     return {
         "income_year": DEFAULT_INCOME_YEAR,
-        "summary_note": "Tabs point directly to the exact item they explain. Hide tabs when you want a clean copy.",
+        "summary_note": "The item index links to each prepared row, next action, destination, and source context.",
         "items": [
             {
                 "number": "5",
@@ -85,6 +95,11 @@ def sample_payload() -> Dict[str, Any]:
                 "tab_title": "Row 5 answer used",
                 "tab_text": "WFH hours need diary/timesheet and current-year rate support.",
                 "tab_kind": "answer",
+                "row_kind": "work-from-home",
+                "facts": [
+                    {"key": "hours", "label": "Hours", "value": 843},
+                    {"key": "method", "label": "Method", "value": "Fixed-rate method candidate"},
+                ],
             },
             {
                 "number": "6",
@@ -99,6 +114,12 @@ def sample_payload() -> Dict[str, Any]:
                 "tab_title": "Row 6 mixed use",
                 "tab_text": "Work-use percentage is not final without review.",
                 "tab_kind": "review",
+                "row_kind": "work-asset",
+                "facts": [
+                    {"key": "asset", "label": "Asset", "value": "Laptop"},
+                    {"key": "cost", "label": "Cost", "value": "$1,850"},
+                    {"key": "work-use", "label": "Work use supplied", "value": "70%"},
+                ],
             },
             {
                 "number": "7",
@@ -113,6 +134,12 @@ def sample_payload() -> Dict[str, Any]:
                 "tab_title": "Row 7 ABN/pre-revenue",
                 "tab_text": "Startup costs require accountant review.",
                 "tab_kind": "review",
+                "row_kind": "abn-business",
+                "facts": [
+                    {"key": "abn", "label": "ABN status", "value": "Active"},
+                    {"key": "income", "label": "Income supplied", "value": 0},
+                    {"key": "costs", "label": "Costs", "value": "Startup costs supplied"},
+                ],
             },
             {
                 "number": "8",
@@ -127,6 +154,10 @@ def sample_payload() -> Dict[str, Any]:
                 "tab_title": "Row 8 missing statement",
                 "tab_text": "Private health statement missing.",
                 "tab_kind": "evidence",
+                "row_kind": "private-health",
+                "facts": [
+                    {"key": "statement", "label": "Insurer statement", "value": "Missing"},
+                ],
             },
         ],
     }
@@ -138,20 +169,45 @@ def load_guide_data(path: Optional[str]) -> GuideData:
 
 
 def load_guide_payload(payload: Dict[str, Any]) -> GuideData:
-    items = [guide_item(raw) for raw in payload.get("items", [])]
-    if not items:
-        raise ValueError("guide input must include at least one item")
+    if not isinstance(payload, dict):
+        raise ValueError("guide input must be a JSON object")
+    income_year = text_value(payload, "income_year", DEFAULT_INCOME_YEAR)
+    raw_items = payload.get("items", [])
+    if not isinstance(raw_items, list):
+        raw_items = [
+            {
+                "number": "MALFORMED-items",
+                "ato_area": "Input shape review",
+                "question": "Malformed items input",
+                "answer": scalar_text(raw_items),
+                "why_included": "Input section had the wrong shape and was kept for accountant review instead of being dropped.",
+                "status": "Accountant review",
+            }
+        ]
+    items = [
+        guide_item(raw, income_year=income_year, fallback_number=f"ITEM-{index}")
+        if isinstance(raw, dict)
+        else malformed_section_item(f"items-{index}", raw, income_year)
+        for index, raw in enumerate(raw_items, start=1)
+    ]
+    extraction_rows = extracted_values(payload.get("extracted_values", []), income_year)
+    abn_items = section_items(payload, "abn_items", income_year, "ABN")
+    bas_items = section_items(payload, "bas_items", income_year, "BAS")
+    missing_facts = section_items(payload, "missing_facts", income_year, "MISS")
+    evidence_items = section_items(payload, "evidence_items", income_year, "EVID")
+    if not any((items, extraction_rows, abn_items, bas_items, missing_facts, evidence_items)):
+        raise ValueError("guide input must include at least one row or queue item")
     generated_date = text_value(payload, "generated_date", default_generated_date())
     return GuideData(
-        income_year=text_value(payload, "income_year", DEFAULT_INCOME_YEAR),
+        income_year=income_year,
         generated_date=generated_date,
         summary_note=text_value(payload, "summary_note", sample_payload()["summary_note"]),
         items=items,
-        extracted_values=extracted_values(payload.get("extracted_values", [])),
-        abn_items=section_items(payload, "abn_items"),
-        bas_items=section_items(payload, "bas_items"),
-        missing_facts=section_items(payload, "missing_facts"),
-        evidence_items=section_items(payload, "evidence_items"),
+        extracted_values=extraction_rows,
+        abn_items=abn_items,
+        bas_items=bas_items,
+        missing_facts=missing_facts,
+        evidence_items=evidence_items,
     )
 
 
@@ -163,32 +219,47 @@ def read_json(path: str) -> Dict[str, Any]:
     return payload
 
 
-def section_items(payload: Dict[str, Any], key: str) -> List[GuideItem]:
+def section_items(
+    payload: Dict[str, Any],
+    key: str,
+    income_year: str = DEFAULT_INCOME_YEAR,
+    fallback_prefix: str = "ITEM",
+) -> List[GuideItem]:
     raw_items = payload.get(key, [])
     if not isinstance(raw_items, list):
-        return [malformed_section_item(key, raw_items)]
+        return [malformed_section_item(key, raw_items, income_year)]
     items: List[GuideItem] = []
     for index, raw in enumerate(raw_items, start=1):
         if isinstance(raw, dict):
-            items.append(guide_item(raw))
+            items.append(
+                guide_item(
+                    raw,
+                    income_year=income_year,
+                    fallback_number=f"{fallback_prefix}-{index}",
+                )
+            )
         else:
-            items.append(malformed_section_item(f"{key}-{index}", raw))
+            items.append(malformed_section_item(f"{key}-{index}", raw, income_year))
     return items
 
 
-def extracted_values(raw_items: Any) -> List[Dict[str, Any]]:
+def extracted_values(raw_items: Any, income_year: str = DEFAULT_INCOME_YEAR) -> List[Dict[str, Any]]:
     if not isinstance(raw_items, list):
-        return [malformed_extraction_row(raw_items)]
+        normalized = normalize_extraction_row(
+            malformed_extraction_row(raw_items, index=1),
+            income_year,
+            index=1,
+        )
+        return [normalized] if normalized is not None else []
     rows: List[Dict[str, Any]] = []
     for index, raw in enumerate(raw_items, start=1):
-        if isinstance(raw, dict):
-            rows.append(raw)
-        else:
-            rows.append(malformed_extraction_row(raw, index))
+        normalized = normalize_extraction_row(raw, income_year, index=index)
+        if normalized is not None:
+            rows.append(normalized)
     return rows
 
 
-def malformed_section_item(key: str, value: Any) -> GuideItem:
+def malformed_section_item(key: str, value: Any, income_year: str = DEFAULT_INCOME_YEAR) -> GuideItem:
     return guide_item(
         {
             "number": f"MALFORMED-{key}",
@@ -198,8 +269,9 @@ def malformed_section_item(key: str, value: Any) -> GuideItem:
             "why_included": "Input section had the wrong shape and was kept for accountant review instead of being dropped.",
             "status": "Accountant review",
             "tab_kind": "review",
-            "tab_text": f"Malformed {key} input needs review before manual use.",
-        }
+            "tab_text": f"Malformed {key} input requires review before entry.",
+        },
+        income_year=income_year,
     )
 
 
@@ -216,16 +288,42 @@ def malformed_extraction_row(value: Any, index: int = 1) -> Dict[str, Any]:
     }
 
 
-def guide_item(raw: Dict[str, Any]) -> GuideItem:
+def normalize_extraction_row(
+    raw: Any,
+    income_year: str,
+    *,
+    index: int = 1,
+) -> Optional[Dict[str, Any]]:
+    normalized = taxmate_handoff.normalize_extraction_row(
+        raw,
+        income_year,
+        index=index,
+    )
+    return dict(normalized) if isinstance(normalized, dict) else None
+
+
+def guide_item(
+    raw: Dict[str, Any],
+    income_year: str = DEFAULT_INCOME_YEAR,
+    fallback_number: str = "ITEM",
+) -> GuideItem:
     if not isinstance(raw, dict):
         raise ValueError("guide items must be JSON objects")
-    number = text_value(raw, "number").strip()
-    if not number:
-        raise ValueError("guide item missing number")
+    number = text_value(raw, "number").strip() or fallback_number
     status_kind = item_status_kind(raw)
     tab_kind = item_tab_kind(raw, status_kind)
     tab_title = first_text(raw, ["tab_title"], f"Row {number} {short_status(status_kind)}")
     tab_text = first_text(raw, ["tab_text", "why_included"], fallback_tab_text(number, status_kind))
+    contract = taxmate_handoff.normalize_row_contract(
+        row_kind=raw.get("row_kind"),
+        facts=raw.get("facts"),
+        handoff=raw.get("handoff"),
+        status=status_kind,
+        income_year=income_year,
+        question=raw.get("question"),
+        answer=raw.get("answer"),
+        why=raw.get("why_included"),
+    )
     return GuideItem(
         number=number,
         ato_area=text_value(raw, "ato_area"),
@@ -239,24 +337,22 @@ def guide_item(raw: Dict[str, Any]) -> GuideItem:
         tab_title=tab_title,
         tab_text=tab_text,
         tab_kind=tab_kind,
+        row_kind=contract["row_kind"],
+        facts=contract["facts"],
+        handoff=contract["handoff"],
     )
 
 
 def item_status_kind(raw: Dict[str, Any]) -> str:
-    status_kind = known_kind(raw.get("status_kind"))
-    status = known_kind(raw.get("status"))
-    tab_kind = known_kind(raw.get("tab_kind"))
-    if status_kind == "review" or status == "review" or tab_kind == "review":
-        return "review"
-    return status_kind or status or "review"
+    return taxmate_handoff.effective_status_kind(
+        raw.get("status_kind"),
+        raw.get("status"),
+        raw.get("tab_kind"),
+    )
 
 
 def item_tab_kind(raw: Dict[str, Any], status_kind: str) -> str:
-    tab_value = text_value(raw, "tab_kind", status_kind)
-    tab_kind = normal_kind(tab_value)
-    if status_kind == "review":
-        return "review"
-    return tab_kind
+    return taxmate_handoff.effective_status_kind(status_kind, raw.get("tab_kind"))
 
 
 _MISSING = object()
@@ -296,36 +392,6 @@ def source_urls(raw: Dict[str, Any]) -> List[str]:
     return urls
 
 
-def normal_kind(value: Any) -> str:
-    return known_kind(value) or "review"
-
-
-def known_kind(value: Any) -> Optional[str]:
-    key = scalar_text(value).strip().lower().replace("_", "-").replace(" ", "-")
-    if key in ANSWER_STATUS_KEYS:
-        return "answer"
-    if key in ATO_STATUS_KEYS:
-        return "ato"
-    if key in EVIDENCE_STATUS_KEYS:
-        return "evidence"
-    if key in REVIEW_STATUS_KEYS or is_review_like_key(key):
-        return "review"
-    if key in SKIPPED_STATUS_KEYS:
-        return "skipped"
-    return None
-
-
-def is_review_like_key(key: str) -> bool:
-    parts = {part for part in key.split("-") if part}
-    if "accountant" in parts:
-        return True
-    if "review" in parts and parts.intersection({"required", "requires", "need", "needs", "needed", "must"}):
-        return True
-    if "review" in parts and "agent" in parts:
-        return True
-    return False
-
-
 def canonical_status(kind: str) -> str:
     if kind == "evidence":
         return "Evidence"
@@ -339,18 +405,7 @@ def canonical_status(kind: str) -> str:
 
 
 def short_status(value: Any) -> str:
-    text = scalar_text(value)
-    key = text.strip().lower().replace("_", " ")
-    slug = key.replace(" ", "-")
-    if "evidence" in key:
-        return "Evidence"
-    if "review" in key or "accountant" in key:
-        return "Accountant review"
-    if slug in SKIPPED_STATUS_KEYS:
-        return "N/A skipped"
-    if key in {"answer", "answer used", "used"}:
-        return "Used"
-    return text.strip() or "Review"
+    return canonical_status(taxmate_handoff.effective_status_kind(value))
 
 
 def default_generated_date() -> str:
@@ -358,196 +413,496 @@ def default_generated_date() -> str:
 
 
 def render_html(data: GuideData) -> str:
-    indexed_items = list(enumerate(data.items, start=1))
-    rows = "\n".join(render_row(item, row_index) for row_index, item in indexed_items)
-    tab_items = rendered_tab_items(data)
-    row_tabs = "\n".join(render_item_tab(item, row_index) for item, row_index in tab_items)
-    review_items = [
-        review_text(item)
-        for item, _row_index in tab_items
-        if effective_status_kind(item) == "review" or effective_tab_kind(item) == "review"
-    ]
+    rows = build_render_rows(data)
+    source_groups, row_sources = build_source_groups(rows)
     output = HTML_TEMPLATE.format(
         income_year=esc(data.income_year),
         generated_date=esc(data.generated_date),
         summary_note=esc(data.summary_note),
-        extraction_table=render_extraction_table(data.extracted_values),
-        abn_section=render_section("ABN prep section", data.abn_items, 200),
-        bas_section=render_section("BAS worksheet", data.bas_items, 300),
-        missing_queue=render_queue("Missing facts queue", data.missing_facts, 400),
-        evidence_queue=render_queue("Evidence queue", data.evidence_items, 500),
-        source_appendix=render_source_appendix(all_guide_items(data)) if has_extended_pack(data) else "",
-        rows=rows,
-        row_tabs=row_tabs,
-        review_queue=render_review_queue(review_items),
+        taxonomy_legend=render_taxonomy_legend(),
+        context_index=render_context_index(rows),
+        guide_sections=render_sections(rows, row_sources),
+        review_queue=render_review_queue(rows),
+        source_appendix=render_source_appendix(source_groups),
+        source_appendix_screen_css=(
+            ".source-appendix{break-before:page;border-top:2px solid var(--line)}"
+            if source_groups
+            else ""
+        ),
+        source_appendix_print_css=(
+            ".source-appendix{break-before:page;page-break-before:always}"
+            "details.source-appendix:not([open]) > :not(summary){display:block!important}"
+            if source_groups
+            else ""
+        ),
     )
     assert_visible_boundaries(output)
     return output
 
 
-def render_row(item: GuideItem, row_index: int) -> str:
-    anchor = row_anchor(item, row_index)
-    item_status_kind = effective_status_kind(item)
+def item_contract(item: GuideItem, income_year: str) -> Dict[str, Any]:
+    status = effective_status_kind(item)
+    return taxmate_handoff.normalize_row_contract(
+        row_kind=item.row_kind,
+        facts=item.facts,
+        handoff=item.handoff,
+        status=status,
+        income_year=income_year,
+        question=item.question,
+        answer=item.answer,
+        why=item.why_included,
+    )
+
+
+def extraction_guide_item(raw: Any, index: int, income_year: str) -> Optional[GuideItem]:
+    normalized = normalize_extraction_row(raw, income_year, index=index)
+    if normalized is None:
+        return None
+    payload = dict(normalized)
+    payload.setdefault("number", f"AI-{index}")
+    payload.setdefault("ato_area", "AI extraction confirmation")
+    payload.setdefault("question", text_value(payload, "field", "Extracted document fact"))
+    payload.setdefault("answer", payload.get("value"))
+    payload.setdefault(
+        "why_included",
+        "Confirm the supplied extraction against the source document before use.",
+    )
+    payload.setdefault("tab_text", payload.get("why_included"))
+    payload.setdefault("row_kind", "ai-extraction")
+    raw_facts = payload.get("facts")
+    if not isinstance(raw_facts, list) or not raw_facts:
+        raw_facts = []
+        for key, label in (
+            ("document", "Source document"),
+            ("page", "Page"),
+            ("field", "Extracted field"),
+            ("value", "Extracted value"),
+            ("confidence", "Extraction confidence"),
+            ("target_label", "Target label supplied (unverified)"),
+        ):
+            value = payload.get(key, _MISSING)
+            if value is _MISSING or value is None or not scalar_text(value).strip():
+                continue
+            raw_facts.append({"key": key.replace("_", "-"), "label": label, "value": value})
+        payload["facts"] = raw_facts
+    return guide_item(
+        payload,
+        income_year=income_year,
+        fallback_number=f"AI-{index}",
+    )
+
+
+def build_render_rows(data: GuideData) -> List[RenderRow]:
+    income_year = scalar_text(data.income_year, DEFAULT_INCOME_YEAR)
+    extraction_items: List[GuideItem] = []
+    for index, raw in enumerate(data.extracted_values, start=1):
+        item = extraction_guide_item(raw, index, income_year)
+        if item is not None:
+            extraction_items.append(item)
+    sections = (
+        ("main", "Prepared return items", data.items),
+        ("ai", "AI extraction confirmation", extraction_items),
+        ("abn", "ABN preparation", data.abn_items),
+        ("bas", "BAS preparation", data.bas_items),
+        ("missing", "Missing facts queue", data.missing_facts),
+        ("evidence", "Evidence queue", data.evidence_items),
+    )
+    rows: List[RenderRow] = []
+    for section, title, items in sections:
+        for ordinal, item in enumerate(items, start=1):
+            rows.append(
+                RenderRow(
+                    section=section,
+                    section_title=title,
+                    ordinal=ordinal,
+                    item=item,
+                    anchor=row_context_anchor(section, ordinal, item),
+                    contract=item_contract(item, income_year),
+                )
+            )
+    return rows
+
+
+def row_context_anchor(section: str, ordinal: int, item: GuideItem) -> str:
+    token = re.sub(r"[^A-Za-z0-9_-]+", "-", scalar_text(item.number).strip()).strip("-") or "item"
+    return f"row-{section}-{ordinal}-{token}"
+
+
+def row_anchor(item: GuideItem, row_index: int) -> str:
+    return row_context_anchor("main", row_index, item)
+
+
+def row_reference(row: RenderRow) -> str:
+    supplied = scalar_text(row.item.number).strip()
+    if supplied:
+        return supplied
+    prefixes = {
+        "main": "Prepared item",
+        "ai": "AI extraction",
+        "abn": "ABN item",
+        "bas": "BAS item",
+        "missing": "Missing fact",
+        "evidence": "Evidence item",
+    }
+    return f"{prefixes.get(row.section, 'Item')} {row.ordinal}"
+
+
+def row_context_label(row: RenderRow) -> str:
+    reference = row_reference(row)
+    question = scalar_text(row.item.question).strip()
+    area = scalar_text(row.item.ato_area).strip()
+    detail = question or area or review_text(row.item)
+    return f"{reference} - {detail}" if detail and detail != reference else reference
+
+
+def source_row_context_label(row: RenderRow) -> str:
+    return f"{row.section_title} #{row.ordinal}: {row_context_label(row)}"
+
+
+def handoff_requires_review(handoff: Dict[str, Any]) -> bool:
+    return scalar_text(handoff.get("kind")).strip() in {
+        "accountant-handoff-only",
+        "destination-requires-review",
+    }
+
+
+def row_review_required(row: RenderRow) -> bool:
+    status = effective_status_kind(row.item)
+    if status == "evidence":
+        return False
+    if status == "review" or handoff_requires_review(row.contract["handoff"]):
+        return True
+    return any(handoff_requires_review(fact["handoff"]) for fact in row.contract["facts"])
+
+
+def row_review_handoff(row: RenderRow) -> Dict[str, Any]:
+    candidates = [row.contract["handoff"]]
+    candidates.extend(fact["handoff"] for fact in row.contract["facts"])
+    for handoff in candidates:
+        if handoff_requires_review(handoff):
+            return handoff
+    return row.contract["handoff"]
+
+
+def unique_display_facts(facts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    unique: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+    for fact in facts:
+        marker = json.dumps(fact, sort_keys=True, ensure_ascii=False, default=scalar_text)
+        if marker in seen:
+            continue
+        seen.add(marker)
+        unique.append(fact)
+    return unique
+
+
+def fact_value_text(value: Any) -> str:
+    if value is None:
+        return "Not supplied"
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, list):
+        return "\n".join(fact_value_text(item) for item in value) or "Not supplied"
+    if isinstance(value, dict):
+        return json.dumps(value, sort_keys=True, ensure_ascii=False, default=scalar_text)
+    return str(value)
+
+
+def handoff_signature(handoff: Dict[str, Any]) -> tuple[str, str]:
     return (
-        "<tr>"
-        f"<td>{esc(item.number)}</td>"
-        f"<td>{esc(item.ato_area)}</td>"
-        f"<td>{esc(item.question)}</td>"
-        f"<td>{esc(item.answer)}</td>"
-        f"<td>{esc(item.why_included)}</td>"
-        f"<td class=\"provenance\">{render_provenance(item)}</td>"
-        f'<td data-anchor="{anchor}"><span class="status {status_class(item_status_kind)}">{esc(canonical_status(item_status_kind))}</span></td>'
-        "</tr>"
+        scalar_text(handoff.get("kind")).strip(),
+        scalar_text(handoff.get("next_action")).strip(),
     )
 
 
-def render_section(title: str, items: List[GuideItem], offset: int) -> str:
-    if not items:
-        return f"<h2>{esc(title)}</h2><p class=\"summary-note\">No rows supplied.</p>"
-    rows = "\n".join(render_row(item, offset + index) for index, item in enumerate(items, start=1))
+def render_row(item: GuideItem, row_index: int, income_year: str = DEFAULT_INCOME_YEAR) -> str:
+    row = RenderRow(
+        section="main",
+        section_title="Prepared return items",
+        ordinal=row_index,
+        item=item,
+        anchor=row_context_anchor("main", row_index, item),
+        contract=item_contract(item, income_year),
+    )
+    return render_card(row, [])
+
+
+def render_card(row: RenderRow, sources: List[SourceGroup]) -> str:
+    item = row.item
+    kind = effective_status_kind(item)
+    facts = unique_display_facts(row.contract["facts"])
+    fact_html = "".join(render_fact(fact, row.contract["handoff"]) for fact in facts)
+    row_handoff = row.contract["handoff"]
+    why = scalar_text(item.why_included).strip() or review_text(item)
+    density = sum(len(fact_value_text(fact.get("value"))) for fact in facts)
+    split_class = " allow-page-split" if len(facts) >= 9 or density > 1600 else ""
     return (
-        f"<h2>{esc(title)}</h2>"
-        '<table class="table section-table"><thead><tr><th></th><th>ATO area</th><th>Question</th>'
-        "<th>Answer/value</th><th>Why included</th><th>Source</th><th>Status</th></tr></thead><tbody>"
-        f"{rows}</tbody></table>"
+        f'<article class="handoff-card status-{esc(kind)}{split_class}" id="{row.anchor}" '
+        f'data-anchor="{row.anchor}" data-status="{esc(kind)}" '
+        f'data-review-required="{str(row_review_required(row)).lower()}" data-filter-row>'
+        '<header class="card-header">'
+        f'<div><span class="row-number">{esc(row_reference(row))}</span><p class="ato-area">{esc(item.ato_area)}</p>'
+        f'<h3>{esc(item.question) or "Prepared item"}</h3></div>'
+        f'<span class="status {status_class(kind)}">{esc(canonical_status(kind))}</span>'
+        "</header>"
+        '<div class="handoff-summary">'
+        f'<section><h4>Next action</h4><p class="action-name">{esc(row_handoff["label"])}</p>'
+        f'<p>{esc(row_handoff["next_action"])}</p></section>'
+        f'<section><h4>Where it belongs</h4>{render_destination_summary(row_handoff["destination"])}</section>'
+        "</div>"
+        f'<ul class="fact-list">{fact_html}</ul>'
+        f'<section class="why-block"><h4>Why this action</h4><p>{esc(why)}</p></section>'
+        f'{render_source_summary(sources)}'
+        "</article>"
     )
 
 
-def render_queue(title: str, items: List[GuideItem], offset: int) -> str:
-    if not items:
-        return f"<h2>{esc(title)}</h2><p class=\"summary-note\">No items supplied.</p>"
-    entries = "".join(
-        f'<li data-anchor="{row_anchor(item, offset + index)}">{esc(queue_item_text(item))}</li>'
-        for index, item in enumerate(items, start=1)
-    )
-    return f"<h2>{esc(title)}</h2><ul class=\"queue-list\">{entries}</ul>"
-
-
-def render_review_queue(items: List[str]) -> str:
-    if not items:
-        body = '<p class="summary-note">No review-only items supplied.</p>'
-    else:
-        body = "".join(f"<li>{esc(item)}</li>" for item in items)
-        body = f'<ul class="review-list">{body}</ul>'
-    return f'<div class="callout review-callout"><b>Accountant review queue:</b>{body}</div>'
-
-
-def queue_item_text(item: GuideItem) -> str:
-    question = scalar_text(item.question).strip()
-    answer = scalar_text(item.answer).strip()
-    status = canonical_status(effective_status_kind(item))
-    if question and answer:
-        return f"{question}: {answer} ({status})"
-    if question:
-        return f"{question} ({status})"
-    if answer:
-        return f"{answer} ({status})"
-    return fallback_tab_text(item.number, effective_status_kind(item))
-
-
-def render_extraction_table(values: List[Dict[str, Any]]) -> str:
-    if not values:
-        return '<h2>AI extraction confirmation table</h2><p class="summary-note">No AI-extracted values supplied.</p>'
-    rows: List[str] = []
-    for raw in values:
-        kind = extraction_status_kind(raw)
-        status = canonical_status(kind)
-        rows.append(
-            "<tr>"
-            f"<td>{esc(raw.get('number', 'AI'))}</td>"
-            f"<td>{esc(raw.get('document'))}</td>"
-            f"<td>{esc(raw.get('page'))}</td>"
-            f"<td>{esc(raw.get('field'))}</td>"
-            f"<td>{esc(raw.get('value'))}</td>"
-            f"<td>{esc(raw.get('confidence'))}</td>"
-            f"<td>{esc(raw.get('target_label'))}</td>"
-            f"<td><span class=\"status {status_class(kind)}\">{esc(status)}</span></td>"
-            "</tr>"
+def render_fact(fact: Dict[str, Any], row_handoff: Dict[str, Any]) -> str:
+    handoff = fact["handoff"]
+    why = scalar_text(fact.get("why")).strip()
+    detail = f'<p class="fact-why">{esc(why)}</p>' if why else ""
+    destination = ""
+    if handoff["destination"] != row_handoff["destination"]:
+        destination = (
+            '<div class="fact-destination">'
+            f'{render_destination_summary(handoff["destination"], compact=True)}</div>'
+        )
+    action = ""
+    if handoff_signature(handoff) != handoff_signature(row_handoff):
+        action = (
+            f'<p class="fact-action"><b>{esc(handoff["label"])}:</b> '
+            f'{esc(handoff["next_action"])}</p>'
         )
     return (
-        "<h2>AI extraction confirmation table</h2>"
-        '<table class="table extraction-table"><thead><tr><th></th><th>Document</th><th>Page</th>'
-        "<th>Field</th><th>Extracted value</th><th>Confidence</th><th>Target label</th><th>Status</th></tr></thead>"
-        f"<tbody>{''.join(rows)}</tbody></table>"
+        '<li class="fact-item">'
+        '<div class="fact-line">'
+        f'<span class="fact-label">{esc(fact["label"])}</span>'
+        f'<span class="fact-value">{esc(fact_value_text(fact.get("value")))}</span>'
+        "</div>"
+        f"{destination}{action}{detail}</li>"
     )
 
 
-def extraction_status_kind(raw: Dict[str, Any]) -> str:
-    status_kind = known_kind(raw.get("status_kind"))
-    status = known_kind(raw.get("status"))
-    tab_kind = known_kind(raw.get("tab_kind"))
-    if status_kind == "review" or status == "review" or tab_kind == "review":
-        return "review"
-    if raw.get("confirmed") is True:
-        return "answer"
-    return "evidence"
+def render_destination_summary(destination: Dict[str, Any], *, compact: bool = False) -> str:
+    kind = scalar_text(destination.get("kind"))
+    label = scalar_text(destination.get("label"), "Destination requires review.")
+    if kind == "verified":
+        visible_label = "Verified destination" if compact else label
+        return (
+            f'<p class="destination-label verified">{esc(visible_label)}</p>'
+            f'<dl class="destination-channels"><dt>myTax</dt><dd>{esc(destination.get("mytax"))}</dd>'
+            f'<dt>Paper return</dt><dd>{esc(destination.get("paper"))}</dd></dl>'
+        )
+    return f'<p class="destination-label {esc(kind or "requires-review")}">{esc(label)}</p>'
 
 
-def render_source_appendix(items: List[GuideItem]) -> str:
-    urls: List[str] = []
-    for item in items:
-        for url in item.source_urls:
-            text = scalar_text(url).strip()
-            if text and text not in urls:
-                urls.append(text)
-    if not urls:
-        return '<h2>Source/provenance appendix</h2><p class="summary-note">No source URLs supplied.</p>'
-    rows = "".join(f"<li><span class=\"source-url\">{esc(url)}</span></li>" for url in urls)
-    return f"<h2>Source/provenance appendix</h2><ul class=\"source-list\">{rows}</ul>"
+def supporting_source_entries(item: GuideItem) -> List[tuple[str, str, str]]:
+    checked = scalar_text(item.checked_at).strip()
+    entries: List[tuple[str, str, str]] = []
+    for raw_url in item.source_urls:
+        url = scalar_text(raw_url).strip()
+        if url and (url, checked, "Supporting source") not in entries:
+            entries.append((url, checked, "Supporting source"))
+    return entries
 
 
-def rendered_tab_items(data: GuideData) -> List[tuple[GuideItem, int]]:
-    items = [(item, index) for index, item in enumerate(data.items, start=1)]
-    items.extend((item, 200 + index) for index, item in enumerate(data.abn_items, start=1))
-    items.extend((item, 300 + index) for index, item in enumerate(data.bas_items, start=1))
-    items.extend((item, 400 + index) for index, item in enumerate(data.missing_facts, start=1))
-    items.extend((item, 500 + index) for index, item in enumerate(data.evidence_items, start=1))
-    return items
+def build_source_groups(rows: List[RenderRow]) -> tuple[List[SourceGroup], Dict[str, List[SourceGroup]]]:
+    groups: List[SourceGroup] = []
+    by_url: Dict[str, SourceGroup] = {}
+    row_groups: Dict[str, List[SourceGroup]] = {row.anchor: [] for row in rows}
+    for row in rows:
+        records: List[tuple[str, str, str, str]] = [
+            (url, checked, role, "")
+            for url, checked, role in supporting_source_entries(row.item)
+        ]
+        destinations = [row.contract["handoff"]["destination"]]
+        destinations.extend(
+            fact["handoff"]["destination"]
+            for fact in row.contract["facts"]
+        )
+        for destination in destinations:
+            raw_sources = destination.get("sources")
+            if not isinstance(raw_sources, list):
+                continue
+            for source in raw_sources:
+                if not isinstance(source, dict):
+                    continue
+                url = scalar_text(source.get("url")).strip()
+                if url:
+                    records.append(
+                        (
+                            url,
+                            scalar_text(source.get("checked_at")).strip(),
+                            "Destination mapping",
+                            scalar_text(source.get("title")).strip(),
+                        )
+                    )
+        for url, checked, role, title in records:
+            group = by_url.get(url)
+            if group is None:
+                source_number = len(groups) + 1
+                group = SourceGroup(
+                    anchor=f"source-{source_number}",
+                    label=f"Source {source_number}",
+                    url=url,
+                )
+                by_url[url] = group
+                groups.append(group)
+            if title and title not in group.titles:
+                group.titles.append(title)
+            if checked and checked not in group.checked_at:
+                group.checked_at.append(checked)
+            if role and role not in group.roles:
+                group.roles.append(role)
+            if all(existing.anchor != row.anchor for existing in group.rows):
+                group.rows.append(row)
+            if all(existing.anchor != group.anchor for existing in row_groups[row.anchor]):
+                row_groups[row.anchor].append(group)
+    return groups, row_groups
 
 
-def all_guide_items(data: GuideData) -> List[GuideItem]:
-    return data.items + data.abn_items + data.bas_items + data.missing_facts + data.evidence_items
-
-
-def has_extended_pack(data: GuideData) -> bool:
-    return bool(data.extracted_values or data.abn_items or data.bas_items or data.missing_facts or data.evidence_items)
-
-
-def render_provenance(item: GuideItem) -> str:
-    parts = [f'<span class="source-url">{esc(url)}</span>' for url in item.source_urls]
-    checked_at = scalar_text(item.checked_at).strip()
-    if checked_at:
-        parts.append(f'<span class="checked-at">Checked {esc(checked_at)}</span>')
-    return "<br>".join(parts) if parts else "-"
-
-
-def render_item_tab(item: GuideItem, row_index: int) -> str:
-    item_tab_kind = effective_tab_kind(item)
-    color = tab_color(item_tab_kind)
-    extra = " review" if item_tab_kind == "review" else ""
-    extra += " evidence" if item_tab_kind in {"evidence", "answer"} else ""
+def render_source_summary(groups: List[SourceGroup]) -> str:
+    if not groups:
+        return (
+            '<footer class="source-summary"><h4>Source context</h4>'
+            '<p class="not-supplied">No supporting source supplied.</p></footer>'
+        )
+    links = ", ".join(
+        f'<a class="source-ref" href="#{group.anchor}">{esc(group.label)}</a>'
+        for group in groups
+    )
     return (
-        f'<button type="button" class="tab {color}{extra}" data-target="{row_anchor(item, row_index)}">'
-        f"<b>{esc(tab_title(item, row_index))}</b>"
-        f'<span class="tab-text">{esc(review_text(item))}</span>'
-        "</button>"
+        '<footer class="source-summary"><h4>Source context</h4>'
+        f'<p>{len(groups)} source{"s" if len(groups) != 1 else ""}: {links}</p></footer>'
+    )
+
+
+def render_sections(rows: List[RenderRow], row_sources: Dict[str, List[SourceGroup]]) -> str:
+    sections: List[str] = []
+    section_order: List[str] = []
+    for row in rows:
+        if row.section not in section_order:
+            section_order.append(row.section)
+    for section in section_order:
+        section_rows = [row for row in rows if row.section == section]
+        if not section_rows:
+            continue
+        cards = "\n".join(
+            render_card(row, row_sources.get(row.anchor, []))
+            for row in section_rows
+        )
+        sections.append(
+            f'<section class="guide-section" data-filter-section="{esc(section)}">'
+            f'<h2>{esc(section_rows[0].section_title)}</h2>'
+            f'<div class="card-list">{cards}</div></section>'
+        )
+    return "\n".join(sections)
+
+
+def render_context_index(rows: List[RenderRow]) -> str:
+    if not rows:
+        return ""
+    links = "".join(
+        f'<li class="context-item" data-status="{esc(effective_status_kind(row.item))}" '
+        f'data-review-required="{str(row_review_required(row)).lower()}">'
+        f'<a class="context-link tab {tab_color(effective_tab_kind(row.item))}" href="#{row.anchor}">'
+        f'<b>{esc(row_context_label(row))}</b></a></li>'
+        for row in rows
+    )
+    return (
+        '<details class="context-index"><summary>'
+        f'Item index ({len(rows)})</summary><nav aria-label="Prepared item index"><ul>{links}</ul></nav></details>'
+    )
+
+
+def render_review_queue(rows: List[RenderRow]) -> str:
+    review_rows = [row for row in rows if row_review_required(row)]
+    if not review_rows:
+        return ""
+
+    def render_queue_group(title: str, group_rows: List[RenderRow]) -> str:
+        if not group_rows:
+            return ""
+        items: List[str] = []
+        for row in group_rows:
+            kind = effective_status_kind(row.item)
+            handoff = row_review_handoff(row)
+            items.append(
+                f'<li class="queue-item" data-status="{esc(kind)}" data-review-required="true" '
+                f'data-action-kind="{esc(handoff["kind"])}">'
+                '<div class="queue-item-head">'
+                f'<a class="queue-link" href="#{row.anchor}">{esc(row_context_label(row))}</a>'
+                f'<span class="status {status_class(kind)}">{esc(canonical_status(kind))}</span></div>'
+                f'<p class="queue-action"><b>Next action:</b> '
+                f'<span class="queue-action-name">{esc(handoff["label"])}.</span></p>'
+                '<div class="queue-destination"><b>Destination:</b> '
+                f'{render_destination_summary(handoff["destination"])}</div></li>'
+            )
+        return (
+            f'<div class="queue-group"><h3>{esc(title)}</h3>'
+            f'<ul class="review-list">{"".join(items)}</ul></div>'
+        )
+
+    accountant_rows = [
+        row for row in review_rows if effective_status_kind(row.item) == "review"
+    ]
+    destination_rows = [
+        row for row in review_rows if effective_status_kind(row.item) != "review"
+    ]
+    return (
+        '<section class="callout review-callout"><h2>Review-required queue</h2>'
+        '<p class="queue-intro">Each item keeps its original status and states the required handoff.</p>'
+        f'{render_queue_group("Accountant review queue", accountant_rows)}'
+        f'{render_queue_group("Destination review queue", destination_rows)}</section>'
+    )
+
+
+def render_source_appendix(groups: List[SourceGroup]) -> str:
+    if not groups:
+        return ""
+    entries: List[str] = []
+    for group in groups:
+        title = " / ".join(group.titles) if group.titles else "ATO source"
+        roles = " / ".join(group.roles)
+        checked = "".join(
+            f'<span class="checked-at">Checked {esc(value)}</span>'
+            for value in group.checked_at
+        )
+        contexts = "".join(
+            f'<li class="source-context" data-status="{esc(effective_status_kind(row.item))}" '
+            f'data-review-required="{str(row_review_required(row)).lower()}">'
+            f'<a href="#{row.anchor}">{esc(source_row_context_label(row))}</a></li>'
+            for row in group.rows
+        )
+        entries.append(
+            f'<li class="source-group" id="{group.anchor}"><b>'
+            f'<span class="source-id">{esc(group.label)}</span> {esc(title)}</b>'
+            f'<span class="source-kind">{esc(roles)}</span>'
+            f'<span class="source-url">{esc(group.url)}</span>{checked}'
+            f'<ul class="source-context-list">{contexts}</ul></li>'
+        )
+    return (
+        '<details class="guide-section source-appendix" id="source-appendix" data-provenance-appendix>'
+        f'<summary>Source/provenance appendix ({len(groups)})</summary>'
+        f'<ul class="source-list">{"".join(entries)}</ul></details>'
+    )
+
+
+def render_taxonomy_legend() -> str:
+    entries = "".join(
+        f'<li><b>{esc(entry["label"])}</b><span>{esc(entry["description"])}</span></li>'
+        for entry in taxmate_handoff.TAXONOMY.values()
+    )
+    return (
+        '<details class="taxonomy-legend"><summary>Next-action legend</summary>'
+        f'<ul class="taxonomy-list">{entries}</ul></details>'
     )
 
 
 def tab_title(item: GuideItem, row_index: int) -> str:
     title = scalar_text(item.tab_title).strip()
-    default_title = f"Row {scalar_text(item.number)} {short_status(effective_status_kind(item))}"
-    if title and title != default_title:
-        return title
-    if 500 <= row_index < 600:
-        return "Evidence queue"
-    if 400 <= row_index < 500:
-        return "Missing facts queue"
-    if 300 <= row_index < 400:
-        return "BAS worksheet"
-    if 200 <= row_index < 300:
-        return "ABN prep section"
-    return title or default_title
+    reference = scalar_text(item.number).strip() or f"Item {row_index}"
+    return title or f"Row {reference} {short_status(effective_status_kind(item))}"
 
 
 def review_text(item: GuideItem) -> str:
@@ -562,23 +917,20 @@ def tab_text_value(value: Any) -> str:
 
 
 def effective_status_kind(item: GuideItem) -> str:
-    status_kind = normal_kind(item.status_kind)
-    status = normal_kind(item.status)
-    tab_kind = normal_kind(item.tab_kind)
-    if status_kind == "review" or status == "review" or tab_kind == "review":
-        return "review"
-    return status_kind
+    return taxmate_handoff.effective_status_kind(
+        item.status_kind,
+        item.status,
+        item.tab_kind,
+    )
 
 
 def effective_tab_kind(item: GuideItem) -> str:
-    status_kind = effective_status_kind(item)
-    if status_kind == "review":
-        return "review"
-    return normal_kind(item.tab_kind or status_kind)
+    return effective_status_kind(item)
 
 
-def row_anchor(item: GuideItem, row_index: int) -> str:
-    return f"row-{row_index}-{html.escape(scalar_text(item.number), quote=True)}"
+def context_label(item: GuideItem, row_index: int) -> str:
+    question = scalar_text(item.question).strip()
+    return question or tab_title(item, row_index) or fallback_tab_text(item.number, effective_status_kind(item))
 
 
 def status_class(kind: str) -> str:
@@ -646,72 +998,223 @@ HTML_TEMPLATE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Self-prepared ATO-aligned Guide</title>
+<title>Self-prepared return handoff guide</title>
 <style>
-:root{{--bg:#e9eef4;--ink:#111827;--muted:#64748b;--line:#d9e0e8;--red:#ef6b73;--blue:#6495ed;--green:#53c987;--yellow:#f2b84b;--grey:#94a3b8}}*{{box-sizing:border-box}}html,body{{overflow-x:hidden}}body{{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}}.toolbar{{padding:12px 18px;background:#111827;color:#fff;display:flex;gap:12px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.18);position:sticky;top:0;z-index:20}}.toolbar strong{{font-size:14px}}.toolbar span{{font-size:12px;color:#cbd5e1;margin-right:auto}}.toolbar button{{border:1px solid #475569;background:#1f2937;color:#fff;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer}}.toolbar button:hover{{background:#374151}}body.hide-tabs .tab{{display:none}}body.only-review .tab:not(.review){{opacity:.18;filter:grayscale(1)}}body.only-evidence .tab:not(.evidence){{opacity:.18;filter:grayscale(1)}}.book{{width:min(1120px,calc(100vw - 24px));margin:18px auto 50px;display:grid;gap:30px}}.spread{{display:grid;grid-template-columns:minmax(0,74%) minmax(190px,26%);align-items:start;position:relative;filter:drop-shadow(0 10px 24px rgba(15,23,42,.16))}}.page{{background:#fff;min-height:1088px;padding:clamp(24px,3.4vw,42px) clamp(24px,3.5vw,48px) 36px clamp(28px,3.8vw,52px);position:relative;overflow:visible}}.page.long{{min-height:1320px}}.side{{min-height:1088px;position:relative;background:transparent;overflow:visible}}.watermark{{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:78px;font-weight:900;letter-spacing:.08em;transform:rotate(-28deg);color:rgba(15,23,42,.045);pointer-events:none}}.header{{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #111827;padding-bottom:14px;margin-bottom:24px}}.header h1{{margin:0;font-size:clamp(22px,2.8vw,29px);line-height:1.12}}.meta{{text-align:right;color:var(--muted);font-size:clamp(9px,1vw,12px);line-height:1.55}}.notice{{border:2px solid #111827;background:#f8fafc;padding:14px 16px;margin:12px 0 24px;font-size:clamp(10.5px,1.15vw,13px);line-height:1.45;position:relative}}h2{{font-size:clamp(15px,1.8vw,18px);margin:24px 0 10px;border-bottom:1px solid var(--line);padding-bottom:8px}}.steps{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;position:relative}}.step{{border:1px solid var(--line);border-radius:6px;padding:12px;min-height:84px;position:relative}}.step b{{font-size:12px}}.step p{{font-size:11px;color:var(--muted);line-height:1.35}}.legend{{display:flex;gap:8px;flex-wrap:wrap}}.legend span{{font-size:10px;padding:5px 8px;border-radius:4px;background:#f8fafc;border-left:7px solid var(--line)}}.legend .b{{border-color:var(--blue)}}.legend .g{{border-color:var(--green)}}.legend .y{{border-color:var(--yellow)}}.legend .r{{border-color:var(--red)}}.legend .x{{border-color:var(--grey)}}.summary-note,.queue-list,.source-list,.review-list{{font-size:clamp(9px,1vw,12px);color:#64748b;line-height:1.5;position:relative}}.queue-list,.source-list,.review-list{{padding-left:18px;color:#334155}}.review-list{{margin:8px 0 0}}.table{{width:100%;max-width:100%;border-collapse:collapse;font-size:9px;table-layout:fixed;margin-bottom:14px}}.table th{{background:#f1f5f9;color:#475569;text-transform:uppercase;font-size:9px;text-align:left;border:1px solid var(--line);padding:8px}}.table td{{border:1px solid var(--line);padding:8px;vertical-align:top;line-height:1.32;position:relative;height:104px;overflow-wrap:normal;word-break:normal}}.table th:nth-child(1),.table td:nth-child(1){{width:5%;text-align:center}}.table th:nth-child(2){{width:14%}}.table th:nth-child(3){{width:13%}}.table th:nth-child(4){{width:17%}}.table th:nth-child(5){{width:22%}}.table th:nth-child(6){{width:17%}}.table th:nth-child(7){{width:12%}}.extraction-table th:nth-child(2),.extraction-table td:nth-child(2){{width:16%}}.extraction-table th:nth-child(8),.extraction-table td:nth-child(8){{width:12%}}.provenance{{font-size:7.5px;color:#475569;line-height:1.28;overflow-wrap:anywhere!important;word-break:break-word!important}}.source-url{{display:block;overflow-wrap:anywhere}}.checked-at{{display:block;margin-top:4px;color:#64748b;font-weight:700}}.status{{display:inline-block;min-width:86px;padding:4px 5px;border-radius:5px;font-weight:800;font-size:7.5px;white-space:normal;word-break:normal;overflow-wrap:normal;text-align:center;line-height:1.15}}.gap{{background:#fde68a}}.review-badge{{background:#fecaca}}.used{{background:#bbf7d0}}.label{{background:#dbeafe}}.skipped{{background:#e2e8f0}}.callout{{margin-top:20px;border-left:5px solid var(--red);background:#fff1f2;padding:10px 12px;font-size:12px;line-height:1.45;position:relative}}.footer{{position:absolute;left:52px;right:48px;bottom:22px;border-top:1px solid var(--line);padding-top:8px;color:#94a3b8;font-size:10px;display:flex;justify-content:space-between}}.tab{{position:absolute;left:12px;width:calc(100% - 18px);min-height:66px;border-radius:0 12px 12px 0;padding:10px 12px 10px 16px;background:#fff;box-shadow:0 7px 16px rgba(15,23,42,.12);border-left:10px solid currentColor;color:#111827;z-index:5;cursor:pointer}}.tab:before{{content:"";position:absolute;left:-64px;top:50%;width:64px;height:3px;background:currentColor;transform:translateY(-50%)}}.tab:after{{content:"";position:absolute;left:-69px;top:50%;width:9px;height:9px;border-left:3px solid currentColor;border-bottom:3px solid currentColor;transform:translateY(-50%) rotate(45deg);background:transparent}}.tab b{{display:block;font-size:clamp(8px,.85vw,10px);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;color:#0f172a}}.tab p{{margin:0;font-size:clamp(9px,.9vw,10.5px);line-height:1.3}}.tab.red{{color:#ef5b63;background:#fff0f1}}.tab.blue{{color:#3f82f6;background:#eef5ff}}.tab.green{{color:#24b96d;background:#effbf4}}.tab.yellow{{color:#df8d00;background:#fff7dc}}.tab.grey{{color:#94a3b8;background:#f8fafc}}.spotlight-target{{outline:2px solid rgba(59,130,246,.45)!important;outline-offset:5px;background:rgba(96,165,250,.08)!important;box-shadow:0 0 0 7px rgba(96,165,250,.08)!important;transition:box-shadow .15s ease,outline-color .15s ease}}.tab.active{{box-shadow:0 0 0 3px rgba(17,24,39,.16),0 10px 22px rgba(15,23,42,.22)}}@media print{{.toolbar{{display:none}}body{{background:#fff}}.book{{width:100%;margin:0;gap:0}}.spread{{filter:none;page-break-after:always;grid-template-columns:74% 26%}}.page,.side{{min-height:100vh}}.page.long{{min-height:100vh}}.tab{{box-shadow:none}}a{{color:#111827;text-decoration:none}}}}
-.table th,.table td{{overflow-wrap:anywhere;word-break:break-word}}
-.table th:nth-child(1),.table td:nth-child(1){{width:9%;padding-left:4px;padding-right:4px;font-size:7.5px}}
-.table th:nth-child(2){{width:12%}}.table th:nth-child(3){{width:11%}}
-.table th:nth-child(4){{width:17%}}.table th:nth-child(5){{width:21%}}
-.table th:nth-child(6){{width:17%}}.table th:nth-child(7){{width:13%}}
-.status{{display:block;width:100%;min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word}}
-.tab{{border:0;border-left:10px solid currentColor;font:inherit;text-align:left}}
-.tab-text{{display:block;margin:0;font-size:clamp(9px,.9vw,10.5px);line-height:1.3}}
-@media screen and (max-width:720px){{.toolbar{{position:static;flex-wrap:wrap}}.book{{display:block;width:100%;margin:0}}.spread{{display:block;width:100%;min-width:0;filter:none}}.page{{width:100%;max-width:100%;min-width:0;min-height:auto;padding:20px 12px 28px;overflow-x:auto}}.page.long{{min-height:auto}}.watermark{{display:none}}.table{{min-width:700px}}.side{{min-height:0;padding:0 12px 24px}}.tab{{position:relative;top:auto!important;left:auto;width:100%;margin:8px 0}}.tab:before,.tab:after{{display:none}}.footer{{position:static;margin-top:24px}}}}
+:root{{--bg:#eef2f6;--paper:#fff;--ink:#142033;--muted:#5d6b7e;--line:#d7dee8;--accent:#2457a6;--review:#a43b45;--review-bg:#fff4f4;--evidence:#8a5a00;--evidence-bg:#fff8df;--used:#17623b;--used-bg:#eefbf4;--label:#174e82;--label-bg:#eef6ff;--skipped:#566273;--skipped-bg:#f1f4f7}}
+*{{box-sizing:border-box}}
+html,body{{max-width:100%;margin:0}}
+body{{background:var(--bg);color:var(--ink);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-wrap:anywhere}}
+a{{color:#174f91;text-underline-offset:3px}}
+button,a{{touch-action:manipulation}}
+[hidden]{{display:none!important}}
+.toolbar{{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;padding:10px max(12px,calc((100vw - 960px)/2));background:#142033;color:#fff;box-shadow:0 2px 10px rgba(20,32,51,.2)}}
+.toolbar>*{{min-width:0}}
+.toolbar strong{{margin-right:auto}}
+.filter-summary{{font-size:13px;color:#dce6f4}}
+.toolbar button{{min-height:44px;border:1px solid #69768a;border-radius:8px;background:#243249;color:#fff;padding:8px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}}
+.toolbar button[aria-pressed="true"]{{background:#fff;color:#142033;border-color:#fff}}
+.book{{width:min(960px,calc(100% - 32px));margin:24px auto 56px}}
+.page{{background:var(--paper);padding:clamp(22px,4vw,48px);box-shadow:0 12px 34px rgba(28,44,69,.12)}}
+.header{{display:flex;justify-content:space-between;gap:24px;padding-bottom:18px;border-bottom:3px solid var(--ink)}}
+.header h1{{max-width:680px;margin:0;font-size:clamp(26px,5vw,42px);line-height:1.08;letter-spacing:-.025em}}
+.meta{{min-width:150px;text-align:right;color:var(--muted);font-size:14px}}
+.notice{{margin:24px 0;padding:16px 18px;border:1px solid #b7c5d9;border-left:6px solid var(--accent);border-radius:8px;background:#f4f8fd}}
+.notice b{{display:block;margin-bottom:4px}}
+h2{{margin:34px 0 14px;font-size:23px;line-height:1.2}}
+h3{{margin:3px 0 0;font-size:20px;line-height:1.28}}
+h4{{margin:0 0 6px;font-size:13px;line-height:1.3;text-transform:uppercase;letter-spacing:.055em;color:#46566d}}
+p{{margin:0 0 8px}}
+.summary-note{{color:var(--muted)}}
+.steps{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}}
+.step{{padding:13px;border:1px solid var(--line);border-radius:9px;background:#fbfcfe}}
+.step b{{display:block;margin-bottom:4px}}
+.step p{{color:var(--muted);font-size:14px}}
+.taxonomy-legend,.context-index{{margin:24px 0;border:1px solid var(--line);border-radius:10px;background:#f8fafc}}
+.taxonomy-legend>summary,.context-index>summary,[data-provenance-appendix]>summary{{cursor:pointer;padding:14px 16px;font-weight:800}}
+.taxonomy-list{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 18px;margin:0;padding:0 20px 16px 38px}}
+.taxonomy-list li span{{display:block;color:var(--muted);font-size:13px}}
+.context-index ul{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0;padding:0 16px 16px;list-style:none}}
+.context-link{{display:block;height:100%;padding:10px 11px;border-left:5px solid #77869a;border-radius:5px;background:#fff;color:var(--ink);text-decoration:none;box-shadow:0 1px 3px rgba(20,32,51,.08)}}
+.context-link b,.tab-text{{display:block}}
+.context-link b{{font-size:13px}}
+.tab-text{{margin-top:2px;color:var(--muted);font-size:13px}}
+.context-link.red{{border-color:#c34f59}}.context-link.yellow{{border-color:#d19a29}}.context-link.green{{border-color:#37a66d}}.context-link.blue{{border-color:#4e87c4}}.context-link.grey{{border-color:#8894a4}}
+.guide-section{{margin-top:36px}}
+.guide-section>h2{{padding-bottom:9px;border-bottom:1px solid var(--line)}}
+.card-list{{display:grid;gap:15px}}
+.handoff-card{{break-inside:avoid-page;page-break-inside:avoid;scroll-margin-top:78px;border:1px solid #cbd5e1;border-radius:11px;background:#fff;box-shadow:0 3px 12px rgba(20,32,51,.06);overflow:hidden}}
+.handoff-card:target{{outline:3px solid rgba(36,87,166,.38);outline-offset:4px}}
+.card-header{{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:15px 17px;border-bottom:1px solid var(--line);background:#f8fafc}}
+.row-number{{display:inline-block;margin-right:7px;border-radius:5px;background:#e5ebf2;padding:3px 7px;font-size:13px;font-weight:800}}
+.ato-area{{display:inline;color:var(--muted);font-size:14px}}
+.status{{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;max-width:180px;min-height:31px;border-radius:999px;padding:6px 10px;text-align:center;font-size:12px;font-weight:800;line-height:1.2}}
+.gap{{background:var(--evidence-bg);color:var(--evidence)}}.review-badge{{background:#ffe2e4;color:#8e2933}}.used{{background:var(--used-bg);color:var(--used)}}.label{{background:var(--label-bg);color:var(--label)}}.skipped{{background:var(--skipped-bg);color:var(--skipped)}}
+.handoff-summary{{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}}
+.handoff-summary section{{padding:14px 17px}}
+.handoff-summary section+section{{border-left:1px solid var(--line)}}
+.action-name{{font-size:17px;font-weight:800;color:#183b6b}}
+.destination-label{{font-weight:750}}
+.destination-label.verified{{color:var(--used)}}.destination-label.requires-review{{color:var(--review)}}.destination-label.not-entered{{color:var(--skipped)}}
+.destination-channels{{display:grid;grid-template-columns:82px minmax(0,1fr);gap:4px 9px;margin:7px 0 0}}
+.destination-channels dt{{font-weight:800}}.destination-channels dd{{min-width:0;margin:0;overflow-wrap:anywhere}}
+.fact-list{{margin:0;padding:13px 17px 8px 38px;border-bottom:1px solid var(--line)}}
+.fact-item{{padding:3px 0 10px 2px}}
+.fact-line{{display:grid;grid-template-columns:minmax(145px,32%) minmax(0,1fr);gap:12px}}
+.fact-label{{font-weight:800}}
+.fact-value{{min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}}
+.fact-destination{{margin-top:4px;color:var(--muted);font-size:13px}}
+.fact-destination .destination-label{{margin:0}}
+.fact-destination .destination-channels{{font-size:13px}}
+.fact-action,.fact-why{{margin:4px 0 0;color:var(--muted);font-size:13px}}
+.fact-action b{{color:#34445a}}
+.why-block,.source-summary{{padding:13px 17px;border-bottom:1px solid var(--line)}}
+.source-summary{{border-bottom:0;background:#fbfcfe}}
+.source-list,.review-list{{margin:0;padding-left:20px}}
+.callout{{margin-top:34px;padding:16px 18px;border:1px solid #efb7bb;border-left:6px solid var(--review);border-radius:9px;background:var(--review-bg)}}
+.callout h2{{margin:0 0 8px;font-size:20px}}
+.queue-intro{{color:var(--muted)}}
+.queue-group+ .queue-group{{margin-top:18px}}
+.queue-group h3{{margin:12px 0 8px;font-size:16px}}
+.review-list{{display:grid;gap:8px;padding:0;list-style:none}}
+.queue-item{{padding:11px 12px;border:1px solid #e2aeb3;border-radius:8px;background:#fff}}
+.queue-item-head{{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}}
+.queue-link{{font-weight:800}}
+.queue-action{{margin-top:7px}}
+.queue-action-name{{font-weight:800}}
+.queue-destination{{color:var(--muted);font-size:13px}}
+.queue-destination>.destination-label{{display:inline;margin-left:4px}}
+.queue-destination .destination-channels{{margin-left:0}}
+{source_appendix_screen_css}
+.source-list{{padding:0 18px 16px 38px}}
+.source-group{{margin-bottom:14px;scroll-margin-top:78px;break-inside:avoid}}
+.source-group:target{{outline:3px solid rgba(36,87,166,.38);outline-offset:3px}}
+.source-id{{display:inline-block;margin-right:4px;color:var(--accent)}}
+.source-kind,.source-url,.checked-at{{display:block}}
+.source-kind{{color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}}
+.source-url{{color:#42536a;font-size:13px;overflow-wrap:anywhere;word-break:break-word}}
+.checked-at{{color:#617086;font-size:12px;font-weight:700}}
+.source-context-list{{margin-top:5px;padding-left:20px}}
+.not-supplied{{color:var(--muted)}}
+.footer{{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}}
+@media screen and (max-width:520px){{
+  .toolbar{{position:static;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px}}
+  .toolbar strong,.filter-summary{{grid-column:1/-1}}
+  .toolbar button{{min-width:0;width:100%;min-height:44px;padding:7px 4px;font-size:12px;line-height:1.2}}
+  .book{{width:100%;margin:0}}
+  .page{{padding:18px 12px;box-shadow:none}}
+  .header{{display:block}}.header>*,.steps>*,.handoff-summary>*,.queue-item>*{{min-width:0}}.meta{{min-width:0;margin-top:10px;text-align:left}}
+  .steps,.taxonomy-list,.context-index ul{{grid-template-columns:1fr}}
+  .handoff-summary{{grid-template-columns:1fr}}
+  .handoff-summary section+section{{border-left:0;border-top:1px solid var(--line)}}
+  .card-header{{display:block;padding:14px}}
+  .card-header .status{{margin-top:10px}}
+  .row-number,.ato-area{{display:block;width:max-content;max-width:100%}}
+  .ato-area{{margin-top:5px}}
+  .fact-list{{padding:12px 14px 7px 32px}}
+  .fact-line{{grid-template-columns:1fr;gap:2px}}
+  .fact-value{{min-width:0;max-width:100%;overflow-wrap:anywhere}}
+  .why-block,.source-summary{{padding:12px 14px}}
+  .queue-item-head{{display:block}}
+  .queue-item-head .status{{margin-top:8px}}
+  .destination-channels{{grid-template-columns:1fr}}
+  .destination-channels dd{{min-width:0;margin-bottom:4px;overflow-wrap:anywhere}}
+}}
+@media print{{
+  @page{{margin:13mm}}
+  *{{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+  body{{background:#fff;font-size:10.5pt}}
+  .toolbar,.context-index{{display:none!important}}
+  .book{{width:100%;margin:0}}.page{{padding:0;box-shadow:none}}
+  .handoff-card{{box-shadow:none;break-inside:avoid-page;page-break-inside:avoid}}
+  .handoff-card.allow-page-split{{break-inside:auto;page-break-inside:auto}}
+  .fact-item{{break-inside:avoid;page-break-inside:avoid}}
+  .queue-item{{break-inside:avoid;page-break-inside:avoid}}
+  .card-header,.handoff-summary,.why-block,.source-summary{{break-inside:avoid}}
+  .guide-section>h2{{break-after:avoid-page}}
+  .guide-section{{margin-top:22px}}
+  {source_appendix_print_css}
+  details.taxonomy-legend:not([open]) > :not(summary){{display:block!important}}
+  details>summary{{list-style:none}}
+  a{{color:inherit;text-decoration:none}}
+}}
 </style>
 </head>
 <body>
-<div class="toolbar"><strong>Self-prepared HTML guide</strong><span>Preview controls are not printed.</span><button data-mode="all">Show all tabs</button><button data-mode="hide">Hide tabs</button><button data-mode="review">Review only</button><button data-mode="evidence">Evidence only</button></div>
-<main class="book">
-<section class="spread">
-<article class="page">
-<div class="watermark">DRAFT GUIDE</div>
-<div class="header"><h1>ATO-aligned manual tax guide<br>{income_year}</h1><div class="meta">Prepared by user<br>Generated {generated_date}<br>Not an ATO form</div></div>
-<div class="notice" data-anchor="prep-boundary"><b>Preparation aid only. Manual copy only.</b> This self-prepared custom HTML pack can be printed or saved as PDF. It helps you copy reviewed answers into myTax, a paper ATO form, or an accountant handoff. It is not tax, legal, financial, accounting, BAS-agent, or registered-tax-agent advice. It is not an official ATO PDF and cannot be filed, uploaded, mailed, or submitted as a tax return.</div>
-<h2>How to use this guide</h2>
-<div class="steps" data-anchor="how-to-row"><div class="step"><b>1. Review answers</b><p>Check each value against your records.</p></div><div class="step"><b>2. Follow ATO labels</b><p>Use ATO label references to find where each answer belongs.</p></div><div class="step"><b>3. Clear red flags</b><p>Ask an accountant about every Accountant review item.</p></div><div class="step"><b>4. Copy manually</b><p>Enter reviewed answers into myTax or paper form.</p></div></div>
-<h2>Sticky tab legend</h2>
-<div class="legend"><span class="b">ATO label</span><span class="g">Answer used</span><span class="y">Evidence needed</span><span class="r">Accountant review</span><span class="x">N/A skipped</span></div>
-<h2>Interview summary</h2>
-<p class="summary-note" data-anchor="summary-note">{summary_note}</p>
-<div class="footer"><span>Self-prepared custom guide. Not an ATO form. Not fileable.</span><span>Page 1</span></div>
-</article>
-<aside class="side">
-<button type="button" class="tab red review" data-target="prep-boundary"><b>Prep boundary</b><span class="tab-text">Not fileable. Manual copy only into myTax/paper form or send to accountant.</span></button>
-<button type="button" class="tab blue" data-target="how-to-row"><b>How-to row</b><span class="tab-text">Use ATO labels, then clear accountant-review flags before copying manually.</span></button>
-<button type="button" class="tab yellow evidence" data-target="summary-note"><b>Evidence needed</b><span class="tab-text">Points directly to the interview summary note.</span></button>
-</aside>
-</section>
-<section class="spread" id="taxmate-guide-worksheet">
-<article class="page long">
-<div class="watermark">MANUAL COPY</div>
-<div class="header"><h1>Tax items and review flags</h1><div class="meta">Income year {income_year}<br>Self-prepared draft<br>Not an ATO form</div></div>
-{extraction_table}
-<h2>ATO-aligned manual copy worksheet</h2>
-<table class="table"><thead><tr><th></th><th>ATO area</th><th>Question</th><th>Answer/value</th><th>Why included</th><th>Source</th><th>Status</th></tr></thead><tbody>
-{rows}
-</tbody></table>
-{abn_section}
-{bas_section}
-{missing_queue}
-{evidence_queue}
+<div class="toolbar" role="group" aria-label="Worksheet filters"><strong>Self-prepared HTML guide</strong><span class="filter-summary" aria-live="polite"></span><button type="button" data-filter="all" aria-controls="guide-content" aria-pressed="true">Show all</button><button type="button" data-filter="review" aria-controls="guide-content" aria-pressed="false">Review required</button><button type="button" data-filter="evidence" aria-controls="guide-content" aria-pressed="false">Evidence required</button></div>
+<main class="book" id="guide-content"><article class="page" id="taxmate-guide-worksheet">
+<header class="header"><h1>Return fields and next actions</h1><div class="meta">Income year {income_year}<br>Prepared by user<br>Generated {generated_date}<br>Not an ATO form</div></header>
+<div class="notice" id="prep-boundary"><b>Preparation aid only. Manual review required.</b>This custom guide is not tax, legal, financial, accounting, BAS-agent, or registered-tax-agent advice. It is not an official ATO form and is not fileable. Only reviewed facts with an exact verified destination may be entered manually in myTax or a paper return. Give every Accountant review item to a qualified professional before entry.</div>
+<section><h2>How to use this guide</h2><div class="steps"><div class="step"><b>1. Check the facts</b><p>Compare each bullet with the record or answer you supplied.</p></div><div class="step"><b>2. Follow the next action</b><p>Use the exact destination only when the card identifies a verified mapping.</p></div><div class="step"><b>3. Resolve review items</b><p>Resolve destination-review items and send Accountant review items for professional review before entry.</p></div></div></section>
+<section><h2>Interview summary</h2><p class="summary-note">{summary_note}</p></section>
+{taxonomy_legend}
+{context_index}
+{guide_sections}
 {review_queue}
 {source_appendix}
-<div class="footer"><span>Self-prepared custom guide. Not an ATO form. Not fileable.</span><span>Page 2</span></div>
-</article>
-<aside class="side">
-{row_tabs}
-</aside>
-</section>
-</main>
+<footer class="footer">Self-prepared custom guide. Not an ATO form. Not fileable. Preparation aid only.</footer>
+</article></main>
 <script>
-function findTarget(spread,value){{for(const el of spread.querySelectorAll('[data-anchor]')){{if(el.dataset.anchor===value)return el;}}return null;}}
-function alignTabs(){{for(const spread of document.querySelectorAll('.spread')){{const side=spread.querySelector('.side');if(!side)continue;const spreadRect=spread.getBoundingClientRect();for(const tab of side.querySelectorAll('.tab[data-target]')){{const target=findTarget(spread,tab.dataset.target);if(!target)continue;const targetRect=target.getBoundingClientRect();const targetCenter=targetRect.top-spreadRect.top+targetRect.height/2;const tabHeight=tab.offsetHeight||66;tab.style.top=Math.max(18,targetCenter-tabHeight/2)+'px';}}}}}}
-function clearSpotlight(){{document.querySelectorAll('.spotlight-target').forEach(function(el){{el.classList.remove('spotlight-target');}});document.querySelectorAll('.tab.active').forEach(function(el){{el.classList.remove('active');}});}}
-function spotlight(tab){{clearSpotlight();const spread=tab.closest('.spread');const target=spread?findTarget(spread,tab.dataset.target):null;if(!target)return;target.classList.add('spotlight-target');tab.classList.add('active');}}
-window.addEventListener('load',alignTabs);window.addEventListener('resize',alignTabs);setTimeout(alignTabs,80);
-for(const tab of document.querySelectorAll('.tab[data-target]')){{tab.addEventListener('click',function(){{spotlight(tab);}});tab.addEventListener('keydown',function(event){{if(event.key==='Enter'||event.key===' '){{event.preventDefault();spotlight(tab);}}}});}}
-for(const button of document.querySelectorAll('[data-mode]')){{button.onclick=function(){{document.body.classList.remove('hide-tabs','only-review','only-evidence');if(button.dataset.mode==='hide')document.body.classList.add('hide-tabs');if(button.dataset.mode==='review')document.body.classList.add('only-review');if(button.dataset.mode==='evidence')document.body.classList.add('only-evidence');clearSpotlight();alignTabs();}};}}
+const filterButtons=[...document.querySelectorAll('[data-filter]')];
+const filterSummary=document.querySelector('.filter-summary');
+let activeFilter='all';
+let filterBeforePrint='all';
+const detailsBeforePrint=new Map();
+function matchesFilter(element,filter){{
+  if(filter==='all'){{return true;}}
+  if(filter==='review'){{return element.dataset.reviewRequired==='true';}}
+  return element.dataset.status===filter;
+}}
+function applyFilter(filter){{
+  activeFilter=filter;
+  const cards=[...document.querySelectorAll('.handoff-card[data-status]')];
+  for(const card of cards){{card.hidden=!matchesFilter(card,filter);}}
+  for(const item of document.querySelectorAll('.context-index [data-status]')){{item.hidden=!matchesFilter(item,filter);}}
+  for(const item of document.querySelectorAll('.review-list [data-status]')){{item.hidden=!matchesFilter(item,filter);}}
+  for(const item of document.querySelectorAll('.source-context[data-status]')){{item.hidden=!matchesFilter(item,filter);}}
+  for(const section of document.querySelectorAll('[data-filter-section]')){{section.hidden=![...section.querySelectorAll('.handoff-card')].some(card=>!card.hidden);}}
+  const reviewQueue=document.querySelector('.review-callout');
+  if(reviewQueue){{reviewQueue.hidden=![...reviewQueue.querySelectorAll('[data-status]')].some(item=>!item.hidden);}}
+  for(const group of document.querySelectorAll('.source-group')){{group.hidden=![...group.querySelectorAll('.source-context')].some(item=>!item.hidden);}}
+  const appendix=document.querySelector('[data-provenance-appendix]');
+  if(appendix){{appendix.hidden=![...appendix.querySelectorAll('.source-group')].some(group=>!group.hidden);}}
+  const visible=cards.filter(card=>!card.hidden).length;
+  if(filterSummary){{filterSummary.textContent=`${{visible}} of ${{cards.length}} items`;}}
+  for(const button of filterButtons){{button.setAttribute('aria-pressed',String(button.dataset.filter===filter));}}
+}}
+function revealHashTarget(){{
+  const raw=window.location.hash.slice(1);
+  if(!raw){{return;}}
+  let identifier=raw;
+  try{{identifier=decodeURIComponent(raw);}}catch(error){{identifier=raw;}}
+  const target=document.getElementById(identifier);
+  if(!target){{return;}}
+  const card=target.classList.contains('handoff-card')?target:target.closest('.handoff-card');
+  if(card&&card.hidden){{
+    const targetFilter=card.dataset.status==='evidence'
+      ?'evidence'
+      :(card.dataset.reviewRequired==='true'?'review':'all');
+    applyFilter(targetFilter);
+  }}
+  const group=target.classList.contains('source-group')?target:target.closest('.source-group');
+  if(group&&group.hidden){{applyFilter('all');}}
+  const details=target.closest('details');
+  if(details){{details.open=true;}}
+  if(group){{group.scrollIntoView({{block:'center'}});}}
+}}
+for(const button of filterButtons){{button.addEventListener('click',function(){{applyFilter(button.dataset.filter);}});}}
+window.addEventListener('hashchange',revealHashTarget);
+window.addEventListener('beforeprint',function(){{
+  filterBeforePrint=activeFilter;
+  applyFilter('all');
+  for(const details of document.querySelectorAll('details')){{detailsBeforePrint.set(details,details.open);details.open=true;}}
+}});
+window.addEventListener('afterprint',function(){{
+  for(const [details,wasOpen] of detailsBeforePrint){{details.open=wasOpen;}}
+  detailsBeforePrint.clear();
+  applyFilter(filterBeforePrint);
+}});
+applyFilter('all');
+revealHashTarget();
 </script>
 </body>
 </html>

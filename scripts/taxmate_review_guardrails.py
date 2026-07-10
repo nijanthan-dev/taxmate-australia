@@ -4,17 +4,22 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import os
 import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable, List
+from typing import Callable, Dict, Iterable, List
+
+import taxmate_handoff
+import taxmate_validate
 
 
 ROOT_MARKER = os.path.join(".codex-plugin", "plugin.json")
 TAXPACK_OUTPUT_LAYER = "taxpack_output_layer_contract"
+HANDOFF_DESTINATION_CONTRACT = "handoff_destination_contract"
 INDIVIDUAL_INTAKE_CONTRACT = "individual_intake_contract"
 PRIVATE_HEALTH_MEDICARE_CONTRACT = "private_health_medicare_contract"
 ATO_FETCH_BOUNDARY = "ato_fetch_boundary"
@@ -31,6 +36,51 @@ LOCAL_CI_CONTRACT = "local_ci_contract"
 PRE_COMMIT_CONTRACT = "pre_commit_contract"
 REVIEW_GUARDRAIL_DOCS = "review_guardrail_docs"
 OUTPUT_DOCS_CONTRACT = "output_docs_contract"
+HANDOFF_TAXONOMY = {
+    "enter-reviewed-value",
+    "answer-guided-question",
+    "retain-evidence",
+    "resolve-before-entry",
+    "accountant-handoff-only",
+    "not-entered-directly",
+    "destination-requires-review",
+}
+REQUIRED_HANDOFF_DESTINATIONS = {
+    "phi-tax-claim-code",
+    "phi-premiums-j",
+    "phi-rebate-k",
+    "phi-benefit-code-l",
+    "m1-exemption-question",
+    "m1-full-days-v",
+    "m1-half-days-w",
+    "m2-cover-question-e",
+    "m2-days-not-liable-a",
+    "spouse-had-question",
+}
+HANDOFF_DESTINATION_SOURCE_IDS = {
+    "phi-tax-claim-code": {"mytax": "ato-f99c3a4ad079", "paper": "ato-2a2cf8a8c462"},
+    "phi-premiums-j": {"mytax": "ato-f99c3a4ad079", "paper": "ato-2a2cf8a8c462"},
+    "phi-rebate-k": {"mytax": "ato-f99c3a4ad079", "paper": "ato-2a2cf8a8c462"},
+    "phi-benefit-code-l": {"mytax": "ato-f99c3a4ad079", "paper": "ato-2a2cf8a8c462"},
+    "m1-exemption-question": {"mytax": "ato-4cedc9f93767", "paper": "ato-39155fe09d00"},
+    "m1-full-days-v": {"mytax": "ato-4cedc9f93767", "paper": "ato-39155fe09d00"},
+    "m1-half-days-w": {"mytax": "ato-4cedc9f93767", "paper": "ato-39155fe09d00"},
+    "m2-cover-question-e": {"mytax": "ato-836a84c52e60", "paper": "ato-b8cc03014dc1"},
+    "m2-days-not-liable-a": {"mytax": "ato-836a84c52e60", "paper": "ato-b8cc03014dc1"},
+    "spouse-had-question": {"mytax": "ato-815a889d0a59", "paper": "ato-29a73bbec8f5"},
+}
+HANDOFF_DESTINATION_PRODUCERS = {
+    "phi-tax-claim-code": {"private_health_statement_rows"},
+    "phi-premiums-j": {"private_health_statement_rows"},
+    "phi-rebate-k": {"private_health_statement_rows"},
+    "phi-benefit-code-l": {"private_health_statement_rows"},
+    "m1-exemption-question": {"medicare_levy_row"},
+    "m1-full-days-v": {"medicare_levy_row"},
+    "m1-half-days-w": {"medicare_levy_row"},
+    "m2-cover-question-e": {"mls_review_row"},
+    "m2-days-not-liable-a": {"mls_review_row"},
+    "spouse-had-question": {"spouse_review_row"},
+}
 MARKETPLACE_ADD_PREFIX = "codex plugin marketplace add "
 LOCAL_MARKETPLACE_ADD_COMMAND = "codex plugin marketplace add ."
 LOCAL_PLUGIN_ADD_COMMAND = "codex plugin add taxmate-australia@{name}"
@@ -359,6 +409,11 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
         "README and install docs must describe portable-vs-runtime output, HTML-only prep handoff sections, synthetic data, and manual-copy boundaries while developer docs carry screenshot refresh commands and the docs-update rule for user-facing output changes.",
     ),
     ReviewPattern(
+        "Issue #124 handoff destinations",
+        HANDOFF_DESTINATION_CONTRACT,
+        "Runtime-owned handoff actions must use the documented taxonomy, preserve review precedence and falsey values, fail closed for malformed or unverified destinations, keep source provenance, and give every row, queue item, extraction, and fact a nonblank next action plus a verified destination or explicit non-entry/review wording.",
+    ),
+    ReviewPattern(
         "Issue #70 deduction/offset intake",
         INDIVIDUAL_INTAKE_CONTRACT,
         "Deduction, personal-super, and offset intake must keep source provenance specific to the row kind, gate GST/BAS sources on the deduction row's GST/BAS signal rather than global BAS inputs, match short deduction routing tokens such as car as whole words, classify software/tool items before broad licence/membership matches, surface offset evidence gaps when claim is omitted, uncertain, or only a supported offset type is supplied but suppress them for boolean or phrase-based negative claims, derive false-only structured placeholders from field alias maps including numeric 0 false defaults while preserving false flags attached to core facts, ignore boolean false amount-only placeholders while preserving zero amount rows, skip natural-language no-op scalar item entries and top-level scalar no-op aliases before row creation, keep partial reimbursement/employer-paid/provided and partial offset eligibility/review phrases in evidence instead of treating them as clean negatives, prefer concrete aliases over earlier unknown or serialized-false placeholders, compare 0/1 amount aliases as money rather than booleans, compare equivalent evidence/NOI/ack denials and boolean aliases by field-aware canonical meaning including negative boolean phrases, suppress negative review phrases before evidence gating, treat explicit document/evidence denials and false evidence/NOI/ack values as concrete facts, preserve false aliases in conflicting boolean alias groups, validate malformed personal-super contribution dates before clearing evidence, surface conflicting concrete aliases in row and evidence text, preserve scalar/free-form facts beside structured rows, inside mixed lists, in nested parent notes, under item alias keys beside item arrays, in note-only containers, in supplemental note dictionaries, in recognized item-level notes, in unrecognized dictionaries, in unrecognized/partially recognized dict list items, in partially recognized dictionaries with unknown sibling keys, and in recognized parent-level aliases beside nested item arrays across all deduction/super/offset alias groups without letting raw notes satisfy evidence/NOI/ack fields, keep receipt/statement/NOI/acknowledgement denials including bare not-sent/not-acknowledged and denial-only super NOI/ack wording in evidence queues, and keep recognized direct-item aliases such as description with their amount/evidence fields intact while keeping super-specific offset sources off spouse, zone/remote, other, unsupported, and scalar generic offset fallback rows while preserving them for super offset rows.",
@@ -448,14 +503,412 @@ def wrong_local_marketplace_commands(commands: Iterable[str]) -> List[str]:
     ]
 
 
+def ast_call_name(node: ast.Call) -> str:
+    if isinstance(node.func, ast.Name):
+        return node.func.id
+    if isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name):
+        return f"{node.func.value.id}.{node.func.attr}"
+    return ""
+
+
+def ast_parent_map(tree: ast.AST) -> Dict[ast.AST, ast.AST]:
+    parents: Dict[ast.AST, ast.AST] = {}
+    for node in ast.walk(tree):
+        for child in ast.iter_child_nodes(node):
+            parents[child] = node
+    return parents
+
+
+def ast_enclosing_function(node: ast.AST, parents: Dict[ast.AST, ast.AST]) -> str:
+    current = node
+    while current in parents:
+        current = parents[current]
+        if isinstance(current, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            return current.name
+    return "<module>"
+
+
+def destination_kind_literals(text: str, name: str) -> set[str]:
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return set()
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        if not any(isinstance(target, ast.Name) and target.id == name for target in targets):
+            continue
+        value = node.value
+        if isinstance(value, (ast.Set, ast.List, ast.Tuple)):
+            return {
+                item.value
+                for item in value.elts
+                if isinstance(item, ast.Constant) and isinstance(item.value, str)
+            }
+    return set()
+
+
+def handoff_ast_findings(intake_text: str, taxpack_text: str, mapping_ids: set[str]) -> List[Finding]:
+    findings: List[Finding] = []
+    try:
+        intake_tree = ast.parse(intake_text)
+    except SyntaxError as exc:
+        findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, f"intake AST is invalid: {exc}"))
+        intake_tree = None
+    if intake_tree is not None:
+        guide_calls = [
+            node
+            for node in ast.walk(intake_tree)
+            if isinstance(node, ast.Call) and ast_call_name(node) == "guide_row"
+        ]
+        if len(guide_calls) != 67:
+            findings.append(
+                Finding(
+                    HANDOFF_DESTINATION_CONTRACT,
+                    f"intake must retain 67 explicit guide_row producers; found {len(guide_calls)}",
+                )
+            )
+        for node in guide_calls:
+            keywords = {keyword.arg: keyword.value for keyword in node.keywords if keyword.arg}
+            if "facts" not in keywords or (
+                isinstance(keywords["facts"], ast.Constant) and keywords["facts"].value is None
+            ):
+                findings.append(
+                    Finding(
+                        HANDOFF_DESTINATION_CONTRACT,
+                        f"guide_row call missing explicit facts at line {node.lineno}",
+                    )
+                )
+            row_kind = keywords.get("row_kind")
+            if not isinstance(row_kind, ast.Constant) or not isinstance(row_kind.value, str) or not row_kind.value.strip():
+                findings.append(
+                    Finding(
+                        HANDOFF_DESTINATION_CONTRACT,
+                        f"guide_row call missing literal row_kind at line {node.lineno}",
+                    )
+                )
+        for node in ast.walk(intake_tree):
+            if isinstance(node, ast.Call) and ast_call_name(node) == "taxmate_handoff.compatibility_facts":
+                findings.append(
+                    Finding(
+                        HANDOFF_DESTINATION_CONTRACT,
+                        f"intake uses compatibility fact synthesis at line {node.lineno}",
+                    )
+                )
+
+        parents = ast_parent_map(intake_tree)
+        for node in ast.walk(intake_tree):
+            if not isinstance(node, ast.Constant) or not isinstance(node.value, str) or node.value not in mapping_ids:
+                continue
+            parent = parents.get(node)
+            while parent is not None and not isinstance(parent, ast.Call):
+                parent = parents.get(parent)
+            function = ast_enclosing_function(node, parents)
+            destination_values = [
+                keyword.value
+                for keyword in parent.keywords
+                if isinstance(parent, ast.Call) and keyword.arg == "destination_key"
+            ] if isinstance(parent, ast.Call) else []
+            if (
+                not isinstance(parent, ast.Call)
+                or ast_call_name(parent) != "taxmate_handoff.fact"
+                or node not in destination_values
+                or function not in HANDOFF_DESTINATION_PRODUCERS.get(node.value, set())
+            ):
+                findings.append(
+                    Finding(
+                        HANDOFF_DESTINATION_CONTRACT,
+                        f"destination mapping used outside approved producer: {node.value} at line {node.lineno}",
+                    )
+                )
+
+    try:
+        taxpack_tree = ast.parse(taxpack_text)
+    except SyntaxError as exc:
+        findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, f"taxpack AST is invalid: {exc}"))
+        taxpack_tree = None
+    if taxpack_tree is not None:
+        output_logic: List[str] = []
+        forbidden_calls = {
+            "taxmate_handoff.fact",
+            "taxmate_handoff.verified_destination",
+            "taxmate_handoff.destination_source",
+            "taxmate_handoff.requested_fact_handoff",
+        }
+        for node in ast.walk(taxpack_tree):
+            if isinstance(node, ast.Call):
+                name = ast_call_name(node)
+                if name in forbidden_calls:
+                    output_logic.append(f"{name} at line {node.lineno}")
+                for keyword in node.keywords:
+                    if keyword.arg in {"action_kind", "destination_key"}:
+                        output_logic.append(f"{keyword.arg} at line {node.lineno}")
+        for detail in sorted(set(output_logic)):
+            findings.append(
+                Finding(
+                    HANDOFF_DESTINATION_CONTRACT,
+                    "output layer constructs handoff facts or destinations: " + detail,
+                )
+            )
+    return findings
+
+
+def handoff_source_state_findings(root: Path) -> List[Finding]:
+    findings: List[Finding] = []
+    try:
+        coverage, registry = taxmate_handoff.source_state(root)
+    except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        return [Finding(HANDOFF_DESTINATION_CONTRACT, f"handoff source state unavailable: {exc}")]
+    for source_id, (expected_url, expected_checked_at) in taxmate_validate.HANDOFF_EXPECTED_SOURCE_STATE.items():
+        covered = coverage.get(source_id)
+        record = registry.get(source_id)
+        if not isinstance(covered, dict) or not isinstance(record, dict):
+            findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, f"source state missing verified binding: {source_id}"))
+            continue
+        expected_hash = taxmate_validate.HANDOFF_EXPECTED_HASHES[source_id]
+        registry_url = taxmate_handoff.canonical_url(str(record.get("final_url") or record.get("url") or ""))
+        if covered.get("canonical_url") != expected_url or registry_url != expected_url:
+            findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, f"coverage-registry URL mismatch: {source_id}"))
+        if covered.get("content_hash") != expected_hash or record.get("content_hash") != expected_hash:
+            findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, f"coverage-registry hash mismatch: {source_id}"))
+        if covered.get("checked_at") != expected_checked_at or record.get("last_checked") != expected_checked_at:
+            findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, f"coverage-registry date mismatch: {source_id}"))
+        if covered.get("status") != "verified" or record.get("content_verified") is not True:
+            findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, f"source state is not verified: {source_id}"))
+    return findings
+
+
+def check_handoff_contract(root: Path) -> List[Finding]:
+    findings: List[Finding] = []
+    runtime_text = read_optional(root, "scripts/taxmate_handoff.py")
+    intake_text = read_optional(root, "scripts/taxmate_intake.py")
+    taxpack_text = read_optional(root, "scripts/taxmate_taxpack.py")
+    validate_text = read_optional(root, "scripts/taxmate_validate.py")
+    test_text = "\n".join(
+        [
+            read_optional(root, "tests/test_handoff_contract.py"),
+            read_optional(root, "tests/test_handoff_repository_contract.py"),
+        ]
+    )
+
+    findings.extend(
+        fail_if_missing(
+            HANDOFF_DESTINATION_CONTRACT,
+            runtime_text,
+            [
+                "TAXONOMY:",
+                "ACTION_TEXT =",
+                "def scalar_text(",
+                "if value is None:",
+                "if isinstance(value, bool):",
+                "def mapping_channel_errors(",
+                "def destination_mapping_errors(",
+                'record.get("content_verified") is not True',
+                'covered.get("content_hash")',
+                'covered.get("checked_at")',
+                "def unresolved_destination(",
+                "def not_entered_destination(",
+                "def effective_action_kind(",
+                'if effective_status == "review":',
+                'return "accountant-handoff-only"',
+                "def normalize_handoff(",
+                "def normalize_fact(",
+                "def normalize_row_contract(",
+                "def build_row_contract(",
+            ],
+        )
+    )
+    findings.extend(handoff_ast_findings(intake_text, taxpack_text, REQUIRED_HANDOFF_DESTINATIONS))
+    runtime_destination_kinds = destination_kind_literals(runtime_text, "DESTINATION_KINDS")
+    validator_destination_kinds = destination_kind_literals(validate_text, "HANDOFF_DESTINATION_KINDS")
+    if "field-level" in runtime_destination_kinds or "field-level" in validator_destination_kinds:
+        findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, "field-level destination kind is forbidden"))
+    if set(taxmate_handoff.TAXONOMY) != HANDOFF_TAXONOMY:
+        findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, "handoff taxonomy does not match the documented seven actions"))
+    elif any(
+        not str(entry.get("label", "")).strip() or not str(entry.get("description", "")).strip()
+        for entry in taxmate_handoff.TAXONOMY.values()
+    ):
+        findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, "handoff taxonomy label or description is blank"))
+
+    findings.extend(
+        fail_if_missing(
+            HANDOFF_DESTINATION_CONTRACT,
+            intake_text,
+            [
+                "import taxmate_handoff",
+                "taxmate_handoff.build_row_contract(",
+            ],
+        )
+    )
+    findings.extend(
+        fail_if_missing(
+            HANDOFF_DESTINATION_CONTRACT,
+            taxpack_text,
+            [
+                "import taxmate_handoff",
+                "taxmate_handoff.normalize_row_contract(",
+                'class="handoff-card',
+                'class="fact-list"',
+                "Next action",
+                "Where it belongs",
+                "Why this action",
+                "Source context",
+            ],
+        )
+    )
+    renderer_mapping_hits = sorted(mapping_id for mapping_id in REQUIRED_HANDOFF_DESTINATIONS if mapping_id in taxpack_text)
+    if renderer_mapping_hits:
+        findings.append(
+            Finding(
+                HANDOFF_DESTINATION_CONTRACT,
+                "output layer contains destination mapping identifiers: " + ", ".join(renderer_mapping_hits),
+            )
+        )
+
+    findings.extend(
+        fail_if_missing(
+            HANDOFF_DESTINATION_CONTRACT,
+            validate_text,
+            [
+                "def handoff_destination_contract(",
+                'add("handoff_destination_contract", handoff_destination_contract(), "")',
+                "taxmate_handoff.destination_mapping_errors(",
+                "taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())",
+                "HANDOFF_ENTRY_WORDING",
+                "taxmate_handoff.ACTION_TEXT[action_kind]",
+                "taxmate_handoff.effective_status_kind(",
+                'canonical["facts"] != facts',
+                "canonical_extraction != extraction",
+                "source_urls",
+                "checked_at",
+            ],
+        )
+    )
+    findings.extend(
+        fail_if_missing(
+            HANDOFF_DESTINATION_CONTRACT,
+            test_text,
+            [
+                "EXPECTED_TAXONOMY",
+                "test_destination_mappings_match_verified_source_state",
+                "test_every_runtime_row_fact_queue_and_extraction_has_handoff",
+                "test_accountant_review_blocks_entry_and_copy_wording",
+                "test_missing_malformed_and_direct_handoffs_fail_closed",
+                "test_falsey_structured_fact_values_remain_visible",
+                "test_repository_validation_checks_cover_the_handoff_contract",
+                "test_all_guide_row_calls_supply_literal_row_kind_and_facts",
+                "test_compatibility_fallback_preserves_one_full_semicolon_value",
+                "test_action_destination_matrix_is_exact",
+                "test_field_level_is_not_a_destination_kind",
+                "test_duplicate_fact_keys_fail_payload_validation",
+                "test_queue_only_and_extended_only_payloads_validate",
+                "test_payload_validation_requires_canonical_handoff_label_and_action",
+                "test_payload_validation_rejects_forged_destination_mapping_and_sources",
+                "test_payload_validation_rejects_binding_key_bypass",
+                "test_payload_validation_rejects_stale_status_contracts",
+                "test_payload_validation_rederives_all_runtime_rows_and_preserves_falsey_values",
+                "test_extraction_payload_requires_shared_normalizer_idempotence",
+                "test_resolved_destinations_keep_channel_review_state_and_provenance",
+            ],
+        )
+    )
+
+    manifest_text = read_optional(root, "config/handoff-destinations.json")
+    try:
+        manifest = json.loads(manifest_text)
+    except (TypeError, json.JSONDecodeError) as exc:
+        findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, f"invalid destination manifest: {exc}"))
+        manifest = {}
+    if not isinstance(manifest, dict):
+        findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, "destination manifest must be an object"))
+        manifest = {}
+    destinations = manifest.get("destinations")
+    if manifest.get("schema_version") != 2 or manifest.get("income_year") != "2025-26":
+        findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, "destination manifest schema or income year is invalid"))
+    if not isinstance(destinations, dict):
+        findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, "destination manifest mappings are missing"))
+    else:
+        if set(destinations) != REQUIRED_HANDOFF_DESTINATIONS:
+            findings.append(
+                Finding(
+                    HANDOFF_DESTINATION_CONTRACT,
+                    "destination manifest must match exact mapping set",
+                )
+            )
+        dynamic_renderer_hits = sorted(mapping_id for mapping_id in destinations if mapping_id in taxpack_text)
+        dynamic_renderer_hits = sorted(set(dynamic_renderer_hits).difference(renderer_mapping_hits))
+        if dynamic_renderer_hits:
+            findings.append(
+                Finding(
+                    HANDOFF_DESTINATION_CONTRACT,
+                    "output layer contains destination mapping identifiers: " + ", ".join(dynamic_renderer_hits),
+                )
+            )
+        for mapping_id in REQUIRED_HANDOFF_DESTINATIONS:
+            mapping = destinations.get(mapping_id)
+            if not isinstance(mapping, dict) or not str(mapping.get("label", "")).strip():
+                findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, f"{mapping_id}: mapping label is blank"))
+                continue
+            for channel_name in ("mytax", "paper"):
+                channel = mapping.get(channel_name)
+                if not isinstance(channel, dict) or not str(channel.get("location", "")).strip():
+                    findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, f"{mapping_id}.{channel_name}: location is blank"))
+                    continue
+                expected_kind = taxmate_validate.HANDOFF_EXPECTED_CHANNEL_KINDS[mapping_id][channel_name]
+                expected_location = taxmate_validate.HANDOFF_EXPECTED_LOCATIONS[mapping_id][channel_name]
+                expected_source_id = HANDOFF_DESTINATION_SOURCE_IDS[mapping_id][channel_name]
+                expected_hash = taxmate_validate.HANDOFF_EXPECTED_HASHES[expected_source_id]
+                if channel.get("kind") != expected_kind:
+                    findings.append(
+                        Finding(
+                            HANDOFF_DESTINATION_CONTRACT,
+                            f"destination channel kind does not match verified binding: {mapping_id}.{channel_name}",
+                        )
+                    )
+                if channel.get("location") != expected_location:
+                    findings.append(
+                        Finding(
+                            HANDOFF_DESTINATION_CONTRACT,
+                            f"destination location does not match verified binding: {mapping_id}.{channel_name}",
+                        )
+                    )
+                if channel.get("source_id") != expected_source_id:
+                    findings.append(
+                        Finding(
+                            HANDOFF_DESTINATION_CONTRACT,
+                            f"source is unrelated to the verified destination: {mapping_id}.{channel_name}",
+                        )
+                    )
+                if channel.get("content_hash") != expected_hash:
+                    findings.append(
+                        Finding(
+                            HANDOFF_DESTINATION_CONTRACT,
+                            f"destination hash does not match verified binding: {mapping_id}.{channel_name}",
+                        )
+                    )
+
+    findings.extend(handoff_source_state_findings(root))
+    if manifest_text:
+        for error in taxmate_handoff.destination_mapping_errors(root):
+            findings.append(Finding(HANDOFF_DESTINATION_CONTRACT, error))
+    return findings
+
+
 def check_taxpack_output_layer_text(text: str) -> List[Finding]:
     findings: List[Finding] = []
     required = [
         "def scalar_text(",
         "def text_value(",
         "def source_urls(",
-        "def render_provenance(",
-        "def is_review_like_key(",
+        "def render_source_summary(",
+        "taxmate_handoff.normalize_row_contract(",
+        "def item_contract(",
+        "def build_render_rows(",
+        "def render_card(",
+        "def render_fact(",
+        "taxmate_handoff.effective_status_kind(",
         "def effective_status_kind(",
         "def effective_tab_kind(",
         "def review_text(",
@@ -463,34 +916,24 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "def tab_text_value(",
         "if value is False:",
         "return \"\" if text.strip().lower() == \"false\" else text",
-        "def queue_item_text(",
-        "def render_review_queue(items: List[str])",
+        "def render_review_queue(rows: List[RenderRow])",
         '<ul class="review-list">',
         "def tab_title(item: GuideItem, row_index: int)",
-        "return \"Evidence queue\"",
-        "return \"Missing facts queue\"",
         "fallback_tab_text(item.number, effective_status_kind(item))",
         "def row_anchor(item: GuideItem, row_index: int)",
-        "render_queue(\"Missing facts queue\", data.missing_facts, 400)",
-        "render_queue(\"Evidence queue\", data.evidence_items, 500)",
-        "def render_queue(title: str, items: List[GuideItem], offset: int)",
-        "data-anchor=\"{row_anchor(item, offset + index)}",
-        "def rendered_tab_items(",
+        "def row_context_anchor(",
+        "def render_sections(",
+        'data-anchor="{row.anchor}"',
+        "def render_context_index(",
+        'href="#{row.anchor}"',
+        "def render_source_appendix(",
         "data.abn_items",
         "data.bas_items",
         "data.missing_facts",
         "data.evidence_items",
-        "400 + index",
-        "500 + index",
-        "for item, row_index in tab_items",
-        "findTarget(spread,value)",
-        "el.dataset.anchor===value",
         "default_generated_date()",
-        "canonical_status(item_status_kind)",
+        "canonical_status(kind)",
         "def malformed_section_item(",
-        "def malformed_extraction_row(",
-        "def extraction_status_kind(",
-        "if raw.get(\"confirmed\") is True:",
     ]
     findings.extend(fail_if_missing(TAXPACK_OUTPUT_LAYER, text, required))
     forbidden = [
@@ -957,15 +1400,12 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "raise ValueError(f\"invalid money value: {value}\") from None",
                 "phrase in lowered",
                 '"not confirmed"',
-                "confirmed = raw.get(\"confirmed\") is True",
-                '"confirmed": confirmed',
-                "def extraction_status(",
-                "def contains_review_status(",
-                'taxmate_taxpack.known_kind(value) == "review"',
-                "def preserve_review_kinds(",
-                "for key in (\"status\", \"status_kind\", \"tab_kind\")",
-                "for key in (\"status_kind\", \"tab_kind\")",
-                "row[key] = raw.get(key)",
+                "def extraction_rows(",
+                "taxmate_handoff.normalize_extraction_row(",
+                "if normalized is not None:",
+                "def finalize_guide_row(",
+                'raise ValueError("internal guide row missing explicit facts")',
+                'raise ValueError("internal guide row missing explicit row_kind")',
                 "state_key = normalize_state(enriched.get(\"state\"))",
                 "if state_key is not None:",
                 "enriched[\"income_year\"] = text(answers.get(\"income_year\"), DEFAULT_INCOME_YEAR)",
@@ -2141,8 +2581,9 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def parse_dates(raw_values: Any) -> Optional[Set[date]]:",
                 "if contains_unknown(raw_values):",
                 "if start is None or end is None or end < start:",
+                "def private_health_row_checked_at(",
                 "def generation_checked_at(",
-                '"checked_at": generation_checked_at()',
+                '"checked_at": checked_at if checked_at is not None else generation_checked_at()',
             ],
         )
     )
@@ -3888,6 +4329,23 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
     )
     docs = "\n".join([readme, install, full_install, prep])
     findings: List[Finding] = []
+    stale_handoff_terms = [
+        term
+        for term in (
+            "AI extraction confirmation table",
+            "individual return field guide",
+            "side tabs",
+            "side-tabs",
+        )
+        if term in docs or term in packaged_output_surfaces
+    ]
+    if stale_handoff_terms:
+        findings.append(
+            Finding(
+                OUTPUT_DOCS_CONTRACT,
+                "stale handoff wording: " + ", ".join(stale_handoff_terms),
+            )
+        )
     findings.extend(
         fail_if_missing(
             OUTPUT_DOCS_CONTRACT,
@@ -3898,12 +4356,15 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
                 "`npx skills` guidance only",
                 "The plugin runtime produces a print-first HTML handoff",
                 "custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable",
-                "manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff",
-                "AI extraction confirmation table",
-                "individual return field guide",
+                "Each worksheet card shows the supplied facts as labelled bullets",
+                "exact verified myTax/paper destination or explicit non-entry/review wording",
+                "The runtime-owned handoff taxonomy is",
+                "Output layers render this contract and do not infer destinations",
+                "intake summary and AI extraction confirmation",
+                "individual return action cards with labelled fact bullets",
                 "ABN prep section and BAS worksheet",
                 "missing facts queue, evidence queue, and accountant-review queue",
-                "source/provenance appendix",
+                "row-associated supporting provenance and verified destination-mapping sources",
                 "The sample data is synthetic",
                 "Screenshot maintenance is a contributor task documented in [docs/DEVELOPMENT.md]",
             ],
@@ -3963,7 +4424,10 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
                 "missing facts",
                 "evidence gaps",
                 "Accountant review",
-                "source/provenance appendix",
+                "action-card context index",
+                "labelled fact bullets",
+                "verified myTax/paper destinations or explicit non-entry/review wording",
+                "row-associated provenance",
             ],
         ),
         (
@@ -3976,10 +4440,11 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
                 "Plugin Runtime Path",
                 "Node.js 20+ for the MCP launcher",
                 "Open the HTML",
-                "prep-only boundary",
-                "manual-copy warning",
-                "AI extraction confirmation table",
-                "source/provenance appendix",
+                "Every worksheet row and queue item uses the same runtime-owned handoff contract",
+                "labelled supplied facts",
+                "verified destination or explicit non-entry/review wording",
+                "Output layers render that contract and do not infer destinations",
+                "The seven handoff actions are",
             ],
         ),
         (
@@ -4095,6 +4560,7 @@ def render_review_patterns(fmt: str) -> str:
 
 
 CHECKS: List[Callable[[Path], List[Finding]]] = [
+    check_handoff_contract,
     check_taxpack_output_layer,
     check_individual_intake_contract,
     check_private_health_medicare_contract,

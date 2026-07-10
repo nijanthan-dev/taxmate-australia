@@ -22,8 +22,12 @@
 - It does not make tax-treatment decisions by itself.
 - It preserves source URLs, effective periods, evidence status, and `Accountant review` flags.
 - If output fields conflict, preserve the most conservative state: explicit or review-like `Accountant review` overrides stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
-- Output-layer review queues and side tabs must keep review items visible even when explanatory text is missing.
+- Output-layer review queues and context links must keep review items visible even when explanatory text is missing.
 - Output layers must preserve valid falsey values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.
+- Every rendered row and queue item must preserve atomic labelled facts, a nonblank runtime-owned action, a verified destination or explicit non-entry/review wording, an explanation, and provenance.
+- The runtime action taxonomy is: enter reviewed value, answer guided question, retain evidence, resolve before entry, accountant handoff only, not entered directly, and destination requires review.
+- Output layers must not infer destinations from row names, broad topic URLs, source coverage, or unverified target labels. Direct destinations require an exact field-and-context mapping to a verified source ID, canonical URL, and content hash.
+- Mixed rows require atomic field actions or safe row separation. Missing, malformed, conflicting, unsupported, or stale mappings retain evidence, non-entry, or review wording.
 - It requires current verification for volatile values when web access is available.
 - If a needed topic skill or reliable source is unavailable, state the limitation and mark the item `Accountant review`.
 - It must not use repository binaries, local repository data, plugin manifests, marketplace JSON, or environment variables.
