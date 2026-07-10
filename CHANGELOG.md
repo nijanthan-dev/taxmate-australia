@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.21.0...v0.22.0) (2026-07-10)
+
+
+### Features
+
+* add individual income routing ([#143](https://github.com/nijanthan-dev/taxmate-australia/issues/143)) ([6181380](https://github.com/nijanthan-dev/taxmate-australia/commit/6181380abe167ac498db5b5b41bc944cad41a789))
+
 ## [0.21.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.20.0...v0.21.0) (2026-07-10)
 
 
