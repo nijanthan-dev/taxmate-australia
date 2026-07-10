@@ -970,7 +970,13 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
             [
                 "REVIEWABLE_PARTNERSHIP_TRUST_FIELDS = (",
                 "PARTNERSHIP_TRUST_FLAT_FIELDS = {",
+                "PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES = {",
                 "def partnership_trust_flat_item(",
+                "def first_scalar_present(",
+                "def structured_uncommon_income_items(",
+                "def uncommon_income_items(",
+                "UNCOMMON_INCOME_DESCRIPTION_FIELDS = (",
+                're.search(r"\\binsurance\\b", descriptions)',
                 "def partnership_trust_share_rows(",
                 "def partnership_trust_share_evidence_rows(",
                 "ATO_PARTNERSHIP_TRUST_INCOME_SOURCE =",

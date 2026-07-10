@@ -71,6 +71,33 @@ class IndividualIncomeRoutingTests(unittest.TestCase):
         self.assertEqual("Evidence", trust["status"])
         self.assertTrue(any(row["number"] == "PT-EVID-1" for row in evidence))
 
+    def test_nested_flat_aliases_preserve_identity_provenance_and_review(self):
+        items, evidence = self.rows({"individual_income": {
+            "trust_name": "Nested Flat Trust",
+            "trust_share_statement": False,
+            "trust_share_income": 0,
+            "trust_share_source_url": "https://example.invalid/nested-trust",
+            "trust_share_checked_at": "2026-07-11",
+            "trust_share_status": "Accountant review",
+            "trust_share_mixed_components": False,
+        }})
+        row = next(row for row in items if row["number"] == "TRUST-SHARE-1")
+        self.assertIn("entity Nested Flat Trust", row["answer"])
+        self.assertIn("mixed components false", row["answer"])
+        self.assertIn("https://example.invalid/nested-trust", row["source_urls"])
+        self.assertEqual("2026-07-11", row["checked_at"])
+        self.assertEqual("Accountant review", row["status"])
+        self.assertFalse(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
+    def test_malformed_and_identical_statement_items_are_not_dropped_or_collapsed(self):
+        statement = {"entity_name": "Same Partnership", "statement": "statement held", "income": 10}
+        items, evidence = self.rows({"partnership_share_items": [statement, statement.copy(), "bad row", {}]})
+        partnership = [row for row in items if row["number"].startswith("PART-SHARE-")]
+        self.assertEqual(4, len(partnership))
+        self.assertEqual(2, sum("entity Same Partnership" in row["answer"] for row in partnership))
+        self.assertTrue(all(row["answer"].strip() for row in partnership))
+        self.assertEqual(2, sum(row["number"].startswith("PT-EVID-") for row in evidence))
+
     def test_narrow_and_unsupported_uncommon_income_routes(self):
         items, evidence = self.rows({"uncommon_income": [
             {"category": "compensation payment", "amount": 0, "statement": "statement held", "source_url": "https://example.invalid/comp"},
@@ -85,10 +112,38 @@ class IndividualIncomeRoutingTests(unittest.TestCase):
         self.assertEqual("Accountant review", uncommon[2]["status"])
         self.assertEqual([], evidence)
 
+    def test_insurance_phrases_and_later_specific_fields_use_verified_route(self):
+        phrases = [
+            "insurance payout", "insurance settlement", "general insurance",
+            "insurance proceeds", "insurance claim payout", "insurance-payment",
+        ]
+        answers = {"supplementary_income": {"uncommon_income_items": [
+            {"category": "other income", "notes": phrase, "amount": 1}
+            for phrase in phrases
+        ]}}
+        items, _ = self.rows(answers)
+        uncommon = [row for row in items if row["number"].startswith("UNC-")]
+        self.assertEqual(len(phrases), len(uncommon))
+        self.assertTrue(all(row["question"] == "Compensation or insurance payment review" for row in uncommon))
+        self.assertTrue(all(taxmate_intake.ATO_COMPENSATION_INCOME_SOURCE in row["source_urls"] for row in uncommon))
+
+    def test_nested_malformed_uncommon_income_is_visible_in_evidence_and_html(self):
+        items, evidence = self.rows({"individual_income": {"other_income_items": [42, {}]}})
+        uncommon = [row for row in items if row["number"].startswith("UNC-")]
+        self.assertEqual(2, len(uncommon))
+        self.assertEqual(2, sum(row["number"].startswith("UNC-EVID-") for row in evidence))
+        payload = taxmate_intake.answers_to_pack_payload({
+            "income_year": "2025-26",
+            "individual_income": {"other_income_items": [42, {}]},
+        })
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+        self.assertIn("Uncommon income evidence required", body)
+        self.assertIn("Empty other_income_items item", body)
+
     def test_blank_and_generic_uncommon_rows_do_not_render_blank_review_items(self):
         items, evidence = self.rows({"uncommon_income": [{}, {"category": "other income"}, "unknown"]})
         uncommon = [row for row in items if row["number"].startswith("UNC-")]
-        self.assertEqual(2, len(uncommon))
+        self.assertEqual(3, len(uncommon))
         self.assertTrue(all(row["answer"].strip() for row in uncommon))
         self.assertTrue(all(row["tab_text"].strip() for row in uncommon))
         self.assertTrue(any(row["number"].startswith("UNC-EVID-") for row in evidence))

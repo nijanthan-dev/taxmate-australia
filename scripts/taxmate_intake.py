@@ -2185,7 +2185,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items.extend(investment_rows(investment, answers))
     items.extend(partnership_trust_share_rows(answers))
     items.extend(ess_rows(ess_answers(answers)))
-    items.extend(uncommon_income_rows(answers.get("uncommon_income", [])))
+    items.extend(uncommon_income_rows(answers))
     payload = {
         "income_year": income_year,
         "summary_note": "Individual return, sole-trader ABN, and BAS preparation aid. Follow each reviewed action and verified destination.",
@@ -3995,7 +3995,7 @@ def evidence_rows(
     rows.extend(phone_evidence_rows(phone_answers(answers), answers))
     rows.extend(investment_evidence_rows(investment_answers(answers), answers))
     rows.extend(partnership_trust_share_evidence_rows(answers))
-    rows.extend(uncommon_income_evidence_rows(answers.get("uncommon_income", [])))
+    rows.extend(uncommon_income_evidence_rows(answers))
     rows.extend(payg_evidence_rows(payg_answers(answers), answers))
     rows.extend(abn_business_evidence_rows(answers))
     rows.extend(bas_evidence_rows(answers))
@@ -19439,7 +19439,7 @@ PARTNERSHIP_TRUST_ITEM_ALIASES = {
 }
 PARTNERSHIP_TRUST_FLAT_FIELDS = {
     "partnership": {
-        "entity_name": ("partnership_entity_name", "partnership_name"),
+        "entity_name": ("partnership_entity_name", "partnership_name", "partnership"),
         "abn": ("partnership_abn",),
         "tfn": ("partnership_tfn",),
         "statement": ("partnership_statement", "partnership_statement_status"),
@@ -19450,7 +19450,12 @@ PARTNERSHIP_TRUST_FLAT_FIELDS = {
         "entity_return_context": ("partnership_entity_return_context",),
     },
     "trust": {
-        "entity_name": ("trust_share_entity_name", "trust_beneficiary_entity_name"),
+        "entity_name": (
+            "trust_share_entity_name",
+            "trust_beneficiary_entity_name",
+            "trust_name",
+            "trust",
+        ),
         "abn": ("trust_share_abn",),
         "tfn": ("trust_share_tfn",),
         "statement": ("trust_share_statement", "trust_share_statement_status"),
@@ -19459,6 +19464,26 @@ PARTNERSHIP_TRUST_FLAT_FIELDS = {
         "tax_withheld": ("trust_share_tax_withheld",),
         "credits": ("trust_share_credits",),
         "entity_return_context": ("trust_entity_return_context",),
+    },
+}
+PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES = {
+    "partnership": {
+        "source_url": ("partnership_source_url", "partnership_share_source_url"),
+        "source_urls": ("partnership_source_urls", "partnership_share_source_urls"),
+        "checked_at": ("partnership_checked_at", "partnership_share_checked_at"),
+        "source_checked_at": ("partnership_source_checked_at", "partnership_share_source_checked_at"),
+        "status": ("partnership_status", "partnership_share_status"),
+        "evidence_status": ("partnership_evidence_status", "partnership_share_evidence_status"),
+        "mixed_components": ("partnership_mixed_components", "partnership_share_mixed_components"),
+    },
+    "trust": {
+        "source_url": ("trust_source_url", "trust_share_source_url", "trust_beneficiary_source_url"),
+        "source_urls": ("trust_source_urls", "trust_share_source_urls", "trust_beneficiary_source_urls"),
+        "checked_at": ("trust_checked_at", "trust_share_checked_at", "trust_beneficiary_checked_at"),
+        "source_checked_at": ("trust_source_checked_at", "trust_share_source_checked_at"),
+        "status": ("trust_status", "trust_share_status", "trust_beneficiary_status"),
+        "evidence_status": ("trust_evidence_status", "trust_share_evidence_status"),
+        "mixed_components": ("trust_mixed_components", "trust_share_mixed_components"),
     },
 }
 PARTNERSHIP_TRUST_AMOUNT_FIELDS = (
@@ -19514,45 +19539,64 @@ def partnership_trust_share_items(answers: Dict[str, Any]) -> List[tuple[str, Di
         if isinstance(nested, dict):
             containers.append(nested)
     for kind, aliases in PARTNERSHIP_TRUST_ITEM_ALIASES.items():
-        seen: List[Dict[str, Any]] = []
         for container in containers:
             for alias in aliases:
-                for item in structured_income_items(container.get(alias)):
-                    if item not in seen:
-                        seen.append(item)
-                        records.append((kind, item))
-        flat_item = partnership_trust_flat_item(answers, kind)
-        if flat_item and flat_item not in seen:
-            records.append((kind, flat_item))
+                if alias not in container:
+                    continue
+                items = structured_income_items(container.get(alias), alias)
+                records.extend((kind, item) for item in items)
+                break
+            flat_item = partnership_trust_flat_item(container, kind)
+            if flat_item:
+                records.append((kind, flat_item))
     return records
 
 
 def partnership_trust_flat_item(answers: Dict[str, Any], kind: str) -> Dict[str, Any]:
     item: Dict[str, Any] = {}
     for field, aliases in PARTNERSHIP_TRUST_FLAT_FIELDS[kind].items():
-        value = first_present(answers, aliases)
+        value = first_scalar_present(answers, aliases)
         if not is_missing(value):
             item[field] = value
-    for field in ("source_url", "source_urls", "checked_at", "source_checked_at", "status"):
-        value = answers.get(f"{kind}_{field}")
+    for field, aliases in PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES[kind].items():
+        value = first_present(answers, aliases)
         if not is_missing(value):
             item[field] = value
     return item
 
 
-def structured_income_items(value: Any) -> List[Dict[str, Any]]:
+def first_scalar_present(values: Dict[str, Any], aliases: tuple[str, ...]) -> Any:
+    for alias in aliases:
+        value = values.get(alias)
+        if not is_missing(value) and not isinstance(value, (dict, list)):
+            return value
+    return None
+
+
+def structured_income_items(value: Any, alias: str) -> List[Dict[str, Any]]:
     if isinstance(value, dict):
-        value = [value]
+        value = [value] if value else [{"unparsed_input": f"Empty {alias} item", "_malformed": True}]
     if not isinstance(value, list):
-        return []
-    return [item for item in value if isinstance(item, dict) and has_meaningful_value(item)]
+        if is_missing(value):
+            return []
+        return [{"unparsed_input": value, "_malformed": True}]
+    items: List[Dict[str, Any]] = []
+    for item in value:
+        if isinstance(item, dict) and has_meaningful_value(item):
+            items.append(item)
+        elif isinstance(item, dict):
+            items.append({"unparsed_input": f"Empty {alias} item", "_malformed": True})
+        elif not is_missing(item):
+            items.append({"unparsed_input": item, "_malformed": True})
+    return items
 
 
 def partnership_trust_evidence_gap(item: Dict[str, Any]) -> bool:
     statement = first_present(item, ("statement", "statement_status", "evidence"))
     amount_values = [item.get(field) for field in PARTNERSHIP_TRUST_AMOUNT_FIELDS if field in item]
     return (
-        investment_statement_missing(statement)
+        item.get("_malformed") is True
+        or investment_statement_missing(statement)
         or not amount_values
         or any(income_amount_needs_evidence(value) for value in amount_values)
     )
@@ -19591,6 +19635,7 @@ def partnership_trust_answer(kind: str, item: Dict[str, Any]) -> str:
         ("entity_return_context", "entity return context"),
         ("mixed_components", "mixed components"),
         ("evidence_status", "evidence status"),
+        ("unparsed_input", "unparsed input"),
     )
     used: set[str] = set()
     for key, label in labels:
@@ -19661,13 +19706,42 @@ def review_first_status(item: Dict[str, Any], evidence_gap: bool) -> str:
     return "Evidence" if evidence_gap else "Accountant review"
 
 
-def uncommon_income_rows(raw_values: Any) -> List[Dict[str, Any]]:
-    values = raw_values if isinstance(raw_values, list) else [raw_values]
+UNCOMMON_INCOME_ALIASES = ("uncommon_income", "uncommon_income_items", "other_income_items")
+UNCOMMON_INCOME_DESCRIPTION_FIELDS = ("category", "type", "income_type", "label", "details", "notes")
+
+
+def uncommon_income_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    items: List[Dict[str, Any]] = []
+    containers = [answers]
+    for key in ("individual_income", "supplementary_income"):
+        nested = answers.get(key)
+        if isinstance(nested, dict):
+            containers.append(nested)
+    for container in containers:
+        for alias in UNCOMMON_INCOME_ALIASES:
+            if alias not in container:
+                continue
+            items.extend(structured_uncommon_income_items(container.get(alias), alias))
+            break
+    return items
+
+
+def structured_uncommon_income_items(value: Any, alias: str) -> List[Dict[str, Any]]:
+    values = value if isinstance(value, list) else [value]
+    items: List[Dict[str, Any]] = []
+    for item in values:
+        if isinstance(item, dict) and has_meaningful_value(item):
+            items.append(item)
+        elif isinstance(item, dict):
+            items.append({"details": f"Empty {alias} item", "_malformed": True})
+        elif not is_missing(item):
+            items.append({"details": item, "_malformed": not isinstance(item, str)})
+    return items
+
+
+def uncommon_income_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
-    for value in values:
-        if not has_meaningful_value(value):
-            continue
-        item = value if isinstance(value, dict) else {"details": value}
+    for item in uncommon_income_items(answers):
         route, question, sources = uncommon_income_route(item)
         evidence_gap = uncommon_income_evidence_gap(item)
         status = review_first_status(item, evidence_gap)
@@ -19695,12 +19769,16 @@ def uncommon_income_rows(raw_values: Any) -> List[Dict[str, Any]]:
 
 
 def uncommon_income_route(item: Dict[str, Any]) -> tuple[str, str, List[str]]:
-    category = text(
-        first_present(item, ("category", "type", "income_type", "label", "details"))
-    ).lower()
-    if any(term in category for term in ("compensation", "insurance payment")):
+    descriptions = " ".join(
+        text(item.get(field)).lower()
+        for field in UNCOMMON_INCOME_DESCRIPTION_FIELDS
+        if not is_missing(item.get(field))
+    )
+    compensation = "compensation" in descriptions or re.search(r"\binsurance\b", descriptions) is not None
+    scholarship = any(term in descriptions for term in ("scholarship", "prize", "award"))
+    if compensation and not scholarship:
         return "Compensation or insurance payment", "Compensation or insurance payment review", [ATO_COMPENSATION_INCOME_SOURCE]
-    if any(term in category for term in ("scholarship", "prize", "award")):
+    if scholarship and not compensation:
         return "Scholarship, prize or award", "Scholarship, prize or award review", [ATO_SCHOLARSHIP_PRIZE_SOURCE]
     return "Unsupported or residual uncommon income", "Uncommon income review", [ATO_INDIVIDUAL_SOURCE]
 
@@ -19718,8 +19796,8 @@ def uncommon_income_answer(item: Dict[str, Any]) -> str:
 
 
 def uncommon_income_evidence_gap(item: Dict[str, Any]) -> bool:
-    category = first_present(item, ("category", "type", "income_type", "label", "details"))
-    if is_missing(category) or contains_unknown(category):
+    descriptions = [item.get(field) for field in UNCOMMON_INCOME_DESCRIPTION_FIELDS if not is_missing(item.get(field))]
+    if item.get("_malformed") is True or not descriptions or any(contains_unknown(value) for value in descriptions):
         return True
     amount_values = [item.get(key) for key in ("amount", "gross") if key in item]
     if amount_values and any(income_amount_needs_evidence(value) for value in amount_values):
@@ -19728,13 +19806,9 @@ def uncommon_income_evidence_gap(item: Dict[str, Any]) -> bool:
     return not is_missing(statement) and investment_statement_missing(statement)
 
 
-def uncommon_income_evidence_rows(raw_values: Any) -> List[Dict[str, Any]]:
-    values = raw_values if isinstance(raw_values, list) else [raw_values]
+def uncommon_income_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
-    for value in values:
-        if not has_meaningful_value(value):
-            continue
-        item = value if isinstance(value, dict) else {"details": value}
+    for item in uncommon_income_items(answers):
         if not uncommon_income_evidence_gap(item) or explicit_accountant_review(item):
             continue
         rows.append(
