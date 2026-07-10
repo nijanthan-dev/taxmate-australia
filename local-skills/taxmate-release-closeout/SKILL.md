@@ -1,6 +1,6 @@
 ---
 name: taxmate-release-closeout
-description: Execute TaxMate Australia repo PR closeout, review hardening, and release delivery. Use when fixing or merging TaxMate Australia GitHub PRs, handling @Codex review comments, encoding repeated review lessons into guardrails/tests, running Gitleaks gates, merging Release Please PRs, verifying published tags/releases, or cleaning TaxMate worktrees/branches after release.
+description: Execute TaxMate Australia repo PR closeout, review validation, and release delivery. Use when fixing or merging TaxMate Australia GitHub PRs, handling @Codex review comments, encoding repeated review lessons into validation checks/tests, running Gitleaks gates, merging Release Please PRs, verifying published tags/releases, or cleaning TaxMate worktrees/branches after release.
 ---
 
 # TaxMate Release Closeout
@@ -19,7 +19,7 @@ Use this only for the `nijanthan-dev/taxmate-australia` repo. Prefer `gh` for Gi
 
 1. Patch all current-head review comments, not only the easiest one.
 2. If feedback repeats or points to a contract class, update `scripts/taxmate_review_guardrails.py` and focused tests before the one-off code fix.
-3. Audit the same bug class across flat, nested, itemized, generated, and rendered paths before re-requesting review.
+3. Audit the same failure pattern across flat, nested, itemized, generated, and rendered paths before re-requesting independent review.
 4. For generated skill/doc output, patch `scripts/skillgen.py` or the source file first; do not hand-edit generated `skills/*/SKILL.md` unless the generator owns no path.
 5. Run focused tests for the touched area, then the repo's relevant validation path.
 6. Reply to each review thread with the fix and resolve it.
@@ -36,7 +36,7 @@ Run the strongest relevant local checks before merge. Common TaxMate checks incl
 gitleaks dir . --redact
 ```
 
-Also scan history and PR diff before merge. If a secret reached remote Git, stop and remove it from branch history before merge.
+Also run secret scans on history and the PR diff before merge. If a secret reached remote Git, stop and remove it from branch history before merge.
 
 For ATO fetch/runtime changes, preserve `curl --disable -L` ordering and verify status, final URL, and body handling through tests.
 
@@ -44,7 +44,7 @@ For release/version changes, inspect `.release-please-manifest.json`, `.codex-pl
 
 ## Merge And Release
 
-1. Squash-merge the fix PR only after live review/check/leak gates pass.
+1. Squash-merge the fix PR only after live review, validation, and secret-scan gates pass.
 2. Verify issue closure and updated `main` state.
 3. Wait for Release Please to open the next release PR when the fix should ship.
 4. Inspect release PR version bumps and changelog; request/poll latest-head review there too when review flow is in use.

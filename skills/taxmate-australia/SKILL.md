@@ -75,7 +75,7 @@ If the required topic skill is not installed, do not decide the tax treatment. S
 
 Mark ambiguous, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-commercial-loss, and business-versus-hobby items as `Accountant review` unless installed sources clearly resolve them.
 
-## Maintenance Guardrails
+## Maintenance Validation Rules
 
 - Keep plugin lock entries and wrapper fallback paths pointed at real tracked `SKILL.md` files.
 - Keep no-op refresh commands read-only; they must not rewrite source registry metadata.
@@ -83,7 +83,7 @@ Mark ambiguous, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-co
 - Treat returned validation errors as failed checks, even when helpers do not throw.
 - Preserve generated current values only when their source URL and content hash match an assigned verified source; refresh preserved value metadata from the current source row.
 - Do not publish volatile values from metadata-only sources.
-- Keep wrapper help on `./scripts/taxmate ...`; do not leak internal `taxmate_*.py` script names.
-- After review feedback, scan the same bug class across parser paths, direct renderer/workbook-row paths, generated artifacts, plugin lock, tests, validator, publication checks, and docs/skills/AGENTS guardrails before requesting another Codex review.
+- Keep wrapper help on `./scripts/taxmate ...`; internal `taxmate_*.py` script names must not appear.
+- After independent review feedback, scan the same failure pattern across parser paths, direct renderer/workbook-row paths, generated artifacts, plugin lock, tests, validator, publication checks, and documentation and instruction validation rules before requesting another Codex review.
 - For output-layer falsey fixes, cover top-level metadata, row fields, source URL lists, checked-at provenance, fallback labels, anchors, and direct constructors.
 - Do not replace the complete Codex plugin with portable skills only.

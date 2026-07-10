@@ -24,21 +24,27 @@ gitleaks detect --source . --redact --no-banner
 gitleaks dir . --redact --no-banner
 ```
 
-## Review feedback loop
+## Engineering terminology
+
+For ordinary engineering prose, use precise neutral terms such as `independent review` or `edge-case review`, `data crossed workflow boundaries`, `validation checks`, `contract checks`, `invariants`, and `verified source mapping`.
+
+Keep exact filenames, commands, identifiers, quoted review text, and genuine security terms such as Gitleaks, secret scans, vulnerabilities, and branch protection. These wording choices improve clarity only; do not claim or imply they influence automated checks.
+
+## Independent review feedback loop
 
 Before requesting another Codex review after review feedback:
 
-- Scan the whole same bug class, not only the commented line.
-- When review exposes an invariant, encode that invariant broadly in guardrails and tests before fixing the narrow line.
-- Use a focused explorer/subagent when the bug class may recur outside the commented line, then close it after findings are integrated.
+- Scan the full failure pattern, not only the commented line.
+- When independent review exposes an invariant, encode that invariant broadly in validation checks and tests before fixing the narrow line.
+- Use a focused explorer/subagent when the failure pattern may recur outside the commented line, then close it after findings are integrated.
 - Cover parser, file-backed data, and direct renderer/workbook-row paths.
 - For falsey output bugs, cover top-level metadata, row fields, list fields, provenance, fallback labels, anchors, and direct constructors.
 - Update AGENTS, relevant skills, generated docs, tests, validator, and plugin lock when behavior changes.
 - Regenerate skills, run publication checks, and run secret scans.
 
-Run `./scripts/taxmate review-guardrails` before opening or updating a PR. The script is the canonical pattern inventory and executable guardrail surface. Do not duplicate PR pattern bullets in docs.
+Run `./scripts/taxmate review-guardrails` before opening or updating a PR. The script is the canonical pattern inventory and executable validation-check surface. Do not duplicate PR pattern bullets in docs.
 
-The local pre-commit config, repo hook, and CI run this guardrail. Public-doc leakage checks are deterministic Python checks in `scripts/taxmate_review_guardrails.py`: update `PUBLIC_OUTPUT_DOCS`, `DEVELOPER_ONLY_PUBLIC_DOC_TERMS`, and `DEVELOPER_ONLY_PUBLIC_DOC_PATTERNS` when Codex review finds a new developer-only command that must not appear in README or public setup docs.
+The local pre-commit config, repo hook, and CI run these checks. Public-doc boundary checks are deterministic Python checks in `scripts/taxmate_review_guardrails.py`: update `PUBLIC_OUTPUT_DOCS`, `DEVELOPER_ONLY_PUBLIC_DOC_TERMS`, and `DEVELOPER_ONLY_PUBLIC_DOC_PATTERNS` when Codex review finds a new developer-only command that must not appear in README or public setup docs.
 
 List the inventory from the script:
 
@@ -233,7 +239,7 @@ bash scripts/test-claude-plugin-validate.sh
 bash scripts/test-claude-plugin-install.sh
 ```
 
-Pre-commit runs review guardrails, repository validation, MCP smoke, and Claude plugin validation/install smoke when the required local CLIs are available.
+Pre-commit runs review validation checks, repository validation, MCP smoke, and Claude plugin validation/install smoke when the required local CLIs are available.
 
 Do not claim official plugin discovery unless a published listing has been verified.
 
@@ -245,7 +251,7 @@ Automatic CI triggers stay in workflow YAML so PR checks and the main release `w
 scripts/run-local-ci-act.sh
 ```
 
-The local workflow runs bash+python runtime checks, generated-source checks, environment guardrails, plugin smokes, publication validation, and local Gitleaks when installed. When GitHub CI is `disabled_manually`, temporarily enable it only when branch protection needs fresh required statuses.
+The local workflow runs bash+python runtime checks, generated-source checks, environment checks, plugin smokes, publication validation, and local Gitleaks when installed. When GitHub CI is `disabled_manually`, temporarily enable it only when branch protection needs fresh required statuses.
 
 ## Release
 

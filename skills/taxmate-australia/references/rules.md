@@ -37,4 +37,4 @@
 ## Accountant review required
 
 - Any ambiguous, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-commercial-loss, business-versus-hobby, missing-source, conflicting-source, or incomplete-fact issue.
-- Review-feedback fixes must cover the same bug class across parser paths, direct renderer/workbook-row paths, file-backed data, generated artifacts, tests, validator, plugin lock, and docs/skills/AGENTS guardrails before review is requested again.
+- Fixes from independent review must cover the same failure pattern across parser paths, direct renderer/workbook-row paths, file-backed data, generated artifacts, tests, validator, plugin lock, and documentation and instruction validation rules before another review is requested.

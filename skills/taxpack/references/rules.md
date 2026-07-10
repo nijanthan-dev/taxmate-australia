@@ -26,5 +26,5 @@
 
 - Any unresolved treatment, missing evidence, BAS/GST, CGT, FBT, home-business, pre-revenue, mixed-use, non-commercial-loss, business-versus-hobby, or lodgment-position item.
 - Validation must cover conflicts or blanks that could hide an accountant-review flag from the row badge, side tab, review-only filter, or review queue.
-- Review-feedback fixes must cover parsed input, file-backed guide data, and direct renderer paths before review is requested again.
+- Fixes from independent review must cover parsed input, file-backed guide data, and direct renderer paths before another review is requested.
 - Falsey-value regressions must cover top-level guide metadata, row fields, source URL lists, checked-at provenance, fallback tab text, anchors, and direct `GuideItem` construction.

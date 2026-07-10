@@ -12,10 +12,10 @@ Public plugin metadata must describe the bash+Python runtime and must not mentio
 3. `scripts/taxmate skills generate` maps sources to topic skills and writes compact references.
 4. `scripts/taxmate skills generate` writes `data/ato_knowledge_base/source_coverage.json`.
 5. `scripts/taxmate skills audit` writes coverage diagnostics on demand.
-6. `scripts/taxmate skills validate` checks guardrails, source assignment, reverse provenance, dynamic-value periods, stale generated artifacts, and absence of committed raw snapshots.
+6. `scripts/taxmate skills validate` checks validation rules, source assignment, reverse provenance, dynamic-value periods, stale generated artifacts, and absence of committed raw snapshots.
 7. `hooks.json` runs `scripts/clean-source-cache.sh` on `SessionEnd` to remove `.cache/ato/`.
 
-Approved hosts are allowlisted in `scripts/atodata.py`. Downloaded content is treated as untrusted data and is never allowed to change guardrails.
+Approved hosts are allowlisted in `scripts/atodata.py`. Downloaded content is treated as untrusted data and is never allowed to change validation rules.
 
 ## Generated Outputs
 

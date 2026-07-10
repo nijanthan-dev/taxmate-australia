@@ -220,7 +220,7 @@ Source artifacts are tracked in `data/ato_knowledge_base/source_coverage.json`, 
 
 ## Development
 
-Contributor flow, release checks, screenshot maintenance, and repository guardrails: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+Contributor flow, release checks, screenshot maintenance, and repository validation rules: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Troubleshooting
 

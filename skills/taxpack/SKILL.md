@@ -54,7 +54,7 @@ Read `references/rules.md` before creating handoff packs.
 - Keep source URLs and checked-at dates visible in guide rows when supplied.
 - For guide rows, preserve accountant-review status in the row badge, side tab, filters, and review queue even if other fields are stale or conflict.
 - For guide rows, keep review side tabs and review queue entries visible even when `tab_text` and rationale fields are blank.
-- Before treating guide output fixes as review-ready, cover parsed JSON rows, file-backed guide data, and direct renderer rows in tests and validation.
+- Before treating guide output fixes as ready for independent review, cover parsed JSON rows, file-backed guide data, and direct renderer rows in tests and validation.
 - Falsey-value regressions must cover top-level guide metadata, row fields, source URL lists, checked-at provenance, fallback tab text, anchors, and direct `GuideItem` construction.
 - For manual-copy guidance, reference ATO labels and income-year wording, but keep the output clearly custom, manual, and non-lodgment. Use the full runtime for print-first HTML handoff generation.
 - Tell users to copy reviewed answers into myTax, paper ATO forms, or give the pack to an accountant.

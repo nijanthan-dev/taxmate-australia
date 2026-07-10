@@ -38,8 +38,8 @@
 
 ## Review
 
-- [ ] same-class scan completed before requesting review
-- [ ] docs/skills/AGENTS guardrails updated for new learned failure modes
+- [ ] same-pattern scan completed before requesting independent review
+- [ ] documentation and instruction validation rules updated for newly learned failure modes
 - [ ] `@Codex` review requested after local validation
 - [ ] review threads replied to and resolved after fixes
 - [ ] merge only after required checks green, `mergeStateStatus` `CLEAN`, and no unresolved review threads

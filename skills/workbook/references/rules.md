@@ -24,4 +24,4 @@
 ## Accountant review required
 
 - Any row with missing facts, missing evidence, source conflict, mixed-use, GST/BAS, CGT, home-business, FBT, pre-revenue, non-commercial-loss, or business-versus-hobby uncertainty.
-- Review-feedback fixes must cover parsed input, file-backed data, and direct workbook-row paths before review is requested again.
+- Fixes from independent review must cover parsed input, file-backed data, and direct workbook-row paths before another review is requested.

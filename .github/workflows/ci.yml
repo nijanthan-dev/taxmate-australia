@@ -86,7 +86,7 @@ jobs:
           ./scripts/taxmate finance --input /tmp/taxmate-finance-sample.csv --format json >/tmp/taxmate-finance-review.json
 
   environment:
-    name: Environment Guardrails
+    name: Environment Checks
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -155,7 +155,7 @@ jobs:
       - run: "! git ls-files 'bin/*' | grep -q ."
 
   publication:
-    name: Publication Guardrails
+    name: Publication Checks
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

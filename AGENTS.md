@@ -1,6 +1,9 @@
 # Agent Instructions
 
 - Keep changes conservative and source-backed.
+- For ordinary engineering work, use precise neutral terms: `independent review` or `edge-case review`, `data crossed workflow boundaries`, `validation checks`, `contract checks`, `invariants`, and `verified source mapping`.
+- Keep exact technical or security terms when accuracy requires them, including filenames, commands, identifiers, quoted review text, Gitleaks, secrets, vulnerabilities, and branch protection.
+- Wording changes improve clarity only. Do not claim or imply they influence automated checks.
 - Do not invent tax treatment.
 - Mark ambiguous, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-commercial-loss, and business-versus-hobby items as `Accountant review` unless sources clearly resolve them.
 - Keep tax logic in `runtime/skills/research`, `runtime/skills/finance-review`, `runtime/skills/calculators`, and shared Python runtime.
@@ -21,7 +24,7 @@
 - Do not combine `find -delete` with `-prune`; GNU find treats `-delete` as depth-first. Use `-exec rm -f {} +` or a tested portable pattern.
 - Cleanup script changes must include a regression test that runs against a linked `git worktree add` checkout.
 - Environment setup scripts must not dirty a fresh worktree. Disable Python bytecode writes or route caches outside the repo, then test `git status --short --untracked-files=all`.
-- After fixing PR review feedback, reply in the inline thread and resolve the thread after verification.
+- After fixing independent review feedback on a PR, reply in the inline thread and resolve the thread after verification.
 - Keep source state in `data/ato_knowledge_base/source_registry.json` and `data/ato_knowledge_base/source_coverage.json`.
 - Do not reintroduce migration artifacts, `source_index`, `source_manifest`, committed raw snapshots, or `data/ato_knowledge_base/text`.
 - Treat refreshed source text as ignored cache under `.cache/ato/text/`.
@@ -30,11 +33,11 @@
 - Output-layer review queues and side tabs must never render blank review items; fall back to row number/status when explanation fields are missing.
 - Output-layer display fields must preserve valid falsey values such as numeric `0` and boolean `false`; use explicit missing/`None` checks and shared scalar conversion instead of truthy fallbacks or raw `str(...)`.
 - Falsey-value fixes must cover top-level guide metadata, parsed row fields, source URL lists, checked-at provenance, fallback tab text, anchors, and direct `GuideItem`/workbook row construction.
-- Taxpack guide changes must add local guardrails for the whole bug class before review: conflicting status fields, source provenance visibility, generated dates, duplicate/unsafe anchors, neutral mixed-area headings, prep-only wording, and tab target integrity.
-- After PR review feedback, spawn or reuse a focused explorer for same-class scan when the bug class may recur outside the commented line; close that agent after incorporating findings.
-- After PR review feedback exposes an invariant, encode the invariant broadly in guardrails and tests before fixing the narrow line. Do not re-request review with only a one-off patch when the same bug class can recur.
-- Private-health/Medicare review fixes must normalize explicit dependant denials to integer `0` before filtering; classify temporal, partial, mixed, and qualified-negative cover before categorical negation; preserve pre-merge cover source/conflict lineage; normalize direct renderer and evidence inputs; suppress recursive metadata-only containers; and route malformed provenance as unresolved facts rather than verified source mapping.
-- After PR review feedback, do not commit, push, or request another Codex review until same-class scan findings are integrated or explicitly ruled out, including parser paths, direct renderer/workbook-row construction paths, generated artifacts, plugin lock, tests, validator, publication checks, and docs/skills/AGENTS guardrails.
+- Taxpack guide changes must add local contract checks for the full failure pattern before independent review: conflicting status fields, source provenance visibility, generated dates, duplicate or invalid anchors, neutral mixed-area headings, prep-only wording, and tab target integrity.
+- After independent review feedback on a PR, spawn or reuse a focused explorer for a same-pattern scan when the failure pattern may recur outside the commented line; close that agent after incorporating findings.
+- After independent review feedback on a PR exposes an invariant, encode the invariant broadly in validation checks and tests before fixing the narrow line. Do not re-request review with only a one-off patch when the same failure pattern can recur.
+- Private-health/Medicare review fixes must normalize explicit dependant denials to integer `0` before filtering; classify temporal, partial, mixed, and qualified-negative cover before categorical negation; preserve pre-merge cover source/conflict lineage; normalize direct renderer and evidence inputs; exclude recursive metadata-only containers; and route malformed provenance as unresolved facts rather than verified source mapping.
+- After independent review feedback on a PR, do not commit, push, or request another Codex review until same-pattern scan findings are integrated or explicitly ruled out, including parser paths, direct renderer/workbook-row construction paths, generated artifacts, plugin lock, tests, validator, publication checks, and documentation and instruction validation rules.
 - Preserved `current-values.json` entries must match an assigned verified source URL and content hash, and must be refreshed to the current source title, last-updated date, and checked-at date.
 - Do not preserve a current value from metadata-only sources or by accepting a valid value hash against a blank source hash.
 - Wrapper help must show `./scripts/taxmate ...` commands, not internal `taxmate_*.py` script names.

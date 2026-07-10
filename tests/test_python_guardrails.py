@@ -616,7 +616,7 @@ class ReviewGuardrailTests(unittest.TestCase):
         cases = (
             (
                 taxmate_review_guardrails.PRIVATE_HEALTH_MEDICARE_NOOP_DOC_PHRASE,
-                "Suppress blank containers before rendering",
+                "Exclude empty containers before rendering",
                 "recursive no-op",
             ),
             (
