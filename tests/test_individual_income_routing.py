@@ -234,6 +234,47 @@ class IndividualIncomeRoutingTests(unittest.TestCase):
         self.assertIn("alias conflicts", row["answer"])
         self.assertFalse(any(item["number"].startswith("PT-EVID-") for item in evidence))
 
+    def test_boolean_and_numeric_alias_values_conflict(self):
+        for left, right in ((0, False), (1, True)):
+            with self.subTest(left=left, right=right):
+                items, evidence = self.rows({
+                    "partnership_name": "Typed Conflict Partnership",
+                    "partnership_statement": "statement held",
+                    "partnership_income": left,
+                    "partnership_share_income": right,
+                })
+                row = next(row for row in items if row["number"] == "PART-SHARE-1")
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("alias conflicts", row["answer"])
+                self.assertTrue(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
+    def test_malformed_structured_row_survives_valid_flat_statement(self):
+        items, evidence = self.rows({
+            "partnership_share_items": ["bad structured row"],
+            "partnership_name": "Flat Partnership",
+            "partnership_statement": "statement held",
+            "partnership_income": 1,
+        })
+        partnership = [row for row in items if row["number"].startswith("PART-SHARE-")]
+        self.assertEqual(2, len(partnership))
+        self.assertTrue(any("bad structured row" in row["answer"] for row in partnership))
+        self.assertTrue(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
+    def test_flat_identity_does_not_contaminate_multiple_structured_rows(self):
+        items, evidence = self.rows({
+            "trust_share_items": [
+                {"statement": "statement held", "income": 1},
+                {"statement": "statement held", "income": 2},
+            ],
+            "trust_name": "Ambiguous Flat Trust",
+        })
+        trust = [row for row in items if row["number"].startswith("TRUST-SHARE-")]
+        self.assertEqual(3, len(trust))
+        self.assertEqual(1, sum("Ambiguous Flat Trust" in row["answer"] for row in trust))
+        self.assertTrue(any("structured_row_assignment" in row["answer"] for row in trust))
+        self.assertFalse(any("entity ;" in row["answer"] for row in trust))
+        self.assertTrue(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
     def test_source_aliases_merge_and_malformed_provenance_fails_closed(self):
         items, evidence = self.rows({
             "trust_name": "Source Trust", "trust_share_statement": "statement held", "trust_share_income": 1,
@@ -251,6 +292,25 @@ class IndividualIncomeRoutingTests(unittest.TestCase):
         self.assertEqual("Evidence", row["status"])
         self.assertNotIn("{'bad': 'shape'}", row["source_urls"])
         self.assertTrue(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
+    def test_evidence_source_urls_are_stably_deduplicated(self):
+        cases = (
+            ({
+                "trust_name": "Duplicate Source Trust",
+                "trust_share_income": 1,
+                "trust_share_source_url": taxmate_intake.ATO_PARTNERSHIP_TRUST_INCOME_SOURCE,
+            }, "PT-EVID-", taxmate_intake.ATO_PARTNERSHIP_TRUST_INCOME_SOURCE),
+            ({"uncommon_income": [{
+                "category": "scholarship",
+                "amount": 1,
+                "source_url": taxmate_intake.ATO_SCHOLARSHIP_PRIZE_SOURCE,
+            }]}, "UNC-EVID-", taxmate_intake.ATO_SCHOLARSHIP_PRIZE_SOURCE),
+        )
+        for answers, prefix, source in cases:
+            with self.subTest(prefix=prefix):
+                _items, evidence = self.rows(answers)
+                row = next(item for item in evidence if item["number"].startswith(prefix))
+                self.assertEqual(1, row["source_urls"].count(source))
 
     def test_payload_generation_does_not_mutate_input_and_is_idempotent(self):
         answers = {
