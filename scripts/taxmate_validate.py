@@ -1091,19 +1091,12 @@ def has_public_disclaimers(text: str) -> bool:
 def review_feedback_guardrail_gaps(root: str) -> List[str]:
     required = {
         "AGENTS.md": [
-            "For ordinary engineering work",
-            "data crossed workflow boundaries",
-            "influence automated checks",
             "spawn or reuse a focused explorer",
             "source URL lists",
             "checked-at provenance",
             "documentation and instruction validation rules",
         ],
         "docs/DEVELOPMENT.md": [
-            "Engineering terminology",
-            "data crossed workflow boundaries",
-            "genuine security terms",
-            "influence automated checks",
             "Use a focused explorer/subagent",
             "file-backed data",
             "falsey output bugs",

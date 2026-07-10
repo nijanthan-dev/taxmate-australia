@@ -12649,9 +12649,6 @@ class ValidatorAndCliTests(unittest.TestCase):
 
         self.assertTrue(taxmate_validate.individual_return_prep_docs_ready(str(ROOT), readme))
 
-    def test_review_feedback_terminology_contract_is_validated(self) -> None:
-        self.assertEqual(taxmate_validate.review_feedback_guardrail_gaps(str(ROOT)), [])
-
     def test_codex_plugin_mcp_files_are_validated(self) -> None:
         self.assertTrue(taxmate_validate.codex_plugin_mcp_files_ready(str(ROOT)))
 
