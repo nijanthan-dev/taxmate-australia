@@ -98,6 +98,43 @@ class IndividualIncomeRoutingTests(unittest.TestCase):
         self.assertTrue(all(row["answer"].strip() for row in partnership))
         self.assertEqual(2, sum(row["number"].startswith("PT-EVID-") for row in evidence))
 
+    def test_empty_earlier_statement_aliases_do_not_mask_later_aliases(self):
+        for placeholder in (None, "", "   ", [], {}):
+            with self.subTest(placeholder=placeholder):
+                items, evidence = self.rows({
+                    "partnership_share_items": placeholder,
+                    "partnership_statement_items": [{
+                        "entity_name": "Later Partnership", "statement": "statement held", "income": 0,
+                    }],
+                })
+                partnership = [row for row in items if row["number"].startswith("PART-SHARE-")]
+                self.assertEqual(1, len(partnership))
+                self.assertIn("Later Partnership", partnership[0]["answer"])
+                self.assertFalse(any(row["number"].startswith("PT-EVID-") for row in evidence))
+
+    def test_populated_statement_aliases_merge_without_collapsing_rows(self):
+        items, _ = self.rows({
+            "trust_share_items": [{"entity_name": "First Trust", "statement": "statement held", "income": 1}],
+            "trust_beneficiary_statement_items": [{"entity_name": "Second Trust", "statement": "statement held", "income": 2}],
+        })
+        trust = [row for row in items if row["number"].startswith("TRUST-SHARE-")]
+        self.assertEqual(2, len(trust))
+        self.assertIn("First Trust", trust[0]["answer"])
+        self.assertIn("Second Trust", trust[1]["answer"])
+
+    def test_empty_structured_fields_do_not_mask_identity_evidence_or_provenance(self):
+        items, evidence = self.rows({"trust_share_items": [{
+            "entity_name": {}, "trust": "Fallback Trust",
+            "statement": [], "evidence": "statement held", "income": 0,
+            "checked_at": {}, "source_checked_at": "2026-07-11",
+        }], "trust_source_urls": [], "trust_share_source_urls": ["https://example.invalid/fallback"]})
+        row = next(row for row in items if row["number"] == "TRUST-SHARE-1")
+        self.assertIn("Fallback Trust", row["answer"])
+        self.assertIn("https://example.invalid/fallback", row["source_urls"])
+        self.assertEqual("2026-07-11", row["checked_at"])
+        self.assertEqual("Accountant review", row["status"])
+        self.assertFalse(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
     def test_narrow_and_unsupported_uncommon_income_routes(self):
         items, evidence = self.rows({"uncommon_income": [
             {"category": "compensation payment", "amount": 0, "statement": "statement held", "source_url": "https://example.invalid/comp"},
@@ -139,6 +176,30 @@ class IndividualIncomeRoutingTests(unittest.TestCase):
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
         self.assertIn("Uncommon income evidence required", body)
         self.assertIn("Empty other_income_items item", body)
+
+    def test_empty_earlier_uncommon_aliases_do_not_mask_or_drop_later_rows(self):
+        for placeholder in (None, "", "   ", [], {}):
+            with self.subTest(placeholder=placeholder):
+                items, _ = self.rows({"supplementary_income": {
+                    "uncommon_income": placeholder,
+                    "uncommon_income_items": [{"category": "insurance payout", "amount": 0}],
+                    "other_income_items": [{"category": "scholarship", "amount": 1}],
+                }})
+                uncommon = [row for row in items if row["number"].startswith("UNC-")]
+                self.assertEqual(2, len(uncommon))
+                self.assertEqual(
+                    ["Compensation or insurance payment review", "Scholarship, prize or award review"],
+                    [row["question"] for row in uncommon],
+                )
+
+    def test_empty_uncommon_statement_does_not_mask_held_evidence(self):
+        items, evidence = self.rows({"uncommon_income": [{
+            "category": "insurance settlement", "amount": 0,
+            "statement": [], "evidence": "statement held",
+        }]})
+        row = next(row for row in items if row["number"] == "UNC-1")
+        self.assertEqual("Accountant review", row["status"])
+        self.assertFalse(any(item["number"].startswith("UNC-EVID-") for item in evidence))
 
     def test_blank_and_generic_uncommon_rows_do_not_render_blank_review_items(self):
         items, evidence = self.rows({"uncommon_income": [{}, {"category": "other income"}, "unknown"]})

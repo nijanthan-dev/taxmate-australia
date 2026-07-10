@@ -19486,6 +19486,11 @@ PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES = {
         "mixed_components": ("trust_mixed_components", "trust_share_mixed_components"),
     },
 }
+PARTNERSHIP_TRUST_METADATA_FIELDS = frozenset(
+    field
+    for aliases in PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES.values()
+    for field in aliases
+)
 PARTNERSHIP_TRUST_AMOUNT_FIELDS = (
     "income",
     "income_amount",
@@ -19540,14 +19545,28 @@ def partnership_trust_share_items(answers: Dict[str, Any]) -> List[tuple[str, Di
             containers.append(nested)
     for kind, aliases in PARTNERSHIP_TRUST_ITEM_ALIASES.items():
         for container in containers:
+            container_items: List[Dict[str, Any]] = []
+            empty_dict_alias = ""
             for alias in aliases:
                 if alias not in container:
                     continue
-                items = structured_income_items(container.get(alias), alias)
-                records.extend((kind, item) for item in items)
-                break
+                value = container.get(alias)
+                if has_meaningful_value(value):
+                    container_items.extend(structured_income_items(value, alias))
+                elif isinstance(value, dict) and not value and not empty_dict_alias:
+                    empty_dict_alias = alias
+            if not container_items and empty_dict_alias:
+                container_items.extend(structured_income_items({}, empty_dict_alias))
             flat_item = partnership_trust_flat_item(container, kind)
-            if flat_item:
+            if container_items and flat_item and not partnership_trust_flat_has_statement_facts(flat_item):
+                for item in container_items:
+                    for field, value in flat_item.items():
+                        if not has_meaningful_value(item.get(field)):
+                            item[field] = value
+                    if explicit_accountant_review(flat_item):
+                        item["status"] = "Accountant review"
+            records.extend((kind, item) for item in container_items)
+            if flat_item and (not container_items or partnership_trust_flat_has_statement_facts(flat_item)):
                 records.append((kind, flat_item))
     return records
 
@@ -19559,16 +19578,31 @@ def partnership_trust_flat_item(answers: Dict[str, Any], kind: str) -> Dict[str,
         if not is_missing(value):
             item[field] = value
     for field, aliases in PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES[kind].items():
-        value = first_present(answers, aliases)
+        value = first_meaningful_present(answers, aliases)
         if not is_missing(value):
             item[field] = value
     return item
+
+
+def partnership_trust_flat_has_statement_facts(item: Dict[str, Any]) -> bool:
+    return any(
+        field not in PARTNERSHIP_TRUST_METADATA_FIELDS and has_meaningful_value(value)
+        for field, value in item.items()
+    )
 
 
 def first_scalar_present(values: Dict[str, Any], aliases: tuple[str, ...]) -> Any:
     for alias in aliases:
         value = values.get(alias)
         if not is_missing(value) and not isinstance(value, (dict, list)):
+            return value
+    return None
+
+
+def first_meaningful_present(values: Dict[str, Any], aliases: tuple[str, ...]) -> Any:
+    for alias in aliases:
+        value = values.get(alias)
+        if has_meaningful_value(value):
             return value
     return None
 
@@ -19592,7 +19626,7 @@ def structured_income_items(value: Any, alias: str) -> List[Dict[str, Any]]:
 
 
 def partnership_trust_evidence_gap(item: Dict[str, Any]) -> bool:
-    statement = first_present(item, ("statement", "statement_status", "evidence"))
+    statement = first_meaningful_present(item, ("statement", "statement_status", "evidence"))
     amount_values = [item.get(field) for field in PARTNERSHIP_TRUST_AMOUNT_FIELDS if field in item]
     return (
         item.get("_malformed") is True
@@ -19616,7 +19650,7 @@ def income_amount_needs_evidence(value: Any) -> bool:
 
 
 def partnership_trust_answer(kind: str, item: Dict[str, Any]) -> str:
-    entity = first_present(item, ("entity_name", kind, "name"))
+    entity = first_meaningful_present(item, ("entity_name", kind, "name"))
     parts = [f"entity {display_value(entity)}"]
     labels = (
         ("abn", "ABN"),
@@ -19684,7 +19718,7 @@ def supplied_source_urls(item: Dict[str, Any]) -> List[str]:
 
 
 def supplied_checked_at(item: Dict[str, Any]) -> Optional[str]:
-    value = first_present(item, ("checked_at", "source_checked_at"))
+    value = first_meaningful_present(item, ("checked_at", "source_checked_at"))
     return None if is_missing(value) else text(value).strip()
 
 
@@ -19718,11 +19752,19 @@ def uncommon_income_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
         if isinstance(nested, dict):
             containers.append(nested)
     for container in containers:
+        container_items: List[Dict[str, Any]] = []
+        empty_dict_alias = ""
         for alias in UNCOMMON_INCOME_ALIASES:
             if alias not in container:
                 continue
-            items.extend(structured_uncommon_income_items(container.get(alias), alias))
-            break
+            value = container.get(alias)
+            if has_meaningful_value(value):
+                container_items.extend(structured_uncommon_income_items(value, alias))
+            elif isinstance(value, dict) and not value and not empty_dict_alias:
+                empty_dict_alias = alias
+        if not container_items and empty_dict_alias:
+            container_items.extend(structured_uncommon_income_items({}, empty_dict_alias))
+        items.extend(container_items)
     return items
 
 
@@ -19802,7 +19844,7 @@ def uncommon_income_evidence_gap(item: Dict[str, Any]) -> bool:
     amount_values = [item.get(key) for key in ("amount", "gross") if key in item]
     if amount_values and any(income_amount_needs_evidence(value) for value in amount_values):
         return True
-    statement = first_present(item, ("statement", "evidence", "records"))
+    statement = first_meaningful_present(item, ("statement", "evidence", "records"))
     return not is_missing(statement) and investment_statement_missing(statement)
 
 
