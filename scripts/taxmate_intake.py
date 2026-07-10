@@ -19566,7 +19566,7 @@ def partnership_trust_share_items(answers: Dict[str, Any]) -> List[tuple[str, Di
                     if explicit_accountant_review(flat_item):
                         item["status"] = "Accountant review"
             records.extend((kind, item) for item in container_items)
-            if flat_item and (not container_items or partnership_trust_flat_has_statement_facts(flat_item)):
+            if flat_item and partnership_trust_flat_has_statement_facts(flat_item):
                 records.append((kind, flat_item))
     return records
 

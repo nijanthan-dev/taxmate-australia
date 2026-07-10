@@ -273,6 +273,17 @@ class IndividualIncomeRoutingTests(unittest.TestCase):
         uncommon = [row for row in items if row["number"].startswith("UNC-")]
         self.assertTrue(all(row["question"] == "Uncommon income review" for row in uncommon))
 
+    def test_metadata_only_flat_share_inputs_do_not_create_blank_rows_or_queues(self):
+        for answers in (
+            {"trust_share_source_urls": ["https://example.invalid/source"]},
+            {"trust_share_status": "Accountant review"},
+            {"partnership_checked_at": "2026-07-11"},
+        ):
+            with self.subTest(answers=answers):
+                items, evidence = self.rows(answers)
+                self.assertFalse(any(row["number"].startswith(("TRUST-SHARE-", "PART-SHARE-")) for row in items))
+                self.assertFalse(any(row["number"].startswith("PT-EVID-") for row in evidence))
+
     def test_blank_and_generic_uncommon_rows_do_not_render_blank_review_items(self):
         items, evidence = self.rows({"uncommon_income": [{}, {"category": "other income"}, "unknown"]})
         uncommon = [row for row in items if row["number"].startswith("UNC-")]
