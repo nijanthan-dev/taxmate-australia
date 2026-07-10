@@ -2108,8 +2108,8 @@ def private_health_medicare_required_answer(raw: Dict[str, Any], key: str) -> An
     dependant_count = normalized_item_field(raw.get("dependant_summary", {}), DEPENDANT_SUMMARY_FIELD_ALIASES["count"])
     if not is_missing(dependant_count):
         return dependant_count
-    dependants = raw.get("dependants", [])
-    return dependants if isinstance(dependants, list) and dependants else None
+    dependants = private_health_dependant_items(raw.get("dependants", []))
+    return dependants if dependants else None
 
 
 def is_missing(value: Any) -> bool:
@@ -3948,6 +3948,10 @@ PRIVATE_HEALTH_GLOBAL_STATEMENT_KEYS = (
     "private_health_statement",
     "private_health_insurance_statements",
 )
+PRIVATE_HEALTH_NOOP_TEXT = frozenset(
+    {"n a", "na", "not applicable", "not applicable to me", "none"}
+)
+PRIVATE_HEALTH_NO_VALUE = object()
 MEDICARE_LEVY_SECTION_KEYS = ("medicare_levy", "levy")
 MLS_SECTION_KEYS = ("medicare_levy_surcharge", "mls", "surcharge")
 SPOUSE_SECTION_KEYS = ("spouse", "spouse_details")
@@ -3958,6 +3962,13 @@ DEPENDANT_SECTION_KEYS = (
     "dependent_details",
     "dependent_children",
     "dependant_students",
+)
+PRIVATE_HEALTH_DEPENDANT_ITEM_KEYS = (
+    "items",
+    "children",
+    "students",
+    "dependants",
+    "dependents",
 )
 PRIVATE_HEALTH_FIELD_ALIASES = {
     "covered": (
@@ -4653,6 +4664,23 @@ def private_health_medicare_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
         result["dependant_summary"],
         DEPENDANT_SUMMARY_FIELD_ALIASES["count"],
     )
+    dependant_notes = private_health_dependant_collection_notes(answers)
+    if dependant_notes:
+        result["dependant_summary"]["dependant_supplemental_facts"] = dependant_notes
+    private_health_add_metadata(
+        result["dependant_summary"],
+        private_health_dependant_collection_metadata(answers),
+        DEPENDANT_SUMMARY_FIELD_ALIASES,
+    )
+    for metadata in (
+        private_health_statement_collection_metadata(answers),
+        private_health_medicare_supplemental_metadata(answers),
+    ):
+        private_health_add_metadata(
+            result["private_health"],
+            metadata,
+            PRIVATE_HEALTH_FIELD_ALIASES,
+        )
     income_year = text(answers.get("income_year"), DEFAULT_INCOME_YEAR)
     result["income_year"] = income_year
     for key in ("private_health", "medicare_levy", "mls", "spouse", "dependant_summary"):
@@ -4683,7 +4711,7 @@ def private_health_key_values(record: Dict[str, Any], keys: tuple[str, ...]) -> 
 
 def private_health_collection_entries(value: Any) -> List[Dict[str, Any]]:
     if isinstance(value, dict):
-        return [value] if has_meaningful_value(value) else []
+        return [value] if private_health_substantive_value(value, false_is_value=True) else []
     if not isinstance(value, list):
         return []
     rows: List[Dict[str, Any]] = []
@@ -4696,11 +4724,12 @@ def private_health_collection_notes(value: Any) -> List[Any]:
     if isinstance(value, list):
         notes: List[Any] = []
         for item in value:
-            if not isinstance(item, (dict, list)) and private_health_freeform_value(item):
-                notes.append(item)
+            notes.extend(private_health_collection_notes(item))
         return notes
-    if not isinstance(value, dict) and private_health_freeform_value(value):
-        return [value]
+    if not isinstance(value, dict):
+        sanitized = private_health_sanitized_value(value, false_is_value=False)
+        if sanitized is not PRIVATE_HEALTH_NO_VALUE:
+            return [sanitized]
     return []
 
 
@@ -4783,11 +4812,25 @@ def private_health_append_medicare_groups(
     record: Dict[str, Any],
     groups: Dict[str, List[Dict[str, Any]]],
 ) -> None:
+    starts = {name: len(groups[name]) for name in ("medicare_levy", "mls")}
     groups["medicare_levy"].extend(
         private_health_section_records(record, MEDICARE_LEVY_SECTION_KEYS, MEDICARE_LEVY_FIELD_ALIASES)
     )
     groups["mls"].extend(private_health_section_records(record, MLS_SECTION_KEYS, MLS_FIELD_ALIASES))
     private_health_append_flat_record_groups(record, groups, ("medicare_levy", "mls"))
+    metadata = private_health_record_metadata(
+        record,
+        set(PRIVATE_HEALTH_FIELD_ALIASES["source_urls"]),
+        set(PRIVATE_HEALTH_FIELD_ALIASES["checked_at"]),
+    )
+    if not metadata:
+        return
+    for name, field_aliases in (
+        ("medicare_levy", MEDICARE_LEVY_FIELD_ALIASES),
+        ("mls", MLS_FIELD_ALIASES),
+    ):
+        for index in range(starts[name], len(groups[name])):
+            private_health_add_metadata(groups[name][index], metadata, field_aliases)
 
 
 def private_health_medicare_wrapper_unknown(record: Dict[str, Any]) -> Dict[str, Any]:
@@ -4796,8 +4839,25 @@ def private_health_medicare_wrapper_unknown(record: Dict[str, Any]) -> Dict[str,
         | set(MLS_SECTION_KEYS)
         | private_health_alias_set(MEDICARE_LEVY_FLAT_FIELD_ALIASES)
         | private_health_alias_set(MLS_FLAT_FIELD_ALIASES)
+        | set(PRIVATE_HEALTH_WORKFLOW_METADATA_KEYS)
     )
     return private_health_unknown_values(record, known)
+
+
+def private_health_medicare_supplemental_metadata(answers: Dict[str, Any]) -> Dict[str, Any]:
+    parent_records, _ = private_health_input_records(answers)
+    metadata: Dict[str, Any] = {}
+    for record in parent_records:
+        medicare = record.get("medicare")
+        if not isinstance(medicare, dict) or not private_health_medicare_wrapper_unknown(medicare):
+            continue
+        supplied = private_health_record_metadata(
+            medicare,
+            set(PRIVATE_HEALTH_FIELD_ALIASES["source_urls"]),
+            set(PRIVATE_HEALTH_FIELD_ALIASES["checked_at"]),
+        )
+        private_health_add_metadata(metadata, supplied, PRIVATE_HEALTH_FIELD_ALIASES)
+    return metadata
 
 
 def private_health_section_records(
@@ -4823,13 +4883,24 @@ def private_health_section_records(
         value = record.get(key)
         records = private_health_collection_entries(value)
         for child in records:
-            section = {
-                child_key: child_value
-                for child_key, child_value in child.items()
-                if child_key not in excluded_child_keys and child_key not in cross_flat_aliases
-            }
+            section = private_health_filter_record_values(
+                {
+                    child_key: child_value
+                    for child_key, child_value in child.items()
+                    if child_key not in excluded_child_keys
+                    and child_key not in cross_flat_aliases
+                },
+                field_aliases,
+            )
             if has_meaningful_value(section):
                 rows.append(section)
+        if isinstance(value, list):
+            scalar_key = "notes" if records else private_health_section_scalar_key(section_keys)
+            rows.extend(
+                {scalar_key: note}
+                for note in private_health_collection_notes(value)
+            )
+            continue
         if records:
             continue
         if value is False and section_keys in (PRIVATE_HEALTH_SECTION_KEYS, SPOUSE_SECTION_KEYS):
@@ -4858,11 +4929,10 @@ def private_health_alias_subset(
     field_aliases: Dict[str, tuple[str, ...]],
 ) -> Dict[str, Any]:
     aliases = private_health_alias_set(field_aliases)
-    return {
-        key: value
-        for key, value in record.items()
-        if key in aliases and (has_meaningful_value(value) or value is False)
-    }
+    return private_health_filter_record_values(
+        {key: value for key, value in record.items() if key in aliases},
+        field_aliases,
+    )
 
 
 def private_health_flat_alias_subset(
@@ -4892,13 +4962,14 @@ def private_health_all_flat_aliases() -> set[str]:
 
 
 def private_health_workflow_notes(record: Dict[str, Any]) -> List[Any]:
-    return private_health_unique_values(
-        [
-            record[key]
-            for key in PRIVATE_HEALTH_WORKFLOW_NOTE_KEYS
-            if key in record and private_health_freeform_value(record[key])
-        ]
-    )
+    notes: List[Any] = []
+    for key in PRIVATE_HEALTH_WORKFLOW_NOTE_KEYS:
+        if key not in record:
+            continue
+        value = private_health_sanitized_value(record[key], false_is_value=False)
+        if value is not PRIVATE_HEALTH_NO_VALUE:
+            notes.append(value)
+    return private_health_unique_values(notes)
 
 
 def private_health_root_known_keys() -> set[str]:
@@ -4917,11 +4988,14 @@ def private_health_root_known_keys() -> set[str]:
 
 
 def private_health_unknown_values(record: Dict[str, Any], known_keys: set[str]) -> Dict[str, Any]:
-    return {
-        key: value
-        for key, value in record.items()
-        if key not in known_keys and not key.startswith("_") and (has_meaningful_value(value) or value is False)
-    }
+    unknown: Dict[str, Any] = {}
+    for key, value in record.items():
+        if key in known_keys or key.startswith("_"):
+            continue
+        sanitized = private_health_sanitized_value(value, false_is_value=True)
+        if sanitized is not PRIVATE_HEALTH_NO_VALUE:
+            unknown[key] = sanitized
+    return unknown
 
 
 def private_health_merge_records(
@@ -4933,6 +5007,7 @@ def private_health_merge_records(
     for record in records:
         if not isinstance(record, dict):
             continue
+        record = private_health_filter_record_values(record, field_aliases)
         for key, value in record.items():
             if is_missing(value):
                 continue
@@ -5049,7 +5124,10 @@ def private_health_statement_entries(value: Any) -> List[Dict[str, Any]]:
         for key in nested_keys:
             if key in value:
                 nested_rows.extend(private_health_statement_entries(value.get(key)))
-        parent = {key: item for key, item in value.items() if key not in nested_keys}
+        parent = private_health_filter_record_values(
+            {key: item for key, item in value.items() if key not in nested_keys},
+            PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES,
+        )
         if any(key in value for key in nested_keys):
             inherited = private_health_statement_wrapper_details(parent)
             if inherited:
@@ -5071,13 +5149,17 @@ def private_health_statement_entries(value: Any) -> List[Dict[str, Any]]:
 
 
 def private_health_statement_record_has_signal(record: Any) -> bool:
-    if private_health_statement_identity_signal(record):
-        return True
     if not isinstance(record, dict):
         return False
+    record = private_health_filter_record_values(
+        record,
+        PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES,
+    )
+    if private_health_statement_identity_signal(record):
+        return True
     for field in ("days_covered", "period_start", "period_end", "period"):
         value = normalized_item_field(record, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES[field])
-        if not is_missing(value) and (has_meaningful_value(value) or value is False):
+        if private_health_substantive_value(value, false_is_value=True):
             return True
     return False
 
@@ -5085,6 +5167,10 @@ def private_health_statement_record_has_signal(record: Any) -> bool:
 def private_health_statement_identity_signal(record: Any) -> bool:
     if not isinstance(record, dict):
         return False
+    record = private_health_filter_record_values(
+        record,
+        PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES,
+    )
     for field in (
         "insurer",
         "membership_id",
@@ -5094,7 +5180,7 @@ def private_health_statement_identity_signal(record: Any) -> bool:
         "tax_claim_code",
     ):
         value = normalized_item_field(record, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES[field])
-        if not is_missing(value) and (has_meaningful_value(value) or value is False):
+        if private_health_substantive_value(value, false_is_value=True):
             return True
     return False
 
@@ -5124,6 +5210,17 @@ def private_health_statement_collection_notes(answers: Dict[str, Any]) -> List[A
     return private_health_unique_values(notes)
 
 
+def private_health_statement_collection_metadata(answers: Dict[str, Any]) -> Dict[str, Any]:
+    parent_records, private_health_sections = private_health_input_records(answers)
+    metadata: Dict[str, Any] = {}
+    for record in [*parent_records, *private_health_sections]:
+        keys = PRIVATE_HEALTH_GLOBAL_STATEMENT_KEYS if record is answers else PRIVATE_HEALTH_STATEMENT_KEYS
+        for value in private_health_key_values(record, keys):
+            for _, supplied in private_health_statement_supplemental_records(value):
+                private_health_add_metadata(metadata, supplied, PRIVATE_HEALTH_FIELD_ALIASES)
+    return metadata
+
+
 def private_health_explicit_statement_notes(answers: Dict[str, Any]) -> List[Any]:
     parent_records, private_health_sections = private_health_input_records(answers)
     notes: List[Any] = []
@@ -5146,20 +5243,41 @@ def private_health_explicit_statement_notes(answers: Dict[str, Any]) -> List[Any
     return private_health_unique_values(notes)
 
 
-def private_health_statement_supplemental_values(value: Any) -> List[Any]:
+def private_health_statement_supplemental_records(
+    value: Any,
+    inherited_metadata: Optional[Dict[str, Any]] = None,
+) -> List[tuple[Any, Dict[str, Any]]]:
+    inherited_metadata = dict(inherited_metadata or {})
     if isinstance(value, list):
-        notes: List[Any] = []
+        records: List[tuple[Any, Dict[str, Any]]] = []
         for item in value:
-            notes.extend(private_health_statement_supplemental_values(item))
-        return notes
+            records.extend(
+                private_health_statement_supplemental_records(
+                    item,
+                    inherited_metadata,
+                )
+            )
+        return records
     if isinstance(value, dict):
-        notes: List[Any] = []
+        local_metadata = private_health_record_metadata(
+            value,
+            set(PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["source_urls"]),
+            set(PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["checked_at"]),
+        )
+        metadata = dict(inherited_metadata)
+        private_health_add_metadata(metadata, local_metadata, PRIVATE_HEALTH_FIELD_ALIASES)
+        records: List[tuple[Any, Dict[str, Any]]] = []
         nested_keys = (*PRIVATE_HEALTH_STATEMENT_KEYS, *PRIVATE_HEALTH_STATEMENT_ITEM_KEYS)
         nested_values = [value[key] for key in nested_keys if key in value]
         for nested_value in nested_values:
-            notes.extend(private_health_statement_supplemental_values(nested_value))
+            records.extend(
+                private_health_statement_supplemental_records(
+                    nested_value,
+                    metadata,
+                )
+            )
         parent = {key: item for key, item in value.items() if key not in nested_keys}
-        metadata = set(PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["source_urls"]) | set(
+        metadata_keys = set(PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["source_urls"]) | set(
             PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES["checked_at"]
         )
         if not nested_values:
@@ -5168,19 +5286,29 @@ def private_health_statement_supplemental_values(value: Any) -> List[Any]:
             represented = set(private_health_statement_wrapper_details(parent))
         else:
             represented = set()
-        details = {
-            key: item
-            for key, item in parent.items()
-            if key not in metadata
-            and key not in represented
-            and (has_meaningful_value(item) or item is False)
-        }
+        details: Dict[str, Any] = {}
+        for key, item in parent.items():
+            if key in metadata_keys or key in represented:
+                continue
+            sanitized = private_health_sanitized_value(item, false_is_value=True)
+            if sanitized is not PRIVATE_HEALTH_NO_VALUE:
+                details[key] = sanitized
         if details:
-            notes.append(details)
-        return notes
-    if value is False or private_health_freeform_value(value):
-        return [value]
-    return []
+            records.append((details, metadata))
+        return records
+    sanitized = private_health_sanitized_value(value, false_is_value=True)
+    if sanitized is PRIVATE_HEALTH_NO_VALUE or (
+        sanitized is not False and not private_health_freeform_value(sanitized)
+    ):
+        return []
+    return [(sanitized, inherited_metadata)]
+
+
+def private_health_statement_supplemental_values(value: Any) -> List[Any]:
+    return [
+        detail
+        for detail, _ in private_health_statement_supplemental_records(value)
+    ]
 
 
 def private_health_merge_item_groups(
@@ -5277,7 +5405,7 @@ def private_health_dependant_item_container(value: Any) -> bool:
         return True
     if not isinstance(value, dict):
         return False
-    if any(key in value for key in ("items", "children", "students", "dependants", "dependents")):
+    if any(key in value for key in PRIVATE_HEALTH_DEPENDANT_ITEM_KEYS):
         return True
     if private_health_dependant_denial_value(value):
         return False
@@ -5292,17 +5420,19 @@ def private_health_dependant_entries(value: Any) -> List[Dict[str, Any]]:
         return rows
     if isinstance(value, dict):
         rows: List[Dict[str, Any]] = []
-        item_keys = ("items", "children", "students", "dependants", "dependents")
-        for key in item_keys:
+        for key in PRIVATE_HEALTH_DEPENDANT_ITEM_KEYS:
             if key in value:
                 rows.extend(private_health_dependant_entries(value.get(key)))
-        container = any(key in value for key in item_keys)
+        container = any(key in value for key in PRIVATE_HEALTH_DEPENDANT_ITEM_KEYS)
         excluded = set(DEPENDANT_SUMMARY_FIELD_ALIASES["count"])
-        parent = {
-            key: item
-            for key, item in value.items()
-            if key not in set(item_keys) and key not in excluded
-        }
+        parent = private_health_filter_record_values(
+            {
+                key: item
+                for key, item in value.items()
+                if key not in set(PRIVATE_HEALTH_DEPENDANT_ITEM_KEYS) and key not in excluded
+            },
+            DEPENDANT_FIELD_ALIASES,
+        )
         if container:
             inherited = private_health_dependant_wrapper_details(parent)
             if inherited:
@@ -5324,11 +5454,12 @@ def private_health_dependant_entries(value: Any) -> List[Dict[str, Any]]:
 def private_health_dependant_record_has_signal(record: Any) -> bool:
     if not isinstance(record, dict):
         return False
+    record = private_health_filter_record_values(record, DEPENDANT_FIELD_ALIASES)
     for field, aliases in DEPENDANT_FIELD_ALIASES.items():
         if field in {"evidence", "notes", "source_urls", "checked_at"}:
             continue
         value = normalized_item_field(record, aliases)
-        if not is_missing(value) and (has_meaningful_value(value) or value is False):
+        if private_health_substantive_value(value, false_is_value=True):
             return True
     return False
 
@@ -5339,6 +5470,146 @@ def private_health_dependant_wrapper_details(record: Dict[str, Any]) -> Dict[str
         for field in ("evidence", "notes", "source_urls", "checked_at")
     }
     return private_health_alias_subset(record, inherited_aliases)
+
+
+def private_health_dependant_collection_notes(answers: Dict[str, Any]) -> List[Any]:
+    parent_records, private_health_sections = private_health_input_records(answers)
+    notes: List[Any] = []
+    for record in [*parent_records, *private_health_sections]:
+        for value in private_health_key_values(record, DEPENDANT_SECTION_KEYS):
+            notes.extend(private_health_dependant_supplemental_values(value, nested=False))
+    return private_health_unique_values(notes)
+
+
+def private_health_dependant_collection_metadata(answers: Dict[str, Any]) -> Dict[str, Any]:
+    parent_records, private_health_sections = private_health_input_records(answers)
+    metadata: Dict[str, Any] = {}
+    for record in [*parent_records, *private_health_sections]:
+        for value in private_health_key_values(record, DEPENDANT_SECTION_KEYS):
+            for _, supplied in private_health_dependant_supplemental_records(
+                value,
+                nested=False,
+            ):
+                private_health_add_metadata(
+                    metadata,
+                    supplied,
+                    DEPENDANT_SUMMARY_FIELD_ALIASES,
+                )
+    return metadata
+
+
+def private_health_dependant_supplemental_records(
+    value: Any,
+    *,
+    nested: bool,
+    inherited_metadata: Optional[Dict[str, Any]] = None,
+) -> List[tuple[Any, Dict[str, Any]]]:
+    inherited_metadata = dict(inherited_metadata or {})
+    if isinstance(value, list):
+        records: List[tuple[Any, Dict[str, Any]]] = []
+        for item in value:
+            records.extend(
+                private_health_dependant_supplemental_records(
+                    item,
+                    nested=True,
+                    inherited_metadata=inherited_metadata,
+                )
+            )
+        return records
+    if isinstance(value, dict):
+        source_aliases = set(DEPENDANT_FIELD_ALIASES["source_urls"]) | set(
+            DEPENDANT_SUMMARY_FIELD_ALIASES["source_urls"]
+        )
+        checked_at_aliases = set(DEPENDANT_FIELD_ALIASES["checked_at"]) | set(
+            DEPENDANT_SUMMARY_FIELD_ALIASES["checked_at"]
+        )
+        local_metadata = private_health_record_metadata(
+            value,
+            source_aliases,
+            checked_at_aliases,
+        )
+        metadata = dict(inherited_metadata)
+        private_health_add_metadata(
+            metadata,
+            local_metadata,
+            DEPENDANT_SUMMARY_FIELD_ALIASES,
+        )
+        records: List[tuple[Any, Dict[str, Any]]] = []
+        nested_values = [
+            value[key]
+            for key in PRIVATE_HEALTH_DEPENDANT_ITEM_KEYS
+            if key in value
+        ]
+        for nested_value in nested_values:
+            records.extend(
+                private_health_dependant_supplemental_records(
+                    nested_value,
+                    nested=True,
+                    inherited_metadata=metadata,
+                )
+            )
+        parent = {
+            key: item
+            for key, item in value.items()
+            if key not in PRIVATE_HEALTH_DEPENDANT_ITEM_KEYS
+        }
+        parent = private_health_filter_record_values(parent, DEPENDANT_FIELD_ALIASES)
+        if private_health_dependant_record_has_signal(parent):
+            return records
+
+        represented: set[str] = set()
+        if not nested:
+            summary = private_health_alias_subset(parent, DEPENDANT_SUMMARY_FIELD_ALIASES)
+            if private_health_summary_substantive(summary):
+                represented.update(summary)
+        child_items: List[Dict[str, Any]] = []
+        for nested_value in nested_values:
+            child_items.extend(
+                private_health_dependant_items(
+                    private_health_dependant_entries(nested_value)
+                )
+            )
+        if child_items:
+            represented.update(private_health_dependant_wrapper_details(parent))
+
+        metadata_aliases = (
+            set(DEPENDANT_FIELD_ALIASES["source_urls"])
+            | set(DEPENDANT_FIELD_ALIASES["checked_at"])
+            | set(DEPENDANT_SUMMARY_FIELD_ALIASES["source_urls"])
+            | set(DEPENDANT_SUMMARY_FIELD_ALIASES["checked_at"])
+        )
+        details: Dict[str, Any] = {}
+        for key, item in parent.items():
+            if key in metadata_aliases or key in represented:
+                continue
+            sanitized = private_health_sanitized_value(item, false_is_value=True)
+            if sanitized is not PRIVATE_HEALTH_NO_VALUE:
+                details[key] = sanitized
+        if details:
+            records.append((details, metadata))
+        return records
+    if not nested or value is False or value == 0:
+        return []
+    sanitized = private_health_sanitized_value(value, false_is_value=False)
+    return (
+        []
+        if sanitized is PRIVATE_HEALTH_NO_VALUE
+        else [(sanitized, inherited_metadata)]
+    )
+
+
+def private_health_dependant_supplemental_values(
+    value: Any,
+    *,
+    nested: bool,
+) -> List[Any]:
+    return [
+        detail
+        for detail, _ in private_health_dependant_supplemental_records(
+            value,
+            nested=nested,
+        )
+    ]
 
 
 def private_health_dependant_denial_value(value: Any) -> bool:
@@ -5382,7 +5653,10 @@ def private_health_summary_substantive(record: Any) -> bool:
         return False
     count = normalized_item_field(record, DEPENDANT_SUMMARY_FIELD_ALIASES["count"])
     notes = normalized_item_field(record, DEPENDANT_SUMMARY_FIELD_ALIASES["notes"])
-    return not is_missing(count) or private_health_freeform_value(notes)
+    return private_health_substantive_value(
+        count,
+        false_is_value=True,
+    ) or private_health_freeform_value(notes)
 
 
 def private_health_count_value(value: Any) -> Optional[int]:
@@ -5391,14 +5665,110 @@ def private_health_count_value(value: Any) -> Optional[int]:
     return private_health_nonnegative_integer(value)
 
 
-def private_health_freeform_value(value: Any) -> bool:
-    if is_missing(value) or value is False:
-        return False
-    if isinstance(value, str) and not contains_unknown(value):
+def private_health_sanitized_value(value: Any, *, false_is_value: bool) -> Any:
+    if is_missing(value):
+        return PRIVATE_HEALTH_NO_VALUE
+    if value is False:
+        return False if false_is_value else PRIVATE_HEALTH_NO_VALUE
+    if isinstance(value, str):
         normalized = re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
-        if normalized in {"n a", "na", "not applicable", "none"}:
-            return False
-    return has_meaningful_value(value)
+        if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:
+            return PRIVATE_HEALTH_NO_VALUE
+        return value
+    if isinstance(value, list):
+        sanitized_items = [
+            private_health_sanitized_value(item, false_is_value=false_is_value)
+            for item in value
+        ]
+        sanitized_items = [
+            item for item in sanitized_items if item is not PRIVATE_HEALTH_NO_VALUE
+        ]
+        return sanitized_items if sanitized_items else PRIVATE_HEALTH_NO_VALUE
+    if isinstance(value, dict):
+        sanitized_record = {
+            key: sanitized_item
+            for key, item in value.items()
+            if (
+                sanitized_item := private_health_sanitized_value(
+                    item,
+                    false_is_value=false_is_value,
+                )
+            )
+            is not PRIVATE_HEALTH_NO_VALUE
+        }
+        return sanitized_record if sanitized_record else PRIVATE_HEALTH_NO_VALUE
+    return value if has_meaningful_value(value) else PRIVATE_HEALTH_NO_VALUE
+
+
+def private_health_substantive_value(value: Any, *, false_is_value: bool) -> bool:
+    return private_health_sanitized_value(
+        value,
+        false_is_value=false_is_value,
+    ) is not PRIVATE_HEALTH_NO_VALUE
+
+
+def private_health_sanitized_note_value(value: Any) -> Any:
+    if isinstance(value, list):
+        sanitized = [private_health_sanitized_note_value(item) for item in value]
+        sanitized = [item for item in sanitized if item is not PRIVATE_HEALTH_NO_VALUE]
+        return sanitized if sanitized else PRIVATE_HEALTH_NO_VALUE
+    if isinstance(value, dict):
+        sanitized = {
+            key: sanitized_item
+            for key, item in value.items()
+            if (
+                sanitized_item := private_health_sanitized_value(
+                    item,
+                    false_is_value=True,
+                )
+            )
+            is not PRIVATE_HEALTH_NO_VALUE
+        }
+        return sanitized if sanitized else PRIVATE_HEALTH_NO_VALUE
+    return private_health_sanitized_value(value, false_is_value=False)
+
+
+def private_health_freeform_value(value: Any) -> bool:
+    return private_health_substantive_value(value, false_is_value=False)
+
+
+def private_health_filter_record_values(
+    record: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> Dict[str, Any]:
+    filtered: Dict[str, Any] = {}
+    for key, value in record.items():
+        if key.startswith("_"):
+            filtered[key] = value
+            continue
+        field = private_health_field_for_alias(key, field_aliases)
+        sanitized = private_health_sanitized_value(
+            value,
+            false_is_value=field not in {"notes", "source_urls", "checked_at"},
+        )
+        if sanitized is not PRIVATE_HEALTH_NO_VALUE:
+            filtered[key] = sanitized
+    return filtered
+
+
+def private_health_statement_items(value: Any) -> List[Dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    return [
+        private_health_filter_record_values(item, PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES)
+        for item in value
+        if isinstance(item, dict) and private_health_statement_record_has_signal(item)
+    ]
+
+
+def private_health_dependant_items(value: Any) -> List[Dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    return [
+        private_health_filter_record_values(item, DEPENDANT_FIELD_ALIASES)
+        for item in value
+        if isinstance(item, dict) and private_health_dependant_record_has_signal(item)
+    ]
 
 
 def private_health_statement_context(value: Any) -> bool:
@@ -5410,7 +5780,8 @@ def private_health_unique_values(values: List[Any]) -> List[Any]:
     rows: List[Any] = []
     seen: set[str] = set()
     for value in values:
-        if not has_meaningful_value(value) and value is not False:
+        value = private_health_sanitized_value(value, false_is_value=True)
+        if value is PRIVATE_HEALTH_NO_VALUE:
             continue
         key = json.dumps(value, sort_keys=True, default=str)
         if key in seen:
@@ -5425,14 +5796,25 @@ def has_private_health_medicare_inputs(raw: Dict[str, Any]) -> bool:
     spouse = raw.get("spouse", {})
     dependant_summary = raw.get("dependant_summary", {})
     levy = raw.get("medicare_levy", {})
+    levy = (
+        private_health_filter_record_values(levy, MEDICARE_LEVY_FIELD_ALIASES)
+        if isinstance(levy, dict)
+        else {}
+    )
     mls = raw.get("mls", {})
+    mls = private_health_filter_record_values(mls, MLS_FIELD_ALIASES) if isinstance(mls, dict) else {}
     if private_health_core_record_has_inputs(private_health):
         return True
     if private_health_spouse_record_has_inputs(spouse):
         return True
     if private_health_dependant_summary_has_inputs(dependant_summary):
         return True
-    if raw.get("statements") or raw.get("dependants") or raw.get("notes"):
+    notes = private_health_sanitized_note_value(raw.get("notes"))
+    if (
+        private_health_statement_items(raw.get("statements"))
+        or private_health_dependant_items(raw.get("dependants"))
+        or notes is not PRIVATE_HEALTH_NO_VALUE
+    ):
         return True
     if private_health_levy_record_has_inputs(levy):
         return True
@@ -5442,6 +5824,7 @@ def has_private_health_medicare_inputs(raw: Dict[str, Any]) -> bool:
 def private_health_core_record_has_inputs(record: Any) -> bool:
     if not isinstance(record, dict):
         return False
+    record = private_health_filter_record_values(record, PRIVATE_HEALTH_FIELD_ALIASES)
     covered = normalized_item_field(record, PRIVATE_HEALTH_FIELD_ALIASES["covered"])
     if covered is False or private_health_cover_bool(covered) is not None or contains_unknown(covered):
         return True
@@ -5451,6 +5834,7 @@ def private_health_core_record_has_inputs(record: Any) -> bool:
 def private_health_spouse_record_has_inputs(record: Any) -> bool:
     if not isinstance(record, dict):
         return False
+    record = private_health_filter_record_values(record, SPOUSE_FIELD_ALIASES)
     had_spouse = normalized_item_field(record, SPOUSE_FIELD_ALIASES["had_spouse"])
     if had_spouse is False or private_health_spouse_bool(had_spouse) is not None or contains_unknown(had_spouse):
         return True
@@ -5460,6 +5844,7 @@ def private_health_spouse_record_has_inputs(record: Any) -> bool:
 def private_health_dependant_summary_has_inputs(record: Any) -> bool:
     if not isinstance(record, dict):
         return False
+    record = private_health_filter_record_values(record, DEPENDANT_SUMMARY_FIELD_ALIASES)
     count = normalized_item_field(record, DEPENDANT_SUMMARY_FIELD_ALIASES["count"])
     return not is_missing(count) or private_health_record_nonfalse_inputs(
         record,
@@ -5475,6 +5860,7 @@ def private_health_levy_record_has_inputs(record: Any) -> bool:
 def private_health_mls_record_has_inputs(record: Any) -> bool:
     if not isinstance(record, dict):
         return False
+    record = private_health_filter_record_values(record, MLS_FIELD_ALIASES)
     cover = normalized_item_field(record, MLS_FIELD_ALIASES["appropriate_hospital_cover"])
     if cover is False or private_health_cover_bool(cover) is not None or contains_unknown(cover):
         return True
@@ -5491,7 +5877,7 @@ def private_health_mls_has_context(
         or private_health_core_record_has_inputs(private_health)
         or private_health_spouse_record_has_inputs(workflow.get("spouse", {}))
         or private_health_dependant_summary_has_inputs(workflow.get("dependant_summary", {}))
-        or bool(workflow.get("dependants"))
+        or bool(private_health_dependant_items(workflow.get("dependants")))
     )
 
 
@@ -5502,6 +5888,7 @@ def private_health_record_nonfalse_inputs(
 ) -> bool:
     if not isinstance(record, dict):
         return False
+    record = private_health_filter_record_values(record, field_aliases)
     for field, aliases in field_aliases.items():
         if field in {"source_urls", "checked_at"}:
             continue
@@ -5514,7 +5901,7 @@ def private_health_record_nonfalse_inputs(
             continue
         if field in ignored_false_fields and phone_bool(value) is False:
             continue
-        if has_meaningful_value(value) or value is False:
+        if private_health_substantive_value(value, false_is_value=True):
             return True
     return bool(record.get("_source_conflicts")) or bool(
         private_health_unknown_values(record, private_health_alias_set(field_aliases))
@@ -5524,8 +5911,12 @@ def private_health_record_nonfalse_inputs(
 def private_health_record_has_metadata(record: Any) -> bool:
     if not isinstance(record, dict):
         return False
+    record = private_health_filter_record_values(record, PRIVATE_HEALTH_FIELD_ALIASES)
     return any(
-        not is_missing(normalized_item_field(record, PRIVATE_HEALTH_FIELD_ALIASES[field]))
+        private_health_substantive_value(
+            normalized_item_field(record, PRIVATE_HEALTH_FIELD_ALIASES[field]),
+            false_is_value=False,
+        )
         for field in ("source_urls", "checked_at")
     )
 
@@ -5534,18 +5925,22 @@ def private_health_overview_context(
     raw: Dict[str, Any],
 ) -> tuple[Dict[str, Any], List[Dict[str, Any]], Dict[str, Any], bool]:
     private_health = raw.get("private_health", {})
-    private_health = private_health if isinstance(private_health, dict) else {}
-    statements = raw.get("statements", [])
-    statements = statements if isinstance(statements, list) else []
-    notes = raw.get("notes")
+    private_health = (
+        private_health_filter_record_values(private_health, PRIVATE_HEALTH_FIELD_ALIASES)
+        if isinstance(private_health, dict)
+        else {}
+    )
+    statements = private_health_statement_items(raw.get("statements"))
+    notes = private_health_sanitized_note_value(raw.get("notes"))
+    notes = None if notes is PRIVATE_HEALTH_NO_VALUE else notes
     overview = dict(private_health)
-    if notes:
+    if private_health_substantive_value(notes, false_is_value=True):
         overview["supplemental_notes"] = notes
     active = bool(
         private_health_core_record_has_inputs(private_health)
         or private_health_record_has_metadata(private_health)
         or statements
-        or notes
+        or private_health_substantive_value(notes, false_is_value=True)
     )
     return private_health, statements, overview, active
 
@@ -5576,6 +5971,7 @@ def private_health_overview_row(
     statements: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
     fields = PRIVATE_HEALTH_FIELD_ALIASES
+    raw = private_health_filter_record_values(raw, fields)
     answer = (
         f"Private hospital cover {private_health_bool_field_text(raw, fields['covered'])}; "
         f"period {private_health_period_text(raw, fields)}; "
@@ -5603,10 +5999,9 @@ def private_health_statement_rows(raw: Any) -> List[Dict[str, Any]]:
     if not isinstance(items, list):
         return []
     fields = PRIVATE_HEALTH_STATEMENT_FIELD_ALIASES
+    items = private_health_statement_items(items)
     rows: List[Dict[str, Any]] = []
     for index, item in enumerate(items, start=1):
-        if not isinstance(item, dict) or not has_meaningful_value(item):
-            continue
         answer = (
             f"Insurer/fund {private_health_field_text(item, fields['insurer'])}; "
             f"policy/membership {private_health_field_text(item, fields['membership_id'])}; "
@@ -5638,6 +6033,11 @@ def private_health_statement_rows(raw: Any) -> List[Dict[str, Any]]:
 
 
 def medicare_levy_row(raw: Any) -> Optional[Dict[str, Any]]:
+    raw = (
+        private_health_filter_record_values(raw, MEDICARE_LEVY_FIELD_ALIASES)
+        if isinstance(raw, dict)
+        else raw
+    )
     if not private_health_levy_record_has_inputs(raw):
         return None
     fields = MEDICARE_LEVY_FIELD_ALIASES
@@ -5669,6 +6069,11 @@ def mls_review_row(
     private_health: Dict[str, Any],
     workflow: Dict[str, Any],
 ) -> Optional[Dict[str, Any]]:
+    raw = private_health_filter_record_values(raw, MLS_FIELD_ALIASES) if isinstance(raw, dict) else raw
+    private_health = private_health_filter_record_values(
+        private_health,
+        PRIVATE_HEALTH_FIELD_ALIASES,
+    )
     if not private_health_mls_has_context(raw, private_health, workflow):
         return None
     effective = private_health_effective_mls_record(raw, private_health)
@@ -5701,6 +6106,7 @@ def mls_review_row(
 
 
 def spouse_review_row(raw: Any) -> Optional[Dict[str, Any]]:
+    raw = private_health_filter_record_values(raw, SPOUSE_FIELD_ALIASES) if isinstance(raw, dict) else raw
     if not private_health_spouse_record_has_inputs(raw):
         return None
     fields = SPOUSE_FIELD_ALIASES
@@ -5729,8 +6135,12 @@ def spouse_review_row(raw: Any) -> Optional[Dict[str, Any]]:
 
 
 def dependant_rows(summary: Any, items: Any) -> List[Dict[str, Any]]:
-    summary = summary if isinstance(summary, dict) else {}
-    items = items if isinstance(items, list) else []
+    summary = (
+        private_health_filter_record_values(summary, DEPENDANT_SUMMARY_FIELD_ALIASES)
+        if isinstance(summary, dict)
+        else {}
+    )
+    items = private_health_dependant_items(items)
     rows: List[Dict[str, Any]] = []
     if private_health_dependant_summary_has_inputs(summary) or items:
         summary_fields = DEPENDANT_SUMMARY_FIELD_ALIASES
@@ -5751,8 +6161,6 @@ def dependant_rows(summary: Any, items: Any) -> List[Dict[str, Any]]:
             )
         )
     for index, item in enumerate(items, start=1):
-        if not isinstance(item, dict) or not has_meaningful_value(item):
-            continue
         fields = DEPENDANT_FIELD_ALIASES
         answer = (
             f"Name {private_health_field_text(item, fields['name'])}; "
@@ -5806,6 +6214,11 @@ def private_health_medicare_evidence_rows(raw: Dict[str, Any]) -> List[Dict[str,
             )
         )
     levy = raw.get("medicare_levy", {})
+    levy = (
+        private_health_filter_record_values(levy, MEDICARE_LEVY_FIELD_ALIASES)
+        if isinstance(levy, dict)
+        else {}
+    )
     if private_health_levy_record_has_inputs(levy):
         entries.extend(
             private_health_evidence_entries(
@@ -5816,6 +6229,7 @@ def private_health_medicare_evidence_rows(raw: Dict[str, Any]) -> List[Dict[str,
             )
         )
     mls = raw.get("mls", {})
+    mls = private_health_filter_record_values(mls, MLS_FIELD_ALIASES) if isinstance(mls, dict) else {}
     if private_health_mls_has_context(mls, private_health, raw):
         effective_mls = private_health_effective_mls_record(mls, private_health)
         entries.extend(
@@ -5827,6 +6241,11 @@ def private_health_medicare_evidence_rows(raw: Dict[str, Any]) -> List[Dict[str,
             )
         )
     spouse = raw.get("spouse", {})
+    spouse = (
+        private_health_filter_record_values(spouse, SPOUSE_FIELD_ALIASES)
+        if isinstance(spouse, dict)
+        else {}
+    )
     if private_health_spouse_record_has_inputs(spouse):
         entries.extend(
             private_health_evidence_entries(
@@ -5837,7 +6256,12 @@ def private_health_medicare_evidence_rows(raw: Dict[str, Any]) -> List[Dict[str,
             )
         )
     summary = raw.get("dependant_summary", {})
-    dependants = raw.get("dependants", [])
+    summary = (
+        private_health_filter_record_values(summary, DEPENDANT_SUMMARY_FIELD_ALIASES)
+        if isinstance(summary, dict)
+        else {}
+    )
+    dependants = private_health_dependant_items(raw.get("dependants"))
     if private_health_dependant_summary_has_inputs(summary) or dependants:
         entries.extend(
             private_health_evidence_entries(
@@ -5869,7 +6293,11 @@ def private_health_medicare_evidence_rows(raw: Dict[str, Any]) -> List[Dict[str,
 
 
 def private_health_effective_mls_record(raw: Any, private_health: Dict[str, Any]) -> Dict[str, Any]:
-    local = raw if isinstance(raw, dict) else {}
+    local = private_health_filter_record_values(raw, MLS_FIELD_ALIASES) if isinstance(raw, dict) else {}
+    private_health = private_health_filter_record_values(
+        private_health,
+        PRIVATE_HEALTH_FIELD_ALIASES,
+    )
     return private_health_merge_records(
         [
             {
@@ -6474,11 +6902,12 @@ def private_health_record_has_field_inputs(
     field_aliases: Dict[str, tuple[str, ...]],
     excluded: set[str],
 ) -> bool:
+    raw = private_health_filter_record_values(raw, field_aliases)
     for field, aliases in field_aliases.items():
         if field in excluded or field in {"notes", "source_urls", "checked_at"}:
             continue
         value = normalized_item_field(raw, aliases)
-        if not is_missing(value) and (has_meaningful_value(value) or value is False):
+        if private_health_substantive_value(value, false_is_value=True):
             return True
     return False
 
@@ -6569,12 +6998,13 @@ def private_health_append_record_details(
     raw: Dict[str, Any],
     field_aliases: Dict[str, tuple[str, ...]],
 ) -> str:
+    raw = private_health_filter_record_values(raw, field_aliases)
     parts: List[str] = []
     notes = normalized_item_field(raw, field_aliases.get("notes", ()))
-    if not is_missing(notes):
+    if private_health_freeform_value(notes):
         parts.append(f"notes {display_value(notes)}")
     source_urls = normalized_item_field(raw, field_aliases.get("source_urls", ()))
-    if not is_missing(source_urls):
+    if private_health_substantive_value(source_urls, false_is_value=False):
         parts.append(f"supplied source URLs {display_value(source_urls)}")
     checked_at = private_health_alias_values(raw, field_aliases.get("checked_at", ()))
     if checked_at:
@@ -6593,9 +7023,80 @@ def private_health_alias_values(raw: Dict[str, Any], aliases: tuple[str, ...]) -
     for alias in aliases:
         if alias not in raw or is_missing(raw[alias]):
             continue
-        value = raw[alias]
-        values.extend(value if isinstance(value, list) else [value])
+        values.extend(private_health_recursive_scalar_values(raw[alias]))
     return private_health_unique_values(values)
+
+
+def private_health_recursive_scalar_values(value: Any) -> List[Any]:
+    if isinstance(value, list):
+        values: List[Any] = []
+        for item in value:
+            values.extend(private_health_recursive_scalar_values(item))
+        return values
+    if isinstance(value, dict):
+        values: List[Any] = []
+        for item in value.values():
+            values.extend(private_health_recursive_scalar_values(item))
+        return values
+    sanitized = private_health_sanitized_value(value, false_is_value=False)
+    return [] if sanitized is PRIVATE_HEALTH_NO_VALUE else [sanitized]
+
+
+def private_health_recursive_urls(value: Any) -> List[str]:
+    if isinstance(value, str):
+        value = value.strip()
+        return [value] if value.startswith(("https://", "http://")) else []
+    if isinstance(value, list):
+        urls: List[str] = []
+        for item in value:
+            urls.extend(private_health_recursive_urls(item))
+        return urls
+    if isinstance(value, dict):
+        urls: List[str] = []
+        for item in value.values():
+            urls.extend(private_health_recursive_urls(item))
+        return urls
+    return []
+
+
+def private_health_record_metadata(
+    record: Dict[str, Any],
+    source_aliases: set[str],
+    checked_at_aliases: set[str],
+) -> Dict[str, Any]:
+    source_urls: List[str] = []
+    checked_at: List[Any] = []
+    for key, value in record.items():
+        if key in source_aliases:
+            source_urls.extend(private_health_recursive_urls(value))
+        elif key in checked_at_aliases:
+            checked_at.extend(private_health_recursive_scalar_values(value))
+    metadata: Dict[str, Any] = {}
+    if source_urls:
+        metadata["source_urls"] = list(dict.fromkeys(source_urls))
+    if checked_at:
+        metadata["checked_at"] = private_health_unique_values(checked_at)
+    return metadata
+
+
+def private_health_add_metadata(
+    record: Dict[str, Any],
+    metadata: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> None:
+    source_urls = [
+        *private_health_provenance_urls(record),
+        *private_health_recursive_urls(metadata.get("source_urls")),
+    ]
+    if source_urls:
+        record["source_urls"] = list(dict.fromkeys(source_urls))
+    checked_at = [
+        *private_health_alias_values(record, field_aliases.get("checked_at", ())),
+        *private_health_recursive_scalar_values(metadata.get("checked_at")),
+    ]
+    if checked_at:
+        values = private_health_unique_values(checked_at)
+        record["checked_at"] = values[0] if len(values) == 1 else values
 
 
 def private_health_row_sources(raw: Any, official_sources: List[str]) -> List[str]:
@@ -6621,13 +7122,7 @@ def private_health_provenance_urls(raw: Dict[str, Any]) -> List[str]:
     for key in dict.fromkeys(aliases):
         if key not in raw:
             continue
-        value = raw[key]
-        values = value if isinstance(value, list) else [value]
-        sources.extend(
-            item.strip()
-            for item in values
-            if isinstance(item, str) and item.strip().startswith(("https://", "http://"))
-        )
+        sources.extend(private_health_recursive_urls(raw[key]))
     return list(dict.fromkeys(sources))
 
 

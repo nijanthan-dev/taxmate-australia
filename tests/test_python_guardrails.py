@@ -292,6 +292,174 @@ class ReviewGuardrailTests(unittest.TestCase):
             )
         )
 
+    def test_private_health_guardrail_requires_normalized_statement_collections(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel in (
+                "scripts/taxmate_intake.py",
+                "config/runtime-coverage.json",
+                "data/ato_knowledge_base/source_coverage.json",
+            ):
+                destination = root / rel
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ROOT / rel, destination)
+            intake_path = root / "scripts/taxmate_intake.py"
+            intake = intake_path.read_text(encoding="utf-8").replace(
+                'statements = private_health_statement_items(raw.get("statements"))',
+                'statements = raw.get("statements", [])',
+                1,
+            )
+            intake_path.write_text(intake, encoding="utf-8")
+
+            findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+
+        self.assertTrue(
+            any(
+                'statements = private_health_statement_items(raw.get("statements"))'
+                in finding.detail
+                for finding in findings
+            )
+        )
+
+    def test_private_health_guardrail_requires_dependant_supplemental_routing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel in (
+                "scripts/taxmate_intake.py",
+                "config/runtime-coverage.json",
+                "data/ato_knowledge_base/source_coverage.json",
+            ):
+                destination = root / rel
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ROOT / rel, destination)
+            intake_path = root / "scripts/taxmate_intake.py"
+            intake = intake_path.read_text(encoding="utf-8").replace(
+                "dependant_notes = private_health_dependant_collection_notes(answers)",
+                "dependant_notes = []",
+                1,
+            )
+            intake_path.write_text(intake, encoding="utf-8")
+
+            findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+
+        self.assertTrue(
+            any(
+                "dependant_notes = private_health_dependant_collection_notes(answers)"
+                in finding.detail
+                for finding in findings
+            )
+        )
+
+    def test_private_health_guardrail_requires_recursive_noop_sanitizer_behavior(self) -> None:
+        mutations = (
+            (
+                "if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:",
+                "if False and normalized in PRIVATE_HEALTH_NOOP_TEXT:",
+                "if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:",
+            ),
+            (
+                "    if isinstance(value, list):\n        sanitized_items = [",
+                "    if False and isinstance(value, list):\n        sanitized_items = [",
+                "if isinstance(value, list):",
+            ),
+            (
+                "    if isinstance(value, dict):\n        sanitized_record = {",
+                "    if False and isinstance(value, dict):\n        sanitized_record = {",
+                "if isinstance(value, dict):",
+            ),
+            (
+                'field not in {"notes", "source_urls", "checked_at"}',
+                'field not in {"notes"}',
+                'field not in {"notes", "source_urls", "checked_at"}',
+            ),
+            (
+                "if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:\n            return PRIVATE_HEALTH_NO_VALUE",
+                "if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:\n            return value",
+                "if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:\n            return PRIVATE_HEALTH_NO_VALUE",
+            ),
+            (
+                "return sanitized_items if sanitized_items else PRIVATE_HEALTH_NO_VALUE",
+                "return value",
+                "return sanitized_items if sanitized_items else PRIVATE_HEALTH_NO_VALUE",
+            ),
+            (
+                "return sanitized_record if sanitized_record else PRIVATE_HEALTH_NO_VALUE",
+                "return value",
+                "return sanitized_record if sanitized_record else PRIVATE_HEALTH_NO_VALUE",
+            ),
+        )
+        for old, new, expected in mutations:
+            with self.subTest(old=old), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                for rel in (
+                    "scripts/taxmate_intake.py",
+                    "config/runtime-coverage.json",
+                    "data/ato_knowledge_base/source_coverage.json",
+                ):
+                    destination = root / rel
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ROOT / rel, destination)
+                intake_path = root / "scripts/taxmate_intake.py"
+                intake = intake_path.read_text(encoding="utf-8").replace(old, new, 1)
+                intake_path.write_text(intake, encoding="utf-8")
+
+                findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+
+            self.assertTrue(any(expected in finding.detail for finding in findings))
+
+    def test_private_health_guardrail_requires_recursive_noop_docs(self) -> None:
+        cases = (
+            (
+                taxmate_review_guardrails.PRIVATE_HEALTH_MEDICARE_NOOP_DOC_PHRASE,
+                "Suppress blank containers before rendering",
+                "recursive no-op",
+            ),
+            (
+                taxmate_review_guardrails.PRIVATE_HEALTH_MEDICARE_PROVENANCE_DOC_PHRASE,
+                "Carry source context onto supplemental review rows",
+                "supplemental provenance",
+            ),
+        )
+        for phrase, replacement, label in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                files = (
+                    "scripts/taxmate_intake.py",
+                    "scripts/skillgen.py",
+                    "config/runtime-coverage.json",
+                    "data/ato_knowledge_base/source_coverage.json",
+                    "skills/private-health-medicare/references/rules.md",
+                    "docs/INDIVIDUAL_RETURN_PREP.md",
+                )
+                for rel in files:
+                    destination = root / rel
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ROOT / rel, destination)
+                for rel in (
+                    "scripts/skillgen.py",
+                    "skills/private-health-medicare/references/rules.md",
+                    "docs/INDIVIDUAL_RETURN_PREP.md",
+                ):
+                    path = root / rel
+                    text = path.read_text(encoding="utf-8").replace(phrase, replacement)
+                    path.write_text(text, encoding="utf-8")
+
+                findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+
+            missing_docs = {
+                finding.detail
+                for finding in findings
+                if f"{label} contract missing" in finding.detail
+            }
+            self.assertEqual(
+                {
+                    f"{label} contract missing from scripts/skillgen.py",
+                    f"{label} contract missing from skills/private-health-medicare/references/rules.md",
+                    f"{label} contract missing from docs/INDIVIDUAL_RETURN_PREP.md",
+                },
+                missing_docs,
+            )
+
     def test_review_guardrails_detect_taxpack_truthiness_fallback(self) -> None:
         text = 'def scalar_text(): pass\nvalue = raw.get("answer") or ""\n'
         findings = taxmate_review_guardrails.check_taxpack_output_layer_text(text)

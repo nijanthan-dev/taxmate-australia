@@ -111,6 +111,45 @@ PRIVATE_HEALTH_MEDICARE_TYPED_HELPERS = (
     ("private_health_collection_entries", "List[Dict[str, Any]]"),
     ("private_health_count_value", "Optional[int]"),
     ("private_health_provenance_urls", "List[str]"),
+    ("private_health_sanitized_value", "Any"),
+    ("private_health_sanitized_note_value", "Any"),
+    ("private_health_filter_record_values", "Dict[str, Any]"),
+    ("private_health_statement_items", "List[Dict[str, Any]]"),
+    ("private_health_dependant_items", "List[Dict[str, Any]]"),
+    ("private_health_dependant_collection_notes", "List[Any]"),
+    ("private_health_dependant_supplemental_records", "List[tuple[Any, Dict[str, Any]]]"),
+    ("private_health_dependant_supplemental_values", "List[Any]"),
+    ("private_health_statement_supplemental_records", "List[tuple[Any, Dict[str, Any]]]"),
+    ("private_health_statement_collection_metadata", "Dict[str, Any]"),
+    ("private_health_dependant_collection_metadata", "Dict[str, Any]"),
+    ("private_health_medicare_supplemental_metadata", "Dict[str, Any]"),
+    ("private_health_recursive_urls", "List[str]"),
+    ("private_health_record_metadata", "Dict[str, Any]"),
+    ("private_health_add_metadata", "None"),
+)
+PRIVATE_HEALTH_MEDICARE_NOOP_FRAGMENTS = (
+    "PRIVATE_HEALTH_NOOP_TEXT = frozenset(",
+    "PRIVATE_HEALTH_NO_VALUE = object()",
+    "notes.extend(private_health_collection_notes(item))",
+    'field not in {"notes", "source_urls", "checked_at"}',
+    'notes = private_health_sanitized_note_value(raw.get("notes"))',
+    'statements = private_health_statement_items(raw.get("statements"))',
+    'dependants = private_health_dependant_items(raw.get("dependants"))',
+    "dependant_notes = private_health_dependant_collection_notes(answers)",
+    'result["dependant_summary"]["dependant_supplemental_facts"] = dependant_notes',
+    'scalar_key = "notes" if records else private_health_section_scalar_key(section_keys)',
+    "private_health_statement_collection_metadata(answers)",
+    "private_health_dependant_collection_metadata(answers)",
+    "private_health_medicare_supplemental_metadata(answers)",
+    "private_health_add_metadata(groups[name][index], metadata, field_aliases)",
+    "sources.extend(private_health_recursive_urls(raw[key]))",
+    "| set(PRIVATE_HEALTH_WORKFLOW_METADATA_KEYS)",
+)
+PRIVATE_HEALTH_MEDICARE_NOOP_DOC_PHRASE = (
+    "Recursively suppress blank or no-op note and metadata containers before alias merge or rendering"
+)
+PRIVATE_HEALTH_MEDICARE_PROVENANCE_DOC_PHRASE = (
+    "Carry matching valid source URLs and checked-at dates onto the review row whenever supplemental facts survive"
 )
 
 
@@ -271,7 +310,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #71 private health/Medicare intake",
         PRIVATE_HEALTH_MEDICARE_CONTRACT,
-        "Private-health and Medicare intake must isolate namespaced flat aliases so generic keys from unrelated workflows never leak into this workflow; preserve direct, flat, nested, itemized, mixed scalar/dict, sibling, unknown, zero, and false values; distinguish explicit no/false and no-statement/not-held/not-supplied/not-received/missing/without denial variants from uncertainty; preserve each insurer statement and dependant as a distinct line; suppress metadata-only, empty, no-op, and default-false containers; validate supported benefit and tax-claim codes, amounts, dates, day ranges, counts, reconciliation, and contradictions; union every valid supplied provenance URL with only the matching verified statement, levy, MLS, and family/dependant sources; keep missing statements, partial-year cover, malformed periods, spouse/dependant uncertainty, levy exemption/reduction ambiguity, and MLS uncertainty in Evidence or Accountant review; and remain prep-only without final levy, surcharge, rebate, or lodgment advice.",
+        "Private-health and Medicare intake must isolate namespaced flat aliases so generic keys from unrelated workflows never leak into this workflow; preserve direct, flat, nested, itemized, mixed scalar/dict, sibling, unknown, zero, and false values; distinguish explicit no/false and no-statement/not-held/not-supplied/not-received/missing/without denial variants from uncertainty; preserve each insurer statement and dependant as a distinct line; recursively suppress metadata-only, empty, no-op, and default-false containers before alias merge or rendering without dropping real mixed-container siblings; validate supported benefit and tax-claim codes, amounts, dates, day ranges, counts, reconciliation, and contradictions; union every valid supplied provenance URL with only the matching verified statement, levy, MLS, and family/dependant sources; keep missing statements, partial-year cover, malformed periods, spouse/dependant uncertainty, levy exemption/reduction ambiguity, and MLS uncertainty in Evidence or Accountant review; and remain prep-only without final levy, surcharge, rebate, or lodgment advice.",
     ),
     ReviewPattern(
         "Release guardrails",
@@ -305,6 +344,15 @@ def contains_in_order(text: str, tokens: Iterable[str]) -> bool:
             return False
         offset = found + len(token)
     return True
+
+
+def python_function_text(text: str, name: str) -> str:
+    match = re.search(
+        rf"^def {re.escape(name)}\(.*?(?=^def |\Z)",
+        text,
+        re.DOTALL | re.MULTILINE,
+    )
+    return match.group(0) if match else ""
 
 
 def missing_tokens(text: str, tokens: Iterable[str]) -> List[str]:
@@ -2299,8 +2347,51 @@ def check_private_health_medicare_contract(root: Path) -> List[Finding]:
             "ATO_SPOUSE_DEPENDANT_SOURCES = [",
             "items.extend(private_health_medicare_rows(private_health_medicare))",
             "rows.extend(private_health_medicare_evidence_rows(private_health_medicare))",
+            *PRIVATE_HEALTH_MEDICARE_NOOP_FRAGMENTS,
         ],
     )
+    sanitizer = python_function_text(intake, "private_health_sanitized_value")
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            sanitizer,
+            (
+                "if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:",
+                "if isinstance(value, list):",
+                "if isinstance(value, dict):",
+                "private_health_sanitized_value(item, false_is_value=false_is_value)",
+                "if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:\n"
+                "            return PRIVATE_HEALTH_NO_VALUE",
+                "return sanitized_items if sanitized_items else PRIVATE_HEALTH_NO_VALUE",
+                "return sanitized_record if sanitized_record else PRIVATE_HEALTH_NO_VALUE",
+            ),
+        )
+    )
+    filter_record = python_function_text(intake, "private_health_filter_record_values")
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            filter_record,
+            ('field not in {"notes", "source_urls", "checked_at"}',),
+        )
+    )
+    for rel in (
+        "scripts/skillgen.py",
+        "skills/private-health-medicare/references/rules.md",
+        "docs/INDIVIDUAL_RETURN_PREP.md",
+    ):
+        text = read_optional(root, rel)
+        for phrase, label in (
+            (PRIVATE_HEALTH_MEDICARE_NOOP_DOC_PHRASE, "recursive no-op"),
+            (PRIVATE_HEALTH_MEDICARE_PROVENANCE_DOC_PHRASE, "supplemental provenance"),
+        ):
+            if phrase not in text:
+                findings.append(
+                    Finding(
+                        PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                        f"{label} contract missing from {rel}",
+                    )
+                )
     for name in PRIVATE_HEALTH_MEDICARE_RUNTIME_FUNCTIONS:
         if f"def {name}(" in intake and intake.count(f"{name}(") < 2:
             findings.append(Finding(PRIVATE_HEALTH_MEDICARE_CONTRACT, f"runtime function not wired: {name}"))

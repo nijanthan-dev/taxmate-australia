@@ -1201,6 +1201,299 @@ class PrivateHealthMedicareWorkflowTests(unittest.TestCase):
                 self.assertEqual([], self.private_health_rows(payload))
                 self.assertEqual([], self.phi_evidence(payload))
 
+    def test_recursive_noop_containers_do_not_create_phantoms(self) -> None:
+        noop: Any = ["N/A", {"note": ["not applicable", None, ""]}, [["none"]]]
+        cases = (
+            {"private_health_medicare": {"notes": noop}},
+            {"private_health_medicare": {"notes": [False]}},
+            {"private_health_medicare": {"custom": noop}},
+            {
+                "private_health_medicare": {
+                    "private_health": {"covered": noop, "notes": noop, "custom": noop}
+                }
+            },
+            {
+                "private_health_medicare": {
+                    "medicare_levy": {"exemption": noop, "notes": noop, "custom": noop}
+                }
+            },
+            {
+                "private_health_medicare": {
+                    "mls": {"review": noop, "notes": noop, "custom": noop}
+                }
+            },
+            {
+                "private_health_medicare": {
+                    "spouse": {"had_spouse": noop, "notes": noop, "custom": noop}
+                }
+            },
+            {
+                "private_health_medicare": {
+                    "statements": {
+                        "items": [{"insurer": noop}],
+                        "notes": noop,
+                        "source_urls": [False],
+                        "checked_at": [False],
+                    }
+                }
+            },
+            {
+                "private_health_medicare": {
+                    "dependants": {
+                        "count": noop,
+                        "items": [{"name": noop}],
+                        "notes": noop,
+                        "source_urls": [False],
+                        "checked_at": [False],
+                    }
+                }
+            },
+            {
+                "private_health_medicare": {
+                    "medicare": {
+                        "levy": {"exemption": noop},
+                        "mls": {"review": noop},
+                    }
+                }
+            },
+            {
+                "private_health_medicare": {
+                    "source_urls": [False],
+                    "checked_at": [False],
+                }
+            },
+        )
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = self.payload(answers)
+
+                self.assertEqual([], self.private_health_rows(payload))
+                self.assertEqual([], self.phi_evidence(payload))
+
+        direct = {
+            "private_health": {
+                "covered": noop,
+                "source_urls": [False],
+                "checked_at": [False],
+            },
+            "statements": [{"insurer": noop}],
+            "medicare_levy": {"exemption": noop},
+            "mls": {"review": noop},
+            "spouse": {"had_spouse": noop},
+            "dependant_summary": {"count": noop},
+            "dependants": [{"name": noop}],
+            "notes": [*noop, False],
+        }
+        self.assertEqual([], taxmate_intake.private_health_medicare_rows(direct))
+        self.assertEqual([], taxmate_intake.private_health_medicare_evidence_rows(direct))
+
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.load_guide_payload(self.payload({"private_health_medicare": {"notes": noop}}))
+        )
+        for row_id in ("PHI-OVERVIEW", "PHI-STMT-", "MEDICARE-LEVY", "MLS-REVIEW", "SPOUSE-REVIEW"):
+            self.assertNotIn(row_id, body)
+
+    def test_noop_aliases_do_not_shadow_real_private_health_facts(self) -> None:
+        noop: Any = ["n/a", {"note": "not applicable"}]
+        custom_source = "https://example.test/noop-filter-source"
+        answers = {
+            "private_health_medicare": {
+                "private_health": {
+                    "covered": noop,
+                    "private_health_cover": True,
+                    "period_start": "2025-07-01",
+                    "period_end": "2026-06-30",
+                    "days_covered": 365,
+                    "evidence": "policy held",
+                    "notes": ["none", "manual cover check retained"],
+                    "source_urls": ["n/a", custom_source],
+                    "checked_at": ["none", "2026-07-10"],
+                },
+                "statements": [
+                    self.statement(insurer=noop, health_fund="Real Health Fund")
+                ],
+                "medicare_levy": {
+                    "exemption": noop,
+                    "medicare_levy_exemption": True,
+                    "exemption_category": "supplied review category",
+                    "full_exemption_days": 0,
+                    "evidence": "certificate held",
+                },
+                "mls": {
+                    "review": noop,
+                    "mls_review": True,
+                    "appropriate_hospital_cover": True,
+                    "income_for_surcharge": 0,
+                    "income_tier": "base tier",
+                    "evidence": "review records held",
+                },
+                "spouse": {
+                    "had_spouse": noop,
+                    "spouse_had": True,
+                    "period_start": "2025-07-01",
+                    "period_end": "2026-06-30",
+                    "income_for_tests": 0,
+                    "income_evidence": "statement held",
+                },
+                "dependant_count": 1,
+                "dependants": [
+                    self.dependant(name=noop, label="Real Child")
+                ],
+            }
+        }
+        payload = self.payload(answers)
+        rows = self.rows(payload)
+        text = self.private_health_text(payload)
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("true", rows["PHI-OVERVIEW"]["answer"].lower())
+        self.assertIn("Real Health Fund", rows["PHI-STMT-1"]["answer"])
+        self.assertIn("true", rows["MEDICARE-LEVY"]["answer"].lower())
+        self.assertIn("true", rows["MLS-REVIEW"]["answer"].lower())
+        self.assertIn("true", rows["SPOUSE-REVIEW"]["answer"].lower())
+        self.assertIn("Real Child", rows["DEPENDANT-1"]["answer"])
+        self.assertIn("manual cover check retained", text)
+        self.assertIn(custom_source, rows["PHI-OVERVIEW"]["source_urls"])
+        self.assertIn("2026-07-10", rows["PHI-OVERVIEW"]["answer"])
+        for suppressed in ("n/a", "not applicable", "alias conflict"):
+            self.assertNotIn(suppressed, text)
+        for suppressed in ("insurer/fund n/a", "notes n/a", "not applicable", "alias conflict"):
+            self.assertNotIn(suppressed, body.lower())
+
+    def test_mixed_containers_preserve_real_notes_falsey_facts_and_denials(self) -> None:
+        nested = self.payload({"private_health_medicare": [["policy pending"]]})
+        self.assertIn("policy pending", self.private_health_text(nested))
+        self.assertIn("policy pending", self.phi_evidence_text(nested))
+
+        mixed_section = self.payload(
+            {
+                "private_health_medicare": {
+                    "private_health": [
+                        {
+                            "covered": True,
+                            "period_start": "2025-07-01",
+                            "period_end": "2026-06-30",
+                            "days_covered": 365,
+                            "evidence": "policy held",
+                        },
+                        "policy split pending",
+                    ],
+                    "notes": ["n/a", {"detail": "manual mapping unclear"}],
+                    "custom": {"noop": "none", "zero": 0, "flag": False},
+                }
+            }
+        )
+        mixed_text = self.private_health_text(mixed_section)
+        self.assertIn("policy split pending", mixed_text)
+        self.assertIn("manual mapping unclear", mixed_text)
+        self.assertIn("zero", mixed_text)
+        self.assertIn("0", mixed_text)
+        self.assertIn("false", mixed_text)
+        self.assertNotIn("n/a", mixed_text)
+
+        denial = self.payload(
+            {
+                "private_health_medicare": self.private_health(
+                    statements={"evidence": ["none", False]}
+                )
+            }
+        )
+        self.assertFalse(
+            any(number.startswith("PHI-STMT-") for number in self.rows(denial))
+        )
+        self.assertIn("false", self.phi_evidence_text(denial))
+
+        direct = {
+            "private_health": {"source_urls": [False], "checked_at": [False]},
+            "statements": [],
+            "medicare_levy": {},
+            "mls": {},
+            "spouse": {
+                "had_spouse": True,
+                "period_start": "2025-07-01",
+                "period_end": "2026-06-30",
+                "income_for_tests": 0,
+                "income_evidence": "statement held",
+            },
+            "dependant_summary": {},
+            "dependants": [],
+            "notes": [],
+        }
+        direct_rows = {
+            str(row["number"]): row
+            for row in taxmate_intake.private_health_medicare_rows(direct)
+        }
+        self.assertNotIn("PHI-OVERVIEW", direct_rows)
+        self.assertIn("SPOUSE-REVIEW", direct_rows)
+
+    def test_dependant_non_item_facts_route_to_summary_without_phantom_items(self) -> None:
+        cases = (
+            ([{"notes": "child facts unclear"}], "child facts unclear"),
+            ([{"custom": "maintenance arrangement unclear"}], "maintenance arrangement unclear"),
+            (["student status pending"], "student status pending"),
+            ({"items": [{"notes": "child period unclear"}]}, "child period unclear"),
+            ({"items": [], "evidence": "family records pending"}, "family records pending"),
+        )
+        for dependants, expected in cases:
+            with self.subTest(dependants=dependants):
+                payload = self.payload(
+                    {
+                        "private_health_medicare": {
+                            "dependants": dependants,
+                        }
+                    }
+                )
+                rows = self.rows(payload)
+
+                self.assertIn("DEPENDANT-SUMMARY", rows)
+                self.assertFalse(
+                    any(re.fullmatch(r"DEPENDANT-\d+", number) for number in rows)
+                )
+                self.assertIn(expected, rows["DEPENDANT-SUMMARY"]["answer"])
+                self.assertIn(expected, self.phi_evidence_text(payload))
+
+        wrapped = self.payload(
+            {
+                "private_health_medicare": {
+                    "dependant_count": 1,
+                    "dependants": {
+                        "items": [self.dependant()],
+                        "family_arrangement": "shared arrangement unclear",
+                    },
+                }
+            }
+        )
+        wrapped_rows = self.rows(wrapped)
+        self.assertIn("DEPENDANT-1", wrapped_rows)
+        self.assertNotIn("shared arrangement unclear", wrapped_rows["DEPENDANT-1"]["answer"])
+        self.assertIn("shared arrangement unclear", wrapped_rows["DEPENDANT-SUMMARY"]["answer"])
+        self.assertIn("shared arrangement unclear", self.phi_evidence_text(wrapped))
+
+    def test_typed_scalar_lists_preserve_true_status_without_false_defaults(self) -> None:
+        true_payload = self.payload(
+            {
+                "private_health_medicare": {
+                    "private_health": [True],
+                    "spouse": [True],
+                }
+            }
+        )
+        true_rows = self.rows(true_payload)
+
+        self.assertIn("true", true_rows["PHI-OVERVIEW"]["answer"].lower())
+        self.assertIn("true", true_rows["SPOUSE-REVIEW"]["answer"].lower())
+
+        false_payload = self.payload(
+            {
+                "private_health_medicare": {
+                    "private_health": [False],
+                    "spouse": [False],
+                }
+            }
+        )
+        self.assertEqual([], self.private_health_rows(false_payload))
+        self.assertEqual([], self.phi_evidence(false_payload))
+
     def test_no_cover_with_statement_and_no_spouse_with_income_are_contradictions(self) -> None:
         cases = (
             (
@@ -1446,6 +1739,264 @@ class PrivateHealthMedicareWorkflowTests(unittest.TestCase):
             with self.subTest(number=number):
                 self.assertIn(url, rows[number]["source_urls"])
                 self.assertIn(url, body)
+
+    def test_recursive_provenance_values_reach_matching_row(self) -> None:
+        nested_source = "https://example.test/nested-cover-source"
+        nested_source_two = "https://example.test/nested-cover-source-two"
+        nested_payload = self.payload(
+            {
+                "private_health_medicare": {
+                    "private_health": {
+                        "covered": True,
+                        "period_start": "2025-07-01",
+                        "period_end": "2026-06-30",
+                        "days_covered": 365,
+                        "evidence": "policy held",
+                        "source_urls": [
+                            "n/a",
+                            [nested_source],
+                            {"value": nested_source_two},
+                        ],
+                        "checked_at": ["none", ["2026-07-10"]],
+                    }
+                }
+            }
+        )
+        nested_overview = self.rows(nested_payload)["PHI-OVERVIEW"]
+        self.assertTrue(
+            {nested_source, nested_source_two}.issubset(set(nested_overview["source_urls"]))
+        )
+        self.assertIn("2026-07-10", nested_overview["answer"])
+        self.assertNotIn("n/a", nested_overview["answer"].lower())
+
+    def test_supplemental_provenance_reaches_matching_rows(self) -> None:
+        statement_cases = (
+            (
+                {
+                    "items": [],
+                    "annual_split": "statement split unclear",
+                    "source_url": "https://example.test/statement-supplement",
+                    "checked_at": "2026-07-10",
+                },
+                "https://example.test/statement-supplement",
+            ),
+            (
+                {
+                    "items": [
+                        {
+                            "notes": "statement facts unclear",
+                            "source_url": "https://example.test/statement-item-supplement",
+                            "checked_at": "2026-07-10",
+                        }
+                    ]
+                },
+                "https://example.test/statement-item-supplement",
+            ),
+        )
+        for statements, source in statement_cases:
+            with self.subTest(statements=statements):
+                payload = self.payload(
+                    {
+                        "private_health_medicare": {
+                            "statements": statements,
+                        }
+                    }
+                )
+                rows = self.rows(payload)
+
+                self.assertFalse(any(number.startswith("PHI-STMT-") for number in rows))
+                self.assertIn(source, rows["PHI-OVERVIEW"]["source_urls"])
+                self.assertIn("2026-07-10", rows["PHI-OVERVIEW"]["answer"])
+                self.assertTrue(
+                    any(source in row["source_urls"] for row in self.phi_evidence(payload))
+                )
+
+        dependant_cases = (
+            (
+                {
+                    "items": [],
+                    "family_arrangement": "family arrangement unclear",
+                    "source_url": "https://example.test/dependant-supplement",
+                    "checked_at": "2026-07-10",
+                },
+                "https://example.test/dependant-supplement",
+            ),
+            (
+                [
+                    {
+                        "notes": "child facts unclear",
+                        "source_url": "https://example.test/dependant-item-supplement",
+                        "checked_at": "2026-07-10",
+                    }
+                ],
+                "https://example.test/dependant-item-supplement",
+            ),
+        )
+        for dependants, source in dependant_cases:
+            with self.subTest(dependants=dependants):
+                payload = self.payload(
+                    {
+                        "private_health_medicare": {
+                            "dependants": dependants,
+                        }
+                    }
+                )
+                rows = self.rows(payload)
+
+                self.assertFalse(any(re.fullmatch(r"DEPENDANT-\d+", number) for number in rows))
+                self.assertIn(source, rows["DEPENDANT-SUMMARY"]["source_urls"])
+                self.assertIn("2026-07-10", rows["DEPENDANT-SUMMARY"]["answer"])
+                self.assertTrue(
+                    any(source in row["source_urls"] for row in self.phi_evidence(payload))
+                )
+
+    def test_supplemental_provenance_isolated_by_branch(self) -> None:
+        statement_item_source = "https://example.test/statement-item"
+        statement_supplement_source = "https://example.test/statement-supplement-only"
+        statement_payload = self.payload(
+            {
+                "private_health_medicare": {
+                    "statements": [
+                        self.statement(
+                            source_url=statement_item_source,
+                            checked_at="2026-07-09",
+                        ),
+                        {
+                            "notes": "separate statement facts unclear",
+                            "source_url": statement_supplement_source,
+                            "checked_at": "2026-07-10",
+                        },
+                    ]
+                }
+            }
+        )
+        statement_rows = self.rows(statement_payload)
+        self.assertIn(statement_item_source, statement_rows["PHI-STMT-1"]["source_urls"])
+        self.assertNotIn(
+            statement_supplement_source,
+            statement_rows["PHI-STMT-1"]["source_urls"],
+        )
+        self.assertIn(
+            statement_supplement_source,
+            statement_rows["PHI-OVERVIEW"]["source_urls"],
+        )
+        self.assertNotIn(
+            statement_item_source,
+            statement_rows["PHI-OVERVIEW"]["source_urls"],
+        )
+        self.assertIn("2026-07-10", statement_rows["PHI-OVERVIEW"]["answer"])
+        self.assertNotIn("2026-07-09", statement_rows["PHI-OVERVIEW"]["answer"])
+
+        dependant_item_source = "https://example.test/dependant-item"
+        dependant_supplement_source = "https://example.test/dependant-supplement-only"
+        dependant_payload = self.payload(
+            {
+                "private_health_medicare": {
+                    "dependants": [
+                        self.dependant(
+                            source_url=dependant_item_source,
+                            checked_at="2026-07-09",
+                        ),
+                        {
+                            "notes": "separate dependant facts unclear",
+                            "source_url": dependant_supplement_source,
+                            "checked_at": "2026-07-10",
+                        },
+                    ]
+                }
+            }
+        )
+        dependant_rows = self.rows(dependant_payload)
+        self.assertIn(dependant_item_source, dependant_rows["DEPENDANT-1"]["source_urls"])
+        self.assertNotIn(
+            dependant_supplement_source,
+            dependant_rows["DEPENDANT-1"]["source_urls"],
+        )
+        self.assertIn(
+            dependant_supplement_source,
+            dependant_rows["DEPENDANT-SUMMARY"]["source_urls"],
+        )
+        self.assertNotIn(
+            dependant_item_source,
+            dependant_rows["DEPENDANT-SUMMARY"]["source_urls"],
+        )
+        self.assertIn("2026-07-10", dependant_rows["DEPENDANT-SUMMARY"]["answer"])
+        self.assertNotIn("2026-07-09", dependant_rows["DEPENDANT-SUMMARY"]["answer"])
+
+    def test_medicare_wrapper_metadata_follows_nested_or_supplemental_facts(self) -> None:
+        source = "https://example.test/medicare-wrapper"
+        checked_at = "2026-07-10"
+        cases = (
+            (
+                {
+                    "levy": {
+                        "exemption": True,
+                        "exemption_category": "supplied review category",
+                        "full_exemption_days": 0,
+                        "evidence": "certificate held",
+                    },
+                    "source_url": source,
+                    "checked_at": checked_at,
+                },
+                "MEDICARE-LEVY",
+                False,
+            ),
+            (
+                {
+                    "mls": {
+                        "review": True,
+                        "appropriate_hospital_cover": False,
+                        "income_for_surcharge": 0,
+                        "income_tier": "base tier",
+                        "evidence": "review records held",
+                    },
+                    "source_url": source,
+                    "checked_at": checked_at,
+                },
+                "MLS-REVIEW",
+                False,
+            ),
+            (
+                {
+                    "custom": "Medicare wrapper facts unclear",
+                    "source_url": source,
+                    "checked_at": checked_at,
+                },
+                "PHI-OVERVIEW",
+                True,
+            ),
+        )
+        for medicare, number, overview_expected in cases:
+            with self.subTest(number=number):
+                payload = self.payload(
+                    {
+                        "private_health_medicare": {
+                            "medicare": medicare,
+                        }
+                    }
+                )
+                rows = self.rows(payload)
+
+                self.assertEqual(overview_expected, "PHI-OVERVIEW" in rows)
+                self.assertIn(source, rows[number]["source_urls"])
+                self.assertIn(checked_at, rows[number]["answer"])
+
+        false_metadata = self.payload(
+            {
+                "private_health_medicare": {
+                    "medicare": {
+                        "custom": "Medicare wrapper facts unclear",
+                        "source_url": [False],
+                        "checked_at": [False],
+                    }
+                }
+            }
+        )
+        false_answer = self.rows(false_metadata)["PHI-OVERVIEW"]["answer"].lower()
+        self.assertIn("medicare wrapper facts unclear", false_answer)
+        self.assertNotIn("source_url", false_answer)
+        self.assertNotIn("checked_at", false_answer)
+        self.assertNotIn("false", false_answer)
 
     def test_workflow_metadata_is_preserved_only_with_substantive_facts(self) -> None:
         source_url = "https://example.test/workflow-source"
