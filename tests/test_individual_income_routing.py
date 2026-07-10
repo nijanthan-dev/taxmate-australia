@@ -212,6 +212,61 @@ class IndividualIncomeRoutingTests(unittest.TestCase):
         self.assertIn("12 345 678 901", trust[0]["answer"])
         self.assertFalse(any(row["number"].startswith("PT-EVID-") for row in evidence))
 
+    def test_structured_identity_and_flat_statement_facts_merge(self):
+        cases = (
+            ({
+                "partnership_share_items": [{"entity_name": "Merged Partnership"}],
+                "partnership_statement": "statement held", "partnership_share_income": 0,
+            }, "PART-SHARE-", "Merged Partnership"),
+            ({"individual_income": {
+                "trust_share_items": [{"entity_name": "Merged Trust", "income": 1}],
+                "trust_share_statement": "statement held",
+            }}, "TRUST-SHARE-", "Merged Trust"),
+        )
+        for answers, prefix, entity in cases:
+            with self.subTest(prefix=prefix):
+                items, evidence = self.rows(answers)
+                rows = [row for row in items if row["number"].startswith(prefix)]
+                self.assertEqual(1, len(rows))
+                self.assertIn(entity, rows[0]["answer"])
+                self.assertEqual("Accountant review", rows[0]["status"])
+                self.assertFalse(any(row["number"].startswith("PT-EVID-") for row in evidence))
+
+    def test_conflicting_identity_and_complete_rows_do_not_merge(self):
+        cases = (
+            {
+                "trust_share_items": [{"entity_name": "Structured Trust", "statement": "statement held", "income": 1}],
+                "trust_name": "Different Flat Trust", "trust_share_statement": "statement held", "trust_share_income": 2,
+            },
+            {
+                "partnership_share_items": [{"entity_name": "Same Partnership", "statement": "statement held", "income": 1}],
+                "partnership_name": "Same Partnership", "partnership_statement": "statement held", "partnership_share_income": 2,
+            },
+        )
+        for answers in cases:
+            with self.subTest(answers=answers):
+                items, _evidence = self.rows(answers)
+                rows = [row for row in items if row["number"].startswith(("TRUST-SHARE-", "PART-SHARE-"))]
+                self.assertEqual(2, len(rows))
+
+    def test_complement_merge_preserves_source_union_and_conflicts(self):
+        items, evidence = self.rows({
+            "partnership_share_items": [{
+                "entity_name": "Conflict Partnership", "income": 1,
+                "source_url": "https://example.invalid/structured", "checked_at": "2026-07-10",
+            }],
+            "partnership_statement": "statement held", "partnership_share_income": 2,
+            "partnership_source_url": "https://example.invalid/flat", "partnership_checked_at": "2026-07-11",
+        })
+        row = next(row for row in items if row["number"] == "PART-SHARE-1")
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("structured_flat_income", row["answer"])
+        self.assertEqual(
+            [taxmate_intake.ATO_PARTNERSHIP_TRUST_INCOME_SOURCE, "https://example.invalid/structured", "https://example.invalid/flat"],
+            row["source_urls"],
+        )
+        self.assertTrue(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
     def test_empty_structured_alias_yields_to_valid_flat_statement(self):
         items, evidence = self.rows({
             "trust_share_items": {}, "trust_name": "Flat Trust",

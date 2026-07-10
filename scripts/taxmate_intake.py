@@ -19558,6 +19558,11 @@ def partnership_trust_share_items(answers: Dict[str, Any]) -> List[tuple[str, Di
             flat_item = partnership_trust_flat_item(container, kind)
             if flat_item and partnership_trust_flat_has_statement_facts(flat_item):
                 container_items = [item for item in container_items if item.get("_empty_placeholder") is not True]
+                if len(container_items) == 1:
+                    merged = merge_partnership_trust_complements(kind, container_items[0], flat_item)
+                    if merged is not None:
+                        container_items = [merged]
+                        flat_item = {}
             if container_items and flat_item and not partnership_trust_flat_has_statement_facts(flat_item):
                 if len(container_items) == 1:
                     item = container_items[0]
@@ -19575,6 +19580,87 @@ def partnership_trust_share_items(answers: Dict[str, Any]) -> List[tuple[str, Di
             if flat_item and partnership_trust_flat_has_statement_facts(flat_item):
                 records.append((kind, flat_item))
     return records
+
+
+PARTNERSHIP_TRUST_MERGE_GROUPS = {
+    "entity_name": ("entity_name", "partnership", "trust", "name"),
+    "abn": ("abn",),
+    "tfn": ("tfn",),
+    "statement": ("statement", "statement_status", "evidence"),
+    "income": ("income", "income_amount"),
+    "loss": ("loss", "loss_amount"),
+    "tax_withheld": ("tax_withheld", "withholding"),
+    "credits": ("credits",),
+    "entity_return_context": ("entity_return_context",),
+    "mixed_components": ("mixed_components",),
+}
+
+
+def merge_partnership_trust_complements(
+    kind: str,
+    structured: Dict[str, Any],
+    flat: Dict[str, Any],
+) -> Optional[Dict[str, Any]]:
+    if structured.get("_malformed") is True:
+        return None
+    identity_groups = ("entity_name", "abn", "tfn")
+    if not any(
+        has_meaningful_value(first_meaningful_present(item, PARTNERSHIP_TRUST_MERGE_GROUPS[group]))
+        for item in (structured, flat)
+        for group in identity_groups
+    ):
+        return None
+    for group in identity_groups:
+        left = first_meaningful_present(structured, PARTNERSHIP_TRUST_MERGE_GROUPS[group])
+        right = first_meaningful_present(flat, PARTNERSHIP_TRUST_MERGE_GROUPS[group])
+        if has_meaningful_value(left) and has_meaningful_value(right) and not income_alias_values_equivalent(left, right):
+            return None
+    if partnership_trust_item_complete(kind, structured) and partnership_trust_item_complete(kind, flat):
+        return None
+
+    merged = dict(structured)
+    conflicts: Dict[str, Any] = {}
+    for item in (structured, flat):
+        existing = item.get("alias_conflicts")
+        if isinstance(existing, dict):
+            conflicts.update(existing)
+    handled = {alias for aliases in PARTNERSHIP_TRUST_MERGE_GROUPS.values() for alias in aliases}
+    for canonical, aliases in PARTNERSHIP_TRUST_MERGE_GROUPS.items():
+        left = first_meaningful_present(structured, aliases)
+        right = first_meaningful_present(flat, aliases)
+        if not has_meaningful_value(left) and has_meaningful_value(right):
+            merged[canonical] = right
+        elif has_meaningful_value(left) and has_meaningful_value(right) and not income_alias_values_equivalent(left, right):
+            conflicts[f"structured_flat_{canonical}"] = [left, right]
+
+    merged_sources = list(dict.fromkeys([*supplied_source_urls(structured), *supplied_source_urls(flat)]))
+    if merged_sources:
+        merged["source_urls"] = merged_sources
+    checked_values = [value for value in (supplied_checked_at(structured), supplied_checked_at(flat)) if value]
+    if checked_values:
+        merged["checked_at"] = checked_values[0]
+        if len(set(checked_values)) > 1:
+            conflicts["structured_flat_checked_at"] = checked_values
+    status_values = [item.get("status") for item in (structured, flat) if has_meaningful_value(item.get("status"))]
+    if status_values:
+        merged["status"] = canonical_review_status(status_values)
+    for key, value in flat.items():
+        if key in handled or key in {"alias_conflicts", "source_url", "source_urls", "checked_at", "source_checked_at", "status"}:
+            continue
+        if not has_meaningful_value(merged.get(key)):
+            merged[key] = value
+        elif has_meaningful_value(value) and not income_alias_values_equivalent(merged.get(key), value):
+            conflicts[f"structured_flat_{key}"] = [merged.get(key), value]
+    if conflicts:
+        merged["alias_conflicts"] = conflicts
+    return merged
+
+
+def partnership_trust_item_complete(kind: str, item: Dict[str, Any]) -> bool:
+    identity = first_meaningful_present(item, ("entity_name", kind, "name", "abn", "tfn"))
+    statement = first_meaningful_present(item, ("statement", "statement_status", "evidence"))
+    amounts = [item.get(field) for field in PARTNERSHIP_TRUST_AMOUNT_FIELDS if has_meaningful_value(item.get(field))]
+    return has_meaningful_value(identity) and has_meaningful_value(statement) and bool(amounts)
 
 
 def partnership_trust_flat_item(answers: Dict[str, Any], kind: str) -> Dict[str, Any]:
