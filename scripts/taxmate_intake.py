@@ -19456,14 +19456,17 @@ PARTNERSHIP_TRUST_FLAT_FIELDS = {
             "trust_name",
             "trust",
         ),
-        "abn": ("trust_share_abn",),
-        "tfn": ("trust_share_tfn",),
-        "statement": ("trust_share_statement", "trust_share_statement_status"),
+        "abn": ("trust_share_abn", "trust_beneficiary_abn"),
+        "tfn": ("trust_share_tfn", "trust_beneficiary_tfn"),
+        "statement": (
+            "trust_share_statement", "trust_share_statement_status",
+            "trust_beneficiary_statement", "trust_beneficiary_statement_status",
+        ),
         "income": ("trust_share_income", "trust_beneficiary_income"),
         "loss": ("trust_share_loss", "trust_beneficiary_loss"),
-        "tax_withheld": ("trust_share_tax_withheld",),
-        "credits": ("trust_share_credits",),
-        "entity_return_context": ("trust_entity_return_context",),
+        "tax_withheld": ("trust_share_tax_withheld", "trust_beneficiary_tax_withheld"),
+        "credits": ("trust_share_credits", "trust_beneficiary_credits"),
+        "entity_return_context": ("trust_entity_return_context", "trust_beneficiary_entity_return_context"),
     },
 }
 PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES = {
@@ -19480,10 +19483,16 @@ PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES = {
         "source_url": ("trust_source_url", "trust_share_source_url", "trust_beneficiary_source_url"),
         "source_urls": ("trust_source_urls", "trust_share_source_urls", "trust_beneficiary_source_urls"),
         "checked_at": ("trust_checked_at", "trust_share_checked_at", "trust_beneficiary_checked_at"),
-        "source_checked_at": ("trust_source_checked_at", "trust_share_source_checked_at"),
+        "source_checked_at": (
+            "trust_source_checked_at", "trust_share_source_checked_at", "trust_beneficiary_source_checked_at",
+        ),
         "status": ("trust_status", "trust_share_status", "trust_beneficiary_status"),
-        "evidence_status": ("trust_evidence_status", "trust_share_evidence_status"),
-        "mixed_components": ("trust_mixed_components", "trust_share_mixed_components"),
+        "evidence_status": (
+            "trust_evidence_status", "trust_share_evidence_status", "trust_beneficiary_evidence_status",
+        ),
+        "mixed_components": (
+            "trust_mixed_components", "trust_share_mixed_components", "trust_beneficiary_mixed_components",
+        ),
     },
 }
 PARTNERSHIP_TRUST_AMOUNT_FIELDS = (
@@ -19555,31 +19564,52 @@ def partnership_trust_share_items(answers: Dict[str, Any]) -> List[tuple[str, Di
                     empty_dict_alias = alias
             if not container_items and empty_dict_alias:
                 container_items.extend(structured_income_items({}, empty_dict_alias))
+            container_items = [normalize_partnership_trust_structured_item(kind, item) for item in container_items]
             flat_item = partnership_trust_flat_item(container, kind)
-            if flat_item and partnership_trust_flat_has_statement_facts(flat_item):
+            flat_substantive = partnership_trust_flat_has_substantive_facts(flat_item)
+            if flat_item and flat_substantive:
                 container_items = [item for item in container_items if item.get("_empty_placeholder") is not True]
+            if container_items and flat_item:
                 if len(container_items) == 1:
                     merged = merge_partnership_trust_complements(kind, container_items[0], flat_item)
                     if merged is not None:
                         container_items = [merged]
                         flat_item = {}
-            if container_items and flat_item and not partnership_trust_flat_has_statement_facts(flat_item):
-                if len(container_items) == 1:
-                    item = container_items[0]
-                    for field, value in flat_item.items():
-                        if not has_meaningful_value(item.get(field)):
-                            item[field] = value
-                    if explicit_accountant_review(flat_item):
-                        item["status"] = "Accountant review"
-                elif has_meaningful_value(flat_item):
+                elif flat_substantive:
                     flat_item.setdefault("alias_conflicts", {})["structured_row_assignment"] = [
                         "Flat identity cannot be assigned across multiple statement rows"
                     ]
                     container_items.append(flat_item)
+                    flat_item = {}
             records.extend((kind, item) for item in container_items)
-            if flat_item and partnership_trust_flat_has_statement_facts(flat_item):
+            if flat_item and partnership_trust_flat_has_substantive_facts(flat_item):
                 records.append((kind, flat_item))
-    return records
+            elif flat_item:
+                records.append((kind, {**flat_item, "_metadata_only": True}))
+    return coalesce_partnership_trust_records(records)
+
+
+def coalesce_partnership_trust_records(
+    records: List[tuple[str, Dict[str, Any]]],
+) -> List[tuple[str, Dict[str, Any]]]:
+    coalesced: List[tuple[str, Dict[str, Any]]] = []
+    for kind, item in records:
+        compatible: List[tuple[int, Dict[str, Any]]] = []
+        for index, (existing_kind, existing) in enumerate(coalesced):
+            if existing_kind != kind:
+                continue
+            merged = merge_partnership_trust_complements(kind, existing, item)
+            if merged is not None:
+                compatible.append((index, merged))
+        if len(compatible) == 1:
+            index, merged = compatible[0]
+            coalesced[index] = (kind, merged)
+        elif item.get("_metadata_only") is not True:
+            coalesced.append((kind, item))
+    return [
+        (kind, {key: value for key, value in item.items() if key != "_metadata_only"})
+        for kind, item in coalesced
+    ]
 
 
 PARTNERSHIP_TRUST_MERGE_GROUPS = {
@@ -19633,19 +19663,36 @@ def merge_partnership_trust_complements(
         elif has_meaningful_value(left) and has_meaningful_value(right) and not income_alias_values_equivalent(left, right):
             conflicts[f"structured_flat_{canonical}"] = [left, right]
 
-    merged_sources = list(dict.fromkeys([*supplied_source_urls(structured), *supplied_source_urls(flat)]))
+    merged_sources, invalid_sources = source_provenance_values(
+        [
+            structured.get("source_url"), structured.get("source_urls"),
+            flat.get("source_url"), flat.get("source_urls"),
+        ]
+    )
     if merged_sources:
         merged["source_urls"] = merged_sources
-    checked_values = [value for value in (supplied_checked_at(structured), supplied_checked_at(flat)) if value]
+    if invalid_sources:
+        merged["unresolved_source_provenance"] = list(dict.fromkeys(map(display_value, invalid_sources)))
+    checked_values, invalid_checked = checked_at_provenance_values(
+        [
+            structured.get("checked_at"), structured.get("source_checked_at"),
+            flat.get("checked_at"), flat.get("source_checked_at"),
+        ]
+    )
     if checked_values:
         merged["checked_at"] = checked_values[0]
         if len(set(checked_values)) > 1:
             conflicts["structured_flat_checked_at"] = checked_values
+    if invalid_checked:
+        merged["unresolved_checked_at_provenance"] = list(dict.fromkeys(map(display_value, invalid_checked)))
     status_values = [item.get("status") for item in (structured, flat) if has_meaningful_value(item.get("status"))]
     if status_values:
         merged["status"] = canonical_review_status(status_values)
     for key, value in flat.items():
-        if key in handled or key in {"alias_conflicts", "source_url", "source_urls", "checked_at", "source_checked_at", "status"}:
+        if key in handled or key in {
+            "_metadata_only", "alias_conflicts", "source_url", "source_urls",
+            "checked_at", "source_checked_at", "status",
+        }:
             continue
         if not has_meaningful_value(merged.get(key)):
             merged[key] = value
@@ -19720,6 +19767,13 @@ def partnership_trust_flat_has_statement_facts(item: Dict[str, Any]) -> bool:
     return any(has_meaningful_value(item.get(field)) for field in PARTNERSHIP_TRUST_ROW_SIGNAL_FIELDS)
 
 
+def partnership_trust_flat_has_substantive_facts(item: Dict[str, Any]) -> bool:
+    return any(
+        has_meaningful_value(item.get(field))
+        for field in (*PARTNERSHIP_TRUST_FLAT_FIELDS["partnership"].keys(), "mixed_components")
+    )
+
+
 def scalar_alias_values(values: Dict[str, Any], aliases: tuple[str, ...]) -> List[Any]:
     return [
         values.get(alias)
@@ -19766,6 +19820,79 @@ def structured_income_items(value: Any, alias: str) -> List[Dict[str, Any]]:
         elif not is_missing(item):
             items.append({"unparsed_input": item, "_malformed": True})
     return items
+
+
+def normalize_partnership_trust_structured_item(kind: str, item: Dict[str, Any]) -> Dict[str, Any]:
+    if item.get("_malformed") is True:
+        return dict(item)
+    normalized = dict(item)
+    conflicts = dict(item.get("alias_conflicts")) if isinstance(item.get("alias_conflicts"), dict) else {}
+    groups = {
+        "entity_name": ("entity_name", kind, "name", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["entity_name"]),
+        "abn": ("abn", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["abn"]),
+        "tfn": ("tfn", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["tfn"]),
+        "statement": ("statement", "statement_status", "evidence", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["statement"]),
+        "income": ("income", "income_amount", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["income"]),
+        "loss": ("loss", "loss_amount", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["loss"]),
+        "tax_withheld": ("tax_withheld", "withholding", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["tax_withheld"]),
+        "credits": ("credits", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["credits"]),
+        "entity_return_context": (
+            "entity_return_context", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["entity_return_context"],
+        ),
+    }
+    for canonical, aliases in groups.items():
+        values = [item.get(alias) for alias in dict.fromkeys(aliases) if has_meaningful_value(item.get(alias))]
+        if not values:
+            continue
+        normalized[canonical] = values[0]
+        if any(not income_alias_values_equivalent(value, values[0]) for value in values[1:]):
+            conflicts[f"structured_{canonical}"] = values
+
+    metadata = PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES[kind]
+    source_values = [
+        item.get(alias)
+        for field in ("source_url", "source_urls")
+        for alias in (field, *metadata[field])
+        if alias in item and not is_missing(item.get(alias))
+    ]
+    valid_urls, invalid_urls = source_provenance_values(source_values)
+    if valid_urls:
+        normalized["source_urls"] = valid_urls
+    if invalid_urls:
+        normalized["unresolved_source_provenance"] = invalid_urls
+    checked_values = [
+        item.get(alias)
+        for field in ("checked_at", "source_checked_at")
+        for alias in (field, *metadata[field])
+        if alias in item and not is_missing(item.get(alias))
+    ]
+    valid_checked, invalid_checked = checked_at_provenance_values(checked_values)
+    if valid_checked:
+        normalized["checked_at"] = valid_checked[0]
+        if len(valid_checked) > 1:
+            conflicts["structured_checked_at"] = valid_checked
+    if invalid_checked:
+        normalized["unresolved_checked_at_provenance"] = invalid_checked
+    status_values = [
+        item.get(alias)
+        for field in ("status", "evidence_status")
+        for alias in (field, *metadata[field])
+        if has_meaningful_value(item.get(alias))
+    ]
+    if status_values:
+        normalized["status"] = canonical_review_status(status_values)
+    mixed_values = [
+        item.get(alias)
+        for alias in ("mixed_components", *metadata["mixed_components"])
+        if has_meaningful_value(item.get(alias))
+    ]
+    if mixed_values:
+        normalized["mixed_components"] = mixed_values[0]
+        if any(not income_alias_values_equivalent(value, mixed_values[0]) for value in mixed_values[1:]):
+            conflicts["structured_mixed_components"] = mixed_values
+    if conflicts:
+        normalized["alias_conflicts"] = conflicts
+    return normalized
 
 
 def partnership_trust_evidence_gap(item: Dict[str, Any]) -> bool:
@@ -19822,7 +19949,7 @@ def partnership_trust_answer(kind: str, item: Dict[str, Any]) -> str:
     )
     used: set[str] = set()
     for key, label in labels:
-        if label in used or key not in item or is_missing(item.get(key)):
+        if label in used or key not in item or not has_meaningful_value(item.get(key)):
             continue
         used.add(label)
         value = item.get(key)
@@ -19891,19 +20018,25 @@ def source_provenance_values(values: Any) -> tuple[List[str], List[str]]:
 def checked_at_provenance_values(values: Any) -> tuple[List[str], List[str]]:
     valid: List[str] = []
     invalid: List[str] = []
-    raw_values = values if isinstance(values, list) else [values]
-    for value in raw_values:
+
+    def collect(value: Any) -> None:
         if is_missing(value):
-            continue
+            return
+        if isinstance(value, list):
+            for entry in value:
+                collect(entry)
+            return
         if isinstance(value, str):
             candidate = value.strip()
             try:
                 datetime.fromisoformat(candidate.replace("Z", "+00:00"))
                 valid.append(candidate)
-                continue
+                return
             except ValueError:
                 pass
         invalid.append(display_value(value))
+
+    collect(values)
     return list(dict.fromkeys(valid)), list(dict.fromkeys(invalid))
 
 

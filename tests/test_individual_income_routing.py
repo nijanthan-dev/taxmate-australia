@@ -399,6 +399,110 @@ class IndividualIncomeRoutingTests(unittest.TestCase):
                 self.assertFalse(any(row["number"].startswith(("TRUST-SHARE-", "PART-SHARE-")) for row in items))
                 self.assertFalse(any(row["number"].startswith("PT-EVID-") for row in evidence))
 
+    def test_identity_and_context_only_flat_facts_remain_visible(self):
+        cases = (
+            ({"partnership_name": "Identity Partnership"}, "PART-SHARE-", "Identity Partnership"),
+            ({"individual_income": {"trust_share_abn": "12 345 678 901"}}, "TRUST-SHARE-", "12 345 678 901"),
+            ({"partnership_entity_return_context": False}, "PART-SHARE-", "entity return context false"),
+            ({"supplementary_income": {"trust_share_mixed_components": False}}, "TRUST-SHARE-", "mixed components false"),
+        )
+        for answers, prefix, expected in cases:
+            with self.subTest(expected=expected):
+                items, evidence = self.rows(answers)
+                rows = [row for row in items if row["number"].startswith(prefix)]
+                self.assertEqual(1, len(rows))
+                self.assertIn(expected, rows[0]["answer"])
+                self.assertEqual("Evidence", rows[0]["status"])
+                self.assertTrue(any(row["number"].startswith("PT-EVID-") for row in evidence))
+
+    def test_identity_only_explicit_review_wins_without_evidence_queue(self):
+        items, evidence = self.rows({
+            "trust_name": "Review Trust",
+            "trust_share_status": "Accountant review",
+        })
+        row = next(row for row in items if row["number"] == "TRUST-SHARE-1")
+        self.assertEqual("Accountant review", row["status"])
+        self.assertFalse(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
+    def test_trust_beneficiary_alias_family_is_preserved(self):
+        items, evidence = self.rows({
+            "trust_beneficiary_entity_name": "Beneficiary Trust",
+            "trust_beneficiary_statement": "statement held",
+            "trust_beneficiary_income": 0,
+            "trust_beneficiary_evidence_status": "Accountant review",
+            "trust_beneficiary_mixed_components": False,
+            "trust_beneficiary_source_checked_at": "2025-01-02",
+        })
+        row = next(row for row in items if row["number"] == "TRUST-SHARE-1")
+        self.assertIn("Beneficiary Trust", row["answer"])
+        self.assertIn("income 0.00", row["answer"])
+        self.assertIn("mixed components false", row["answer"])
+        self.assertEqual("2025-01-02", row["checked_at"])
+        self.assertEqual("Accountant review", row["status"])
+        self.assertFalse(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
+    def test_structured_aliases_normalize_and_conflicts_fail_closed(self):
+        items, evidence = self.rows({
+            "partnership_share_items": [{
+                "partnership_name": "Row Partnership",
+                "partnership_abn": "11 111 111 111",
+                "partnership_statement": "statement held",
+                "partnership_share_income": 0,
+                "partnership_entity_return_context": False,
+            }],
+            "trust_share_items": [{
+                "entity_name": "Trust A", "trust": "Trust B",
+                "statement": "statement held", "income": 1, "income_amount": 2,
+            }],
+        })
+        partnership = next(row for row in items if row["number"] == "PART-SHARE-1")
+        trust = next(row for row in items if row["number"] == "TRUST-SHARE-1")
+        self.assertIn("Row Partnership", partnership["answer"])
+        self.assertIn("income 0.00", partnership["answer"])
+        self.assertIn("entity return context false", partnership["answer"])
+        self.assertEqual("Accountant review", partnership["status"])
+        self.assertIn("structured_entity_name", trust["answer"])
+        self.assertIn("structured_income", trust["answer"])
+        self.assertEqual("Evidence", trust["status"])
+        self.assertTrue(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
+    def test_cross_container_complements_and_metadata_coalesce(self):
+        items, evidence = self.rows({
+            "partnership_name": "Cross Partnership",
+            "supplementary_income": {
+                "partnership_statement": "statement held", "partnership_share_income": 0,
+            },
+            "trust_share_items": [{
+                "entity_name": "Cross Trust", "statement": "statement held", "income": 1,
+            }],
+            "individual_income": {
+                "trust_share_source_url": "https://example.invalid/cross",
+                "trust_share_checked_at": "2026-07-11",
+            },
+        })
+        partnership = [row for row in items if row["number"].startswith("PART-SHARE-")]
+        trust = [row for row in items if row["number"].startswith("TRUST-SHARE-")]
+        self.assertEqual(1, len(partnership))
+        self.assertEqual(1, len(trust))
+        self.assertEqual("Accountant review", partnership[0]["status"])
+        self.assertIn("https://example.invalid/cross", trust[0]["source_urls"])
+        self.assertEqual("2026-07-11", trust[0]["checked_at"])
+        self.assertFalse(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
+    def test_checked_at_provenance_recursively_preserves_valid_entries(self):
+        items, evidence = self.rows({
+            "trust_share_items": [{
+                "entity_name": "Date Trust", "statement": "statement held", "income": 1,
+                "checked_at": [["2025-01-02"], "bad date"],
+            }],
+        })
+        row = next(row for row in items if row["number"] == "TRUST-SHARE-1")
+        self.assertEqual("2025-01-02", row["checked_at"])
+        self.assertIn("bad date", row["answer"])
+        self.assertNotIn("2025-01-02", row["answer"])
+        self.assertEqual("Evidence", row["status"])
+        self.assertTrue(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
     def test_blank_and_generic_uncommon_rows_do_not_render_blank_review_items(self):
         items, evidence = self.rows({"uncommon_income": [{}, {"category": "other income"}, "unknown"]})
         uncommon = [row for row in items if row["number"].startswith("UNC-")]
