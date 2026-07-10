@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.20.0...v0.21.0) (2026-07-10)
+
+
+### Features
+
+* clarify form destinations and next actions ([#141](https://github.com/nijanthan-dev/taxmate-australia/issues/141)) ([0661a81](https://github.com/nijanthan-dev/taxmate-australia/commit/0661a8110591a2fd06df8d78cf652509454db7c7))
+
 ## [0.20.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.19.2...v0.20.0) (2026-07-10)
 
 
