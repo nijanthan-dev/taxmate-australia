@@ -15630,7 +15630,7 @@ def cgt_item_values(raw_items: Any) -> List[Dict[str, Any]]:
             continue
         item = normalize_cgt_item(raw_item)
         if cgt_item_has_facts(item):
-            items.append(item)
+            items.append(dict(item))
     return items
 
 
@@ -19486,11 +19486,6 @@ PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES = {
         "mixed_components": ("trust_mixed_components", "trust_share_mixed_components"),
     },
 }
-PARTNERSHIP_TRUST_METADATA_FIELDS = frozenset(
-    field
-    for aliases in PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES.values()
-    for field in aliases
-)
 PARTNERSHIP_TRUST_AMOUNT_FIELDS = (
     "income",
     "income_amount",
@@ -19501,6 +19496,9 @@ PARTNERSHIP_TRUST_AMOUNT_FIELDS = (
     "tax_withheld",
     "withholding",
     "credits",
+)
+PARTNERSHIP_TRUST_ROW_SIGNAL_FIELDS = frozenset(
+    {"statement", "statement_status", "evidence", *PARTNERSHIP_TRUST_AMOUNT_FIELDS}
 )
 
 
@@ -19529,7 +19527,7 @@ def partnership_trust_share_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]
                     else f"{label} needs accountant review; no allocation or entitlement is decided."
                 ),
                 row_kind="supplementary-income",
-                facts=atomic_handoff_facts(f"{kind}-share", f"{label} fact", item),
+                facts=routing_handoff_facts(f"{kind}-share", f"{label} fact", item),
                 checked_at=supplied_checked_at(item),
             )
         )
@@ -19558,6 +19556,8 @@ def partnership_trust_share_items(answers: Dict[str, Any]) -> List[tuple[str, Di
             if not container_items and empty_dict_alias:
                 container_items.extend(structured_income_items({}, empty_dict_alias))
             flat_item = partnership_trust_flat_item(container, kind)
+            if flat_item and partnership_trust_flat_has_statement_facts(flat_item):
+                container_items = [item for item in container_items if item.get("_malformed") is not True]
             if container_items and flat_item and not partnership_trust_flat_has_statement_facts(flat_item):
                 for item in container_items:
                     for field, value in flat_item.items():
@@ -19573,30 +19573,71 @@ def partnership_trust_share_items(answers: Dict[str, Any]) -> List[tuple[str, Di
 
 def partnership_trust_flat_item(answers: Dict[str, Any], kind: str) -> Dict[str, Any]:
     item: Dict[str, Any] = {}
+    conflicts: Dict[str, Any] = {}
     for field, aliases in PARTNERSHIP_TRUST_FLAT_FIELDS[kind].items():
-        value = first_scalar_present(answers, aliases)
-        if not is_missing(value):
-            item[field] = value
-    for field, aliases in PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES[kind].items():
-        value = first_meaningful_present(answers, aliases)
-        if not is_missing(value):
-            item[field] = value
+        values = scalar_alias_values(answers, aliases)
+        if not values:
+            continue
+        item[field] = values[0]
+        if any(value != values[0] for value in values[1:]):
+            conflicts[field] = values
+    metadata = PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES[kind]
+    source_values = [
+        answers.get(alias)
+        for field in ("source_url", "source_urls")
+        for alias in metadata[field]
+        if has_meaningful_value(answers.get(alias))
+    ]
+    valid_urls, invalid_urls = source_provenance_values(source_values)
+    if valid_urls:
+        item["source_urls"] = valid_urls
+    if invalid_urls:
+        item["unresolved_source_provenance"] = invalid_urls
+    checked_values = [
+        answers.get(alias)
+        for field in ("checked_at", "source_checked_at")
+        for alias in metadata[field]
+        if has_meaningful_value(answers.get(alias))
+    ]
+    valid_checked, invalid_checked = checked_at_provenance_values(checked_values)
+    if valid_checked:
+        item["checked_at"] = valid_checked[0]
+        if len(valid_checked) > 1:
+            conflicts["checked_at"] = valid_checked
+    if invalid_checked:
+        item["unresolved_checked_at_provenance"] = invalid_checked
+    status_values = [
+        answers.get(alias)
+        for field in ("status", "evidence_status")
+        for alias in metadata[field]
+        if has_meaningful_value(answers.get(alias))
+    ]
+    if status_values:
+        item["status"] = canonical_review_status(status_values)
+    mixed_values = meaningful_alias_values(answers, metadata["mixed_components"])
+    if mixed_values:
+        item["mixed_components"] = mixed_values[0]
+        if any(value != mixed_values[0] for value in mixed_values[1:]):
+            conflicts["mixed_components"] = mixed_values
+    if conflicts:
+        item["alias_conflicts"] = conflicts
     return item
 
 
 def partnership_trust_flat_has_statement_facts(item: Dict[str, Any]) -> bool:
-    return any(
-        field not in PARTNERSHIP_TRUST_METADATA_FIELDS and has_meaningful_value(value)
-        for field, value in item.items()
-    )
+    return any(has_meaningful_value(item.get(field)) for field in PARTNERSHIP_TRUST_ROW_SIGNAL_FIELDS)
 
 
-def first_scalar_present(values: Dict[str, Any], aliases: tuple[str, ...]) -> Any:
-    for alias in aliases:
-        value = values.get(alias)
-        if not is_missing(value) and not isinstance(value, (dict, list)):
-            return value
-    return None
+def scalar_alias_values(values: Dict[str, Any], aliases: tuple[str, ...]) -> List[Any]:
+    return [
+        values.get(alias)
+        for alias in aliases
+        if has_meaningful_value(values.get(alias)) and not isinstance(values.get(alias), (dict, list))
+    ]
+
+
+def meaningful_alias_values(values: Dict[str, Any], aliases: tuple[str, ...]) -> List[Any]:
+    return [values.get(alias) for alias in aliases if has_meaningful_value(values.get(alias))]
 
 
 def first_meaningful_present(values: Dict[str, Any], aliases: tuple[str, ...]) -> Any:
@@ -19617,7 +19658,7 @@ def structured_income_items(value: Any, alias: str) -> List[Dict[str, Any]]:
     items: List[Dict[str, Any]] = []
     for item in value:
         if isinstance(item, dict) and has_meaningful_value(item):
-            items.append(item)
+            items.append(dict(item))
         elif isinstance(item, dict):
             items.append({"unparsed_input": f"Empty {alias} item", "_malformed": True})
         elif not is_missing(item):
@@ -19630,6 +19671,9 @@ def partnership_trust_evidence_gap(item: Dict[str, Any]) -> bool:
     amount_values = [item.get(field) for field in PARTNERSHIP_TRUST_AMOUNT_FIELDS if field in item]
     return (
         item.get("_malformed") is True
+        or has_routing_conflict(item)
+        or provenance_has_errors(item)
+        or is_missing(first_meaningful_present(item, ("entity_name", "partnership", "trust", "name")))
         or investment_statement_missing(statement)
         or not amount_values
         or any(income_amount_needs_evidence(value) for value in amount_values)
@@ -19670,6 +19714,9 @@ def partnership_trust_answer(kind: str, item: Dict[str, Any]) -> str:
         ("mixed_components", "mixed components"),
         ("evidence_status", "evidence status"),
         ("unparsed_input", "unparsed input"),
+        ("alias_conflicts", "alias conflicts"),
+        ("unresolved_source_provenance", "unresolved source provenance"),
+        ("unresolved_checked_at_provenance", "unresolved checked-at provenance"),
     )
     used: set[str] = set()
     for key, label in labels:
@@ -19710,16 +19757,95 @@ def partnership_trust_share_evidence_rows(answers: Dict[str, Any]) -> List[Dict[
 
 
 def supplied_source_urls(item: Dict[str, Any]) -> List[str]:
-    values = item.get("source_urls")
-    raw = values if isinstance(values, list) else [values]
-    if not is_missing(item.get("source_url")):
-        raw.append(item.get("source_url"))
-    return list(dict.fromkeys(text(value).strip() for value in raw if not is_missing(value)))
+    valid, _invalid = source_provenance_values([item.get("source_urls"), item.get("source_url")])
+    return valid
 
 
 def supplied_checked_at(item: Dict[str, Any]) -> Optional[str]:
-    value = first_meaningful_present(item, ("checked_at", "source_checked_at"))
-    return None if is_missing(value) else text(value).strip()
+    valid, _invalid = checked_at_provenance_values([item.get("checked_at"), item.get("source_checked_at")])
+    return valid[0] if valid else None
+
+
+def source_provenance_values(values: Any) -> tuple[List[str], List[str]]:
+    valid: List[str] = []
+    invalid: List[str] = []
+
+    def collect(value: Any) -> None:
+        if is_missing(value):
+            return
+        if isinstance(value, list):
+            for entry in value:
+                collect(entry)
+            return
+        if isinstance(value, str) and re.match(r"^https?://[^\s]+$", value.strip()):
+            valid.append(value.strip())
+            return
+        invalid.append(display_value(value))
+
+    collect(values)
+    return list(dict.fromkeys(valid)), list(dict.fromkeys(invalid))
+
+
+def checked_at_provenance_values(values: Any) -> tuple[List[str], List[str]]:
+    valid: List[str] = []
+    invalid: List[str] = []
+    raw_values = values if isinstance(values, list) else [values]
+    for value in raw_values:
+        if is_missing(value):
+            continue
+        if isinstance(value, str):
+            candidate = value.strip()
+            try:
+                datetime.fromisoformat(candidate.replace("Z", "+00:00"))
+                valid.append(candidate)
+                continue
+            except ValueError:
+                pass
+        invalid.append(display_value(value))
+    return list(dict.fromkeys(valid)), list(dict.fromkeys(invalid))
+
+
+def provenance_has_errors(item: Dict[str, Any]) -> bool:
+    _urls, invalid_urls = source_provenance_values([item.get("source_urls"), item.get("source_url")])
+    checked, invalid_checked = checked_at_provenance_values([item.get("checked_at"), item.get("source_checked_at")])
+    return bool(
+        invalid_urls
+        or invalid_checked
+        or has_meaningful_value(item.get("unresolved_source_provenance"))
+        or has_meaningful_value(item.get("unresolved_checked_at_provenance"))
+        or len(checked) > 1
+    )
+
+
+def has_routing_conflict(item: Dict[str, Any]) -> bool:
+    return has_meaningful_value(item.get("alias_conflicts"))
+
+
+def canonical_review_status(values: List[Any]) -> str:
+    kind = taxmate_handoff.effective_status_kind(*values)
+    if kind == "review":
+        return "Accountant review"
+    if kind == "evidence":
+        return "Evidence"
+    return display_value(values[0])
+
+
+def routing_handoff_facts(key_prefix: str, label_prefix: str, item: Dict[str, Any]) -> List[Dict[str, Any]]:
+    metadata = {"source_url", "source_urls", "checked_at", "source_checked_at", "status", "status_kind", "tab_kind"}
+    facts = atomic_handoff_facts(
+        key_prefix,
+        label_prefix,
+        {key: value for key, value in item.items() if key not in metadata},
+    )
+    _urls, invalid_urls = source_provenance_values([item.get("source_urls"), item.get("source_url")])
+    _checked, invalid_checked = checked_at_provenance_values([item.get("checked_at"), item.get("source_checked_at")])
+    if invalid_urls:
+        facts.extend(atomic_handoff_facts(f"{key_prefix}-source", f"{label_prefix} unresolved source", invalid_urls))
+    if invalid_checked:
+        facts.extend(atomic_handoff_facts(f"{key_prefix}-checked-at", f"{label_prefix} unresolved checked at", invalid_checked))
+    if not facts:
+        return handoff_facts((key_prefix, label_prefix, "Evidence details not supplied"))
+    return facts
 
 
 def explicit_accountant_review(item: Dict[str, Any]) -> bool:
@@ -19803,7 +19929,7 @@ def uncommon_income_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                     else "Uncommon income needs accountant review before entry."
                 ),
                 row_kind="supplementary-income",
-                facts=atomic_handoff_facts("uncommon-income", "Uncommon income fact", item),
+                facts=routing_handoff_facts("uncommon-income", "Uncommon income fact", item),
                 checked_at=supplied_checked_at(item),
             )
         )
@@ -19816,7 +19942,11 @@ def uncommon_income_route(item: Dict[str, Any]) -> tuple[str, str, List[str]]:
         for field in UNCOMMON_INCOME_DESCRIPTION_FIELDS
         if not is_missing(item.get(field))
     )
-    compensation = "compensation" in descriptions or re.search(r"\binsurance\b", descriptions) is not None
+    insurance = re.search(r"\binsurance\b", descriptions) is not None and (
+        re.search(r"\b(payment|payout|settlement|proceeds|claim|benefit)s?\b", descriptions) is not None
+        or "general insurance" in descriptions
+    )
+    compensation = "compensation" in descriptions or insurance
     scholarship = any(term in descriptions for term in ("scholarship", "prize", "award"))
     if compensation and not scholarship:
         return "Compensation or insurance payment", "Compensation or insurance payment review", [ATO_COMPENSATION_INCOME_SOURCE]
@@ -19839,13 +19969,19 @@ def uncommon_income_answer(item: Dict[str, Any]) -> str:
 
 def uncommon_income_evidence_gap(item: Dict[str, Any]) -> bool:
     descriptions = [item.get(field) for field in UNCOMMON_INCOME_DESCRIPTION_FIELDS if not is_missing(item.get(field))]
-    if item.get("_malformed") is True or not descriptions or any(contains_unknown(value) for value in descriptions):
+    if (
+        item.get("_malformed") is True
+        or has_routing_conflict(item)
+        or provenance_has_errors(item)
+        or not descriptions
+        or any(contains_unknown(value) for value in descriptions)
+    ):
         return True
     amount_values = [item.get(key) for key in ("amount", "gross") if key in item]
-    if amount_values and any(income_amount_needs_evidence(value) for value in amount_values):
+    if not amount_values or any(income_amount_needs_evidence(value) for value in amount_values):
         return True
     statement = first_meaningful_present(item, ("statement", "evidence", "records"))
-    return not is_missing(statement) and investment_statement_missing(statement)
+    return investment_statement_missing(statement)
 
 
 def uncommon_income_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:

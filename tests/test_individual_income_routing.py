@@ -132,8 +132,8 @@ class IndividualIncomeRoutingTests(unittest.TestCase):
         self.assertIn("Fallback Trust", row["answer"])
         self.assertIn("https://example.invalid/fallback", row["source_urls"])
         self.assertEqual("2026-07-11", row["checked_at"])
-        self.assertEqual("Accountant review", row["status"])
-        self.assertFalse(any(item["number"].startswith("PT-EVID-") for item in evidence))
+        self.assertEqual("Evidence", row["status"])
+        self.assertTrue(any(item["number"].startswith("PT-EVID-") for item in evidence))
 
     def test_narrow_and_unsupported_uncommon_income_routes(self):
         items, evidence = self.rows({"uncommon_income": [
@@ -146,8 +146,8 @@ class IndividualIncomeRoutingTests(unittest.TestCase):
         self.assertIn("amount 0.00", uncommon[0]["answer"])
         self.assertIn(taxmate_intake.ATO_COMPENSATION_INCOME_SOURCE, uncommon[0]["source_urls"])
         self.assertIn("preserve this", uncommon[2]["answer"])
-        self.assertEqual("Accountant review", uncommon[2]["status"])
-        self.assertEqual([], evidence)
+        self.assertEqual("Evidence", uncommon[2]["status"])
+        self.assertTrue(any(row["number"].startswith("UNC-EVID-") for row in evidence))
 
     def test_insurance_phrases_and_later_specific_fields_use_verified_route(self):
         phrases = [
@@ -200,6 +200,78 @@ class IndividualIncomeRoutingTests(unittest.TestCase):
         row = next(row for row in items if row["number"] == "UNC-1")
         self.assertEqual("Accountant review", row["status"])
         self.assertFalse(any(item["number"].startswith("UNC-EVID-") for item in evidence))
+
+    def test_flat_identity_enriches_structured_row_without_duplicate(self):
+        items, evidence = self.rows({
+            "trust_share_items": [{"statement": "statement held", "income": 1}],
+            "trust_name": "Enriched Trust", "trust_share_abn": "12 345 678 901",
+        })
+        trust = [row for row in items if row["number"].startswith("TRUST-SHARE-")]
+        self.assertEqual(1, len(trust))
+        self.assertIn("Enriched Trust", trust[0]["answer"])
+        self.assertIn("12 345 678 901", trust[0]["answer"])
+        self.assertFalse(any(row["number"].startswith("PT-EVID-") for row in evidence))
+
+    def test_empty_structured_alias_yields_to_valid_flat_statement(self):
+        items, evidence = self.rows({
+            "trust_share_items": {}, "trust_name": "Flat Trust",
+            "trust_share_statement": "statement held", "trust_share_income": 0,
+        })
+        trust = [row for row in items if row["number"].startswith("TRUST-SHARE-")]
+        self.assertEqual(1, len(trust))
+        self.assertIn("Flat Trust", trust[0]["answer"])
+        self.assertFalse(any(row["number"].startswith("PT-EVID-") for row in evidence))
+
+    def test_alias_conflicts_and_review_precedence_fail_closed(self):
+        items, evidence = self.rows({
+            "partnership_name": "Conflict Partnership",
+            "partnership_statement": "statement held",
+            "partnership_income": 0, "partnership_share_income": 100,
+            "partnership_status": "Evidence", "partnership_share_status": "Accountant review",
+        })
+        row = next(row for row in items if row["number"] == "PART-SHARE-1")
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("alias conflicts", row["answer"])
+        self.assertFalse(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
+    def test_source_aliases_merge_and_malformed_provenance_fails_closed(self):
+        items, evidence = self.rows({
+            "trust_name": "Source Trust", "trust_share_statement": "statement held", "trust_share_income": 1,
+            "trust_source_url": "https://example.invalid/one",
+            "trust_share_source_urls": ["https://example.invalid/two", "https://example.invalid/one"],
+            "trust_beneficiary_source_urls": {"bad": "shape"},
+            "trust_checked_at": False, "trust_share_checked_at": "2026-07-11",
+        })
+        row = next(row for row in items if row["number"] == "TRUST-SHARE-1")
+        self.assertEqual(
+            [taxmate_intake.ATO_PARTNERSHIP_TRUST_INCOME_SOURCE, "https://example.invalid/one", "https://example.invalid/two"],
+            row["source_urls"],
+        )
+        self.assertEqual("2026-07-11", row["checked_at"])
+        self.assertEqual("Evidence", row["status"])
+        self.assertNotIn("{'bad': 'shape'}", row["source_urls"])
+        self.assertTrue(any(item["number"].startswith("PT-EVID-") for item in evidence))
+
+    def test_payload_generation_does_not_mutate_input_and_is_idempotent(self):
+        answers = {
+            "income_year": "2025-26",
+            "partnership_share_items": [{"entity_name": "Stable Partnership", "statement": "statement held", "income": 1}],
+            "partnership_source_url": "https://example.invalid/stable",
+        }
+        original = json.loads(json.dumps(answers))
+        first = taxmate_intake.answers_to_pack_payload(answers)
+        second = taxmate_intake.answers_to_pack_payload(answers)
+        self.assertEqual(original, answers)
+        self.assertEqual(first, second)
+
+    def test_non_payment_insurance_phrases_remain_unsupported(self):
+        items, _ = self.rows({"uncommon_income": [
+            {"category": "income protection insurance premium", "amount": 1, "statement": "record held"},
+            {"category": "private health insurance rebate", "amount": 1, "statement": "record held"},
+            {"category": "insurance policy", "amount": 1, "statement": "record held"},
+        ]})
+        uncommon = [row for row in items if row["number"].startswith("UNC-")]
+        self.assertTrue(all(row["question"] == "Uncommon income review" for row in uncommon))
 
     def test_blank_and_generic_uncommon_rows_do_not_render_blank_review_items(self):
         items, evidence = self.rows({"uncommon_income": [{}, {"category": "other income"}, "unknown"]})
