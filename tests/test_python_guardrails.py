@@ -264,6 +264,423 @@ class ReviewGuardrailTests(unittest.TestCase):
     def test_review_guardrails_pass_current_repo(self) -> None:
         self.assertEqual([], taxmate_review_guardrails.run(ROOT))
 
+    def test_private_health_guardrail_rejects_verified_but_wrong_source_binding(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel in (
+                "scripts/taxmate_intake.py",
+                "config/runtime-coverage.json",
+                "data/ato_knowledge_base/source_coverage.json",
+            ):
+                destination = root / rel
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ROOT / rel, destination)
+            intake_path = root / "scripts/taxmate_intake.py"
+            intake = intake_path.read_text(encoding="utf-8").replace(
+                f'ATO_PRIVATE_HEALTH_STATEMENT_SOURCE = "{taxmate_intake.ATO_PRIVATE_HEALTH_STATEMENT_SOURCE}"',
+                f'ATO_PRIVATE_HEALTH_STATEMENT_SOURCE = "{taxmate_intake.ATO_PRIVATE_HEALTH_REBATE_CLAIM_SOURCE}"',
+            )
+            intake_path.write_text(intake, encoding="utf-8")
+
+            findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+
+        self.assertTrue(
+            any(
+                "runtime source binding mismatch: ATO_PRIVATE_HEALTH_STATEMENT_SOURCE -> ato-53b20854d6fb"
+                in finding.detail
+                for finding in findings
+            )
+        )
+
+    def test_private_health_guardrail_requires_normalized_statement_collections(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel in (
+                "scripts/taxmate_intake.py",
+                "config/runtime-coverage.json",
+                "data/ato_knowledge_base/source_coverage.json",
+            ):
+                destination = root / rel
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ROOT / rel, destination)
+            intake_path = root / "scripts/taxmate_intake.py"
+            intake = intake_path.read_text(encoding="utf-8").replace(
+                'statements = private_health_statement_items(raw.get("statements"))',
+                'statements = raw.get("statements", [])',
+                1,
+            )
+            intake_path.write_text(intake, encoding="utf-8")
+
+            findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+
+        self.assertTrue(
+            any(
+                'statements = private_health_statement_items(raw.get("statements"))'
+                in finding.detail
+                for finding in findings
+            )
+        )
+
+    def test_private_health_guardrail_requires_dependant_supplemental_routing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel in (
+                "scripts/taxmate_intake.py",
+                "config/runtime-coverage.json",
+                "data/ato_knowledge_base/source_coverage.json",
+            ):
+                destination = root / rel
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ROOT / rel, destination)
+            intake_path = root / "scripts/taxmate_intake.py"
+            intake = intake_path.read_text(encoding="utf-8").replace(
+                "dependant_notes = private_health_dependant_collection_notes(answers)",
+                "dependant_notes = []",
+                1,
+            )
+            intake_path.write_text(intake, encoding="utf-8")
+
+            findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+
+        self.assertTrue(
+            any(
+                "dependant_notes = private_health_dependant_collection_notes(answers)"
+                in finding.detail
+                for finding in findings
+            )
+        )
+
+    def test_private_health_guardrail_requires_recursive_noop_sanitizer_behavior(self) -> None:
+        mutations = (
+            (
+                "if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:",
+                "if False and normalized in PRIVATE_HEALTH_NOOP_TEXT:",
+                "if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:",
+            ),
+            (
+                "    if isinstance(value, list):\n        sanitized_items = [",
+                "    if False and isinstance(value, list):\n        sanitized_items = [",
+                "if isinstance(value, list):",
+            ),
+            (
+                "    if isinstance(value, dict):\n        sanitized_record = {",
+                "    if False and isinstance(value, dict):\n        sanitized_record = {",
+                "if isinstance(value, dict):",
+            ),
+            (
+                "sanitized, supplied = private_health_detail_with_metadata(\n            value,",
+                "sanitized, supplied = (value, {}) if False else (value, {})\n        #",
+                "private_health_detail_with_metadata(",
+            ),
+            (
+                "if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:\n            return PRIVATE_HEALTH_NO_VALUE",
+                "if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:\n            return value",
+                "if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:\n            return PRIVATE_HEALTH_NO_VALUE",
+            ),
+            (
+                "return sanitized_items if sanitized_items else PRIVATE_HEALTH_NO_VALUE",
+                "return value",
+                "return sanitized_items if sanitized_items else PRIVATE_HEALTH_NO_VALUE",
+            ),
+            (
+                "return sanitized_record if sanitized_record else PRIVATE_HEALTH_NO_VALUE",
+                "return value",
+                "return sanitized_record if sanitized_record else PRIVATE_HEALTH_NO_VALUE",
+            ),
+        )
+        for old, new, expected in mutations:
+            with self.subTest(old=old), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                for rel in (
+                    "scripts/taxmate_intake.py",
+                    "config/runtime-coverage.json",
+                    "data/ato_knowledge_base/source_coverage.json",
+                ):
+                    destination = root / rel
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ROOT / rel, destination)
+                intake_path = root / "scripts/taxmate_intake.py"
+                intake = intake_path.read_text(encoding="utf-8").replace(old, new, 1)
+                intake_path.write_text(intake, encoding="utf-8")
+
+                findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+
+            self.assertTrue(
+                any(expected in finding.detail for finding in findings),
+                (old, [finding.detail for finding in findings]),
+            )
+
+    def test_private_health_guardrail_requires_dependant_denial_normalization(self) -> None:
+        mutations = (
+            (
+                'if bare and normalized in {"0", "false", "no", "nil", "zero"}:',
+                'if False and normalized in {"0", "false", "no", "nil", "zero"}:',
+                'if bare and normalized in {"0", "false", "no", "nil", "zero"}:',
+            ),
+            (
+                "return any(private_health_dependant_denial_value(item) for item in value)",
+                "return False",
+                "return any(private_health_dependant_denial_value(item) for item in value)",
+            ),
+            (
+                "if private_health_summary_substantive(summary):\n            represented.update(summary)",
+                "if False:\n            represented.update(summary)",
+                "if private_health_summary_substantive(summary):\n            represented.update(summary)",
+            ),
+            (
+                "if wrapper_keys:\n            represented.update(parent)",
+                "if False:\n            represented.update(parent)",
+                "if wrapper_keys:\n            represented.update(parent)",
+            ),
+            (
+                "or private_health_dependant_summary_entries(value)",
+                "or False",
+                "or private_health_dependant_summary_entries(value)",
+            ),
+            (
+                "private_health_record_metadata(\n                parent,\n                source_aliases,\n                checked_at_aliases,",
+                "private_health_record_metadata(\n                {},\n                source_aliases,\n                checked_at_aliases,",
+                "private_health_record_metadata(\n                parent,\n                source_aliases,\n                checked_at_aliases,",
+            ),
+            (
+                'and re.sub(r"[^a-z0-9]+", " ", value.lower()).strip() == "none"',
+                "and False",
+                'strip() == "none"',
+            ),
+            (
+                "def dependant_rows(summary: Any, items: Any) -> List[Dict[str, Any]]:\n"
+                "    summary = private_health_dependant_summary_from_values(summary, items)",
+                "def dependant_rows(summary: Any, items: Any) -> List[Dict[str, Any]]:\n"
+                "    summary = {}",
+                "dependant denial normalization missing from dependant_rows",
+            ),
+            (
+                "dependant_summary = private_health_dependant_summary_from_values(\n"
+                '        raw.get("dependant_summary", {}),\n'
+                '        raw.get("dependants", []),\n'
+                "    )",
+                'dependant_summary = raw.get("dependant_summary", {})',
+                "dependant denial normalization missing from private_health_medicare_required_answer",
+            ),
+        )
+        for old, new, expected in mutations:
+            with self.subTest(old=old), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                for rel in (
+                    "scripts/taxmate_intake.py",
+                    "config/runtime-coverage.json",
+                    "data/ato_knowledge_base/source_coverage.json",
+                ):
+                    destination = root / rel
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ROOT / rel, destination)
+                intake_path = root / "scripts/taxmate_intake.py"
+                intake = intake_path.read_text(encoding="utf-8")
+                self.assertIn(old, intake)
+                intake_path.write_text(intake.replace(old, new, 1), encoding="utf-8")
+
+                findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+                self.assertTrue(
+                    any(expected in finding.detail for finding in findings),
+                    (old, [finding.detail for finding in findings]),
+                )
+
+    def test_private_health_guardrail_requires_partial_before_negation(self) -> None:
+        mutations = (
+            (
+                r"part\s+(?:of\s+(?:the\s+)?)?(?:income\s+)?year",
+                r"part\s+(?:around\s+(?:the\s+)?)?(?:income\s+)?year",
+                r"part\s+(?:of\s+(?:the\s+)?)?(?:income\s+)?year",
+            ),
+            (
+                "if private_health_partial_cover_text(normalized):\n        return True",
+                "if private_health_partial_cover_text(normalized):\n        return False",
+                "if private_health_partial_cover_text(normalized):\n        return True",
+            ),
+            (
+                "if private_health_continuous_cover_text(normalized):\n        return False",
+                "if private_health_continuous_cover_text(normalized):\n        return True",
+                "if private_health_continuous_cover_text(normalized):\n        return False",
+            ),
+            (
+                "private_health_partial_cover_text(covered_raw)",
+                "private_health_partial_text(covered_raw)",
+                "private_health_partial_cover_text(covered_raw)",
+            ),
+            (
+                "private_health_partial_cover_text(cover_raw)",
+                "private_health_partial_text(cover_raw)",
+                "MLS review must use partial cover classification for gaps and evidence",
+            ),
+            (
+                "if private_health_negated_spouse_absence_text(normalized):\n        return True",
+                "if private_health_negated_spouse_absence_text(normalized):\n        return False",
+                "if private_health_negated_spouse_absence_text(normalized):\n        return True",
+            ),
+            (
+                'separator = r"(?:(?:to|and|until|through(?:\\s+to)?)\\s+)?"',
+                'separator = r"(?:to\\s+)?"',
+                'separator = r"(?:(?:to|and|until|through(?:\\s+to)?)\\s+)?"',
+            ),
+        )
+        for old, new, expected in mutations:
+            with self.subTest(old=old), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                for rel in (
+                    "scripts/taxmate_intake.py",
+                    "config/runtime-coverage.json",
+                    "data/ato_knowledge_base/source_coverage.json",
+                ):
+                    destination = root / rel
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ROOT / rel, destination)
+                intake_path = root / "scripts/taxmate_intake.py"
+                intake = intake_path.read_text(encoding="utf-8")
+                self.assertIn(old, intake)
+                intake_path.write_text(intake.replace(old, new, 1), encoding="utf-8")
+
+                findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+
+            self.assertTrue(
+                any(expected in finding.detail for finding in findings),
+                (old, [finding.detail for finding in findings]),
+            )
+
+    def test_private_health_guardrail_requires_workflow_boundary_invariants(self) -> None:
+        mutations = (
+            (
+                '| {"income_year"}',
+                '| set()',
+                '| {"income_year"}',
+            ),
+            (
+                "false_is_value=isinstance(value, dict)",
+                "false_is_value=False",
+                "false_is_value=isinstance(value, dict)",
+            ),
+            (
+                "private_health_capture_cover_lineage(merged, records)",
+                "pass",
+                "private_health_capture_cover_lineage(merged, records)",
+            ),
+            (
+                "raw = private_health_normalize_workflow_boundary(raw)",
+                "raw = dict(raw)",
+                "raw = private_health_normalize_workflow_boundary(raw)",
+            ),
+            (
+                'note: Dict[str, Any] = {"private_health_statement": detail}',
+                "note: Dict[str, Any] = {}",
+                'note: Dict[str, Any] = {"private_health_statement": detail}',
+            ),
+            (
+                "inherited.pop(inherited_key, None)",
+                "pass",
+                "inherited.pop(inherited_key, None)",
+            ),
+            (
+                'record["_income_year"] = income_year\n    return record',
+                'record.setdefault("_income_year", income_year)\n    return record',
+                'record["_income_year"] = income_year',
+            ),
+            (
+                "if key not in PRIVATE_HEALTH_WORKFLOW_NOTE_KEYS",
+                "if True",
+                "if key not in PRIVATE_HEALTH_WORKFLOW_NOTE_KEYS",
+            ),
+        )
+        for old, new, expected in mutations:
+            with self.subTest(old=old), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                for rel in (
+                    "scripts/taxmate_intake.py",
+                    "config/runtime-coverage.json",
+                    "data/ato_knowledge_base/source_coverage.json",
+                ):
+                    destination = root / rel
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ROOT / rel, destination)
+                intake_path = root / "scripts/taxmate_intake.py"
+                intake = intake_path.read_text(encoding="utf-8")
+                self.assertIn(old, intake)
+                intake_path.write_text(intake.replace(old, new, 1), encoding="utf-8")
+
+                findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+
+            self.assertTrue(
+                any(expected in finding.detail for finding in findings),
+                (old, [finding.detail for finding in findings]),
+            )
+
+    def test_private_health_guardrail_requires_recursive_noop_docs(self) -> None:
+        cases = (
+            (
+                taxmate_review_guardrails.PRIVATE_HEALTH_MEDICARE_NOOP_DOC_PHRASE,
+                "Suppress blank containers before rendering",
+                "recursive no-op",
+            ),
+            (
+                taxmate_review_guardrails.PRIVATE_HEALTH_MEDICARE_PROVENANCE_DOC_PHRASE,
+                "Carry source context onto supplemental review rows",
+                "supplemental provenance",
+            ),
+            (
+                taxmate_review_guardrails.PRIVATE_HEALTH_MEDICARE_DEPENDANT_DENIAL_DOC_PHRASE,
+                "Keep explicit dependant denials visible",
+                "dependant denial",
+            ),
+            (
+                taxmate_review_guardrails.PRIVATE_HEALTH_MEDICARE_PARTIAL_COVER_DOC_PHRASE,
+                "Keep partial cover wording visible",
+                "partial cover",
+            ),
+        )
+        for phrase, replacement, label in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                files = (
+                    "scripts/taxmate_intake.py",
+                    "scripts/skillgen.py",
+                    "config/runtime-coverage.json",
+                    "data/ato_knowledge_base/source_coverage.json",
+                    "skills/private-health-medicare/references/rules.md",
+                    "skills/individual-return/SKILL.md",
+                    "skills/individual-return/references/rules.md",
+                    "docs/INDIVIDUAL_RETURN_PREP.md",
+                )
+                for rel in files:
+                    destination = root / rel
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ROOT / rel, destination)
+                for rel in (
+                    "scripts/skillgen.py",
+                    "skills/private-health-medicare/references/rules.md",
+                    "skills/individual-return/SKILL.md",
+                    "skills/individual-return/references/rules.md",
+                    "docs/INDIVIDUAL_RETURN_PREP.md",
+                ):
+                    path = root / rel
+                    text = path.read_text(encoding="utf-8").replace(phrase, replacement)
+                    path.write_text(text, encoding="utf-8")
+
+                findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+
+            missing_docs = {
+                finding.detail
+                for finding in findings
+                if f"{label} contract missing" in finding.detail
+            }
+            self.assertEqual(
+                {
+                    f"{label} contract missing from scripts/skillgen.py",
+                    f"{label} contract missing from skills/private-health-medicare/references/rules.md",
+                    f"{label} contract missing from skills/individual-return/SKILL.md",
+                    f"{label} contract missing from skills/individual-return/references/rules.md",
+                    f"{label} contract missing from docs/INDIVIDUAL_RETURN_PREP.md",
+                },
+                missing_docs,
+            )
+
     def test_review_guardrails_detect_taxpack_truthiness_fallback(self) -> None:
         text = 'def scalar_text(): pass\nvalue = raw.get("answer") or ""\n'
         findings = taxmate_review_guardrails.check_taxpack_output_layer_text(text)
@@ -7773,7 +8190,7 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("asset_items", rendered_numbers)
         self.assertNotIn("ess_items", rendered_numbers)
 
-    def test_explicit_false_optional_answers_still_render_base_rows(self) -> None:
+    def test_explicit_false_private_health_answers_render_structured_rows(self) -> None:
         answers = taxmate_intake.sample_answers()
         answers["gst_registered"] = False
         answers["private_health_cover"] = False
@@ -7783,9 +8200,14 @@ class IndividualIntakeTests(unittest.TestCase):
         rendered = {row["number"]: row for row in rows}
 
         self.assertEqual("Accountant review", rendered["gst_registered"]["status"])
-        self.assertEqual("Used", rendered["private_health_cover"]["status"])
-        self.assertEqual("Used", rendered["spouse_had"]["status"])
+        self.assertNotIn("private_health_cover", rendered)
+        self.assertNotIn("spouse_had", rendered)
         self.assertEqual("false", rendered["gst_registered"]["answer"])
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        structured = {row["number"]: row for row in payload["items"]}
+        self.assertEqual("Accountant review", structured["PHI-OVERVIEW"]["status"])
+        self.assertEqual("Accountant review", structured["SPOUSE-REVIEW"]["status"])
 
     def test_empty_nested_ess_falls_back_to_flat_answers(self) -> None:
         answers = taxmate_intake.sample_answers()
@@ -9287,11 +9709,12 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("Accountant review", wfh["status"])
         self.assertIn("16.00 hours; fixed-rate candidate 11.20", wfh["answer"])
 
-    def test_embedded_unconfirmed_answers_render_as_evidence(self) -> None:
-        rows = taxmate_intake.base_items(taxmate_intake.sample_answers())
-        private_health = next(row for row in rows if row["number"] == "private_health_cover")
+    def test_structured_private_health_answers_replace_legacy_base_row(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        rows = {row["number"]: row for row in payload["items"]}
 
-        self.assertEqual("Evidence", private_health["status"])
+        self.assertNotIn("private_health_cover", rows)
+        self.assertEqual("Accountant review", rows["PHI-OVERVIEW"]["status"])
 
     def test_ai_extracted_values_require_confirmation(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
@@ -10310,9 +10733,11 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("alias conflicts none", rows[0]["answer"])
 
     def test_embedded_unconfirmed_answers_create_evidence_rows(self) -> None:
-        rows = taxmate_intake.evidence_rows(taxmate_intake.sample_answers())
+        answers = taxmate_intake.sample_answers()
+        answers["private_health_medicare"]["private_health_cover"] = "unknown"
+        rows = taxmate_intake.evidence_rows(answers)
 
-        self.assertTrue(any(row["ato_area"] == "M2 / Private health" for row in rows))
+        self.assertTrue(any(str(row["number"]).startswith("PHI-EVID-") for row in rows))
 
     def test_individual_html_pack_has_print_boundary_sections(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
@@ -12399,6 +12824,7 @@ class ValidatorAndCliTests(unittest.TestCase):
 class TaxpackGuideTests(unittest.TestCase):
     def test_sample_guide_uses_current_generated_date(self) -> None:
         self.assertNotIn("generated_date", taxmate_taxpack.sample_payload())
+        self.assertEqual(date.today().strftime("%d %b %Y").lstrip("0"), taxmate_taxpack.default_generated_date())
         self.assertEqual(
             taxmate_taxpack.default_generated_date(),
             taxmate_taxpack.load_guide_data(None).generated_date,
@@ -12420,6 +12846,18 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("background:#effbf4", body)
         self.assertIn("background:#fff7dc", body)
         self.assertIn("left:-64px", body)
+        self.assertIn(".table th,.table td{overflow-wrap:anywhere;word-break:break-word}", body)
+        self.assertIn(".table th:nth-child(1),.table td:nth-child(1){width:9%;padding-left:4px", body)
+        self.assertIn(".status{display:block;width:100%;min-width:0;max-width:100%", body)
+        self.assertIn(".tab{border:0;border-left:10px solid currentColor;font:inherit;text-align:left}", body)
+        self.assertIn('<span class="tab-text">', body)
+        self.assertNotRegex(body, r'<button[^>]*class="tab[^"]*"[^>]*>.*?<p>')
+        self.assertIn("@media screen and (max-width:720px)", body)
+        self.assertIn(".book{display:block;width:100%;margin:0}", body)
+        self.assertIn(".watermark{display:none}", body)
+        self.assertIn(".table{min-width:700px}", body)
+        self.assertIn("top:auto!important", body)
+        self.assertIn("event.key==='Enter'||event.key===' '", body)
         self.assertIn("spotlight-target", body)
         self.assertIn("show all tabs", body.lower())
         self.assertIn("hide tabs", body.lower())
@@ -12496,7 +12934,7 @@ class TaxpackGuideTests(unittest.TestCase):
         row_anchors = re.findall(r'<td data-anchor="([^"]+)"', body)
         row_targets = [
             target
-            for target in re.findall(r'<div class="tab [^"]+" data-target="([^"]+)"', body)
+            for target in re.findall(r'<button type="button" class="tab [^"]+" data-target="([^"]+)"', body)
             if target.startswith("row-")
         ]
 
@@ -12832,7 +13270,7 @@ class TaxpackGuideTests(unittest.TestCase):
         )
         self.assertEqual("Row 13: Accountant review.", blank_review.tab_text)
         self.assertIn("<li>Row 13: Accountant review.</li>", body)
-        self.assertIn("<p>Row 13: Accountant review.</p>", body)
+        self.assertIn('<span class="tab-text">Row 13: Accountant review.</span>', body)
 
         blank_queue = taxmate_taxpack.GuideItem(
             number="Q1",
@@ -12883,7 +13321,7 @@ class TaxpackGuideTests(unittest.TestCase):
             )
         )
         self.assertIn("<li>Row 14: Accountant review.</li>", body)
-        self.assertIn("<p>Row 14: Accountant review.</p>", body)
+        self.assertIn('<span class="tab-text">Row 14: Accountant review.</span>', body)
 
         direct_conflict = taxmate_taxpack.GuideItem(
             number="15",
@@ -12975,9 +13413,9 @@ class TaxpackGuideTests(unittest.TestCase):
             )
         )
 
-        self.assertIn("<p>Row ABN: Accountant review.</p>", body)
+        self.assertIn('<span class="tab-text">Row ABN: Accountant review.</span>', body)
         self.assertIn("<li>Row ABN: Accountant review.</li>", body)
-        self.assertNotIn("<p>false</p>", body)
+        self.assertNotIn('<span class="tab-text">false</span>', body)
         self.assertNotIn("<li>false</li>", body)
 
     def test_guide_canonicalizes_color_status_aliases(self) -> None:
@@ -13043,7 +13481,7 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("<td>0</td>", body)
         self.assertIn("<td>false</td>", body)
         self.assertIn("<b>0</b>", body)
-        self.assertIn("<p>0</p>", body)
+        self.assertIn('<span class="tab-text">0</span>', body)
         self.assertIn("Checked 0", body)
         self.assertIn("<span class=\"source-url\">false</span>", body)
 
@@ -13103,7 +13541,7 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("<td>false</td>", body)
         self.assertIn("<span class=\"source-url\">0</span>", body)
         self.assertIn("<b>0</b>", body)
-        self.assertIn("<p>0</p>", body)
+        self.assertIn('<span class="tab-text">0</span>', body)
         self.assertIn("Checked 0", body)
         self.assertIn("data-anchor=\"row-1-0\"", body)
 
@@ -14174,7 +14612,7 @@ class CgtIntakeTests(unittest.TestCase):
         )
 
         row = self.cgt_event_rows(payload)[0]
-        evidence = payload["evidence_items"][0]
+        evidence = next(item for item in payload["evidence_items"] if item["number"] == "CGT-EVID-1")
         self.assertEqual("Evidence", row["status"])
         self.assertIn("owner unknown", row["answer"])
         self.assertIn("acquired bad-date", row["answer"])
@@ -16849,7 +17287,9 @@ class RuntimeCoverageTests(unittest.TestCase):
         self.assertEqual("structured", by_id["individual-offset-routing"]["runtime_status"])
         self.assertEqual("#70", by_id["super-contribution-deductions"]["issue"])
         self.assertEqual("#70", by_id["individual-offset-routing"]["issue"])
-        self.assertEqual("review_only", by_id["private-health-medicare-spouse-dependants"]["runtime_status"])
+        self.assertEqual("structured", by_id["private-health-medicare-spouse-dependants"]["runtime_status"])
+        self.assertEqual("#71", by_id["private-health-medicare-spouse-dependants"]["issue"])
+        self.assertGreater(by_id["private-health-medicare-spouse-dependants"]["source_count"], 0)
 
     def test_runtime_coverage_manifest_validates(self) -> None:
         ok, errors = taxmate_coverage.validate_manifest(ROOT)
@@ -16874,13 +17314,22 @@ class RuntimeCoverageTests(unittest.TestCase):
         coverage = taxmate_coverage.load_source_coverage(ROOT)
         concept = {
             "id": "bad-pins",
+            "source_skills": ["private-health-medicare"],
             "source_ids": ["ato-0a702ac5d106", "ato-not-real"],
             "source_urls": [taxmate_intake.ATO_PHONE_SOURCE, "https://example.invalid/not-verified"],
         }
 
         errors = taxmate_coverage.source_pin_errors(coverage["sources"], concept)
 
+        self.assertIn(
+            "bad-pins source_id not assigned to source_skills: ato-0a702ac5d106",
+            errors,
+        )
         self.assertIn("bad-pins source_id not verified: ato-not-real", errors)
+        self.assertIn(
+            f"bad-pins source_url not assigned to source_skills: {taxmate_intake.ATO_PHONE_SOURCE}",
+            errors,
+        )
         self.assertIn("bad-pins source_url not verified: https://example.invalid/not-verified", errors)
 
     def test_runtime_coverage_rejects_generic_only_concept_matches(self) -> None:

@@ -1023,6 +1023,17 @@ def skillMarkdown(topic_obj: Topic) -> str:
                 "small-business CGT concession evidence, source URLs, and checked-at provenance for rows and evidence queues",
             ]
         )
+    if topic_obj.slug == "private-health-medicare":
+        facts.extend(
+            [
+                "one row for each private health statement line, including health insurer or fund, membership or policy identifier, benefit code, premiums eligible for rebate, rebate received, tax claim code, cover days or period, and statement evidence",
+                "private hospital cover status and full-year, partial-year, or no-cover periods",
+                "Medicare levy exemption or reduction signals and supporting evidence",
+                "Medicare levy surcharge income, tier, hospital-cover, spouse, and family review signals without calculating a surcharge",
+                "spouse period and spouse income-test facts plus dependant child or student facts",
+                "row-specific source URLs, checked-at provenance, evidence gaps, and Accountant review routing",
+            ]
+        )
     for fact in facts:
         lines.append(f"- {fact}")
     return "\n".join(lines) + "\n"
@@ -1109,6 +1120,17 @@ def rulesMarkdown(topic_obj: Topic, sources: List[Source]) -> str:
                 "",
             ]
         )
+    if topic_obj.slug == "private-health-medicare":
+        lines.extend(
+            [
+                "Private health, Medicare levy, spouse, and dependant handling is structured through the individual-return runtime and remains review-first and prep-only. Keep each private health statement line separate. Collect health insurer or fund, membership or policy identifier, benefit code, premiums eligible for rebate, rebate received, tax claim code, cover days or period, and statement evidence. Also collect private hospital cover status, Medicare levy exemption or reduction signals, Medicare levy surcharge income or tier signals, spouse period and income-test facts, and dependant child or student facts.",
+                "",
+                "Missing or unknown statements, missing statement-line fields, no-cover or partial-year cover, malformed amounts or dates, unsupported benefit or tax claim codes, Medicare levy exemption or reduction ambiguity, Medicare levy surcharge uncertainty, and spouse or dependant uncertainty stay Evidence or `Accountant review`. Recursively suppress blank or no-op note and metadata containers before alias merge or rendering so they cannot create rows, shadow concrete aliases, or appear as supplemental facts; preserve every real sibling in a mixed container. Normalize explicit dependant collection or count denials to integer 0 before collection filtering, and keep denial-plus-positive count or item conflicts visible. Treat temporal, partial, mixed, or qualified-negative cover wording as review input before categorical no-cover classification. Carry matching valid source URLs and checked-at dates onto the review row whenever supplemental facts survive. Preserve source URLs, checked-at dates, free-form or unknown sibling facts, explicit evidence denials, and valid falsey values such as `false` spouse, `false` cover, `0` dependants, and supplied `0` premium, rebate, or cover-day amounts. Supplied zero or unsupported benefit and tax claim codes stay visible but remain Evidence or `Accountant review`; preservation does not make a code valid.",
+                "",
+                "Completed statement, Medicare levy, surcharge, spouse, and dependant rows stay `Accountant review`. Do not calculate the Medicare levy, Medicare levy surcharge, private health rebate, tax claim code, or final entitlement. Do not fill an official ATO form, lodge, or call the output final or copy-ready.",
+                "",
+            ]
+        )
     if topic_obj.slug == "capital-gains-tax":
         lines.extend(
             [
@@ -1142,6 +1164,16 @@ def evidenceMarkdown(topic_obj: Topic, sources: List[Source]) -> str:
             [
                 "- main residence property records such as purchase contract, settlement statement, rates notices, lease records, occupancy evidence, and absence-rule support",
                 "- rental or business use evidence and spouse or partner main-residence conflict evidence where relevant",
+            ]
+        )
+    if topic_obj.slug == "private-health-medicare":
+        lines.extend(
+            [
+                "- private health statement or pre-fill record for each statement line, including health insurer ID, membership number, premiums eligible for rebate, rebate received, benefit code, and cover days",
+                "- private hospital cover start/end dates or supplied cover-day evidence, including partial-year or no-cover periods",
+                "- supplied tax claim code support and any spouse-share or policy-period facts relied on",
+                "- spouse period and income-test evidence plus dependant child or student facts",
+                "- Medicare levy exemption or reduction evidence and Medicare levy surcharge income, family, and hospital-cover evidence",
             ]
         )
     lines.extend(["", "Missing or altered evidence means `Insufficient evidence` or `Accountant review`, never a confirmed claim."])

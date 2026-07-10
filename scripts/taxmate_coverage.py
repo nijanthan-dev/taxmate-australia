@@ -105,20 +105,38 @@ def verified_source_count(sources: Iterable[Dict[str, Any]], concept: Dict[str, 
 
 def source_pin_errors(sources: Iterable[Dict[str, Any]], concept: Dict[str, Any]) -> List[str]:
     concept_id = str(concept.get("id", ""))
-    verified_ids: set[str] = set()
-    verified_urls: set[str] = set()
+    verified_by_id: Dict[str, Dict[str, Any]] = {}
+    verified_by_url: Dict[str, List[Dict[str, Any]]] = {}
     for entry in sources:
         if entry.get("status") != "verified":
             continue
-        verified_ids.add(str(entry.get("source_id", "")))
-        verified_urls.update(str(entry.get(key, "")) for key in ("canonical_url", "original_url"))
+        source_id = str(entry.get("source_id", ""))
+        verified_by_id[source_id] = entry
+        for key in ("canonical_url", "original_url"):
+            source_url = str(entry.get(key, ""))
+            if not source_url:
+                continue
+            verified_by_url.setdefault(source_url, []).append(entry)
     errors: List[str] = []
+    expected_skills = {str(value) for value in concept.get("source_skills", [])}
     for source_id in concept.get("source_ids", []):
-        if str(source_id) not in verified_ids:
+        source_id = str(source_id)
+        if source_id not in verified_by_id:
             errors.append(f"{concept_id} source_id not verified: {source_id}")
+            continue
+        assigned_skills = {str(value) for value in verified_by_id[source_id].get("skills", [])}
+        if expected_skills and not expected_skills.intersection(assigned_skills):
+            errors.append(f"{concept_id} source_id not assigned to source_skills: {source_id}")
     for source_url in concept.get("source_urls", []):
-        if str(source_url) not in verified_urls:
+        source_url = str(source_url)
+        if source_url not in verified_by_url:
             errors.append(f"{concept_id} source_url not verified: {source_url}")
+            continue
+        if expected_skills and not any(
+            expected_skills.intersection(str(value) for value in entry.get("skills", []))
+            for entry in verified_by_url[source_url]
+        ):
+            errors.append(f"{concept_id} source_url not assigned to source_skills: {source_url}")
     return errors
 
 

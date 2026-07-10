@@ -12,7 +12,7 @@ Use `taxmate-australia-individual-return` first for a broad checklist. Route spe
 
 - `taxmate-australia-employment-deductions` for PAYG and work deductions.
 - `taxmate-australia-work-from-home` for WFH hours, records, holidays, and fixed-rate or actual-cost support.
-- `taxmate-australia-private-health-medicare` for private health, Medicare levy, and surcharge facts.
+- `taxmate-australia-private-health-medicare` for itemized private health statement lines, Medicare levy and surcharge review signals, spouse periods and income-test facts, and dependant child or student facts.
 - `taxmate-australia-abn-business` for sole-trader, PSI, business-versus-hobby, and losses.
 - `taxmate-australia-gst-bas` for BAS worksheets only.
 - `taxmate-australia-shares-etfs-managed-funds`, `taxmate-australia-capital-gains-tax`, `taxmate-australia-crypto-assets`, and `taxmate-australia-property-rental-cgt` for investment, crypto, rental property worksheet, and CGT review.
@@ -22,6 +22,8 @@ Use `taxmate-australia-individual-return` first for a broad checklist. Route spe
 Ask a full intake, not a short interview. Keep unknown, ambiguous, mixed-use, GST/BAS, CGT, PSI, foreign, ESS, ETP/lump sum, rental, company, trust, partnership, and entity-return items in Evidence or `Accountant review` unless official sources clearly resolve the prep step.
 
 For PAYG salary and wages prep, collect each income statement by payer, employer or payer ABN, occupation, gross salary/wages, tax withheld, allowances, reportable fringe benefits, reportable employer super contributions, lump sum A/B/D/E labels, statement evidence, and finalised/tax-ready status. Reconcile item totals to supplied aggregate PAYG gross and withholding. Keep missing or unfinalised statements, unknown payer details, malformed amounts, ambiguous allowances/RFBA/RESC/lump sum labels, no-PAYG answers plus facts, and mismatched totals in Evidence or `Accountant review`.
+
+For private health and Medicare prep, keep every private health statement line separate. Collect health insurer or fund, membership or policy identifier, benefit code, premiums eligible for rebate, rebate received, tax claim code, cover days or period, and statement evidence. Also collect private hospital cover status, Medicare levy exemption or reduction signals, Medicare levy surcharge income or tier signals, spouse period and income-test facts, and dependant child or student facts. Missing or unknown statements, no-cover or partial-year uncertainty, malformed amounts or dates, unsupported codes, source gaps, and spouse, dependant, levy, or surcharge uncertainty stay Evidence or `Accountant review`. Recursively suppress blank or no-op note and metadata containers before alias merge or rendering, while preserving every real sibling in a mixed container. Normalize explicit dependant collection or count denials to integer 0 before collection filtering, and keep denial-plus-positive count or item conflicts visible. Treat temporal, partial, mixed, or qualified-negative cover wording as review input before categorical no-cover classification. Carry matching valid source URLs and checked-at dates onto the review row whenever supplemental facts survive. Preserve row-specific source URLs, checked-at dates, unknown sibling facts, explicit evidence denials, `false` spouse or cover, `0` dependants, and supplied `0` premium, rebate, or cover-day amounts. Supplied zero or unsupported benefit and tax claim codes stay visible but remain Evidence or `Accountant review`; preservation does not make a code valid. TaxMate does not calculate levy, surcharge, rebate, tax claim code, or final entitlement.
 
 For investment income prep, collect itemized bank interest by payer/account, dividends with franked/unfranked amounts, franking credits and withholding, managed fund/ETF/AMIT distribution statement components, and trust distribution statement facts for individual beneficiaries. Reconcile item totals to supplied aggregate interest/dividend totals. Keep missing statements, AMIT/cost-base adjustments, foreign components, trust distributions, franking uncertainty, and mismatched totals in Evidence or `Accountant review`.
 
@@ -56,7 +58,7 @@ For general non-crypto/non-rental CGT event prep, collect top-level facts or ite
 | WFH actual-cost and occupancy | Review-only | Actual-cost comparison and occupancy/main-residence risk stay review-first. |
 | ABN categories | Triage-only | Summary/category worksheet exists; complex categories stay review-first. |
 | GST/BAS special topics | Triage-only | Core worksheet exists; WET/LCT/fuel tax/reverse charge/groups/time limits/cancellation stay review-only. |
-| Private health, Medicare, spouse, dependants | Review-only | Shallow intake only; #71 tracks statement/tier/detail workflow. |
+| Private health, Medicare, spouse, dependants | Structured | Itemized statement lines, cover periods, levy/surcharge review signals, spouse/dependant facts, row-specific provenance, and evidence/review queues; no final calculation. |
 | Government payments | Review-only | Generic field visible only; detailed payment-type workflow remains open. |
 | FBT/RFBA | Triage-only | RFBA preserved from PAYG; no FBT calculation. |
 
@@ -97,7 +99,7 @@ The plugin runtime can also run the underlying `intake` command family through T
 ./scripts/taxmate coverage audit
 ```
 
-Open the HTML in a browser and print or save as PDF. The guide keeps the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, PAYG income statement rows, itemized investment income rows, CGT schedule and item rows, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, source URLs, checked-at dates, and source/provenance appendix visible.
+Open the HTML in a browser and print or save as PDF. The guide keeps the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, PAYG income statement rows, itemized private health statement and Medicare/spouse/dependant review rows, itemized investment income rows, CGT schedule and item rows, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, source URLs, checked-at dates, and source/provenance appendix visible.
 
 ## Review Rules
 
@@ -105,6 +107,7 @@ Open the HTML in a browser and print or save as PDF. The guide keeps the prep-on
 - No-answer plus facts stays Evidence and must remain visible in answer text and review queues.
 - Valid falsey values such as `0` and `false` stay visible.
 - `0` withholding, `0` allowances, `0` RFBA, `0` RESC, and false finalised/tax-ready flags stay visible in PAYG rows.
+- `false` spouse, `false` private health cover, `0` dependants, and supplied `0` premium, rebate, or cover-day amounts stay visible in private health and Medicare review rows; supplied zero or unsupported benefit and tax claim codes also stay visible but remain Evidence or `Accountant review`.
 - `0` franking credits, `0` withholding, and `false` foreign components stay visible in investment rows.
 - `0` ABN income, `0` ABN expenses, `0` itemized business income or expense categories, and false GST registration stay visible in ABN and BAS prep rows.
 - `0` GST collected, `0` GST credits, `0` GST-free sales, `0` input-taxed sales, `0` adjustments, `0` PAYG instalments, and `0` PAYG withholding stay visible in BAS worksheet rows.
