@@ -545,7 +545,7 @@ def Topics() -> List[Topic]:
         topic(
             "gst-bas",
             "GST BAS",
-            "GST registration, credits, tax invoices, BAS reporting, PAYG instalment intersections, and guardrails.",
+            "GST registration, credits, tax invoices, BAS reporting, PAYG instalment intersections, and validation boundaries.",
             ["GST", "BAS", "tax invoice", "GST credit", "PAYG instalment"],
             "GST registration, credits, tax invoices, and BAS preparation",
             "income-tax-only employee deductions",
@@ -916,7 +916,7 @@ def writeOutputLayers(root: str) -> None:
         body += "- If input fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.\n"
         body += "- If explanation fields are blank, review queues must fall back to row number/status instead of rendering blank review items.\n"
         body += "- Preserve valid falsey output values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.\n"
-        body += "- Review-feedback fixes must cover parsed input, file-backed data, direct renderer/workbook-row paths, generated artifacts, tests, validator, and docs/skills/AGENTS guardrails before another review is requested.\n"
+        body += "- Fixes from independent review must cover parsed input, file-backed data, direct renderer/workbook-row paths, generated artifacts, tests, validator, and documentation and instruction validation rules before another review is requested.\n"
         body += "- Falsey output fixes must cover metadata, row fields, list fields, provenance, fallback labels, anchors, and direct constructors.\n"
         body += "- Preserve source URLs and checked-at dates.\n"
         body += "- Do not turn raw transactions into lodging-ready claims from source extracts alone.\n"
@@ -964,7 +964,7 @@ def skillMarkdown(topic_obj: Topic) -> str:
         "## Hard Safety Boundary",
         "",
         "- Do not fabricate records, source support, source checks, or evidence.",
-        "- Do not hide income, omit private use, suppress missing evidence, or remove `Accountant review` flags.",
+        "- Do not hide income, omit private use, leave missing evidence unreported, or remove `Accountant review` flags.",
         "- Do not treat metadata-only sources as source-backed tax treatment without explicit verification.",
         "- Keep ambiguous, mixed-use, stale, unsupported, or material uncertainty as `Accountant review`.",
         "- Never lodge, file, submit, transmit, or finalise any tax return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency.",
@@ -1125,7 +1125,7 @@ def rulesMarkdown(topic_obj: Topic, sources: List[Source]) -> str:
             [
                 "Private health, Medicare levy, spouse, and dependant handling is structured through the individual-return runtime and remains review-first and prep-only. Keep each private health statement line separate. Collect health insurer or fund, membership or policy identifier, benefit code, premiums eligible for rebate, rebate received, tax claim code, cover days or period, and statement evidence. Also collect private hospital cover status, Medicare levy exemption or reduction signals, Medicare levy surcharge income or tier signals, spouse period and income-test facts, and dependant child or student facts.",
                 "",
-                "Missing or unknown statements, missing statement-line fields, no-cover or partial-year cover, malformed amounts or dates, unsupported benefit or tax claim codes, Medicare levy exemption or reduction ambiguity, Medicare levy surcharge uncertainty, and spouse or dependant uncertainty stay Evidence or `Accountant review`. Recursively suppress blank or no-op note and metadata containers before alias merge or rendering so they cannot create rows, shadow concrete aliases, or appear as supplemental facts; preserve every real sibling in a mixed container. Normalize explicit dependant collection or count denials to integer 0 before collection filtering, and keep denial-plus-positive count or item conflicts visible. Treat temporal, partial, mixed, or qualified-negative cover wording as review input before categorical no-cover classification. Carry matching valid source URLs and checked-at dates onto the review row whenever supplemental facts survive. Preserve source URLs, checked-at dates, free-form or unknown sibling facts, explicit evidence denials, and valid falsey values such as `false` spouse, `false` cover, `0` dependants, and supplied `0` premium, rebate, or cover-day amounts. Supplied zero or unsupported benefit and tax claim codes stay visible but remain Evidence or `Accountant review`; preservation does not make a code valid.",
+                "Missing or unknown statements, missing statement-line fields, no-cover or partial-year cover, malformed amounts or dates, unsupported benefit or tax claim codes, Medicare levy exemption or reduction ambiguity, Medicare levy surcharge uncertainty, and spouse or dependant uncertainty stay Evidence or `Accountant review`. Recursively exclude blank or no-op note and metadata containers before alias merge or rendering so they cannot create rows, shadow concrete aliases, or appear as supplemental facts; preserve every real sibling in a mixed container. Normalize explicit dependant collection or count denials to integer 0 before collection filtering, and keep denial-plus-positive count or item conflicts visible. Treat temporal, partial, mixed, or qualified-negative cover wording as review input before categorical no-cover classification. Carry matching valid source URLs and checked-at dates onto the review row whenever supplemental facts survive. Preserve source URLs, checked-at dates, free-form or unknown sibling facts, explicit evidence denials, and valid falsey values such as `false` spouse, `false` cover, `0` dependants, and supplied `0` premium, rebate, or cover-day amounts. Supplied zero or unsupported benefit and tax claim codes stay visible but remain Evidence or `Accountant review`; preservation does not make a code valid.",
                 "",
                 "Completed statement, Medicare levy, surcharge, spouse, and dependant rows stay `Accountant review`. Do not calculate the Medicare levy, Medicare levy surcharge, private health rebate, tax claim code, or final entitlement. Do not fill an official ATO form, lodge, or call the output final or copy-ready.",
                 "",

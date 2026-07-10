@@ -1091,29 +1091,36 @@ def has_public_disclaimers(text: str) -> bool:
 def review_feedback_guardrail_gaps(root: str) -> List[str]:
     required = {
         "AGENTS.md": [
+            "For ordinary engineering work",
+            "data crossed workflow boundaries",
+            "influence automated checks",
             "spawn or reuse a focused explorer",
             "source URL lists",
             "checked-at provenance",
-            "docs/skills/AGENTS guardrails",
+            "documentation and instruction validation rules",
         ],
         "docs/DEVELOPMENT.md": [
+            "Engineering terminology",
+            "data crossed workflow boundaries",
+            "genuine security terms",
+            "influence automated checks",
             "Use a focused explorer/subagent",
             "file-backed data",
             "falsey output bugs",
         ],
         ".github/pull_request_template.md": [
-            "same-class scan completed before requesting review",
-            "docs/skills/AGENTS guardrails updated",
+            "same-pattern scan completed before requesting independent review",
+            "documentation and instruction validation rules updated",
         ],
         "skills/taxmate-australia/SKILL.md": [
-            "docs/skills/AGENTS guardrails",
+            "documentation and instruction validation rules",
             "top-level metadata",
             "source URL lists",
             "checked-at provenance",
         ],
         "skills/taxmate-australia/references/rules.md": [
             "file-backed data",
-            "docs/skills/AGENTS guardrails",
+            "documentation and instruction validation rules",
         ],
         "skills/taxpack/SKILL.md": [
             "file-backed guide data",
@@ -1129,7 +1136,7 @@ def review_feedback_guardrail_gaps(root: str) -> List[str]:
         ],
         "skills/taxpack/references/topic-inputs.md": [
             "file-backed data",
-            "docs/skills/AGENTS guardrails",
+            "documentation and instruction validation rules",
             "list fields",
             "direct constructors",
         ],
@@ -1143,7 +1150,7 @@ def review_feedback_guardrail_gaps(root: str) -> List[str]:
         ],
         "skills/workbook/references/topic-inputs.md": [
             "file-backed data",
-            "docs/skills/AGENTS guardrails",
+            "documentation and instruction validation rules",
             "list fields",
             "direct constructors",
         ],

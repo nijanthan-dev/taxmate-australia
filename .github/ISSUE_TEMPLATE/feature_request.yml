@@ -21,7 +21,7 @@ body:
         - Calculator
         - Source registry or coverage
         - Plugin packaging
-        - CI or repo guardrail
+        - CI or repo validation check
         - Documentation
     validations:
       required: true

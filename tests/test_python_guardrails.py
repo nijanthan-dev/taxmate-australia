@@ -616,7 +616,7 @@ class ReviewGuardrailTests(unittest.TestCase):
         cases = (
             (
                 taxmate_review_guardrails.PRIVATE_HEALTH_MEDICARE_NOOP_DOC_PHRASE,
-                "Suppress blank containers before rendering",
+                "Exclude empty containers before rendering",
                 "recursive no-op",
             ),
             (
@@ -12648,6 +12648,9 @@ class ValidatorAndCliTests(unittest.TestCase):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
         self.assertTrue(taxmate_validate.individual_return_prep_docs_ready(str(ROOT), readme))
+
+    def test_review_feedback_terminology_contract_is_validated(self) -> None:
+        self.assertEqual(taxmate_validate.review_feedback_guardrail_gaps(str(ROOT)), [])
 
     def test_codex_plugin_mcp_files_are_validated(self) -> None:
         self.assertTrue(taxmate_validate.codex_plugin_mcp_files_ready(str(ROOT)))

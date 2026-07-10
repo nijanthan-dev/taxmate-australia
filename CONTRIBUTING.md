@@ -8,9 +8,9 @@ Do not present TaxMate Australia output as tax, legal, accounting, financial, BA
 
 1. Open an issue first for user-visible tax behaviour, source changes, generated skills, CI, packaging, release, or security-sensitive work.
 2. Use synthetic records only. Do not attach real tax records, TFNs, Medicare numbers, bank details, identity documents, or private client files.
-3. Keep the change narrow. Do not mix source refresh, generated skills, finance logic, calculator logic, docs, and repo plumbing unless one bug requires it.
-4. Add or update tests for changed behaviour and every bug class found while working.
-5. Run the full local PR checklist before requesting review.
+3. Keep the change narrow. Do not combine source refresh, generated skills, finance logic, calculator logic, docs, and repo plumbing unless a single issue requires it.
+4. Add or update tests for changed behaviour and every failure pattern found while working.
+5. Run the full local PR checklist before requesting independent review.
 
 ## Tax Safety Rules
 

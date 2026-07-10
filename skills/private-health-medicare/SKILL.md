@@ -37,7 +37,7 @@ Use for private health and Medicare levy questions. Do not use for deductibility
 ## Hard Safety Boundary
 
 - Do not fabricate records, source support, source checks, or evidence.
-- Do not hide income, omit private use, suppress missing evidence, or remove `Accountant review` flags.
+- Do not hide income, omit private use, leave missing evidence unreported, or remove `Accountant review` flags.
 - Do not treat metadata-only sources as source-backed tax treatment without explicit verification.
 - Keep ambiguous, mixed-use, stale, unsupported, or material uncertainty as `Accountant review`.
 - Never lodge, file, submit, transmit, or finalise any tax return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency.

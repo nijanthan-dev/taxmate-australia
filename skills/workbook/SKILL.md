@@ -69,7 +69,7 @@ Default tabs:
 - Separate primary taxpayer, spouse or partner, joint, and entity records.
 - Preserve gross, GST, GST-exclusive, claim %, claim amount, evidence, source URL, and review status.
 - Put ambiguous rows in `Accountant Review`.
-- Before treating workbook output fixes as review-ready, cover parsed rows, file-backed data, and direct workbook-row paths in tests and validation.
+- Before treating workbook output fixes as ready for independent review, cover parsed rows, file-backed data, and direct workbook-row paths in tests and validation.
 - Do not silently drop rows.
 - Do not mark BAS nil when GST credits or GST collected exist.
 - Use formulas only for transparent totals; keep source rows visible.

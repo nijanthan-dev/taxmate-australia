@@ -196,7 +196,7 @@ PRIVATE_HEALTH_MEDICARE_NOOP_FRAGMENTS = (
     "| set(PRIVATE_HEALTH_WORKFLOW_METADATA_KEYS)",
 )
 PRIVATE_HEALTH_MEDICARE_NOOP_DOC_PHRASE = (
-    "Recursively suppress blank or no-op note and metadata containers before alias merge or rendering"
+    "Recursively exclude blank or no-op note and metadata containers before alias merge or rendering"
 )
 PRIVATE_HEALTH_MEDICARE_PROVENANCE_DOC_PHRASE = (
     "Carry matching valid source URLs and checked-at dates onto the review row whenever supplemental facts survive"
@@ -3856,7 +3856,7 @@ def check_review_guardrail_docs(root: Path) -> List[Finding]:
             [
                 "The script is the canonical pattern inventory",
                 "Do not duplicate PR pattern bullets",
-                "When review exposes an invariant, encode that invariant broadly in guardrails and tests before fixing the narrow line.",
+                "When independent review exposes an invariant, encode that invariant broadly in validation checks and tests before fixing the narrow line.",
             ],
         )
     )
