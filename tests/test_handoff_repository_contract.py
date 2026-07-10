@@ -441,7 +441,7 @@ class RepositoryAstContractTests(unittest.TestCase):
     def test_all_guide_row_calls_supply_literal_row_kind_and_facts(self) -> None:
         tree = ast.parse((SCRIPTS / "taxmate_intake.py").read_text(encoding="utf-8"))
         calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and call_name(node) == "guide_row"]
-        self.assertEqual(67, len(calls))
+        self.assertEqual(70, len(calls))
 
         violations: list[str] = []
         for node in calls:

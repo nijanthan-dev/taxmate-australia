@@ -194,6 +194,12 @@ REVIEWABLE_INVESTMENT_FIELDS = (
     "investment_distribution_items",
     "trust_distribution_items",
 )
+REVIEWABLE_PARTNERSHIP_TRUST_FIELDS = (
+    "partnership_share_items",
+    "partnership_statement_items",
+    "trust_share_items",
+    "trust_beneficiary_statement_items",
+)
 MEDICARE_PRIVATE_HEALTH_BASE_FIELDS = frozenset(
     {
         "spouse_had",
@@ -1302,6 +1308,9 @@ LIMITED_PUBLIC_HOLIDAYS_BY_STATE = {
     "WA": {"2025-09-29"},
 }
 ATO_INDIVIDUAL_SOURCE = "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions"
+ATO_PARTNERSHIP_TRUST_INCOME_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/business-partnership-and-trust-income"
+ATO_COMPENSATION_INCOME_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/compensation-and-insurance-payments"
+ATO_SCHOLARSHIP_PRIZE_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/scholarships-prizes-and-awards"
 ATO_PRIVATE_HEALTH_STATEMENT_SOURCE = "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/your-private-health-insurance-statement"
 ATO_PRIVATE_HEALTH_REBATE_CLAIM_SOURCE = "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/claiming-the-private-health-insurance-rebate"
 ATO_MEDICARE_LEVY_SOURCE = "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy"
@@ -1576,6 +1585,8 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("investment_dividend_items", "Investment income", "Dividend and franking items", "11 Dividends", False),
         QuestionSpec("investment_distribution_items", "Investment income", "Managed fund/ETF/AMIT distributions", "13 Partnerships and trusts", False),
         QuestionSpec("trust_distribution_items", "Investment income", "Trust distribution statements", "13 Partnerships and trusts", False),
+        QuestionSpec("partnership_share_items", "Supplementary income", "Individual partnership share statements", "13 Partnerships and trusts", False),
+        QuestionSpec("trust_share_items", "Supplementary income", "Individual trust beneficiary/share statements", "13 Partnerships and trusts", False),
         QuestionSpec("government_payments", "Income", "Government payments or allowances", "5/6 Government payments", False),
         QuestionSpec("etp_statement", "Complex income", "ETP payment summary or income statement held?", "Employment termination payments", False),
         QuestionSpec("etp_taxable_component", "Complex income", "ETP taxable component", "Employment termination payments", False),
@@ -2172,8 +2183,9 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items.extend(cgt_rows(cgt))
     items.extend(payg_rows(payg, answers))
     items.extend(investment_rows(investment, answers))
+    items.extend(partnership_trust_share_rows(answers))
     items.extend(ess_rows(ess_answers(answers)))
-    items.extend(uncommon_income_rows(answers.get("uncommon_income", [])))
+    items.extend(uncommon_income_rows(answers))
     payload = {
         "income_year": income_year,
         "summary_note": "Individual return, sole-trader ABN, and BAS preparation aid. Follow each reviewed action and verified destination.",
@@ -2274,6 +2286,8 @@ def base_items(
             investment,
             investment_flat_field_key(spec.key),
         ):
+            continue
+        if spec.key in REVIEWABLE_PARTNERSHIP_TRUST_FIELDS and partnership_trust_share_items(answers):
             continue
         if spec.key in REVIEWABLE_CGT_FIELDS and has_cgt:
             continue
@@ -2559,6 +2573,8 @@ def base_item_sources(key: str) -> Any:
         return ATO_OFFSET_SOURCES
     if key in REVIEWABLE_INVESTMENT_FIELDS:
         return INVESTMENT_SOURCES
+    if key in REVIEWABLE_PARTNERSHIP_TRUST_FIELDS:
+        return [ATO_PARTNERSHIP_TRUST_INCOME_SOURCE]
     if key in REVIEWABLE_PAYG_FIELDS:
         return PAYG_SOURCES
     if key in REVIEWABLE_CGT_FIELDS:
@@ -3978,6 +3994,8 @@ def evidence_rows(
     rows.extend(offset_evidence_rows(offset_answers(answers)))
     rows.extend(phone_evidence_rows(phone_answers(answers), answers))
     rows.extend(investment_evidence_rows(investment_answers(answers), answers))
+    rows.extend(partnership_trust_share_evidence_rows(answers))
+    rows.extend(uncommon_income_evidence_rows(answers))
     rows.extend(payg_evidence_rows(payg_answers(answers), answers))
     rows.extend(abn_business_evidence_rows(answers))
     rows.extend(bas_evidence_rows(answers))
@@ -15612,7 +15630,7 @@ def cgt_item_values(raw_items: Any) -> List[Dict[str, Any]]:
             continue
         item = normalize_cgt_item(raw_item)
         if cgt_item_has_facts(item):
-            items.append(item)
+            items.append(dict(item))
     return items
 
 
@@ -19407,27 +19425,819 @@ def has_meaningful_ess_value(value: Any) -> bool:
     return has_meaningful_value(value)
 
 
-def uncommon_income_rows(raw_values: Any) -> List[Dict[str, Any]]:
-    if not isinstance(raw_values, list):
-        return []
+PARTNERSHIP_TRUST_ITEM_ALIASES = {
+    "partnership": (
+        "partnership_share_items",
+        "partnership_statement_items",
+        "partnership_shares",
+    ),
+    "trust": (
+        "trust_share_items",
+        "trust_beneficiary_statement_items",
+        "trust_beneficiary_share_items",
+    ),
+}
+PARTNERSHIP_TRUST_FLAT_FIELDS = {
+    "partnership": {
+        "entity_name": ("partnership_entity_name", "partnership_name", "partnership"),
+        "abn": ("partnership_abn",),
+        "tfn": ("partnership_tfn",),
+        "statement": ("partnership_statement", "partnership_statement_status"),
+        "income": ("partnership_income", "partnership_share_income"),
+        "loss": ("partnership_loss", "partnership_share_loss"),
+        "tax_withheld": ("partnership_tax_withheld",),
+        "credits": ("partnership_credits",),
+        "entity_return_context": ("partnership_entity_return_context",),
+    },
+    "trust": {
+        "entity_name": (
+            "trust_share_entity_name",
+            "trust_beneficiary_entity_name",
+            "trust_name",
+            "trust",
+        ),
+        "abn": ("trust_share_abn", "trust_beneficiary_abn"),
+        "tfn": ("trust_share_tfn", "trust_beneficiary_tfn"),
+        "statement": (
+            "trust_share_statement", "trust_share_statement_status",
+            "trust_beneficiary_statement", "trust_beneficiary_statement_status",
+        ),
+        "income": ("trust_share_income", "trust_beneficiary_income"),
+        "loss": ("trust_share_loss", "trust_beneficiary_loss"),
+        "tax_withheld": ("trust_share_tax_withheld", "trust_beneficiary_tax_withheld"),
+        "credits": ("trust_share_credits", "trust_beneficiary_credits"),
+        "entity_return_context": ("trust_entity_return_context", "trust_beneficiary_entity_return_context"),
+    },
+}
+PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES = {
+    "partnership": {
+        "source_url": ("partnership_source_url", "partnership_share_source_url"),
+        "source_urls": ("partnership_source_urls", "partnership_share_source_urls"),
+        "checked_at": ("partnership_checked_at", "partnership_share_checked_at"),
+        "source_checked_at": ("partnership_source_checked_at", "partnership_share_source_checked_at"),
+        "status": ("partnership_status", "partnership_share_status"),
+        "evidence_status": ("partnership_evidence_status", "partnership_share_evidence_status"),
+        "mixed_components": ("partnership_mixed_components", "partnership_share_mixed_components"),
+    },
+    "trust": {
+        "source_url": ("trust_source_url", "trust_share_source_url", "trust_beneficiary_source_url"),
+        "source_urls": ("trust_source_urls", "trust_share_source_urls", "trust_beneficiary_source_urls"),
+        "checked_at": ("trust_checked_at", "trust_share_checked_at", "trust_beneficiary_checked_at"),
+        "source_checked_at": (
+            "trust_source_checked_at", "trust_share_source_checked_at", "trust_beneficiary_source_checked_at",
+        ),
+        "status": ("trust_status", "trust_share_status", "trust_beneficiary_status"),
+        "evidence_status": (
+            "trust_evidence_status", "trust_share_evidence_status", "trust_beneficiary_evidence_status",
+        ),
+        "mixed_components": (
+            "trust_mixed_components", "trust_share_mixed_components", "trust_beneficiary_mixed_components",
+        ),
+    },
+}
+PARTNERSHIP_TRUST_AMOUNT_FIELDS = (
+    "income",
+    "income_amount",
+    "income_components",
+    "loss",
+    "loss_amount",
+    "loss_components",
+    "tax_withheld",
+    "withholding",
+    "credits",
+)
+PARTNERSHIP_TRUST_ROW_SIGNAL_FIELDS = frozenset(
+    {"statement", "statement_status", "evidence", *PARTNERSHIP_TRUST_AMOUNT_FIELDS}
+)
+
+
+def partnership_trust_share_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
-    for idx, value in enumerate(raw_values, start=1):
-        if not has_meaningful_value(value):
+    counts = {"partnership": 0, "trust": 0}
+    for kind, item in partnership_trust_share_items(answers):
+        counts[kind] += 1
+        evidence_gap = partnership_trust_evidence_gap(item)
+        status = review_first_status(item, evidence_gap)
+        label = "Partnership share statement" if kind == "partnership" else "Trust beneficiary/share statement"
+        answer = partnership_trust_answer(kind, item)
+        sources = [ATO_PARTNERSHIP_TRUST_INCOME_SOURCE, *supplied_source_urls(item)]
+        rows.append(
+            guide_row(
+                f"{'PART' if kind == 'partnership' else 'TRUST'}-SHARE-{counts[kind]}",
+                "13 Partnerships and trusts",
+                f"{label} routing for individual return",
+                answer,
+                "Individual statement facts stay prep-only. Allocation, entitlement, losses, credits, mixed components, and entity-return work require accountant review; full entity returns belong to #42/#43.",
+                status,
+                list(dict.fromkeys(sources)),
+                tab_text=(
+                    f"{label} needs statement and numeric evidence before accountant review."
+                    if evidence_gap and status == "Evidence"
+                    else f"{label} needs accountant review; no allocation or entitlement is decided."
+                ),
+                row_kind="supplementary-income",
+                facts=routing_handoff_facts(f"{kind}-share", f"{label} fact", item),
+                checked_at=supplied_checked_at(item),
+            )
+        )
+    return rows
+
+
+def partnership_trust_share_items(answers: Dict[str, Any]) -> List[tuple[str, Dict[str, Any]]]:
+    records: List[tuple[str, Dict[str, Any]]] = []
+    containers = [answers]
+    for key in ("individual_income", "supplementary_income"):
+        nested = answers.get(key)
+        if isinstance(nested, dict):
+            containers.append(nested)
+    for kind, aliases in PARTNERSHIP_TRUST_ITEM_ALIASES.items():
+        for container in containers:
+            container_items: List[Dict[str, Any]] = []
+            empty_dict_alias = ""
+            for alias in aliases:
+                if alias not in container:
+                    continue
+                value = container.get(alias)
+                if has_meaningful_value(value):
+                    container_items.extend(structured_income_items(value, alias))
+                elif isinstance(value, dict) and not value and not empty_dict_alias:
+                    empty_dict_alias = alias
+            if not container_items and empty_dict_alias:
+                container_items.extend(structured_income_items({}, empty_dict_alias))
+            container_items = [normalize_partnership_trust_structured_item(kind, item) for item in container_items]
+            flat_item = partnership_trust_flat_item(container, kind)
+            flat_substantive = partnership_trust_flat_has_substantive_facts(flat_item)
+            if flat_item and flat_substantive:
+                container_items = [item for item in container_items if item.get("_empty_placeholder") is not True]
+            if container_items and flat_item:
+                if len(container_items) == 1:
+                    merged = merge_partnership_trust_complements(kind, container_items[0], flat_item)
+                    if merged is not None:
+                        container_items = [merged]
+                        flat_item = {}
+                elif flat_substantive:
+                    flat_item.setdefault("alias_conflicts", {})["structured_row_assignment"] = [
+                        "Flat identity cannot be assigned across multiple statement rows"
+                    ]
+                    container_items.append(flat_item)
+                    flat_item = {}
+            records.extend((kind, item) for item in container_items)
+            if flat_item and partnership_trust_flat_has_substantive_facts(flat_item):
+                records.append((kind, flat_item))
+            elif flat_item:
+                records.append((kind, {**flat_item, "_metadata_only": True}))
+    return coalesce_partnership_trust_records(records)
+
+
+def coalesce_partnership_trust_records(
+    records: List[tuple[str, Dict[str, Any]]],
+) -> List[tuple[str, Dict[str, Any]]]:
+    coalesced: List[tuple[str, Dict[str, Any]]] = []
+    for kind, item in records:
+        compatible: List[tuple[int, Dict[str, Any]]] = []
+        for index, (existing_kind, existing) in enumerate(coalesced):
+            if existing_kind != kind:
+                continue
+            merged = merge_partnership_trust_complements(kind, existing, item)
+            if merged is not None:
+                compatible.append((index, merged))
+        if len(compatible) == 1:
+            index, merged = compatible[0]
+            coalesced[index] = (kind, merged)
+        elif item.get("_metadata_only") is not True:
+            coalesced.append((kind, item))
+    return [
+        (kind, {key: value for key, value in item.items() if key != "_metadata_only"})
+        for kind, item in coalesced
+    ]
+
+
+PARTNERSHIP_TRUST_MERGE_GROUPS = {
+    "entity_name": ("entity_name", "partnership", "trust", "name"),
+    "abn": ("abn",),
+    "tfn": ("tfn",),
+    "statement": ("statement", "statement_status", "evidence"),
+    "income": ("income", "income_amount"),
+    "loss": ("loss", "loss_amount"),
+    "tax_withheld": ("tax_withheld", "withholding"),
+    "credits": ("credits",),
+    "entity_return_context": ("entity_return_context",),
+    "mixed_components": ("mixed_components",),
+}
+
+
+def merge_partnership_trust_complements(
+    kind: str,
+    structured: Dict[str, Any],
+    flat: Dict[str, Any],
+) -> Optional[Dict[str, Any]]:
+    if structured.get("_malformed") is True:
+        return None
+    identity_groups = ("entity_name", "abn", "tfn")
+    if not any(
+        has_meaningful_value(first_meaningful_present(item, PARTNERSHIP_TRUST_MERGE_GROUPS[group]))
+        for item in (structured, flat)
+        for group in identity_groups
+    ):
+        return None
+    for group in identity_groups:
+        left = first_meaningful_present(structured, PARTNERSHIP_TRUST_MERGE_GROUPS[group])
+        right = first_meaningful_present(flat, PARTNERSHIP_TRUST_MERGE_GROUPS[group])
+        if has_meaningful_value(left) and has_meaningful_value(right) and not income_alias_values_equivalent(left, right):
+            return None
+    if partnership_trust_item_complete(kind, structured) and partnership_trust_item_complete(kind, flat):
+        return None
+
+    merged = dict(structured)
+    conflicts: Dict[str, Any] = {}
+    for item in (structured, flat):
+        existing = item.get("alias_conflicts")
+        if isinstance(existing, dict):
+            conflicts.update(existing)
+    handled = {alias for aliases in PARTNERSHIP_TRUST_MERGE_GROUPS.values() for alias in aliases}
+    for canonical, aliases in PARTNERSHIP_TRUST_MERGE_GROUPS.items():
+        left = first_meaningful_present(structured, aliases)
+        right = first_meaningful_present(flat, aliases)
+        if not has_meaningful_value(left) and has_meaningful_value(right):
+            merged[canonical] = right
+        elif has_meaningful_value(left) and has_meaningful_value(right) and not income_alias_values_equivalent(left, right):
+            conflicts[f"structured_flat_{canonical}"] = [left, right]
+
+    merged_sources, invalid_sources = source_provenance_values(
+        [
+            structured.get("source_url"), structured.get("source_urls"),
+            flat.get("source_url"), flat.get("source_urls"),
+        ]
+    )
+    if merged_sources:
+        merged["source_urls"] = merged_sources
+    if invalid_sources:
+        merged["unresolved_source_provenance"] = list(dict.fromkeys(map(display_value, invalid_sources)))
+    checked_values, invalid_checked = checked_at_provenance_values(
+        [
+            structured.get("checked_at"), structured.get("source_checked_at"),
+            flat.get("checked_at"), flat.get("source_checked_at"),
+        ]
+    )
+    if checked_values:
+        merged["checked_at"] = checked_values[0]
+        if len(set(checked_values)) > 1:
+            conflicts["structured_flat_checked_at"] = checked_values
+    if invalid_checked:
+        merged["unresolved_checked_at_provenance"] = list(dict.fromkeys(map(display_value, invalid_checked)))
+    status_values = [item.get("status") for item in (structured, flat) if has_meaningful_value(item.get("status"))]
+    if status_values:
+        merged["status"] = canonical_review_status(status_values)
+    for key, value in flat.items():
+        if key in handled or key in {
+            "_metadata_only", "alias_conflicts", "source_url", "source_urls",
+            "checked_at", "source_checked_at", "status",
+        }:
             continue
+        if not has_meaningful_value(merged.get(key)):
+            merged[key] = value
+        elif has_meaningful_value(value) and not income_alias_values_equivalent(merged.get(key), value):
+            conflicts[f"structured_flat_{key}"] = [merged.get(key), value]
+    if conflicts:
+        merged["alias_conflicts"] = conflicts
+    return merged
+
+
+def partnership_trust_item_complete(kind: str, item: Dict[str, Any]) -> bool:
+    identity = first_meaningful_present(item, ("entity_name", kind, "name", "abn", "tfn"))
+    statement = first_meaningful_present(item, ("statement", "statement_status", "evidence"))
+    amounts = [item.get(field) for field in PARTNERSHIP_TRUST_AMOUNT_FIELDS if has_meaningful_value(item.get(field))]
+    return has_meaningful_value(identity) and has_meaningful_value(statement) and bool(amounts)
+
+
+def partnership_trust_flat_item(answers: Dict[str, Any], kind: str) -> Dict[str, Any]:
+    item: Dict[str, Any] = {}
+    conflicts: Dict[str, Any] = {}
+    for field, aliases in PARTNERSHIP_TRUST_FLAT_FIELDS[kind].items():
+        values = scalar_alias_values(answers, aliases)
+        if not values:
+            continue
+        item[field] = values[0]
+        if any(not income_alias_values_equivalent(value, values[0]) for value in values[1:]):
+            conflicts[field] = values
+    metadata = PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES[kind]
+    source_values = [
+        answers.get(alias)
+        for field in ("source_url", "source_urls")
+        for alias in metadata[field]
+        if has_meaningful_value(answers.get(alias))
+    ]
+    valid_urls, invalid_urls = source_provenance_values(source_values)
+    if valid_urls:
+        item["source_urls"] = valid_urls
+    if invalid_urls:
+        item["unresolved_source_provenance"] = invalid_urls
+    checked_values = [
+        answers.get(alias)
+        for field in ("checked_at", "source_checked_at")
+        for alias in metadata[field]
+        if has_meaningful_value(answers.get(alias))
+    ]
+    valid_checked, invalid_checked = checked_at_provenance_values(checked_values)
+    if valid_checked:
+        item["checked_at"] = valid_checked[0]
+        if len(valid_checked) > 1:
+            conflicts["checked_at"] = valid_checked
+    if invalid_checked:
+        item["unresolved_checked_at_provenance"] = invalid_checked
+    status_values = [
+        answers.get(alias)
+        for field in ("status", "evidence_status")
+        for alias in metadata[field]
+        if has_meaningful_value(answers.get(alias))
+    ]
+    if status_values:
+        item["status"] = canonical_review_status(status_values)
+    mixed_values = meaningful_alias_values(answers, metadata["mixed_components"])
+    if mixed_values:
+        item["mixed_components"] = mixed_values[0]
+        if any(not income_alias_values_equivalent(value, mixed_values[0]) for value in mixed_values[1:]):
+            conflicts["mixed_components"] = mixed_values
+    if conflicts:
+        item["alias_conflicts"] = conflicts
+    return item
+
+
+def partnership_trust_flat_has_statement_facts(item: Dict[str, Any]) -> bool:
+    return any(has_meaningful_value(item.get(field)) for field in PARTNERSHIP_TRUST_ROW_SIGNAL_FIELDS)
+
+
+def partnership_trust_flat_has_substantive_facts(item: Dict[str, Any]) -> bool:
+    return any(
+        has_meaningful_value(item.get(field))
+        for field in (*PARTNERSHIP_TRUST_FLAT_FIELDS["partnership"].keys(), "mixed_components")
+    )
+
+
+def scalar_alias_values(values: Dict[str, Any], aliases: tuple[str, ...]) -> List[Any]:
+    return [
+        values.get(alias)
+        for alias in aliases
+        if has_meaningful_value(values.get(alias)) and not isinstance(values.get(alias), (dict, list))
+    ]
+
+
+def meaningful_alias_values(values: Dict[str, Any], aliases: tuple[str, ...]) -> List[Any]:
+    return [values.get(alias) for alias in aliases if has_meaningful_value(values.get(alias))]
+
+
+def income_alias_values_equivalent(left: Any, right: Any) -> bool:
+    if isinstance(left, bool) or isinstance(right, bool):
+        return isinstance(left, bool) and isinstance(right, bool) and left == right
+    return left == right
+
+
+def first_meaningful_present(values: Dict[str, Any], aliases: tuple[str, ...]) -> Any:
+    for alias in aliases:
+        value = values.get(alias)
+        if has_meaningful_value(value):
+            return value
+    return None
+
+
+def structured_income_items(value: Any, alias: str) -> List[Dict[str, Any]]:
+    if isinstance(value, dict):
+        value = [value] if value else [
+            {"unparsed_input": f"Empty {alias} item", "_malformed": True, "_empty_placeholder": True}
+        ]
+    if not isinstance(value, list):
+        if is_missing(value):
+            return []
+        return [{"unparsed_input": value, "_malformed": True}]
+    items: List[Dict[str, Any]] = []
+    for item in value:
+        if isinstance(item, dict) and has_meaningful_value(item):
+            items.append(dict(item))
+        elif isinstance(item, dict):
+            items.append(
+                {"unparsed_input": f"Empty {alias} item", "_malformed": True, "_empty_placeholder": True}
+            )
+        elif not is_missing(item):
+            items.append({"unparsed_input": item, "_malformed": True})
+    return items
+
+
+def normalize_partnership_trust_structured_item(kind: str, item: Dict[str, Any]) -> Dict[str, Any]:
+    if item.get("_malformed") is True:
+        return dict(item)
+    normalized = dict(item)
+    conflicts = dict(item.get("alias_conflicts")) if isinstance(item.get("alias_conflicts"), dict) else {}
+    groups = {
+        "entity_name": ("entity_name", kind, "name", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["entity_name"]),
+        "abn": ("abn", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["abn"]),
+        "tfn": ("tfn", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["tfn"]),
+        "statement": ("statement", "statement_status", "evidence", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["statement"]),
+        "income": ("income", "income_amount", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["income"]),
+        "loss": ("loss", "loss_amount", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["loss"]),
+        "tax_withheld": ("tax_withheld", "withholding", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["tax_withheld"]),
+        "credits": ("credits", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["credits"]),
+        "entity_return_context": (
+            "entity_return_context", *PARTNERSHIP_TRUST_FLAT_FIELDS[kind]["entity_return_context"],
+        ),
+    }
+    for canonical, aliases in groups.items():
+        values = [item.get(alias) for alias in dict.fromkeys(aliases) if has_meaningful_value(item.get(alias))]
+        if not values:
+            continue
+        normalized[canonical] = values[0]
+        if any(not income_alias_values_equivalent(value, values[0]) for value in values[1:]):
+            conflicts[f"structured_{canonical}"] = values
+
+    metadata = PARTNERSHIP_TRUST_FLAT_METADATA_ALIASES[kind]
+    source_values = [
+        item.get(alias)
+        for field in ("source_url", "source_urls")
+        for alias in (field, *metadata[field])
+        if alias in item and not is_missing(item.get(alias))
+    ]
+    valid_urls, invalid_urls = source_provenance_values(source_values)
+    if valid_urls:
+        normalized["source_urls"] = valid_urls
+    if invalid_urls:
+        normalized["unresolved_source_provenance"] = invalid_urls
+    checked_values = [
+        item.get(alias)
+        for field in ("checked_at", "source_checked_at")
+        for alias in (field, *metadata[field])
+        if alias in item and not is_missing(item.get(alias))
+    ]
+    valid_checked, invalid_checked = checked_at_provenance_values(checked_values)
+    if valid_checked:
+        normalized["checked_at"] = valid_checked[0]
+        if len(valid_checked) > 1:
+            conflicts["structured_checked_at"] = valid_checked
+    if invalid_checked:
+        normalized["unresolved_checked_at_provenance"] = invalid_checked
+    status_values = [
+        item.get(alias)
+        for field in ("status", "evidence_status")
+        for alias in (field, *metadata[field])
+        if has_meaningful_value(item.get(alias))
+    ]
+    if status_values:
+        normalized["status"] = canonical_review_status(status_values)
+    mixed_values = [
+        item.get(alias)
+        for alias in ("mixed_components", *metadata["mixed_components"])
+        if has_meaningful_value(item.get(alias))
+    ]
+    if mixed_values:
+        normalized["mixed_components"] = mixed_values[0]
+        if any(not income_alias_values_equivalent(value, mixed_values[0]) for value in mixed_values[1:]):
+            conflicts["structured_mixed_components"] = mixed_values
+    if conflicts:
+        normalized["alias_conflicts"] = conflicts
+    return normalized
+
+
+def partnership_trust_evidence_gap(item: Dict[str, Any]) -> bool:
+    statement = first_meaningful_present(item, ("statement", "statement_status", "evidence"))
+    amount_values = [item.get(field) for field in PARTNERSHIP_TRUST_AMOUNT_FIELDS if field in item]
+    return (
+        item.get("_malformed") is True
+        or has_routing_conflict(item)
+        or provenance_has_errors(item)
+        or is_missing(first_meaningful_present(item, ("entity_name", "partnership", "trust", "name")))
+        or investment_statement_missing(statement)
+        or not amount_values
+        or any(income_amount_needs_evidence(value) for value in amount_values)
+    )
+
+
+def income_amount_needs_evidence(value: Any) -> bool:
+    if isinstance(value, dict):
+        return not value or any(income_amount_needs_evidence(item) for item in value.values())
+    if isinstance(value, list):
+        return not value or any(income_amount_needs_evidence(item) for item in value)
+    return (
+        isinstance(value, bool)
+        or is_missing(value)
+        or contains_unknown(value)
+        or investment_amount_malformed(value)
+    )
+
+
+def partnership_trust_answer(kind: str, item: Dict[str, Any]) -> str:
+    entity = first_meaningful_present(item, ("entity_name", kind, "name"))
+    parts = [f"entity {display_value(entity)}"] if not is_missing(entity) else []
+    labels = (
+        ("abn", "ABN"),
+        ("tfn", "TFN"),
+        ("statement", "statement"),
+        ("statement_status", "statement status"),
+        ("income", "income"),
+        ("income_amount", "income"),
+        ("income_components", "income components"),
+        ("loss", "loss"),
+        ("loss_amount", "loss"),
+        ("loss_components", "loss components"),
+        ("tax_withheld", "tax withheld"),
+        ("withholding", "tax withheld"),
+        ("credits", "credits"),
+        ("entity_return_context", "entity return context"),
+        ("mixed_components", "mixed components"),
+        ("evidence_status", "evidence status"),
+        ("unparsed_input", "unparsed input"),
+        ("alias_conflicts", "alias conflicts"),
+        ("unresolved_source_provenance", "unresolved source provenance"),
+        ("unresolved_checked_at_provenance", "unresolved checked-at provenance"),
+    )
+    used: set[str] = set()
+    for key, label in labels:
+        if label in used or key not in item or not has_meaningful_value(item.get(key)):
+            continue
+        used.add(label)
+        value = item.get(key)
+        amount = None
+        if key in PARTNERSHIP_TRUST_AMOUNT_FIELDS and not isinstance(value, (dict, list)):
+            amount = investment_money_value(value)
+        rendered = money_text(amount) if amount is not None else display_value(value)
+        parts.append(f"{label} {rendered}")
+    return "; ".join(parts) or f"{kind} statement details not supplied"
+
+
+def partnership_trust_share_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for kind, item in partnership_trust_share_items(answers):
+        if not partnership_trust_evidence_gap(item) or explicit_accountant_review(item):
+            continue
+        rows.append(
+            guide_row(
+                f"PT-EVID-{len(rows) + 1}",
+                "13 Partnerships and trusts",
+                "Partnership/trust statement evidence required",
+                partnership_trust_answer(kind, item),
+                "Statement and numeric component evidence must be resolved before accountant review.",
+                "Evidence",
+                list(dict.fromkeys([ATO_PARTNERSHIP_TRUST_INCOME_SOURCE, *supplied_source_urls(item)])),
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("statement-evidence", "Statement evidence needed", partnership_trust_answer(kind, item)),
+                ),
+                checked_at=supplied_checked_at(item),
+            )
+        )
+    return rows
+
+
+def supplied_source_urls(item: Dict[str, Any]) -> List[str]:
+    valid, _invalid = source_provenance_values([item.get("source_urls"), item.get("source_url")])
+    return valid
+
+
+def supplied_checked_at(item: Dict[str, Any]) -> Optional[str]:
+    valid, _invalid = checked_at_provenance_values([item.get("checked_at"), item.get("source_checked_at")])
+    return valid[0] if valid else None
+
+
+def source_provenance_values(values: Any) -> tuple[List[str], List[str]]:
+    valid: List[str] = []
+    invalid: List[str] = []
+
+    def collect(value: Any) -> None:
+        if is_missing(value):
+            return
+        if isinstance(value, list):
+            for entry in value:
+                collect(entry)
+            return
+        if isinstance(value, str) and re.match(r"^https?://[^\s]+$", value.strip()):
+            valid.append(value.strip())
+            return
+        invalid.append(display_value(value))
+
+    collect(values)
+    return list(dict.fromkeys(valid)), list(dict.fromkeys(invalid))
+
+
+def checked_at_provenance_values(values: Any) -> tuple[List[str], List[str]]:
+    valid: List[str] = []
+    invalid: List[str] = []
+
+    def collect(value: Any) -> None:
+        if is_missing(value):
+            return
+        if isinstance(value, list):
+            for entry in value:
+                collect(entry)
+            return
+        if isinstance(value, str):
+            candidate = value.strip()
+            try:
+                datetime.fromisoformat(candidate.replace("Z", "+00:00"))
+                valid.append(candidate)
+                return
+            except ValueError:
+                pass
+        invalid.append(display_value(value))
+
+    collect(values)
+    return list(dict.fromkeys(valid)), list(dict.fromkeys(invalid))
+
+
+def provenance_has_errors(item: Dict[str, Any]) -> bool:
+    _urls, invalid_urls = source_provenance_values([item.get("source_urls"), item.get("source_url")])
+    checked, invalid_checked = checked_at_provenance_values([item.get("checked_at"), item.get("source_checked_at")])
+    return bool(
+        invalid_urls
+        or invalid_checked
+        or has_meaningful_value(item.get("unresolved_source_provenance"))
+        or has_meaningful_value(item.get("unresolved_checked_at_provenance"))
+        or len(checked) > 1
+    )
+
+
+def has_routing_conflict(item: Dict[str, Any]) -> bool:
+    return has_meaningful_value(item.get("alias_conflicts"))
+
+
+def canonical_review_status(values: List[Any]) -> str:
+    kind = taxmate_handoff.effective_status_kind(*values)
+    if kind == "review":
+        return "Accountant review"
+    if kind == "evidence":
+        return "Evidence"
+    return display_value(values[0])
+
+
+def routing_handoff_facts(key_prefix: str, label_prefix: str, item: Dict[str, Any]) -> List[Dict[str, Any]]:
+    metadata = {"source_url", "source_urls", "checked_at", "source_checked_at", "status", "status_kind", "tab_kind"}
+    facts = atomic_handoff_facts(
+        key_prefix,
+        label_prefix,
+        {key: value for key, value in item.items() if key not in metadata},
+    )
+    _urls, invalid_urls = source_provenance_values([item.get("source_urls"), item.get("source_url")])
+    _checked, invalid_checked = checked_at_provenance_values([item.get("checked_at"), item.get("source_checked_at")])
+    if invalid_urls:
+        facts.extend(atomic_handoff_facts(f"{key_prefix}-source", f"{label_prefix} unresolved source", invalid_urls))
+    if invalid_checked:
+        facts.extend(atomic_handoff_facts(f"{key_prefix}-checked-at", f"{label_prefix} unresolved checked at", invalid_checked))
+    if not facts:
+        return handoff_facts((key_prefix, label_prefix, "Evidence details not supplied"))
+    return facts
+
+
+def explicit_accountant_review(item: Dict[str, Any]) -> bool:
+    status_keys = ("status_kind", "status", "tab_kind", "evidence_status")
+    if not any(not is_missing(item.get(key)) for key in status_keys):
+        return False
+    return taxmate_handoff.effective_status_kind(
+        item.get("status_kind"),
+        item.get("status"),
+        item.get("tab_kind"),
+        item.get("evidence_status"),
+    ) == "review"
+
+
+def review_first_status(item: Dict[str, Any], evidence_gap: bool) -> str:
+    if explicit_accountant_review(item):
+        return "Accountant review"
+    return "Evidence" if evidence_gap else "Accountant review"
+
+
+UNCOMMON_INCOME_ALIASES = ("uncommon_income", "uncommon_income_items", "other_income_items")
+UNCOMMON_INCOME_DESCRIPTION_FIELDS = ("category", "type", "income_type", "label", "details", "notes")
+
+
+def uncommon_income_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    items: List[Dict[str, Any]] = []
+    containers = [answers]
+    for key in ("individual_income", "supplementary_income"):
+        nested = answers.get(key)
+        if isinstance(nested, dict):
+            containers.append(nested)
+    for container in containers:
+        container_items: List[Dict[str, Any]] = []
+        empty_dict_alias = ""
+        for alias in UNCOMMON_INCOME_ALIASES:
+            if alias not in container:
+                continue
+            value = container.get(alias)
+            if has_meaningful_value(value):
+                container_items.extend(structured_uncommon_income_items(value, alias))
+            elif isinstance(value, dict) and not value and not empty_dict_alias:
+                empty_dict_alias = alias
+        if not container_items and empty_dict_alias:
+            container_items.extend(structured_uncommon_income_items({}, empty_dict_alias))
+        items.extend(container_items)
+    return items
+
+
+def structured_uncommon_income_items(value: Any, alias: str) -> List[Dict[str, Any]]:
+    values = value if isinstance(value, list) else [value]
+    items: List[Dict[str, Any]] = []
+    for item in values:
+        if isinstance(item, dict) and has_meaningful_value(item):
+            items.append(item)
+        elif isinstance(item, dict):
+            items.append({"details": f"Empty {alias} item", "_malformed": True})
+        elif not is_missing(item):
+            items.append({"details": item, "_malformed": not isinstance(item, str)})
+    return items
+
+
+def uncommon_income_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for item in uncommon_income_items(answers):
+        route, question, sources = uncommon_income_route(item)
+        evidence_gap = uncommon_income_evidence_gap(item)
+        status = review_first_status(item, evidence_gap)
+        idx = len(rows) + 1
         rows.append(
             guide_row(
                 f"UNC-{idx}",
                 "Supplementary / uncommon income",
-                "Uncommon income trigger",
-                display_value(value),
-                "V1 detects this area and routes it to source-backed accountant review instead of full handling.",
-                "Accountant review",
-                ATO_INDIVIDUAL_SOURCE,
-                tab_text="Uncommon income needs later workflow or accountant review.",
-                row_kind="extended-section",
-                facts=handoff_facts(
-                    ("uncommon-income", "Uncommon income supplied", value),
+                question,
+                uncommon_income_answer(item),
+                f"{route} facts stay prep-only. TaxMate preserves the supplied facts and does not decide final treatment or destination.",
+                status,
+                list(dict.fromkeys([*sources, *supplied_source_urls(item)])),
+                tab_text=(
+                    "Uncommon income needs category, amount, or statement evidence before accountant review."
+                    if evidence_gap and status == "Evidence"
+                    else "Uncommon income needs accountant review before entry."
                 ),
+                row_kind="supplementary-income",
+                facts=routing_handoff_facts("uncommon-income", "Uncommon income fact", item),
+                checked_at=supplied_checked_at(item),
+            )
+        )
+    return rows
+
+
+def uncommon_income_route(item: Dict[str, Any]) -> tuple[str, str, List[str]]:
+    descriptions = " ".join(
+        text(item.get(field)).lower()
+        for field in UNCOMMON_INCOME_DESCRIPTION_FIELDS
+        if not is_missing(item.get(field))
+    )
+    insurance = re.search(r"\binsurance\b", descriptions) is not None and (
+        re.search(r"\b(payment|payout|settlement|proceeds|claim|benefit)s?\b", descriptions) is not None
+        or "general insurance" in descriptions
+    )
+    compensation = "compensation" in descriptions or insurance
+    scholarship = any(term in descriptions for term in ("scholarship", "prize", "award"))
+    if compensation and not scholarship:
+        return "Compensation or insurance payment", "Compensation or insurance payment review", [ATO_COMPENSATION_INCOME_SOURCE]
+    if scholarship and not compensation:
+        return "Scholarship, prize or award", "Scholarship, prize or award review", [ATO_SCHOLARSHIP_PRIZE_SOURCE]
+    return "Unsupported or residual uncommon income", "Uncommon income review", [ATO_INDIVIDUAL_SOURCE]
+
+
+def uncommon_income_answer(item: Dict[str, Any]) -> str:
+    parts: List[str] = []
+    for key, value in item.items():
+        metadata_keys = {"source_url", "source_urls", "checked_at", "source_checked_at"}
+        if key.startswith("_") or key in metadata_keys or is_missing(value):
+            continue
+        amount = investment_money_value(value) if key in {"amount", "gross", "tax_withheld", "credits"} else None
+        rendered = money_text(amount) if amount is not None else display_value(value)
+        parts.append(f"{handoff_label_part(key).lower()} {rendered}")
+    return "; ".join(parts) or "Uncommon income details not supplied"
+
+
+def uncommon_income_evidence_gap(item: Dict[str, Any]) -> bool:
+    descriptions = [item.get(field) for field in UNCOMMON_INCOME_DESCRIPTION_FIELDS if not is_missing(item.get(field))]
+    if (
+        item.get("_malformed") is True
+        or has_routing_conflict(item)
+        or provenance_has_errors(item)
+        or not descriptions
+        or any(contains_unknown(value) for value in descriptions)
+    ):
+        return True
+    amount_values = [item.get(key) for key in ("amount", "gross") if key in item]
+    if not amount_values or any(income_amount_needs_evidence(value) for value in amount_values):
+        return True
+    statement = first_meaningful_present(item, ("statement", "evidence", "records"))
+    return investment_statement_missing(statement)
+
+
+def uncommon_income_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for item in uncommon_income_items(answers):
+        if not uncommon_income_evidence_gap(item) or explicit_accountant_review(item):
+            continue
+        rows.append(
+            guide_row(
+                f"UNC-EVID-{len(rows) + 1}",
+                "Supplementary / uncommon income",
+                "Uncommon income evidence required",
+                uncommon_income_answer(item),
+                "Category, amount, or statement evidence must be resolved before accountant review.",
+                "Evidence",
+                list(dict.fromkeys([*uncommon_income_route(item)[2], *supplied_source_urls(item)])),
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("uncommon-income-evidence", "Uncommon income evidence needed", uncommon_income_answer(item)),
+                ),
+                checked_at=supplied_checked_at(item),
             )
         )
     return rows
