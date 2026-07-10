@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "taxmate-australia",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "description": "TaxMate Australia provides Australian individual tax return prep skills, a Node.js MCP launcher, and a bash/Python runtime for prep-only HTML guide, taxpack, source refresh, finance review, and calculator workflows.",
   "author": {
     "name": "TaxMate Australia Maintainers"
