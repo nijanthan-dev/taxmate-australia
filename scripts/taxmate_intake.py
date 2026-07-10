@@ -7696,6 +7696,7 @@ def mls_review_row(
     gaps = mls_review_gaps(effective)
     general_conflict_markers = (
         "hospital cover is true but cover days is 0",
+        "hospital cover days and days not liable exceed",
         "no-cover answer conflicts",
     )
     family_period_conflict_markers = (
@@ -8581,6 +8582,13 @@ def mls_review_gaps(raw: Dict[str, Any]) -> List[str]:
     days_not_liable = normalized_item_field(raw, MLS_FIELD_ALIASES["days_not_liable"])
     if not is_missing(days_not_liable) and private_health_day_count(days_not_liable) is None:
         gaps.append(f"confirm days not liable ({private_health_raw_text(days_not_liable)})")
+    cover_days = private_health_day_count(
+        normalized_item_field(raw, MLS_FIELD_ALIASES["hospital_cover_days"])
+    )
+    not_liable_days = private_health_day_count(days_not_liable)
+    supplied_days = [value for value in (cover_days, not_liable_days) if value is not None]
+    if supplied_days and sum(supplied_days) > private_health_income_year_day_limit(raw):
+        gaps.append("hospital cover days and days not liable exceed the income year")
     evidence = normalized_item_field(raw, MLS_FIELD_ALIASES["evidence"])
     if (
         (not is_missing(review_raw) and review is None)

@@ -925,11 +925,31 @@ class MedicareAndSpouseDestinationGateTests(unittest.TestCase):
             "days_not_liable": 365,
             "evidence": "MLS review facts held",
         }
-        self.assertFalse(
+        self.assertTrue(
             any(
                 "hospital cover days and days not liable exceed" in gap
                 for gap in taxmate_intake.mls_review_gaps(overlapping_periods)
             )
+        )
+        overflow_payload = taxmate_intake.answers_to_pack_payload(
+            required_answers(
+                private_health_medicare={
+                    "mls": {
+                        key: value
+                        for key, value in overlapping_periods.items()
+                        if not key.startswith("_")
+                    }
+                }
+            )
+        )
+        overflow_row = row(overflow_payload, "MLS-REVIEW")
+        self.assertIn(
+            "hospital cover days and days not liable exceed",
+            overflow_row["tab_text"],
+        )
+        self.assertEqual(
+            "requires-review",
+            destination(facts_by_key(overflow_row)["days-not-liable"])["kind"],
         )
 
     def test_visible_mapped_value_must_match_destination_context(self) -> None:
