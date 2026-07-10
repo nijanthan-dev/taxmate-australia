@@ -1,0 +1,282 @@
+{
+  "schema_version": 2,
+  "income_year": "2025-26",
+  "destinations": {
+    "phi-tax-claim-code": {
+      "label": "Private health insurance statement line - Tax claim code",
+      "context": {
+        "key": "tax_claim_code",
+        "channels": {
+          "mytax": {
+            "A": "verified",
+            "B": "verified",
+            "C": "verified",
+            "D": "read-only",
+            "E": "verified",
+            "F": "verified",
+            "default": "requires-review"
+          },
+          "paper": {
+            "A": "verified",
+            "B": "verified",
+            "C": "verified",
+            "D": "verified",
+            "E": "verified",
+            "F": "verified",
+            "default": "requires-review"
+          }
+        }
+      },
+      "mytax": {
+        "kind": "verified",
+        "location": "Prepare return > Medicare and private health insurance > Private health insurance > Statement line panel > Tax claim code",
+        "state_locations": {
+          "read-only": "Read-only spouse-share statement line created by myTax with tax claim code D",
+          "requires-review": "Tax claim code destination requires review"
+        },
+        "source_id": "ato-f99c3a4ad079",
+        "content_hash": "da3592fbaa5668af33905a526362d13a976695834084d0d0f8b7bbc405e4d1d1"
+      },
+      "paper": {
+        "kind": "verified",
+        "location": "Private health insurance policy details > Tax claim code box",
+        "state_locations": {
+          "requires-review": "Tax claim code destination requires review"
+        },
+        "source_id": "ato-2a2cf8a8c462",
+        "content_hash": "38a3018c329e8c1e168a6b169a35530c730f89f1a199bc834e81488003117cc6"
+      }
+    },
+    "phi-premiums-j": {
+      "label": "Private health insurance statement line - Premiums eligible for rebate",
+      "context": {
+        "key": "tax_claim_code",
+        "channels": {
+          "mytax": {
+            "A": "verified",
+            "B": "verified",
+            "C": "verified",
+            "D": "read-only",
+            "E": "not-entered",
+            "F": "not-entered",
+            "default": "requires-review"
+          },
+          "paper": {
+            "A": "verified",
+            "B": "verified",
+            "C": "verified",
+            "D": "verified",
+            "E": "verified",
+            "F": "not-entered",
+            "default": "requires-review"
+          }
+        }
+      },
+      "mytax": {
+        "kind": "verified",
+        "location": "Prepare return > Medicare and private health insurance > Private health insurance > Your premiums eligible for Australian Government rebate",
+        "state_locations": {
+          "read-only": "Read-only spouse-share statement line created by myTax",
+          "not-entered": "Not entered in myTax for this tax claim code",
+          "requires-review": "Premium destination requires review"
+        },
+        "source_id": "ato-f99c3a4ad079",
+        "content_hash": "da3592fbaa5668af33905a526362d13a976695834084d0d0f8b7bbc405e4d1d1"
+      },
+      "paper": {
+        "kind": "verified",
+        "location": "Private health insurance policy details > label J",
+        "state_locations": {
+          "not-entered": "Not entered at label J for tax claim code F",
+          "requires-review": "Label J destination requires review"
+        },
+        "source_id": "ato-2a2cf8a8c462",
+        "content_hash": "38a3018c329e8c1e168a6b169a35530c730f89f1a199bc834e81488003117cc6"
+      }
+    },
+    "phi-rebate-k": {
+      "label": "Private health insurance statement line - Rebate received",
+      "context": {
+        "key": "tax_claim_code",
+        "channels": {
+          "mytax": {
+            "A": "verified",
+            "B": "verified",
+            "C": "verified",
+            "D": "read-only",
+            "E": "not-entered",
+            "F": "not-entered",
+            "default": "requires-review"
+          },
+          "paper": {
+            "A": "verified",
+            "B": "verified",
+            "C": "verified",
+            "D": "verified",
+            "E": "verified",
+            "F": "not-entered",
+            "default": "requires-review"
+          }
+        }
+      },
+      "mytax": {
+        "kind": "verified",
+        "location": "Prepare return > Medicare and private health insurance > Private health insurance > Your Australian Government rebate received",
+        "state_locations": {
+          "read-only": "Read-only spouse-share statement line created by myTax",
+          "not-entered": "Not entered in myTax for this tax claim code",
+          "requires-review": "Rebate destination requires review"
+        },
+        "source_id": "ato-f99c3a4ad079",
+        "content_hash": "da3592fbaa5668af33905a526362d13a976695834084d0d0f8b7bbc405e4d1d1"
+      },
+      "paper": {
+        "kind": "verified",
+        "location": "Private health insurance policy details > label K",
+        "state_locations": {
+          "not-entered": "Not entered at label K for tax claim code F",
+          "requires-review": "Label K destination requires review"
+        },
+        "source_id": "ato-2a2cf8a8c462",
+        "content_hash": "38a3018c329e8c1e168a6b169a35530c730f89f1a199bc834e81488003117cc6"
+      }
+    },
+    "phi-benefit-code-l": {
+      "label": "Private health insurance statement line - Benefit code",
+      "context": {
+        "key": "tax_claim_code",
+        "channels": {
+          "mytax": {
+            "A": "verified",
+            "B": "verified",
+            "C": "verified",
+            "D": "read-only",
+            "E": "not-entered",
+            "F": "not-entered",
+            "default": "requires-review"
+          },
+          "paper": {
+            "A": "verified",
+            "B": "verified",
+            "C": "verified",
+            "D": "verified",
+            "E": "verified",
+            "F": "not-entered",
+            "default": "requires-review"
+          }
+        }
+      },
+      "mytax": {
+        "kind": "verified",
+        "location": "Prepare return > Medicare and private health insurance > Private health insurance > Benefit code",
+        "state_locations": {
+          "read-only": "Read-only spouse-share statement line created by myTax",
+          "not-entered": "Not entered in myTax for this tax claim code",
+          "requires-review": "Benefit code destination requires review"
+        },
+        "source_id": "ato-f99c3a4ad079",
+        "content_hash": "da3592fbaa5668af33905a526362d13a976695834084d0d0f8b7bbc405e4d1d1"
+      },
+      "paper": {
+        "kind": "verified",
+        "location": "Private health insurance policy details > label L",
+        "state_locations": {
+          "not-entered": "Not entered at label L for tax claim code F",
+          "requires-review": "Label L destination requires review"
+        },
+        "source_id": "ato-2a2cf8a8c462",
+        "content_hash": "38a3018c329e8c1e168a6b169a35530c730f89f1a199bc834e81488003117cc6"
+      }
+    },
+    "m1-exemption-question": {
+      "label": "Medicare levy exemption category question",
+      "mytax": {
+        "kind": "verified",
+        "location": "Prepare return > Medicare and private health insurance details > Medicare levy exemption > Were you in an exemption category during 2025-26?",
+        "source_id": "ato-4cedc9f93767",
+        "content_hash": "2c7c4e2623459a338d146c41899f7a3b5ad5f2ea70c1b95640d950e9cad6d23c"
+      },
+      "paper": {
+        "kind": "requires-review",
+        "location": "Question M1 category instructions; no equivalent generic paper yes/no label is verified",
+        "source_id": "ato-39155fe09d00",
+        "content_hash": "272598694ee4ca50ee47cef9b8130dbd93a7c16dbcdb868aedeeaed5abc752b7"
+      }
+    },
+    "m1-full-days-v": {
+      "label": "Medicare levy full exemption days",
+      "mytax": {
+        "kind": "verified",
+        "location": "Prepare return > Medicare and private health insurance details > Full 2% levy exemption - number of days",
+        "source_id": "ato-4cedc9f93767",
+        "content_hash": "2c7c4e2623459a338d146c41899f7a3b5ad5f2ea70c1b95640d950e9cad6d23c"
+      },
+      "paper": {
+        "kind": "verified",
+        "location": "Question M1 > label V",
+        "source_id": "ato-39155fe09d00",
+        "content_hash": "272598694ee4ca50ee47cef9b8130dbd93a7c16dbcdb868aedeeaed5abc752b7"
+      }
+    },
+    "m1-half-days-w": {
+      "label": "Medicare levy half exemption days",
+      "mytax": {
+        "kind": "verified",
+        "location": "Prepare return > Medicare and private health insurance details > Half 2% levy exemption - number of days",
+        "source_id": "ato-4cedc9f93767",
+        "content_hash": "2c7c4e2623459a338d146c41899f7a3b5ad5f2ea70c1b95640d950e9cad6d23c"
+      },
+      "paper": {
+        "kind": "verified",
+        "location": "Question M1 > label W",
+        "source_id": "ato-39155fe09d00",
+        "content_hash": "272598694ee4ca50ee47cef9b8130dbd93a7c16dbcdb868aedeeaed5abc752b7"
+      }
+    },
+    "m2-cover-question-e": {
+      "label": "Medicare levy surcharge full-year appropriate family cover question",
+      "mytax": {
+        "kind": "verified",
+        "location": "Prepare return > Medicare and private health insurance > Medicare levy surcharge > Were you and all your dependants covered by an appropriate level of private patient hospital cover from 1 July 2025 to 30 June 2026?",
+        "source_id": "ato-836a84c52e60",
+        "content_hash": "ef48900dec7c99657f728f1751f49f83fd3eea6ff5d9401476cffc5554874f24"
+      },
+      "paper": {
+        "kind": "verified",
+        "location": "Question M2 > label E Yes/No - full-year appropriate private patient hospital cover for you and all dependants",
+        "source_id": "ato-b8cc03014dc1",
+        "content_hash": "b604f09774f9a6ee18e63d98afa7fee9e678cb6f7429b1f71fba9a5a0797c163"
+      }
+    },
+    "m2-days-not-liable-a": {
+      "label": "Medicare levy surcharge days not liable",
+      "mytax": {
+        "kind": "requires-review",
+        "location": "After an explicit No to full-year appropriate family cover, myTax may skip this field after its income check; if shown: Number of days you do not have to pay the surcharge",
+        "source_id": "ato-836a84c52e60",
+        "content_hash": "ef48900dec7c99657f728f1751f49f83fd3eea6ff5d9401476cffc5554874f24"
+      },
+      "paper": {
+        "kind": "verified",
+        "location": "Question M2 > label A",
+        "source_id": "ato-b8cc03014dc1",
+        "content_hash": "b604f09774f9a6ee18e63d98afa7fee9e678cb6f7429b1f71fba9a5a0797c163"
+      }
+    },
+    "spouse-had-question": {
+      "label": "Spouse details participation question",
+      "mytax": {
+        "kind": "verified",
+        "location": "Personalise return > Did you have a spouse at any time between 1 July 2025 and 30 June 2026?",
+        "source_id": "ato-815a889d0a59",
+        "content_hash": "ea256593bfa3b5d30a4cc742970e6a88d02c9645ccb2db497ae4b1e35728d016"
+      },
+      "paper": {
+        "kind": "requires-review",
+        "location": "Spouse details - married or de facto section; no separate paper had-spouse label is verified",
+        "source_id": "ato-29a73bbec8f5",
+        "content_hash": "29f2101f9c146bcfd111bd457799c3eb049a6a725b4362175ea4abb4670c99fe"
+      }
+    }
+  }
+}

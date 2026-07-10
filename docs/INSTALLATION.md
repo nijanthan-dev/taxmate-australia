@@ -50,7 +50,9 @@ The installed plugin exposes TaxMate runtime tools for:
 - `taxpack`
 - `validate`
 
-The individual-return HTML guide includes the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, PAYG rows, investment rows, deduction/super/offset rows, CGT schedule and item rows, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, source URLs, checked-at dates, and source/provenance appendix.
+The individual-return HTML guide includes the prep-only boundary, action-card context index, labelled fact bullets, next actions, verified myTax/paper destinations or explicit non-entry/review wording, explanations, PAYG and investment rows, private-health/Medicare rows, deduction/super/offset rows, CGT rows, ABN and BAS prep, missing-fact/evidence/accountant-review queues, and row-associated provenance. Output rendering does not create destination logic.
+
+The runtime action taxonomy is: enter reviewed value, answer guided question, retain evidence, resolve before entry, accountant handoff only, not entered directly, and destination requires review. Missing, conflicting, unsupported, or stale destination state remains evidence, non-entry, or review work.
 
 ## Optional Guidance-Only Skills
 

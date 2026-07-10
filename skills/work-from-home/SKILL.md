@@ -44,6 +44,14 @@ Use for work-from-home expenses and evidence. Do not use for general business de
 - Refuse requests to submit, lodge, file, transmit, finalise, or send prepared material to the ATO.
 - Do not present outputs as lodging-ready advice.
 
+## Runtime handoff contract
+
+- When the full runtime creates an HTML handoff, the runtime owns each atomic fact's action, destination, explanation, and provenance. Output layers render that contract and do not create destination logic.
+- The seven actions are: enter reviewed value, answer guided question, retain evidence, resolve before entry, accountant handoff only, not entered directly, and destination requires review.
+- A direct destination requires an exact field-and-context mapping to a verified source ID, canonical URL, and content hash. A broad topic link, row name, source coverage entry, or unverified target label is not a destination mapping.
+- Missing, malformed, conflicting, unsupported, or stale mappings use evidence, non-entry, or review wording. `Accountant review` overrides entry-ready wording.
+- Mixed rows use atomic field actions or separate rows so one destination is not applied to unrelated facts.
+
 ## Output states
 
 - Supported record

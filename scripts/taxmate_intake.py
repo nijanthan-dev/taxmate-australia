@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 import taxmate_taxpack
+import taxmate_handoff
 
 
 DEFAULT_INCOME_YEAR = "2025-26"
@@ -1300,7 +1301,7 @@ LIMITED_PUBLIC_HOLIDAYS_BY_STATE = {
     "VIC": {"2025-11-04"},
     "WA": {"2025-09-29"},
 }
-ATO_INDIVIDUAL_SOURCE = "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-instructions-2026"
+ATO_INDIVIDUAL_SOURCE = "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions"
 ATO_PRIVATE_HEALTH_STATEMENT_SOURCE = "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/your-private-health-insurance-statement"
 ATO_PRIVATE_HEALTH_REBATE_CLAIM_SOURCE = "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/claiming-the-private-health-insurance-rebate"
 ATO_MEDICARE_LEVY_SOURCE = "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy"
@@ -1744,6 +1745,7 @@ def sample_answers() -> Dict[str, Any]:
                 "review": True,
                 "income_for_surcharge": 120000,
                 "income_tier": "user-supplied review signal",
+                "full_year_appropriate_family_cover": True,
                 "appropriate_hospital_cover": True,
                 "hospital_cover_days": 365,
                 "evidence": "hospital cover period confirmed from policy records",
@@ -2140,6 +2142,7 @@ def has_meaningful_value(value: Any) -> bool:
 
 
 def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
+    income_year = text(answers.get("income_year"), DEFAULT_INCOME_YEAR)
     investment = investment_answers(answers)
     payg = payg_answers(answers)
     cgt = cgt_answers(answers)
@@ -2148,7 +2151,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     offsets = offset_answers(answers)
     private_health_medicare = private_health_medicare_answers(answers)
     items = base_items(answers, private_health_medicare)
-    extracted_values = extraction_rows(answers.get("extracted_values", []))
+    extracted_values = extraction_rows(answers.get("extracted_values", []), income_year)
     abn_items = abn_rows(answers) if has_abn_inputs(answers) else []
     bas_items = bas_rows(answers) if has_bas_inputs(answers) else []
     missing_items = missing_fact_rows(answers)
@@ -2171,9 +2174,9 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items.extend(investment_rows(investment, answers))
     items.extend(ess_rows(ess_answers(answers)))
     items.extend(uncommon_income_rows(answers.get("uncommon_income", [])))
-    return {
-        "income_year": text(answers.get("income_year"), DEFAULT_INCOME_YEAR),
-        "summary_note": "Individual return, sole-trader ABN, and BAS prep pack. Manual copy only after review.",
+    payload = {
+        "income_year": income_year,
+        "summary_note": "Individual return, sole-trader ABN, and BAS preparation aid. Follow each reviewed action and verified destination.",
         "items": items,
         "extracted_values": extracted_values,
         "abn_items": abn_items,
@@ -2181,6 +2184,12 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
         "missing_facts": missing_items,
         "evidence_items": evidence_items,
     }
+    for key in ("items", "abn_items", "bas_items", "missing_facts", "evidence_items"):
+        payload[key] = [finalize_guide_row(row, income_year) for row in payload[key]]
+    payload["extracted_values"] = [
+        finalize_guide_row(row, income_year) for row in payload["extracted_values"]
+    ]
+    return payload
 
 
 def base_items(
@@ -2282,10 +2291,14 @@ def base_items(
                     spec.ato_area,
                     spec.prompt,
                     display_value(value),
-                    "Long-checklist intake answer for manual copy guidance.",
+                    "Shown because this is a user-supplied intake value; follow the row handoff contract before any return entry.",
                     status,
                     base_item_sources(spec.key),
                     tab_text=f"{spec.prompt}: {display_value(value)}",
+                    row_kind="individual-return",
+                    facts=handoff_facts(
+                        ("supplied-answer", spec.prompt, value),
+                    ),
                 )
             )
     return rows
@@ -3458,9 +3471,7 @@ def evidence_missing(value: Any) -> bool:
 def item_list_text(label: str, items: List[Dict[str, Any]]) -> str:
     if not items:
         return f"{label} none supplied"
-    parts = [f"{item_label(item)} {money_text(item_amount(item))}" for item in items[:4]]
-    if len(items) > 4:
-        parts.append(f"{len(items) - 4} more")
+    parts = [f"{item_label(item)} {money_text(item_amount(item))}" for item in items]
     return f"{label} {', '.join(parts)}"
 
 
@@ -3477,6 +3488,19 @@ def review_flag_terms(raw: Dict[str, Any], keys: tuple[str, ...]) -> List[str]:
         else:
             terms.append(f"{key.replace('_', ' ')} review")
     return terms
+
+
+def abn_review_handoff_facts(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
+    facts: List[Dict[str, Any]] = []
+    for key in ABN_COMPLEX_REVIEW_FIELDS:
+        facts.extend(
+            atomic_handoff_facts(
+                key.replace("_", "-"),
+                handoff_label_part(key),
+                raw.get(key),
+            )
+        )
+    return facts
 
 
 def abn_summary(answers: Dict[str, Any]) -> Dict[str, Any]:
@@ -3655,6 +3679,38 @@ def abn_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
             status,
             ATO_ABN_BUSINESS_SOURCES,
             tab_text=abn_tab_text(summary),
+            row_kind="abn-business",
+            facts=[
+                *handoff_facts(
+                    ("abn", "ABN", summary.get("abn")),
+                    ("business-name", "Business name", summary.get("business_name")),
+                    ("activity", "Business activity", summary.get("activity")),
+                    ("start-date", "Start date", summary.get("start_date")),
+                    ("end-date", "End date", summary.get("end_date")),
+                    ("gst-registered", "GST registered", summary.get("gst_registered")),
+                    ("gst-registration-date", "GST registration date", summary.get("gst_registration_date")),
+                    ("accounting-basis", "Accounting basis", summary.get("accounting_basis")),
+                    ("income-total", "Business income supplied", money_text(summary.get("income_total"))),
+                    ("expense-total", "Business expenses supplied", money_text(summary.get("expense_total"))),
+                    ("record-system", "Record system", summary.get("record_system")),
+                ),
+                *abn_review_handoff_facts(summary),
+                *indexed_item_handoff_facts(
+                    "abn-income-item",
+                    "Business income item",
+                    summary.get("income_streams", []),
+                ),
+                *indexed_item_handoff_facts(
+                    "abn-expense-item",
+                    "Business expense item",
+                    summary.get("expense_categories", []),
+                ),
+                *atomic_handoff_facts(
+                    "alias-conflict",
+                    "Alias conflict",
+                    summary.get("alias_conflicts", []),
+                ),
+            ],
         )
     ]
 
@@ -3668,58 +3724,48 @@ def bas_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
             "BAS worksheet",
             "GST/BAS prep worksheet labels and evidence",
             bas_answer_text(summary),
-            "BAS worksheet only. Confirm 1A, 1B, GST-free/input-taxed sales, adjustments, PAYG labels, tax invoices, period coverage, and accounting basis before manual use.",
+            "BAS worksheet only. Confirm 1A, 1B, GST-free/input-taxed sales, adjustments, PAYG labels, tax invoices, period coverage, and accounting basis before entry.",
             status,
             ATO_BAS_SOURCES,
             tab_text=bas_tab_text(summary),
+            row_kind="bas",
+            facts=handoff_facts(
+                ("gst-registered", "GST registered", summary.get("gst_registered")),
+                ("gst-registration-date", "GST registration date", summary.get("gst_registration_date")),
+                ("accounting-basis", "Accounting basis", summary.get("accounting_basis")),
+                ("period", "BAS period", summary.get("period")),
+                ("period-coverage", "Period coverage", summary.get("period_coverage")),
+                ("label-1a", "GST on sales - label 1A", money_text(summary.get("gst_collected_amount"))),
+                ("label-1b", "GST on purchases - label 1B", money_text(summary.get("gst_credits_amount"))),
+                ("net-gst", "Net GST worksheet amount", money_text(summary.get("net_gst"))),
+                ("gst-free-sales", "GST-free sales", money_text(summary.get("gst_free_sales_amount"))),
+                ("input-taxed-sales", "Input-taxed sales", money_text(summary.get("input_taxed_sales_amount"))),
+                ("adjustments", "Adjustments", money_text(summary.get("adjustments_amount"))),
+                ("payg-instalments", "PAYG instalments", money_text(summary.get("payg_instalments_amount"))),
+                ("payg-withholding", "PAYG withholding", money_text(summary.get("payg_withholding_amount"))),
+                ("tax-invoices", "Tax invoice evidence", summary.get("tax_invoice_evidence")),
+                ("alias-conflicts", "Alias conflicts", ", ".join(str(key).replace("_", " ") for key in summary.get("alias_conflicts", [])) or "none"),
+            ),
         )
     ]
 
 
-def extraction_rows(raw_values: Any) -> List[Dict[str, Any]]:
+def extraction_rows(
+    raw_values: Any,
+    income_year: str = DEFAULT_INCOME_YEAR,
+) -> List[Dict[str, Any]]:
     if not isinstance(raw_values, list):
         return []
     rows: List[Dict[str, Any]] = []
     for idx, raw in enumerate(raw_values, start=1):
-        if not isinstance(raw, dict):
-            continue
-        if not has_meaningful_value(raw):
-            continue
-        confirmed = raw.get("confirmed") is True
-        row = {
-            "document": display_value(raw.get("document")),
-            "page": display_value(raw.get("page")),
-            "field": display_value(raw.get("field")),
-            "value": display_value(raw.get("value")),
-            "confidence": display_value(raw.get("confidence")),
-            "target_label": display_value(raw.get("target_label")),
-            "status": extraction_status(raw, confirmed),
-            "confirmed": confirmed,
-            "number": f"AI{idx}",
-        }
-        preserve_review_kinds(row, raw)
-        rows.append(row)
+        normalized = taxmate_handoff.normalize_extraction_row(
+            raw,
+            income_year,
+            index=idx,
+        )
+        if normalized is not None:
+            rows.append(normalized)
     return rows
-
-
-def extraction_status(raw: Dict[str, Any], confirmed: bool) -> str:
-    if contains_review_status(raw):
-        return "Accountant review"
-    return "Used" if confirmed else "Evidence"
-
-
-def contains_review_status(raw: Dict[str, Any]) -> bool:
-    return any(is_review_status(raw.get(key)) for key in ("status", "status_kind", "tab_kind"))
-
-
-def is_review_status(value: Any) -> bool:
-    return taxmate_taxpack.known_kind(value) == "review"
-
-
-def preserve_review_kinds(row: Dict[str, Any], raw: Dict[str, Any]) -> None:
-    for key in ("status_kind", "tab_kind"):
-        if not is_missing(raw.get(key)):
-            row[key] = raw.get(key)
 
 
 def missing_fact_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -3733,6 +3779,10 @@ def missing_fact_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
             "Evidence",
             ATO_INDIVIDUAL_SOURCE,
             tab_text=f"Missing answer: {spec.prompt}",
+            row_kind="missing-fact",
+            facts=handoff_facts(
+                ("missing-answer", spec.prompt, "Not supplied"),
+            ),
         )
         for idx, spec in enumerate(missing_required_answers(answers), start=1)
     ]
@@ -3936,7 +3986,19 @@ def evidence_rows(
 
 
 def evidence_row(number: Any, area: str, evidence: str) -> Dict[str, Any]:
-    return guide_row(number, area, "Evidence required", evidence, "Draft value remains not copy-ready until evidence is confirmed.", "Evidence", ATO_INDIVIDUAL_SOURCE)
+    return guide_row(
+        number,
+        area,
+        "Evidence required",
+        evidence,
+        "Draft value remains not ready for entry until evidence is confirmed.",
+        "Evidence",
+        ATO_INDIVIDUAL_SOURCE,
+        row_kind="evidence-queue",
+        facts=handoff_facts(
+            ("evidence-needed", "Evidence needed", evidence),
+        ),
+    )
 
 
 PRIVATE_HEALTH_MEDICARE_NESTED_KEYS = (
@@ -4118,6 +4180,12 @@ MEDICARE_LEVY_FIELD_ALIASES = {
 }
 MLS_FIELD_ALIASES = {
     "review": ("review", "review_signal", "mls_review", "surcharge_review"),
+    "full_year_appropriate_family_cover": (
+        "full_year_appropriate_family_cover",
+        "all_dependants_full_year_appropriate_hospital_cover",
+        "you_and_all_dependants_covered_by_appropriate_hospital_cover_full_year",
+        "mls_full_year_appropriate_family_cover",
+    ),
     "income_for_surcharge": (
         "income_for_surcharge",
         "mls_income",
@@ -4367,6 +4435,7 @@ BOOLEAN_FALSE_CONCRETE_ALIAS_GROUPS = (
     MEDICARE_LEVY_FIELD_ALIASES["reduction"],
     MEDICARE_LEVY_FIELD_ALIASES["exemption"],
     MLS_FIELD_ALIASES["review"],
+    MLS_FIELD_ALIASES["full_year_appropriate_family_cover"],
     MLS_FIELD_ALIASES["appropriate_hospital_cover"],
     SPOUSE_FIELD_ALIASES["had_spouse"],
     DEPENDANT_FIELD_ALIASES["student"],
@@ -7088,6 +7157,16 @@ def private_health_mls_record_has_inputs(record: Any) -> bool:
     if not isinstance(record, dict):
         return False
     record = private_health_filter_record_values(record, MLS_FIELD_ALIASES)
+    full_year_family_cover = normalized_item_field(
+        record,
+        MLS_FIELD_ALIASES["full_year_appropriate_family_cover"],
+    )
+    if (
+        full_year_family_cover is False
+        or private_health_cover_bool(full_year_family_cover) is not None
+        or contains_unknown(full_year_family_cover)
+    ):
+        return True
     cover = normalized_item_field(record, MLS_FIELD_ALIASES["appropriate_hospital_cover"])
     if cover is False or private_health_cover_bool(cover) is not None or contains_unknown(cover):
         return True
@@ -7349,6 +7428,41 @@ def private_health_overview_row(
         "Accountant review",
         private_health_row_sources(raw, [*ATO_PRIVATE_HEALTH_STATEMENT_SOURCES, *ATO_MLS_SOURCES]),
         tab_text=private_health_review_tab("Private hospital cover", gaps),
+        row_kind="private-health-overview",
+        checked_at=private_health_row_checked_at(raw, fields),
+        facts=[
+            taxmate_handoff.fact(
+                "private-hospital-cover",
+                "Private hospital cover supplied",
+                normalized_item_field(raw, fields["covered"]),
+                action_kind="destination-requires-review",
+            ),
+            taxmate_handoff.fact(
+                "cover-period",
+                "Cover period",
+                private_health_period_text(raw, fields),
+                action_kind="retain-evidence",
+            ),
+            taxmate_handoff.fact(
+                "days-covered",
+                "Days covered",
+                normalized_item_field(raw, fields["days_covered"]),
+                action_kind="retain-evidence",
+            ),
+            taxmate_handoff.fact(
+                "cover-evidence",
+                "Cover evidence",
+                normalized_item_field(raw, fields["evidence"]),
+                action_kind="retain-evidence",
+            ),
+            taxmate_handoff.fact(
+                "statement-count",
+                "Private health statement lines supplied",
+                len(statements),
+                action_kind="not-entered-directly",
+            ),
+            *private_health_supplemental_handoff_facts(raw, fields),
+        ],
     )
 
 
@@ -7360,6 +7474,11 @@ def private_health_statement_rows(raw: Any) -> List[Dict[str, Any]]:
     items = private_health_statement_items(items)
     rows: List[Dict[str, Any]] = []
     for index, item in enumerate(items, start=1):
+        claim_code = normalized_item_field(item, fields["tax_claim_code"])
+        destination_context = {
+            "tax_claim_code": claim_code,
+            "conflicted": bool(private_health_record_conflicts(item, fields)),
+        }
         answer = (
             f"Insurer/fund {private_health_field_text(item, fields['insurer'])}; "
             f"policy/membership {private_health_field_text(item, fields['membership_id'])}; "
@@ -7385,6 +7504,73 @@ def private_health_statement_rows(raw: Any) -> List[Dict[str, Any]]:
                 "Accountant review",
                 private_health_row_sources(item, ATO_PRIVATE_HEALTH_STATEMENT_SOURCES),
                 tab_text=private_health_review_tab(f"Private health statement {index}", gaps),
+                row_kind="private-health-statement",
+                checked_at=private_health_row_checked_at(item, fields),
+                facts=[
+                    taxmate_handoff.fact(
+                        "insurer",
+                        "Insurer or health fund",
+                        normalized_item_field(item, fields["insurer"]),
+                        action_kind="destination-requires-review",
+                    ),
+                    taxmate_handoff.fact(
+                        "membership-id",
+                        "Policy or membership identifier",
+                        normalized_item_field(item, fields["membership_id"]),
+                        action_kind="destination-requires-review",
+                    ),
+                    taxmate_handoff.fact(
+                        "benefit-code",
+                        "Benefit code",
+                        normalized_item_field(item, fields["benefit_code"]),
+                        action_kind="enter-reviewed-value",
+                        destination_key="phi-benefit-code-l",
+                        destination_context=destination_context,
+                    ),
+                    taxmate_handoff.fact(
+                        "premiums-eligible-for-rebate",
+                        "Premiums eligible for rebate",
+                        normalized_item_field(item, fields["premiums_eligible_for_rebate"]),
+                        action_kind="enter-reviewed-value",
+                        destination_key="phi-premiums-j",
+                        destination_context=destination_context,
+                    ),
+                    taxmate_handoff.fact(
+                        "rebate-received",
+                        "Australian Government rebate received",
+                        normalized_item_field(item, fields["rebate_received"]),
+                        action_kind="enter-reviewed-value",
+                        destination_key="phi-rebate-k",
+                        destination_context=destination_context,
+                    ),
+                    taxmate_handoff.fact(
+                        "tax-claim-code",
+                        "Tax claim code",
+                        claim_code,
+                        action_kind="enter-reviewed-value",
+                        destination_key="phi-tax-claim-code",
+                        destination_context=destination_context,
+                    ),
+                    taxmate_handoff.fact(
+                        "days-covered",
+                        "Days covered",
+                        normalized_item_field(item, fields["days_covered"]),
+                        action_kind="retain-evidence",
+                    ),
+                    taxmate_handoff.fact(
+                        "cover-period",
+                        "Statement cover period",
+                        private_health_period_text(item, fields),
+                        action_kind="retain-evidence",
+                    ),
+                    taxmate_handoff.fact(
+                        "statement-evidence",
+                        "Statement evidence",
+                        normalized_item_field(item, fields["evidence"]),
+                        action_kind="retain-evidence",
+                    ),
+                    *private_health_supplemental_handoff_facts(item, fields),
+                ],
             )
         )
     return rows
@@ -7399,6 +7585,19 @@ def medicare_levy_row(raw: Any) -> Optional[Dict[str, Any]]:
     if not private_health_levy_record_has_inputs(raw):
         return None
     fields = MEDICARE_LEVY_FIELD_ALIASES
+    exemption_value = normalized_item_field(raw, fields["exemption"])
+    gaps = medicare_levy_gaps(raw)
+    m1_semantic_conflicts = (
+        "no-exemption answer conflicts with an exemption category",
+        "no-exemption answer conflicts with exemption days",
+        "exemption answer requires positive full or half exemption days",
+        "full and half exemption days exceed the income year",
+    )
+    destination_context = {
+        "exemption": exemption_value,
+        "conflicted": bool(private_health_record_conflicts(raw, fields))
+        or any(marker in gaps for marker in m1_semantic_conflicts),
+    }
     answer = (
         f"Reduction signal {private_health_bool_field_text(raw, fields['reduction'])}; "
         f"exemption signal {private_health_bool_field_text(raw, fields['exemption'])}; "
@@ -7408,7 +7607,6 @@ def medicare_levy_row(raw: Any) -> Optional[Dict[str, Any]]:
         f"evidence {private_health_field_text(raw, fields['evidence'])}"
     )
     answer = private_health_append_record_details(answer, raw, fields)
-    gaps = medicare_levy_gaps(raw)
     return guide_row(
         "MEDICARE-LEVY",
         "M1 Medicare levy reduction or exemption",
@@ -7419,6 +7617,58 @@ def medicare_levy_row(raw: Any) -> Optional[Dict[str, Any]]:
         "Accountant review",
         private_health_row_sources(raw, ATO_MEDICARE_LEVY_SOURCES),
         tab_text=private_health_review_tab("Medicare levy", gaps),
+        row_kind="medicare-levy-review",
+        checked_at=private_health_row_checked_at(raw, fields),
+        facts=[
+            taxmate_handoff.fact(
+                "reduction-signal",
+                "Medicare levy reduction signal",
+                normalized_item_field(raw, fields["reduction"]),
+                action_kind="not-entered-directly",
+            ),
+            taxmate_handoff.fact(
+                "exemption-signal",
+                "Medicare levy exemption category question",
+                exemption_value,
+                action_kind="answer-guided-question",
+                destination_key="m1-exemption-question",
+                destination_context=destination_context,
+            ),
+            taxmate_handoff.fact(
+                "exemption-category",
+                "Exemption category",
+                normalized_item_field(raw, fields["exemption_category"]),
+                action_kind=(
+                    "not-entered-directly"
+                    if private_health_flag_bool(exemption_value) is False
+                    and private_health_field_missing(raw, fields["exemption_category"])
+                    else "destination-requires-review"
+                ),
+            ),
+            taxmate_handoff.fact(
+                "full-exemption-days",
+                "Full exemption days",
+                normalized_item_field(raw, fields["full_exemption_days"]),
+                action_kind="enter-reviewed-value",
+                destination_key="m1-full-days-v",
+                destination_context=destination_context,
+            ),
+            taxmate_handoff.fact(
+                "half-exemption-days",
+                "Half exemption days",
+                normalized_item_field(raw, fields["half_exemption_days"]),
+                action_kind="enter-reviewed-value",
+                destination_key="m1-half-days-w",
+                destination_context=destination_context,
+            ),
+            taxmate_handoff.fact(
+                "levy-evidence",
+                "Levy exemption evidence",
+                normalized_item_field(raw, fields["evidence"]),
+                action_kind="retain-evidence",
+            ),
+            *private_health_supplemental_handoff_facts(raw, fields),
+        ],
     )
 
 
@@ -7434,8 +7684,50 @@ def mls_review_row(
     )
     if not private_health_mls_has_context(raw, private_health, workflow):
         return None
+    local = raw if isinstance(raw, dict) else {}
     effective = private_health_effective_mls_record(raw, private_health)
     fields = MLS_FIELD_ALIASES
+    local_family_cover = normalized_item_field(
+        local,
+        fields["full_year_appropriate_family_cover"],
+    )
+    local_cover = normalized_item_field(local, fields["appropriate_hospital_cover"])
+    local_days = normalized_item_field(local, fields["hospital_cover_days"])
+    gaps = mls_review_gaps(effective)
+    general_conflict_markers = (
+        "hospital cover is true but cover days is 0",
+        "no-cover answer conflicts",
+    )
+    family_period_conflict_markers = (
+        "confirm partial-year hospital cover period",
+        "confirm hospital cover period dates",
+        "confirm hospital cover period date order",
+        "hospital cover period dates are outside requested income year",
+        "reconcile hospital cover period dates",
+    )
+    family_cover = private_health_cover_bool(local_family_cover)
+    local_appropriate_cover = private_health_cover_bool(local_cover)
+    mls_conflicted = (
+        bool(private_health_record_conflicts(effective, fields))
+        or any(marker in gap for gap in gaps for marker in general_conflict_markers)
+        or (
+            family_cover is True
+            and (
+                local_appropriate_cover is not True
+                or private_health_partial_cover_text(local_cover)
+                or any(
+                    marker in gap
+                    for gap in gaps
+                    for marker in family_period_conflict_markers
+                )
+            )
+        )
+    )
+    cover_destination_context = {
+        "explicit_family_cover": local_family_cover,
+        "explicit_local_days": local_days,
+        "conflicted": mls_conflicted,
+    }
     answer = (
         f"Review signal {private_health_bool_field_text(effective, fields['review'])}; "
         "income for surcharge "
@@ -7449,7 +7741,6 @@ def mls_review_row(
         f"evidence {private_health_field_text(effective, fields['evidence'])}"
     )
     answer = private_health_append_record_details(answer, effective, fields)
-    gaps = mls_review_gaps(effective)
     return guide_row(
         "MLS-REVIEW",
         "M2 Medicare levy surcharge",
@@ -7460,6 +7751,72 @@ def mls_review_row(
         "Accountant review",
         private_health_row_sources(effective, ATO_MLS_SOURCES),
         tab_text=private_health_review_tab("Medicare levy surcharge", gaps),
+        row_kind="medicare-surcharge-review",
+        checked_at=private_health_row_checked_at(effective, fields),
+        facts=[
+            taxmate_handoff.fact(
+                "review-signal",
+                "Medicare levy surcharge review signal",
+                normalized_item_field(effective, fields["review"]),
+                action_kind="not-entered-directly",
+            ),
+            taxmate_handoff.fact(
+                "income-for-surcharge",
+                "Income for surcharge purposes",
+                normalized_item_field(effective, fields["income_for_surcharge"]),
+                action_kind="not-entered-directly",
+            ),
+            taxmate_handoff.fact(
+                "income-tier",
+                "Income tier signal",
+                normalized_item_field(effective, fields["income_tier"]),
+                action_kind="not-entered-directly",
+            ),
+            taxmate_handoff.fact(
+                "full-year-family-cover",
+                "You and all dependants covered by an appropriate level of private patient hospital cover for the full income year",
+                local_family_cover,
+                action_kind="answer-guided-question",
+                destination_key="m2-cover-question-e",
+                destination_context=cover_destination_context,
+            ),
+            taxmate_handoff.fact(
+                "appropriate-hospital-cover",
+                "Appropriate hospital cover",
+                normalized_item_field(effective, fields["appropriate_hospital_cover"]),
+                action_kind="destination-requires-review",
+            ),
+            taxmate_handoff.fact(
+                "hospital-cover-days",
+                "Hospital cover days",
+                normalized_item_field(effective, fields["hospital_cover_days"]),
+                action_kind="retain-evidence",
+            ),
+            taxmate_handoff.fact(
+                "days-not-liable",
+                "Days not liable for the surcharge",
+                normalized_item_field(effective, fields["days_not_liable"]),
+                action_kind="enter-reviewed-value",
+                destination_key="m2-days-not-liable-a",
+                destination_context={
+                    "explicit_family_cover": local_family_cover,
+                    "conflicted": mls_conflicted,
+                },
+            ),
+            taxmate_handoff.fact(
+                "cover-period",
+                "Hospital cover period",
+                private_health_period_text(effective, fields),
+                action_kind="retain-evidence",
+            ),
+            taxmate_handoff.fact(
+                "cover-evidence",
+                "Hospital cover evidence",
+                normalized_item_field(effective, fields["evidence"]),
+                action_kind="retain-evidence",
+            ),
+            *private_health_supplemental_handoff_facts(effective, fields),
+        ],
     )
 
 
@@ -7480,6 +7837,12 @@ def spouse_review_row(raw: Any) -> Optional[Dict[str, Any]]:
     )
     answer = private_health_append_record_details(answer, raw, fields)
     gaps = spouse_review_gaps(raw)
+    had_spouse = normalized_item_field(raw, fields["had_spouse"])
+    spouse_destination_context = {
+        "had_spouse": had_spouse,
+        "contradicted": any("no-spouse answer conflicts" in gap for gap in gaps),
+        "conflicted": bool(private_health_record_conflicts(raw, fields)),
+    }
     return guide_row(
         "SPOUSE-REVIEW",
         "Spouse details / M1 / M2",
@@ -7489,6 +7852,55 @@ def spouse_review_row(raw: Any) -> Optional[Dict[str, Any]]:
         "Accountant review",
         private_health_row_sources(raw, ATO_SPOUSE_DEPENDANT_SOURCES),
         tab_text=private_health_review_tab("Spouse facts", gaps),
+        row_kind="spouse-review",
+        checked_at=private_health_row_checked_at(raw, fields),
+        facts=[
+            taxmate_handoff.fact(
+                "had-spouse",
+                "Had a spouse during the income year",
+                had_spouse,
+                action_kind="answer-guided-question",
+                destination_key="spouse-had-question",
+                destination_context=spouse_destination_context,
+            ),
+            taxmate_handoff.fact(
+                "spouse-period",
+                "Spouse period",
+                private_health_period_text(raw, fields),
+                action_kind="destination-requires-review",
+            ),
+            taxmate_handoff.fact(
+                "income-for-tests",
+                "Spouse income for tests",
+                normalized_item_field(raw, fields["income_for_tests"]),
+                action_kind="destination-requires-review",
+            ),
+            taxmate_handoff.fact(
+                "reportable-fringe-benefits",
+                "Spouse reportable fringe benefits",
+                normalized_item_field(raw, fields["reportable_fringe_benefits"]),
+                action_kind="destination-requires-review",
+            ),
+            taxmate_handoff.fact(
+                "reportable-super",
+                "Spouse reportable super contributions",
+                normalized_item_field(raw, fields["reportable_super"]),
+                action_kind="destination-requires-review",
+            ),
+            taxmate_handoff.fact(
+                "net-investment-loss",
+                "Spouse net investment loss",
+                normalized_item_field(raw, fields["net_investment_loss"]),
+                action_kind="destination-requires-review",
+            ),
+            taxmate_handoff.fact(
+                "income-evidence",
+                "Spouse income evidence",
+                normalized_item_field(raw, fields["income_evidence"]),
+                action_kind="retain-evidence",
+            ),
+            *private_health_supplemental_handoff_facts(raw, fields),
+        ],
     )
 
 
@@ -7512,6 +7924,23 @@ def dependant_rows(summary: Any, items: Any) -> List[Dict[str, Any]]:
                 "Accountant review",
                 private_health_row_sources(summary, ATO_SPOUSE_DEPENDANT_SOURCES),
                 tab_text=private_health_review_tab("Dependant summary", dependant_summary_gaps(summary, items)),
+                row_kind="dependant-review",
+                checked_at=private_health_row_checked_at(summary, summary_fields),
+                facts=[
+                    taxmate_handoff.fact(
+                        "dependant-count",
+                        "Dependent children or students supplied",
+                        normalized_item_field(summary, summary_fields["count"]),
+                        action_kind="destination-requires-review",
+                    ),
+                    taxmate_handoff.fact(
+                        "dependant-item-count",
+                        "Detailed dependant rows supplied",
+                        len(items),
+                        action_kind="not-entered-directly",
+                    ),
+                    *private_health_supplemental_handoff_facts(summary, summary_fields),
+                ],
             )
         )
     for index, item in enumerate(items, start=1):
@@ -7539,6 +7968,33 @@ def dependant_rows(summary: Any, items: Any) -> List[Dict[str, Any]]:
                 "Accountant review",
                 private_health_row_sources(item, ATO_SPOUSE_DEPENDANT_SOURCES),
                 tab_text=private_health_review_tab(f"Dependant {index}", dependant_item_gaps(item)),
+                row_kind="dependant-review",
+                checked_at=private_health_row_checked_at(item, fields),
+                facts=[
+                    taxmate_handoff.fact("name", "Name", normalized_item_field(item, fields["name"])),
+                    taxmate_handoff.fact("type", "Dependant type", normalized_item_field(item, fields["type"])),
+                    taxmate_handoff.fact("age", "Age", normalized_item_field(item, fields["age"])),
+                    taxmate_handoff.fact("student", "Student", normalized_item_field(item, fields["student"])),
+                    taxmate_handoff.fact(
+                        "dependant-period",
+                        "Dependant period",
+                        private_health_period_text(item, fields),
+                    ),
+                    taxmate_handoff.fact("maintained", "Maintained", normalized_item_field(item, fields["maintained"])),
+                    taxmate_handoff.fact(
+                        "income-for-tests",
+                        "Income for tests",
+                        normalized_item_field(item, fields["income_for_tests"]),
+                    ),
+                    taxmate_handoff.fact("shared-care", "Shared care", normalized_item_field(item, fields["shared_care"])),
+                    taxmate_handoff.fact(
+                        "evidence",
+                        "Dependant evidence",
+                        normalized_item_field(item, fields["evidence"]),
+                        action_kind="retain-evidence",
+                    ),
+                    *private_health_supplemental_handoff_facts(item, fields),
+                ],
             )
         )
     return rows
@@ -7849,6 +8305,11 @@ def private_health_evidence_row(
         "Evidence",
         sources,
         tab_text=f"{subject} needs {gap} before accountant review.",
+        row_kind="evidence-queue",
+        facts=handoff_facts(
+            ("subject", "Subject", subject),
+            ("evidence-gap", "Evidence or conflict to resolve", gap),
+        ),
     )
 
 
@@ -8042,6 +8503,10 @@ def medicare_levy_gaps(raw: Dict[str, Any]) -> List[str]:
     half_days = private_health_day_count(
         normalized_item_field(raw, MEDICARE_LEVY_FIELD_ALIASES["half_exemption_days"])
     )
+    if exemption is True and (full_days is None or full_days == 0) and (
+        half_days is None or half_days == 0
+    ):
+        gaps.append("exemption answer requires positive full or half exemption days")
     supplied_days = [value for value in (full_days, half_days) if value is not None]
     if supplied_days and sum(supplied_days) > private_health_income_year_day_limit(raw):
         gaps.append("full and half exemption days exceed the income year")
@@ -8052,6 +8517,11 @@ def medicare_levy_gaps(raw: Dict[str, Any]) -> List[str]:
 def mls_review_gaps(raw: Dict[str, Any]) -> List[str]:
     gaps: List[str] = []
     review_raw = normalized_item_field(raw, MLS_FIELD_ALIASES["review"])
+    family_cover_raw = normalized_item_field(
+        raw,
+        MLS_FIELD_ALIASES["full_year_appropriate_family_cover"],
+    )
+    family_cover = private_health_cover_bool(family_cover_raw)
     cover_raw = normalized_item_field(raw, MLS_FIELD_ALIASES["appropriate_hospital_cover"])
     cover = private_health_cover_bool(cover_raw)
     income = normalized_item_field(raw, MLS_FIELD_ALIASES["income_for_surcharge"])
@@ -8059,6 +8529,8 @@ def mls_review_gaps(raw: Dict[str, Any]) -> List[str]:
     review = private_health_flag_bool(review_raw)
     if not is_missing(review_raw) and review is None:
         gaps.append("resolve Medicare levy surcharge review uncertainty")
+    if not is_missing(family_cover_raw) and family_cover is None:
+        gaps.append("resolve full-year family cover uncertainty")
     if cover is None:
         gaps.append("confirm appropriate private patient hospital cover")
     if not is_missing(income) and private_health_amount_needs_evidence(income):
@@ -8084,6 +8556,15 @@ def mls_review_gaps(raw: Dict[str, Any]) -> List[str]:
         days = normalized_item_field(raw, MLS_FIELD_ALIASES["hospital_cover_days"])
         if private_health_day_count(days) == 0:
             gaps.append("hospital cover is true but cover days is 0")
+    if family_cover is True:
+        if cover is False:
+            gaps.append(
+                "full-year family-cover answer conflicts with no appropriate hospital cover"
+            )
+        if private_health_day_count(
+            normalized_item_field(raw, MLS_FIELD_ALIASES["hospital_cover_days"])
+        ) != 365:
+            gaps.append("confirm 365 cover days for the full-year family-cover answer")
     if cover is False:
         days = normalized_item_field(raw, MLS_FIELD_ALIASES["hospital_cover_days"])
         parsed_days = private_health_day_count(days)
@@ -8100,13 +8581,6 @@ def mls_review_gaps(raw: Dict[str, Any]) -> List[str]:
     days_not_liable = normalized_item_field(raw, MLS_FIELD_ALIASES["days_not_liable"])
     if not is_missing(days_not_liable) and private_health_day_count(days_not_liable) is None:
         gaps.append(f"confirm days not liable ({private_health_raw_text(days_not_liable)})")
-    cover_days = private_health_day_count(
-        normalized_item_field(raw, MLS_FIELD_ALIASES["hospital_cover_days"])
-    )
-    not_liable_days = private_health_day_count(days_not_liable)
-    supplied_days = [value for value in (cover_days, not_liable_days) if value is not None]
-    if supplied_days and sum(supplied_days) > private_health_income_year_day_limit(raw):
-        gaps.append("hospital cover days and days not liable exceed the income year")
     evidence = normalized_item_field(raw, MLS_FIELD_ALIASES["evidence"])
     if (
         (not is_missing(review_raw) and review is None)
@@ -8861,6 +9335,13 @@ def private_health_record_conflicts(
     raw: Dict[str, Any],
     field_aliases: Dict[str, tuple[str, ...]],
 ) -> str:
+    return "; ".join(private_health_record_conflict_values(raw, field_aliases))
+
+
+def private_health_record_conflict_values(
+    raw: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> List[str]:
     conflict_aliases = {
         field: aliases
         for field, aliases in field_aliases.items()
@@ -8870,7 +9351,71 @@ def private_health_record_conflicts(
     source_conflicts = raw.get("_source_conflicts")
     if isinstance(source_conflicts, list):
         details.extend(display_value(value) for value in source_conflicts if display_value(value))
-    return "; ".join(private_health_unique_text(details))
+    return private_health_unique_text(details)
+
+
+def private_health_supplemental_handoff_facts(
+    raw: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> List[Dict[str, Any]]:
+    filtered = private_health_filter_record_values(raw, field_aliases)
+    facts: List[Dict[str, Any]] = []
+    notes = normalized_item_field(filtered, field_aliases.get("notes", ()))
+    facts.extend(
+        atomic_handoff_facts(
+            "supplemental-note",
+            "Supplemental note",
+            notes,
+            action_kind="destination-requires-review",
+        )
+    )
+    unknown = private_health_unknown_values(
+        filtered,
+        private_health_alias_set(field_aliases),
+    )
+    facts.extend(
+        atomic_handoff_facts(
+            "supplemental-fact",
+            "Supplemental fact",
+            unknown,
+            action_kind="destination-requires-review",
+        )
+    )
+    facts.extend(
+        atomic_handoff_facts(
+            "supplied-source-url",
+            "Supplied source URL",
+            private_health_provenance_urls(filtered),
+            action_kind="retain-evidence",
+        )
+    )
+    facts.extend(
+        atomic_handoff_facts(
+            "supplied-checked-at",
+            "Supplied checked at",
+            private_health_alias_values(filtered, field_aliases.get("checked_at", ())),
+            action_kind="retain-evidence",
+        )
+    )
+    facts.extend(
+        atomic_handoff_facts(
+            "source-conflict",
+            "Source or alias conflict",
+            private_health_record_conflict_values(filtered, field_aliases),
+            action_kind="destination-requires-review",
+        )
+    )
+    return facts
+
+
+def private_health_row_checked_at(
+    raw: Dict[str, Any],
+    field_aliases: Dict[str, tuple[str, ...]],
+) -> Optional[str]:
+    filtered = private_health_filter_record_values(raw, field_aliases)
+    values = private_health_alias_values(filtered, field_aliases.get("checked_at", ()))
+    valid = private_health_valid_checked_at_values(values)
+    return valid[0] if valid else None
 
 
 def private_health_append_record_details(
@@ -9340,10 +9885,26 @@ def deduction_rows(items: List[Dict[str, Any]], answers: Dict[str, Any]) -> List
                 deduction_ato_area(kind),
                 deduction_question(item, kind),
                 deduction_answer_text(item, kind, amount),
-                "Itemized deduction rows are prep-only. Evidence, reimbursement, employer-paid/provided, private-use, GST/BAS, duplicate-risk, and source-support checks must be resolved before manual copy.",
+                "Itemized deduction rows are prep-only. Evidence, reimbursement, employer-paid/provided, private-use, GST/BAS, duplicate-risk, and source-support checks must be resolved before entry.",
                 "Accountant review",
                 deduction_sources(kind, item, answers),
                 tab_text=deduction_tab_text(kind, gaps),
+                row_kind="deduction",
+                facts=handoff_facts(
+                    ("deduction-type", "Deduction type", DEDUCTION_KIND_LABELS.get(kind, "Unsupported or other deduction")),
+                    ("description", "Description", deduction_question(item, kind)),
+                    ("amount", "Amount supplied", normalized_item_field(item, DEDUCTION_FIELD_ALIASES["amount"])),
+                    ("evidence", "Evidence", normalized_item_field(item, DEDUCTION_FIELD_ALIASES["evidence"])),
+                    ("reimbursed", "Reimbursed", normalized_item_field(item, DEDUCTION_FIELD_ALIASES["reimbursed"])),
+                    ("employer-paid", "Employer paid", normalized_item_field(item, DEDUCTION_FIELD_ALIASES["employer_paid"])),
+                    ("employer-provided", "Employer provided", normalized_item_field(item, DEDUCTION_FIELD_ALIASES["employer_provided"])),
+                    ("work-use", "Work-use percentage", normalized_item_field(item, DEDUCTION_FIELD_ALIASES["work_use_percent"])),
+                    ("private-use", "Private-use percentage", normalized_item_field(item, DEDUCTION_FIELD_ALIASES["private_use_percent"])),
+                    ("work-private-split", "Work/private split", normalized_item_field(item, DEDUCTION_FIELD_ALIASES["work_private_split"])),
+                    ("gst-bas", "GST or BAS interaction", normalized_item_field(item, DEDUCTION_FIELD_ALIASES["gst_bas_interaction"])),
+                    ("duplicate-risk", "Duplicate-risk signal", normalized_item_field(item, DEDUCTION_FIELD_ALIASES["duplicate_risk"])),
+                    ("alias-conflicts", "Alias conflicts", item_alias_conflict_text(item, DEDUCTION_FIELD_ALIASES) or "none"),
+                ),
             )
         )
     return rows
@@ -9583,6 +10144,11 @@ def deduction_evidence_rows(items: List[Dict[str, Any]], answers: Dict[str, Any]
                     "Deduction rows remain prep-only until receipts, payment source, private-use split, duplicate-risk, GST/BAS overlap, and source support are reviewed.",
                     "Evidence",
                     deduction_sources(kind, item, answers),
+                    row_kind="evidence-queue",
+                    facts=handoff_facts(
+                        ("deduction", "Deduction", deduction_question(item, kind)),
+                        ("evidence-needed", "Evidence or review needed", ", ".join(terms)),
+                    ),
                 )
             )
     return rows
@@ -9600,10 +10166,24 @@ def personal_super_contribution_rows(items: List[Dict[str, Any]]) -> List[Dict[s
                 "D12 Personal super contributions",
                 "Personal super contribution deduction prep",
                 personal_super_contribution_answer_text(item),
-                "Personal super contribution deductions need contribution records, valid notice of intent, fund acknowledgement, cap review, and Division 293 review before manual copy.",
+                "Personal super contribution deductions need contribution records, valid notice of intent, fund acknowledgement, cap review, and Division 293 review before entry.",
                 "Accountant review",
                 ATO_PERSONAL_SUPER_DEDUCTION_SOURCES,
                 tab_text="Personal super deduction prep-only; " + ", ".join(gaps) + ".",
+                row_kind="deduction",
+                facts=handoff_facts(
+                    ("fund", "Fund", normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["fund"])),
+                    ("member", "Member", normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["member"])),
+                    ("contribution-date", "Contribution date", normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["contribution_date"])),
+                    ("contribution-amount", "Contribution amount", normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["amount"])),
+                    ("notice-of-intent", "Notice of intent", normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["notice_of_intent"])),
+                    ("fund-acknowledgement", "Fund acknowledgement", normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["fund_acknowledgement"])),
+                    ("intended-deduction", "Intended deduction amount", normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["intended_deduction_amount"])),
+                    ("cap-review", "Concessional cap review", normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["concessional_cap_review"])),
+                    ("division-293", "Division 293 review", normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["division_293_review"])),
+                    ("notes", "Notes", normalized_item_field(item, SUPER_CONTRIBUTION_FIELD_ALIASES["notes"])),
+                    ("alias-conflicts", "Alias conflicts", item_alias_conflict_text(item, SUPER_CONTRIBUTION_FIELD_ALIASES) or "none"),
+                ),
             )
         )
     return rows
@@ -9679,6 +10259,11 @@ def personal_super_contribution_evidence_rows(items: List[Dict[str, Any]]) -> Li
                     "Personal super contribution deduction prep remains blocked until notice, acknowledgement, contribution amount/date, cap, and Division 293 facts are reviewed.",
                     "Evidence",
                     ATO_PERSONAL_SUPER_DEDUCTION_SOURCES,
+                    row_kind="evidence-queue",
+                    facts=handoff_facts(
+                        ("contribution", "Contribution", personal_super_contribution_subject(item)),
+                        ("evidence-needed", "Evidence or review needed", ", ".join(terms)),
+                    ),
                 )
             )
     return rows
@@ -9701,6 +10286,16 @@ def offset_rows(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                 "Accountant review",
                 offset_sources(kind),
                 tab_text=f"{offset_label(kind)} offset routing; " + ", ".join(gaps) + ".",
+                row_kind="deduction",
+                facts=handoff_facts(
+                    ("offset-type", "Offset type", offset_label(kind)),
+                    ("raw-type", "Type supplied", normalized_item_field(item, OFFSET_FIELD_ALIASES["kind"])),
+                    ("claim", "Claim signal", normalized_item_field(item, OFFSET_FIELD_ALIASES["claim"])),
+                    ("amount", "Amount supplied", normalized_item_field(item, OFFSET_FIELD_ALIASES["amount"])),
+                    ("evidence", "Eligibility evidence", normalized_item_field(item, OFFSET_FIELD_ALIASES["evidence"])),
+                    ("review-signal", "Review signal", normalized_item_field(item, OFFSET_FIELD_ALIASES["review_signal"])),
+                    ("alias-conflicts", "Alias conflicts", item_alias_conflict_text(item, OFFSET_FIELD_ALIASES) or "none"),
+                ),
             )
         )
     return rows
@@ -9823,6 +10418,11 @@ def offset_evidence_rows(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     "Offset routing remains prep-only until eligibility, evidence, income-test, and amount facts are reviewed.",
                     "Evidence",
                     offset_sources(kind),
+                    row_kind="evidence-queue",
+                    facts=handoff_facts(
+                        ("offset", "Offset", offset_subject(item, kind)),
+                        ("evidence-needed", "Evidence or review needed", ", ".join(terms)),
+                    ),
                 )
             )
     return rows
@@ -10149,6 +10749,17 @@ def phone_overview_row(raw: Dict[str, Any], answers: Dict[str, Any]) -> Dict[str
         "Accountant review",
         phone_sources(raw, answers),
         tab_text="Phone overview: " + ", ".join(flags) + ".",
+        row_kind="deduction",
+        facts=handoff_facts(
+            ("context", "Work context", context),
+            ("paid-by-user", "Paid by user", raw.get("paid_by_user")),
+            ("employer-reimbursed", "Employer reimbursed", raw.get("employer_reimbursed")),
+            ("employer-paid", "Employer paid", raw.get("employer_paid")),
+            ("employer-provided", "Employer provided", raw.get("employer_provided")),
+            ("wfh-method", "Work-from-home method", raw.get("wfh_method")),
+            ("freeform", "Additional phone facts", raw.get("freeform")),
+            ("review-flags", "Review flags", ", ".join(flags)),
+        ),
     )
 
 
@@ -10188,6 +10799,21 @@ def phone_plan_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[s
             status,
             phone_sources(raw, answers),
             tab_text=phone_plan_tab_text(blocked, evidence_gap),
+            row_kind="deduction",
+            facts=handoff_facts(
+                ("monthly-cost", "Monthly cost", plan.get("monthly_cost")),
+                ("months-claimed", "Months claimed", plan.get("months_claimed")),
+                ("itemised-bill", "Itemised bill", plan.get("itemised_bill")),
+                ("prepaid", "Prepaid", plan.get("prepaid")),
+                ("representative-period-start", "Representative period start", plan.get("representative_period_start")),
+                ("representative-period-end", "Representative period end", plan.get("representative_period_end")),
+                ("work-use", "Work-use percentage", plan.get("work_use_percent")),
+                ("basis", "Work-use basis", plan.get("basis")),
+                ("candidate", "Prepared candidate amount", candidate_text),
+                ("bills", "Bills or payment evidence", plan.get("bills")),
+                ("usage-log", "Work/private usage log", plan.get("log")),
+                ("blocking-facts", "Blocking facts", ", ".join(blocked) or "none"),
+            ),
         )
     ]
 
@@ -10205,18 +10831,47 @@ def phone_device_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict
     if blocked:
         status = "Accountant review"
         treatment = "blocked: " + ", ".join(blocked)
+        treatment_fact = "Method review blocked"
+        treatment_boundary = ", ".join(blocked)
     elif cost is None or work_use is None or evidence_gap:
         status = "Evidence"
         treatment = "evidence needed before method review"
+        treatment_fact = "Evidence needed before method review"
+        treatment_boundary = ""
     elif cost > 300:
         status = "Accountant review"
         treatment = "decline-in-value review; not full immediate claim"
+        treatment_fact = "Decline-in-value review"
+        treatment_boundary = "Not a full immediate claim"
     elif immediate_candidate:
         status = "Accountant review"
         treatment = "immediate deduction candidate if source-backed conditions and evidence hold"
+        treatment_fact = "Immediate deduction candidate"
+        treatment_boundary = "Only if source-backed conditions and evidence hold"
     else:
         status = "Evidence"
         treatment = "under-300 conditions incomplete; no immediate candidate yet"
+        treatment_fact = "Under-$300 conditions incomplete"
+        treatment_boundary = "No immediate candidate prepared"
+    prepared_facts = handoff_facts(
+        ("description", "Device", device.get("description") or "Phone"),
+        ("cost", "Cost", device.get("cost")),
+        ("purchase-date", "Purchase date", device.get("purchase_date")),
+        ("work-use", "Work-use percentage", device.get("work_use_percent")),
+        ("work-use-amount", "Prepared work-use amount", work_amount),
+        ("receipt", "Receipt or tax invoice", device.get("receipt")),
+        ("method", "Method preference", device.get("method_preference")),
+        ("effective-life", "Effective life", device.get("effective_life_years")),
+        ("set-test", "Set or substantially identical", device.get("set_or_substantially_identical")),
+        ("changed-use", "Changed-use facts", device.get("work_use_percent_changed")),
+        ("treatment", "Prepared treatment", treatment_fact),
+    )
+    if treatment_boundary:
+        prepared_facts.extend(
+            handoff_facts(
+                ("treatment-boundary", "Prepared treatment boundary", treatment_boundary),
+            )
+        )
     answer = (
         f"{display_value(device.get('description')) or 'phone'}; cost {money_text(cost)}; purchase date {display_value(device.get('purchase_date'))}; "
         f"work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; receipt {display_value(device.get('receipt'))}; "
@@ -10233,6 +10888,8 @@ def phone_device_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict
             status,
             phone_sources(raw, answers),
             tab_text=phone_device_tab_text(blocked, evidence_gap, cost),
+            row_kind="deduction",
+            facts=prepared_facts,
         )
     ]
     if "insurance_amount" in device:
@@ -10255,6 +10912,14 @@ def phone_device_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict
                 insurance_status,
                 phone_sources(raw, answers),
                 tab_text=insurance_tab,
+                row_kind="deduction",
+                facts=handoff_facts(
+                    ("insurance-amount", "Insurance amount", device.get("insurance_amount")),
+                    ("work-use", "Work-use percentage", device.get("work_use_percent")),
+                    ("work-portion", "Prepared work-use portion", insurance_work),
+                    ("evidence", "Evidence", device.get("receipt")),
+                    ("blocking-facts", "Blocking facts", ", ".join(blocked) or "none"),
+                ),
             )
         )
     return rows
@@ -10286,7 +10951,7 @@ def phone_incidental_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[
         answer = f"{answer}; blocked: {', '.join(blocked)}"
     elif over_limit:
         answer = f"{answer}; over $50 incidental threshold needs detailed phone-plan evidence"
-    tab_text = "Incidental phone use needs basic records and fixed-rate double-dip review."
+    tab_text = "Incidental phone use needs basic records and fixed-rate duplicate-claim review."
     if blocked:
         tab_text = "Incidental phone use blocked: " + ", ".join(blocked) + "."
     return [
@@ -10299,6 +10964,16 @@ def phone_incidental_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[
             status,
             phone_sources(raw, answers),
             tab_text=tab_text,
+            row_kind="deduction",
+            facts=handoff_facts(
+                ("claim-amount", "Prepared claim amount", amount),
+                ("supplied-amount", "Claim amount supplied", incidental.get("claim_amount")),
+                ("work-calls", "Work calls", incidental.get("work_calls")),
+                ("work-texts", "Work texts", incidental.get("work_texts")),
+                ("basic-records", "Basic records", incidental.get("basic_records")),
+                ("rate-basis", "Rate basis", "$0.75 per work mobile call and $0.10 per work text"),
+                ("blocking-facts", "Blocking facts", ", ".join(blocked) or "none"),
+            ),
         )
     ]
 
@@ -10346,6 +11021,10 @@ def phone_evidence_row(index: int, evidence: str, raw: Dict[str, Any], answers: 
         "Phone rows stay prep-only until bills, receipts, records, and review facts are confirmed.",
         "Evidence",
         phone_sources(raw, answers),
+        row_kind="evidence-queue",
+        facts=handoff_facts(
+            ("evidence-needed", "Phone evidence needed", evidence),
+        ),
     )
 
 
@@ -10624,7 +11303,7 @@ def phone_employee_excluded(raw: Dict[str, Any]) -> List[str]:
 def phone_blocking_terms(raw: Dict[str, Any]) -> List[str]:
     terms = phone_employee_excluded(raw)
     if phone_wfh_fixed_rate(raw):
-        terms.append("WFH fixed-rate double-dip")
+        terms.append("WFH fixed-rate duplicate-claim risk")
     return terms
 
 
@@ -10724,7 +11403,7 @@ def phone_plan_tab_text(blocked: List[str], evidence_gap: bool) -> str:
         return "Phone plan blocked: " + ", ".join(blocked) + "."
     if evidence_gap:
         return "Phone plan needs bills and 4-week work/private records."
-    return "Phone plan candidate stays prep-only and needs accountant review before manual copy."
+    return "Phone plan candidate stays prep-only and requires accountant review before entry."
 
 
 def phone_device_tab_text(blocked: List[str], evidence_gap: bool, cost: Optional[float]) -> str:
@@ -10755,10 +11434,14 @@ def abn_business_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "ABN-EVID-1",
                 "Sole-trader ABN",
                 "ABN amount evidence required",
-                "Confirm malformed or unknown business income and expense amounts before manual use.",
-                "ABN income and expense rows stay not copy-ready until amount records are reconciled.",
+                "Confirm malformed or unknown business income and expense amounts before entry.",
+                "ABN income and expense rows are not ready for entry until amount records are reconciled.",
                 "Evidence",
                 ATO_ABN_BUSINESS_SOURCES,
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("evidence-needed", "Evidence needed", "Business income and expense amount records"),
+                ),
             )
         )
     if summary.get("alias_conflict"):
@@ -10771,6 +11454,10 @@ def abn_business_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "Conflicting ABN aliases stay Evidence until source records show which business fact should be used.",
                 "Evidence",
                 ATO_ABN_BUSINESS_SOURCES,
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("conflicting-aliases", "Conflicting ABN aliases", ", ".join(str(key).replace("_", " ") for key in summary.get("alias_conflicts", []))),
+                ),
             )
         )
     item_gaps = [
@@ -10788,6 +11475,10 @@ def abn_business_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "Itemized business income and expense rows need evidence before accountant review.",
                 "Evidence",
                 ATO_ABN_BUSINESS_SOURCES,
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("items-needing-evidence", "Income or expense items needing evidence", ", ".join(item_gaps[:6])),
+                ),
             )
         )
     if summary.get("record_evidence"):
@@ -10800,6 +11491,10 @@ def abn_business_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "Record-system gaps remain Evidence for the business schedule workflow.",
                 "Evidence",
                 ATO_ABN_BUSINESS_SOURCES,
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("record-system", "Record system needed", summary.get("record_system")),
+                ),
             )
         )
     return rows
@@ -10816,10 +11511,14 @@ def bas_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "BAS-EVID-1",
                 "BAS worksheet",
                 "BAS amount evidence required",
-                "Confirm malformed or unknown BAS label amounts before manual use.",
-                "BAS label rows stay not copy-ready until 1A, 1B, GST-free/input-taxed, adjustment, and PAYG amounts are reconciled.",
+                "Confirm malformed or unknown BAS label amounts before entry.",
+                "BAS label rows are not ready for entry until 1A, 1B, GST-free/input-taxed, adjustment, and PAYG amounts are reconciled.",
                 "Evidence",
                 ATO_BAS_SOURCES,
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("amounts", "BAS amounts needing evidence", "1A, 1B, GST-free/input-taxed sales, adjustments, or PAYG amounts"),
+                ),
             )
         )
     if summary.get("alias_conflict"):
@@ -10832,6 +11531,10 @@ def bas_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "Conflicting BAS aliases keep worksheet labels unknown until source records show which amount or fact should be used.",
                 "Evidence",
                 ATO_BAS_SOURCES,
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("conflicting-aliases", "Conflicting BAS aliases", ", ".join(str(key).replace("_", " ") for key in summary.get("alias_conflicts", []))),
+                ),
             )
         )
     if summary.get("invoice_evidence"):
@@ -10844,6 +11547,11 @@ def bas_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "GST credits need valid tax invoice and creditable-purpose evidence before manual BAS use.",
                 "Evidence",
                 ATO_BAS_SOURCES,
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("tax-invoice-evidence", "Tax invoice evidence", summary.get("tax_invoice_evidence")),
+                    ("gst-credits", "GST credits supplied", summary.get("gst_credits_amount")),
+                ),
             )
         )
     if summary.get("basis_evidence"):
@@ -10856,6 +11564,10 @@ def bas_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "Unknown GST accounting basis stays visible before any manual BAS worksheet use.",
                 "Evidence",
                 ATO_BAS_SOURCES,
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("accounting-basis", "Accounting basis", summary.get("accounting_basis")),
+                ),
             )
         )
     if summary.get("period_coverage_evidence"):
@@ -10868,6 +11580,11 @@ def bas_evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "Unknown BAS period coverage stays visible before any manual BAS worksheet use.",
                 "Evidence",
                 ATO_BAS_SOURCES,
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("period", "BAS period", summary.get("period")),
+                    ("period-coverage", "Period coverage", summary.get("period_coverage")),
+                ),
             )
         )
     return rows
@@ -10901,7 +11618,19 @@ def wfh_rows(raw: Any) -> List[Dict[str, Any]]:
             "Calendar helper excludes non-work public holidays and leave, includes confirmed weekends/holidays worked, and still requires records/method review.",
             status,
             [ATO_WFH_FIXED_SOURCE, ATO_WFH_ACTUAL_SOURCE, *PUBLIC_HOLIDAY_SOURCES],
-            tab_text="WFH amount is not copy-ready without records and method review.",
+            tab_text="WFH amount is not ready for entry without records and method review.",
+            row_kind="deduction",
+            facts=handoff_facts(
+                ("hours", "Work-from-home hours", hours if hours is not None else "unknown"),
+                (
+                    "fixed-rate-candidate",
+                    "Prepared fixed-rate candidate",
+                    fixed_candidate if fixed_candidate is not None else "unknown",
+                ),
+                ("work-records", "Work records", records),
+                ("actual-cost-records", "Actual-cost records", actual_cost_record_value),
+                ("method", "Method", raw.get("method") or raw.get("method_preference")),
+            ),
         )
     ]
 
@@ -11096,6 +11825,8 @@ def asset_rows(raw_assets: Any) -> List[Dict[str, Any]]:
             continue
         cost = money_value(asset.get("cost"), unknown_as_missing=True)
         work_use = money_value(asset.get("work_use_percent"), unknown_as_missing=True)
+        work_amount = None if cost is None or work_use is None else round(cost * work_use / 100, 2)
+        treatment = asset_fact_treatment(cost, work_use)
         claim_basis = asset_claim_basis(cost, work_use, asset.get("method_preference"))
         rows.append(
             guide_row(
@@ -11106,7 +11837,17 @@ def asset_rows(raw_assets: Any) -> List[Dict[str, Any]]:
                 "ATO-guided asset treatment asks work-use, cost, evidence, and method. Items over $300 are not auto-claimed in full.",
                 asset_status(cost, work_use),
                 ATO_ASSET_SOURCE,
-                tab_text="Asset treatment needs evidence and method review before manual copy.",
+                tab_text="Asset treatment needs evidence and method review before entry.",
+                row_kind="deduction",
+                facts=handoff_facts(
+                    ("description", "Asset", asset.get("description")),
+                    ("cost", "Cost", asset.get("cost")),
+                    ("work-use", "Work-use percentage", asset.get("work_use_percent")),
+                    ("work-use-amount", "Prepared work-use amount", work_amount),
+                    ("method", "Method preference", asset.get("method_preference")),
+                    ("evidence", "Evidence", asset.get("evidence")),
+                    ("prepared-treatment", "Prepared treatment", treatment),
+                ),
             )
         )
     return rows
@@ -11258,10 +11999,25 @@ def investment_interest_row(index: int, item: Dict[str, Any], conflict: bool) ->
             f"interest {money_text(investment_money_value(item.get('amount')))}; "
             f"TFN withholding {money_text(investment_money_value(item.get('tfn_withheld')))}"
         ),
-        "Itemized bank interest is prep-only and needs statement support before manual copy.",
+        "Itemized bank interest is prep-only and needs statement support before entry.",
         status,
         INVESTMENT_SOURCES[:2],
         tab_text=investment_tab_text("Bank interest", evidence_terms(statement_evidence, amount_evidence, conflict), []),
+        row_kind="investment",
+        facts=handoff_facts(
+            ("payer", "Payer", item.get("payer")),
+            ("account", "Account", item.get("account")),
+            ("interest", "Gross interest", item.get("amount")),
+            ("tfn-withholding", "TFN withholding", item.get("tfn_withheld")),
+            ("statement", "Statement evidence", item.get("statement")),
+            (
+                "alias-conflicts",
+                "Alias conflicts",
+                (", ".join(item.get("_alias_conflicts", [])) or "none")
+                if isinstance(item.get("_alias_conflicts"), list)
+                else "none",
+            ),
+        ),
     )
 
 
@@ -11291,6 +12047,16 @@ def investment_dividend_row(index: int, item: Dict[str, Any], conflict: bool) ->
         status,
         [INVESTMENT_SOURCES[0], INVESTMENT_SOURCES[2], INVESTMENT_SOURCES[3]],
         tab_text=investment_tab_text("Dividend", evidence_terms(statement_evidence, amount_evidence or franking_evidence, conflict), reviews),
+        row_kind="investment",
+        facts=handoff_facts(
+            ("security", "Security", investment_label_text(item)),
+            ("cash-dividend", "Cash dividend", dividend_item_total(item)),
+            ("franked", "Franked amount", item.get("franked_amount")),
+            ("unfranked", "Unfranked amount", item.get("unfranked_amount")),
+            ("franking-credit", "Franking credit", item.get("franking_credit")),
+            ("tfn-withholding", "TFN withholding", item.get("tfn_withheld")),
+            ("statement", "Statement evidence", item.get("statement")),
+        ),
     )
 
 
@@ -11322,6 +12088,19 @@ def investment_distribution_row(index: int, item: Dict[str, Any], conflict: bool
         status,
         [INVESTMENT_SOURCES[0], INVESTMENT_SOURCES[2], INVESTMENT_SOURCES[4]],
         tab_text=investment_tab_text("Managed fund/ETF distribution", evidence_terms(statement_evidence, amount_evidence, conflict), reviews),
+        row_kind="investment",
+        facts=handoff_facts(
+            ("fund", "Fund", item.get("fund")),
+            ("distribution", "Distribution total", distribution_item_total(item)),
+            ("taxable-amount", "Taxable amount", item.get("taxable_amount")),
+            ("capital-gain", "Capital gain component", item.get("capital_gain")),
+            ("foreign-income", "Foreign income component", item.get("foreign_income")),
+            ("foreign-tax-offset", "Foreign tax offset component", item.get("foreign_tax_offset")),
+            ("franking-credit", "Franking credit", item.get("franking_credit")),
+            ("tfn-withholding", "TFN withholding", item.get("tfn_withheld")),
+            ("foreign-components", "Foreign components", investment_foreign_components_text(item)),
+            ("statement", "Statement evidence", item.get("statement")),
+        ),
     )
 
 
@@ -11353,6 +12132,20 @@ def investment_trust_row(index: int, item: Dict[str, Any]) -> Dict[str, Any]:
         status,
         [INVESTMENT_SOURCES[0], INVESTMENT_SOURCES[2], INVESTMENT_SOURCES[4]],
         tab_text=investment_tab_text("Trust distribution", evidence_terms(statement_evidence, amount_evidence, False), investment_review_terms(item, include_trust=True)),
+        row_kind="investment",
+        facts=handoff_facts(
+            ("trust", "Trust", item.get("trust")),
+            ("beneficiary-type", "Beneficiary type", item.get("beneficiary_type")),
+            ("distribution", "Distribution amount", item.get("distribution_amount")),
+            ("franked-distribution", "Franked distribution", item.get("franked_distribution")),
+            ("franking-credit", "Franking credit", item.get("franking_credit")),
+            ("capital-gain", "Capital gain component", item.get("capital_gain")),
+            ("foreign-income", "Foreign income component", item.get("foreign_income")),
+            ("foreign-tax-offset", "Foreign tax offset component", item.get("foreign_tax_offset")),
+            ("non-assessable-payment", "Non-assessable payment", item.get("non_assessable_payment")),
+            ("foreign-components", "Foreign components", investment_foreign_components_text(item)),
+            ("statement", "Statement evidence", item.get("statement")),
+        ),
     )
 
 
@@ -11387,10 +12180,19 @@ def investment_reconciliation_row(
         "10/11/13 Investment income",
         "Investment income item total reconciliation",
         "; ".join(answers_text),
-        "Itemized investment rows are reconciled to supplied aggregate totals before manual copy.",
+        "Itemized investment rows must be reconciled to supplied aggregate totals before entry.",
         status,
         INVESTMENT_SOURCES,
         tab_text=investment_reconciliation_tab_text(interest_conflict, dividend_conflict),
+        row_kind="investment",
+        facts=handoff_facts(
+            ("interest-item-total", "Interest item total", interest_total),
+            ("interest-aggregate", "Interest aggregate supplied", investment_aggregate_value(raw, "interest_income")),
+            ("dividend-item-total", "Dividend/distribution item total", dividend_total),
+            ("dividend-aggregate", "Dividend aggregate supplied", investment_aggregate_value(raw, "dividend_income")),
+            ("aggregate-conflicts", "Aggregate conflicts", ", ".join(sorted(raw.get("_aggregate_conflicts", []))) or "none"),
+            ("item-conflicts", "Item alias conflicts", ", ".join(sorted(investment_item_conflict_keys(raw))) or "none"),
+        ),
     )
 
 
@@ -11423,9 +12225,14 @@ def investment_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> Li
                         area,
                         "Investment evidence required",
                         investment_evidence_text(group_label, idx, missing, amounts, franking),
-                        "Investment prep row remains not copy-ready until statement and amount evidence are confirmed.",
+                        "Investment prep row is not ready for entry until statement and amount evidence are confirmed.",
                         "Evidence",
                         INVESTMENT_SOURCES,
+                        row_kind="evidence-queue",
+                        facts=handoff_facts(
+                            ("investment-item", "Investment item", f"{group_label} {idx}"),
+                            ("evidence-needed", "Evidence needed", investment_evidence_text(group_label, idx, missing, amounts, franking)),
+                        ),
                     )
                 )
     interest_items = investment_item_values(raw.get("interest_items"))
@@ -11452,6 +12259,10 @@ def investment_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> Li
                 "Supplied aggregate totals and itemized investment rows conflict.",
                 "Evidence",
                 INVESTMENT_SOURCES,
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("reconciliation", "Reconciliation evidence needed", investment_reconciliation_evidence_text(interest_conflict, dividend_conflict, item_conflicts)),
+                ),
             )
         )
     return rows
@@ -11894,8 +12705,8 @@ def investment_tab_text(label: str, evidence: List[str], reviews: List[str]) -> 
     if evidence:
         return f"{label} needs {', '.join(evidence)} before accountant review."
     if reviews:
-        return f"{label} stays accountant review for {', '.join(reviews)} before manual copy."
-    return f"{label} stays accountant review before manual copy."
+        return f"{label} requires accountant review before entry because of {', '.join(reviews)}."
+    return f"{label} requires accountant review before entry."
 
 
 def investment_reconciliation_tab_text(interest_conflict: bool, dividend_conflict: bool) -> str:
@@ -11940,6 +12751,16 @@ def asset_claim_basis(cost: Optional[float], work_use: Optional[float], preferen
     if work_use != 100:
         return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; mixed-use immediate/depreciation method needs review"
     return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; immediate deduction candidate if evidence supports"
+
+
+def asset_fact_treatment(cost: Optional[float], work_use: Optional[float]) -> str:
+    if cost is None or work_use is None:
+        return "Evidence needed before method review"
+    if cost > 300:
+        return "Selected method candidate, not a full immediate claim"
+    if work_use != 100:
+        return "Mixed-use method needs review"
+    return "Immediate deduction candidate if evidence supports it"
 
 
 def payg_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
@@ -12224,6 +13045,7 @@ def payg_statement_row(index: int, item: Dict[str, Any], conflict: bool) -> Dict
     amount_evidence = payg_item_amounts_need_evidence(item)
     lump_sum_evidence = payg_lump_sum_label_evidence(item)
     decline_evidence = payg_decline_contradiction(item)
+    alias_evidence = bool(item.get("_alias_conflicts"))
     status = (
         "Evidence"
         if statement_evidence
@@ -12232,6 +13054,7 @@ def payg_statement_row(index: int, item: Dict[str, Any], conflict: bool) -> Dict
         or amount_evidence
         or lump_sum_evidence
         or decline_evidence
+        or alias_evidence
         or conflict
         else "Accountant review"
     )
@@ -12259,10 +13082,29 @@ def payg_statement_row(index: int, item: Dict[str, Any], conflict: bool) -> Dict
         "1 Salary or wages",
         "PAYG income statement item",
         answer,
-        "PAYG statement rows are prep-only. Confirm income statement evidence, payer identity, amounts, allowances, RFBA, RESC, and any lump sum labels before manual copy.",
+        "PAYG statement rows are prep-only. Confirm income statement evidence, payer identity, amounts, allowances, RFBA, RESC, and any lump sum labels before entry.",
         status,
         PAYG_SOURCES,
         tab_text=payg_tab_text(statement_evidence, finalised_evidence, payer_evidence, amount_evidence, lump_sum_evidence, decline_evidence, conflict),
+        row_kind="individual-return",
+        facts=handoff_facts(
+            ("payer", "Payer", item.get("payer")),
+            ("abn", "Payer ABN", item.get("abn")),
+            ("occupation", "Occupation", item.get("occupation")),
+            ("gross", "Gross income", item.get("gross")),
+            ("withheld", "Tax withheld", item.get("withheld")),
+            ("allowances", "Allowances", item.get("allowances")),
+            ("rfba", "Reportable fringe benefits amount", item.get("rfba")),
+            ("resc", "Reportable employer super contributions", item.get("resc")),
+            ("lump-sum-a", "Lump sum A", item.get("lump_sum_a")),
+            ("lump-sum-b", "Lump sum B", item.get("lump_sum_b")),
+            ("lump-sum-d", "Lump sum D", item.get("lump_sum_d")),
+            ("lump-sum-e", "Lump sum E", item.get("lump_sum_e")),
+            ("statement", "Income statement evidence", item.get("statement")),
+            ("finalised", "Income statement finalised", item.get("finalised")),
+            ("decline-signals", "Decline signals", decline_text or "none"),
+            ("alias-conflicts", "Alias conflicts", conflict_text or "none"),
+        ),
     )
 
 
@@ -12283,10 +13125,14 @@ def payg_nested_base_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[
                 "1 Salary or wages",
                 payg_nested_base_question(nested_key),
                 display_value(value),
-                "PAYG aggregate-only fact is prep-only and needs source evidence before manual copy.",
+                "PAYG aggregate-only fact is prep-only and needs source evidence before entry.",
                 payg_nested_base_status(nested_key, value, raw),
                 PAYG_SOURCES,
                 tab_text=f"{payg_nested_base_question(nested_key)}: {display_value(value)}",
+                row_kind="individual-return",
+                facts=handoff_facts(
+                    (nested_key.replace("_", "-"), payg_nested_base_question(nested_key), value),
+                ),
             )
         )
     return rows
@@ -12368,6 +13214,23 @@ def payg_supplemental_row(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         status,
         PAYG_SOURCES,
         tab_text=payg_supplemental_tab_text(raw),
+        row_kind="individual-return",
+        facts=handoff_facts(
+            ("payer", "Payer", raw.get("payer")),
+            ("abn", "Payer ABN", raw.get("abn")),
+            ("occupation", "Occupation", raw.get("occupation")),
+            ("allowances", "Allowances", raw.get("allowances")),
+            ("rfba", "Reportable fringe benefits amount", raw.get("rfba")),
+            ("resc", "Reportable employer super contributions", raw.get("resc")),
+            ("lump-sum-a", "Lump sum A", raw.get("lump_sum_a")),
+            ("lump-sum-b", "Lump sum B", raw.get("lump_sum_b")),
+            ("lump-sum-d", "Lump sum D", raw.get("lump_sum_d")),
+            ("lump-sum-e", "Lump sum E", raw.get("lump_sum_e")),
+            ("statement", "Income statement evidence", raw.get("statement")),
+            ("finalised", "Income statement finalised", raw.get("finalised")),
+            ("decline-signals", "Decline signals", decline_text or "none"),
+            ("alias-conflicts", "Aggregate alias conflicts", conflict_text or "none"),
+        ),
     )
 
 
@@ -12432,10 +13295,18 @@ def payg_reconciliation_row(
         "1 Salary or wages",
         "PAYG income statement reconciliation",
         answer,
-        "Itemized PAYG statement totals are reconciled to supplied aggregate salary/wages and withholding before manual copy.",
+        "Itemized PAYG statement totals must be reconciled to supplied aggregate salary/wages and withholding before entry.",
         status,
         PAYG_SOURCES,
         tab_text=payg_reconciliation_tab_text(gross_conflict, withheld_conflict, aggregate_alias_conflict),
+        row_kind="individual-return",
+        facts=handoff_facts(
+            ("gross-item-total", "Gross statement total", payg_item_amount_total(items, "gross")),
+            ("gross-aggregate", "Gross aggregate supplied", payg_aggregate_value(raw, "gross")),
+            ("withheld-item-total", "Withheld statement total", payg_item_amount_total(items, "withheld")),
+            ("withheld-aggregate", "Withheld aggregate supplied", payg_aggregate_value(raw, "withheld")),
+            ("alias-conflicts", "Aggregate alias conflicts", conflict_text or "none"),
+        ),
     )
 
 
@@ -12450,9 +13321,13 @@ def payg_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dic
                 "1 Salary or wages",
                 "PAYG evidence required",
                 f"PAYG aggregate facts: confirm {', '.join(aggregate_gaps)}",
-                "PAYG aggregate rows remain not copy-ready until supplied salary/wages facts and statement evidence are reconciled.",
+                "PAYG aggregate rows are not ready for entry until supplied salary/wages facts and statement evidence are reconciled.",
                 "Evidence",
                 PAYG_SOURCES,
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("aggregate-evidence", "PAYG aggregate evidence needed", ", ".join(aggregate_gaps)),
+                ),
             )
         )
     for idx, item in enumerate(items, start=1):
@@ -12463,16 +13338,21 @@ def payg_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dic
         lump = payg_lump_sum_label_evidence(item)
         decline = payg_decline_contradiction(item)
         alias = bool(item.get("_alias_conflicts"))
-        if statement or finalised or payer or amounts or lump or decline:
+        if statement or finalised or payer or amounts or lump or decline or alias:
             rows.append(
                 guide_row(
                     f"PAYG-EVID-{len(rows) + 1}",
                     "1 Salary or wages",
                     "PAYG evidence required",
                     payg_evidence_text(idx, statement, finalised, payer, amounts, lump, decline, alias),
-                    "PAYG prep row remains not copy-ready until statement, payer, amount, finalisation, and label evidence are resolved.",
+                    "PAYG prep row is not ready for entry until statement, payer, amount, finalisation, and label evidence are resolved.",
                     "Evidence",
                     PAYG_SOURCES,
+                    row_kind="evidence-queue",
+                    facts=handoff_facts(
+                        ("payg-item", "PAYG item", idx),
+                        ("evidence-needed", "Evidence needed", payg_evidence_text(idx, statement, finalised, payer, amounts, lump, decline, alias)),
+                    ),
                 )
             )
     if items and payg_supplemental_needs_evidence(raw):
@@ -12482,9 +13362,13 @@ def payg_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dic
                 "1 Salary or wages",
                 "PAYG aggregate detail evidence required",
                 payg_supplemental_tab_text(raw),
-                "Flat PAYG details supplied with itemized statements remain not copy-ready until amount, payer, and alias evidence is resolved.",
+                "Flat PAYG details supplied with itemized statements are not ready for entry until amount, payer, and alias evidence is resolved.",
                 "Evidence",
                 PAYG_SOURCES,
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("aggregate-details", "Aggregate details needing evidence", payg_supplemental_tab_text(raw)),
+                ),
             )
         )
     gross_conflict = payg_reconciliation_conflict(payg_aggregate_value(raw, "gross"), payg_item_amount_total(items, "gross"), bool(items))
@@ -12504,6 +13388,10 @@ def payg_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dic
                 "Supplied aggregate PAYG totals and itemized income statement rows conflict or include unresolved item amounts.",
                 "Evidence",
                 PAYG_SOURCES,
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("reconciliation", "PAYG reconciliation evidence needed", payg_reconciliation_tab_text(gross_conflict, withheld_conflict, aggregate_alias_conflict)),
+                ),
             )
         )
     return rows
@@ -12975,7 +13863,7 @@ def payg_tab_text(
         gaps.append("aggregate reconciliation")
     if gaps:
         return f"PAYG statement needs {', '.join(gaps)} before accountant review."
-    return "PAYG statement stays accountant review before manual copy."
+    return "PAYG statement requires accountant review before entry."
 
 
 def payg_reconciliation_tab_text(gross_conflict: bool, withheld_conflict: bool, alias_conflict: bool = False) -> str:
@@ -13124,10 +14012,22 @@ def etp_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
             "Employment termination payments",
             "ETP payment summary workflow",
             answer,
-            "ETP records need payment summary/income statement evidence, payment code, component split, cap context, and accountant review before manual copy.",
+            "ETP records need payment summary/income statement evidence, payment code, component split, cap context, and accountant review before entry.",
             status,
             ATO_ETP_SOURCE,
             tab_text=complex_payment_tab_text("ETP", statement_evidence, amount_evidence, decline_evidence),
+            row_kind="extended-section",
+            facts=handoff_facts(
+                ("payer", "Payer", raw.get("payer")),
+                ("payment-type", "Payment type", raw.get("payment_type")),
+                ("payment-date", "Payment date", raw.get("payment_date")),
+                ("code", "ETP code", raw.get("code")),
+                ("taxable-component", "Taxable component", raw.get("taxable_component")),
+                ("tax-free-component", "Tax-free component", raw.get("tax_free_component")),
+                ("tax-withheld", "Tax withheld", raw.get("tax_withheld")),
+                ("statement", "Statement evidence", raw.get("statement")),
+                ("decline-signals", "Decline signals", decline_text or "none"),
+            ),
         )
     ]
 
@@ -13156,10 +14056,19 @@ def lump_sum_arrears_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
             "Lump sum payment in arrears",
             "Lump sum in arrears workflow",
             answer,
-            "Lump sum in arrears records need statement evidence, prior-year allocation, amount, withholding, and accountant review before manual copy.",
+            "Lump sum in arrears records need statement evidence, prior-year allocation, amount, withholding, and accountant review before entry.",
             status,
             ATO_LUMP_SUM_ARREARS_SOURCE,
             tab_text=lump_sum_arrears_tab_text(statement_evidence, prior_year_evidence, amount_evidence, decline_evidence),
+            row_kind="extended-section",
+            facts=handoff_facts(
+                ("payer", "Payer", raw.get("payer")),
+                ("prior-years", "Prior payment years", raw.get("payment_years")),
+                ("amount", "Amount", raw.get("amount")),
+                ("tax-withheld", "Tax withheld", raw.get("tax_withheld")),
+                ("statement", "Statement evidence", raw.get("statement")),
+                ("decline-signals", "Decline signals", decline_text or "none"),
+            ),
         )
     ]
 
@@ -13192,10 +14101,21 @@ def super_income_rows(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
             "Superannuation lump sum or income stream",
             "Super lump sum or income stream workflow",
             answer,
-            "Super lump sums and income streams need fund statement evidence, component split, withholding, age/condition context, and accountant review before manual copy.",
+            "Super lump sums and income streams need fund statement evidence, component split, withholding, age/condition context, and accountant review before entry.",
             status,
             [ATO_SUPER_PENSIONS_SOURCE, ATO_SUPER_LUMP_SUM_SOURCE, ATO_SUPER_STREAM_SOURCE],
             tab_text=complex_payment_tab_text("Super income", statement_evidence, amount_evidence, decline_evidence),
+            row_kind="extended-section",
+            facts=handoff_facts(
+                ("fund", "Fund", raw.get("fund")),
+                ("payment-kind", "Payment kind", raw.get("payment_kind")),
+                ("taxable-component", "Taxable component", raw.get("taxable_component")),
+                ("tax-free-component", "Tax-free component", raw.get("tax_free_component")),
+                ("taxable-amount", "Income-stream taxable amount", raw.get("taxable_amount")),
+                ("tax-withheld", "Tax withheld", raw.get("tax_withheld")),
+                ("statement", "Statement evidence", raw.get("statement")),
+                ("decline-signals", "Decline signals", decline_text or "none"),
+            ),
         )
     ]
 
@@ -13536,7 +14456,7 @@ def foreign_income_rows(raw: Any) -> List[Dict[str, Any]]:
             "Foreign and worldwide income",
             "Foreign income, residency, and tax offset workflow",
             answer,
-            "Foreign income needs source statement evidence, residency or temporary-resident context, foreign tax paid records, exchange-rate support, and accountant review before manual copy.",
+            "Foreign income needs source statement evidence, residency or temporary-resident context, foreign tax paid records, exchange-rate support, and accountant review before entry.",
             status,
             ATO_FOREIGN_INCOME_SOURCES,
             tab_text=foreign_income_tab_text(
@@ -13546,6 +14466,22 @@ def foreign_income_rows(raw: Any) -> List[Dict[str, Any]]:
                 tax_paid_evidence,
                 decline_evidence,
             ),
+            row_kind="extended-section",
+            facts=[
+                *handoff_facts(
+                    ("country", "Country", raw.get("country")),
+                    ("income-type", "Income type", raw.get("income_type")),
+                    ("payer", "Payer", raw.get("payer")),
+                    ("amount", "Prepared foreign income total", amount),
+                    ("foreign-tax-paid", "Prepared foreign tax paid total", foreign_tax_paid),
+                    ("exchange-rate", "Supplied exchange rate", raw.get("exchange_rate")),
+                    ("residency", "Residency context", raw.get("residency_status")),
+                    ("foreign-tax-offset-claim", "Foreign tax offset claim", raw.get("foreign_tax_offset_claim")),
+                    ("employment-exemption-claim", "Foreign employment exemption claim", raw.get("foreign_employment_exempt_claim")),
+                    ("decline-signals", "Decline signals", decline_text or "none"),
+                ),
+                *indexed_item_handoff_facts("foreign-item", "Foreign income item", items),
+            ],
         )
     ]
 
@@ -14259,10 +15195,28 @@ def psi_rows(raw: Any) -> List[Dict[str, Any]]:
             "Personal services income",
             "PSI tests, attribution, deductions, and structure workflow",
             answer,
-            "PSI handling collects test facts, contracts, client concentration, attribution, deductions, and structure impacts for accountant review before manual copy.",
+            "PSI handling collects test facts, contracts, client concentration, attribution, deductions, and structure impacts for accountant review before entry.",
             status,
             ATO_PSI_SOURCES,
             tab_text=psi_tab_text(evidence),
+            row_kind="extended-section",
+            facts=handoff_facts(
+                ("income", "PSI income", raw.get("income")),
+                ("income-type", "Income type", raw.get("income_type")),
+                ("occupation", "Occupation", raw.get("occupation")),
+                ("client", "Client", raw.get("client")),
+                ("contract-evidence", "Contract evidence", raw.get("contract_evidence")),
+                ("results-test", "Results test", raw.get("results_test")),
+                ("eighty-percent-test", "80% test", raw.get("eighty_percent_test")),
+                ("unrelated-clients-test", "Unrelated clients test", raw.get("unrelated_clients_test")),
+                ("employment-test", "Employment test", raw.get("employment_test")),
+                ("business-premises-test", "Business premises test", raw.get("business_premises_test")),
+                ("psb-determination", "PSB determination", raw.get("psb_determination")),
+                ("attribution", "Attribution entity", raw.get("attribution_entity")),
+                ("deductions", "Deductions supplied", raw.get("deductions")),
+                ("structure", "Business structure", raw.get("business_structure")),
+                ("decline-signals", "Decline signals", decline_text or "none"),
+            ),
         )
     ]
 
@@ -14399,7 +15353,7 @@ def psi_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
 def psi_tab_text(evidence: List[str]) -> str:
     if evidence:
         return f"PSI needs {', '.join(evidence)} before accountant review."
-    return "PSI tests, attribution, deductions, and structure stay accountant review before manual copy."
+    return "PSI tests, attribution, deductions, and structure require accountant review before entry."
 
 
 def psi_decline_contradiction(raw: Dict[str, Any]) -> bool:
@@ -14954,6 +15908,55 @@ def cgt_small_business_concession_answer_text(raw: Dict[str, Any]) -> str:
     )
 
 
+def cgt_handoff_facts(raw: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Return atomic CGT facts without working out a gain, loss, or concession."""
+    return handoff_facts(
+        ("event-type", "Event type", raw.get("event_type")),
+        ("asset", "Asset", raw.get("asset")),
+        ("owner", "Owner", raw.get("owner")),
+        ("acquisition-date", "Acquisition date", raw.get("acquisition_date")),
+        ("disposal-date", "Disposal date", raw.get("disposal_date")),
+        ("proceeds", "Capital proceeds supplied", raw.get("proceeds")),
+        ("cost-base", "Cost base supplied", raw.get("cost_base")),
+        ("incidental-costs", "Incidental costs supplied", raw.get("incidental_costs")),
+        ("losses", "Losses supplied", raw.get("losses")),
+        ("current-year-losses", "Current-year losses supplied", raw.get("current_year_losses")),
+        ("carried-forward-losses", "Carried-forward losses supplied", raw.get("carried_forward_losses")),
+        ("records", "CGT records", raw.get("records")),
+        ("exemption-flag", "Exemption flag", raw.get("exemption_flag")),
+        ("discount-flag", "Discount flag", raw.get("discount_flag")),
+        ("discount-claim", "Discount claim", raw.get("discount_claim")),
+        ("discount-timing", "Discount timing", raw.get("discount_timing")),
+        ("discount-eligibility", "Discount eligibility", raw.get("discount_eligibility")),
+        ("concession-flag", "Small business concession flag", raw.get("concession_flag")),
+        ("concession-type", "Small business concession type", raw.get("concession_type")),
+        ("business-asset", "Business asset", raw.get("business_asset")),
+        ("active-asset", "Active asset", raw.get("active_asset")),
+        ("entity-context", "Entity, affiliate, or connected-entity context", raw.get("entity_affiliate_connected_entity")),
+        ("retirement-exemption", "Retirement exemption", raw.get("retirement_exemption")),
+        ("rollover", "Rollover", raw.get("rollover")),
+        ("fifteen-year-exemption", "15-year exemption", raw.get("fifteen_year_exemption")),
+        ("active-asset-reduction", "50% active asset reduction", raw.get("active_asset_reduction_50")),
+        ("concession-evidence", "Concession evidence", raw.get("concession_evidence")),
+        ("mixed-use", "Mixed use", raw.get("mixed_use")),
+        ("business-use", "Business use", raw.get("business_use")),
+        ("private-use", "Private use", raw.get("private_use")),
+        ("main-residence-claim", "Main residence claim", raw.get("main_residence_claim")),
+        ("ownership-period", "Main residence ownership period", raw.get("main_residence_ownership_period")),
+        ("occupancy-period", "Main residence occupancy period", raw.get("main_residence_occupancy_period")),
+        ("rental-business-use", "Main residence rental or business use", raw.get("main_residence_rental_business_use")),
+        ("absence-periods", "Main residence absence periods", raw.get("main_residence_absence_periods")),
+        ("spouse-conflict", "Spouse or partner main-residence conflict", raw.get("main_residence_spouse_conflict")),
+        ("property-records", "Main residence property records", raw.get("main_residence_property_records")),
+        ("foreign-resident-discount", "Foreign resident discount", raw.get("foreign_resident_discount")),
+        ("summary", "Supplied summary", raw.get("summary")),
+        ("decline-signals", "Decline signals", cgt_decline_signal_text(raw) or "none"),
+        ("conflict-signals", "Conflict signals", cgt_conflict_signal_text(raw) or "none"),
+        ("alias-conflicts", "Alias conflicts", cgt_alias_conflict_text(raw) or "none"),
+        ("calculation-boundary", "Calculation boundary", "No capital gain or loss amount is worked out"),
+    )
+
+
 def cgt_schedule_row(
     raw: Dict[str, Any],
     evidence: List[str],
@@ -15011,6 +16014,8 @@ def cgt_schedule_row(
         status,
         cgt_row_sources(raw),
         tab_text=cgt_tab_text(evidence, review),
+        row_kind="capital-gains",
+        facts=cgt_handoff_facts(raw),
     )
     if review:
         row["tab_kind"] = "review"
@@ -15074,6 +16079,8 @@ def cgt_item_row(
         status,
         cgt_row_sources(item),
         tab_text=cgt_tab_text(evidence, review),
+        row_kind="capital-gains",
+        facts=cgt_handoff_facts(item),
     )
     if review:
         row["tab_kind"] = "review"
@@ -15105,6 +16112,19 @@ def cgt_reconciliation_row(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> 
         "Evidence" if conflicts else "Accountant review",
         ATO_CGT_SOURCES,
         tab_text=cgt_reconciliation_tab_text(conflicts),
+        row_kind="capital-gains",
+        facts=handoff_facts(
+            ("proceeds-item-total", "Proceeds item total", cgt_item_amount_total(items, "proceeds")),
+            ("proceeds-aggregate", "Proceeds aggregate supplied", raw.get("proceeds")),
+            ("cost-base-item-total", "Cost base item total", cgt_item_amount_total(items, "cost_base")),
+            ("cost-base-aggregate", "Cost base aggregate supplied", raw.get("cost_base")),
+            ("incidental-costs-item-total", "Incidental costs item total", cgt_item_amount_total(items, "incidental_costs")),
+            ("incidental-costs-aggregate", "Incidental costs aggregate supplied", raw.get("incidental_costs")),
+            ("losses-item-total", "Losses item total", cgt_item_amount_total(items, "losses")),
+            ("losses-aggregate", "Losses aggregate supplied", raw.get("losses")),
+            ("conflicts", "Reconciliation conflicts", ", ".join(conflicts) or "none"),
+            ("calculation-boundary", "Calculation boundary", "No capital gain or loss amount is worked out"),
+        ),
     )
 
 
@@ -15123,9 +16143,15 @@ def cgt_evidence_rows(raw: Any) -> List[Dict[str, Any]]:
                         "CGT schedule",
                         "CGT evidence required",
                         f"CGT item {idx} needs {', '.join(evidence)}; no capital gain or loss amount worked out.",
-                        "CGT item row remains not copy-ready until evidence gaps are resolved.",
+                        "CGT item row is not ready for entry until evidence gaps are resolved.",
                         "Evidence",
                         cgt_row_sources(item),
+                        row_kind="evidence-queue",
+                        facts=handoff_facts(
+                            ("cgt-item", "CGT item", idx),
+                            ("evidence-needed", "Evidence needed", ", ".join(evidence)),
+                            ("calculation-boundary", "Calculation boundary", "No capital gain or loss amount is worked out"),
+                        ),
                     )
                 )
         top_level_evidence = cgt_itemized_top_level_evidence(raw)
@@ -15140,9 +16166,15 @@ def cgt_evidence_rows(raw: Any) -> List[Dict[str, Any]]:
                     "CGT schedule",
                     "CGT evidence required",
                     f"{evidence_prefix} {', '.join(top_level_evidence)}; no capital gain or loss amount worked out.",
-                    f"{subject} remain not copy-ready until evidence gaps are resolved.",
+                    f"{subject} are not ready for entry until evidence gaps are resolved.",
                     "Evidence",
                     cgt_row_sources(raw),
+                    row_kind="evidence-queue",
+                    facts=handoff_facts(
+                        ("cgt-scope", "CGT scope", subject),
+                        ("evidence-needed", "Evidence needed", ", ".join(top_level_evidence)),
+                        ("calculation-boundary", "Calculation boundary", "No capital gain or loss amount is worked out"),
+                    ),
                 )
             )
         reconciliation = cgt_reconciliation_conflicts(raw, items)
@@ -15156,6 +16188,11 @@ def cgt_evidence_rows(raw: Any) -> List[Dict[str, Any]]:
                     "Supplied aggregate CGT totals and itemized CGT event rows conflict or include unresolved item amounts.",
                     "Evidence",
                     ATO_CGT_SOURCES,
+                    row_kind="evidence-queue",
+                    facts=handoff_facts(
+                        ("reconciliation", "CGT reconciliation evidence needed", cgt_reconciliation_tab_text(reconciliation)),
+                        ("calculation-boundary", "Calculation boundary", "No capital gain or loss amount is worked out"),
+                    ),
                 )
             )
         return rows
@@ -15167,9 +16204,14 @@ def cgt_evidence_rows(raw: Any) -> List[Dict[str, Any]]:
                 "CGT schedule",
                 "CGT evidence required",
                 f"CGT event needs {', '.join(evidence)}; no capital gain or loss amount worked out.",
-                "CGT schedule row remains not copy-ready until evidence gaps are resolved.",
+                "CGT schedule row is not ready for entry until evidence gaps are resolved.",
                 "Evidence",
                 cgt_row_sources(raw),
+                row_kind="evidence-queue",
+                facts=handoff_facts(
+                    ("evidence-needed", "CGT evidence needed", ", ".join(evidence)),
+                    ("calculation-boundary", "Calculation boundary", "No capital gain or loss amount is worked out"),
+                ),
             )
         )
     return rows
@@ -15975,10 +17017,31 @@ def crypto_rows(raw: Any) -> List[Dict[str, Any]]:
             "Crypto asset investments",
             "Crypto disposals, swaps, exchanges, conversions, rewards, transfers, wallet records, and cost-base workflow",
             answer,
-            "Crypto handling collects event type, asset, dates, proceeds, cost base, rewards, wallet records, ownership, and both business and private use context flags for accountant review before manual copy.",
+            "Crypto handling collects event type, asset, dates, proceeds, cost base, rewards, wallet records, ownership, and both business and private use context flags for accountant review before entry.",
             status,
             ATO_CRYPTO_SOURCES,
             tab_text=crypto_tab_text(evidence),
+            row_kind="capital-gains",
+            facts=[
+                *handoff_facts(
+                    ("event-type", "Event type", raw.get("event_type")),
+                    ("asset", "Crypto asset", raw.get("asset")),
+                    ("exchange-wallet", "Exchange or wallet", raw.get("exchange_or_wallet")),
+                    ("quantity", "Quantity", raw.get("quantity")),
+                    ("acquired-date", "Acquired date", raw.get("acquired_date")),
+                    ("disposed-date", "Disposed date", raw.get("disposed_date")),
+                    ("cost-base", "Cost base supplied", raw.get("cost_base")),
+                    ("capital-proceeds", "Capital proceeds supplied", raw.get("capital_proceeds")),
+                    ("rewards-income", "Rewards income supplied", raw.get("rewards_income")),
+                    ("own-wallet-transfer", "Transfer between own wallets", raw.get("transfer_between_wallets")),
+                    ("records", "Wallet records", raw.get("wallet_records")),
+                    ("owner-entity", "Owner or entity", raw.get("ownership_entity")),
+                    ("business-use", "Business-use context", raw.get("business_use")),
+                    ("private-use", "Private-use context", raw.get("private_use")),
+                    ("decline-signals", "Decline signals", decline_text or "none"),
+                ),
+                *indexed_item_handoff_facts("crypto-item", "Crypto item", items),
+            ],
         )
     ]
 
@@ -16781,7 +17844,7 @@ def crypto_bool_field_text(raw: Dict[str, Any], items: List[Dict[str, Any]], key
 def crypto_tab_text(evidence: List[str]) -> str:
     if evidence:
         return f"Crypto workflow needs {', '.join(evidence)} before accountant review."
-    return "Crypto disposals, swaps, exchanges, conversions, rewards, transfers, wallet records, and cost base stay accountant review before manual copy."
+    return "Crypto disposals, swaps, exchanges, conversions, rewards, transfers, wallet records, and cost base require accountant review before entry."
 
 
 def rental_property_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
@@ -16846,10 +17909,30 @@ def rental_property_rows(raw: Any) -> List[Dict[str, Any]]:
             "Rental property worksheet",
             "Rental income, interest, repairs/capital, private use, depreciation, and net loss review",
             answer,
-            "Rental property handling collects income, expenses, records, private-use apportionment, repairs versus capital indicators, depreciation, and net-loss flags for accountant review before manual copy.",
+            "Rental property handling collects income, expenses, records, private-use apportionment, repairs versus capital indicators, depreciation, and net-loss flags for accountant review before entry.",
             status,
             ATO_RENTAL_PROPERTY_SOURCES,
             tab_text=rental_property_tab_text(evidence, review),
+            row_kind="extended-section",
+            facts=[
+                *handoff_facts(
+                    ("property", "Property", raw.get("address")),
+                    ("ownership", "Ownership", raw.get("ownership")),
+                    ("income", "Rental income", raw.get("income")),
+                    ("interest", "Interest expense", raw.get("interest")),
+                    ("repairs", "Repairs", raw.get("repairs")),
+                    ("capital-works", "Capital works", raw.get("capital_works")),
+                    ("depreciation", "Depreciation", raw.get("depreciation")),
+                    ("other-expenses", "Other expenses", raw.get("other_expenses")),
+                    ("private-use", "Private use", raw.get("private_use")),
+                    ("private-days", "Private-use days", raw.get("private_use_days")),
+                    ("available-days", "Available days", raw.get("available_days")),
+                    ("records", "Records", raw.get("records")),
+                    ("worksheet-net", "Prepared worksheet net", rental_property_net_text(raw, items)),
+                    ("decline-signals", "Decline signals", decline_text or "none"),
+                ),
+                *indexed_item_handoff_facts("rental-item", "Rental property item", items),
+            ],
         )
     ]
 
@@ -17911,13 +18994,13 @@ def rental_property_tab_text(evidence: List[str], review: List[str]) -> str:
     if evidence and review:
         return (
             f"Rental property worksheet needs {', '.join(evidence)} and stays accountant review for "
-            f"{', '.join(review)} before manual copy."
+            f"{', '.join(review)} before entry."
         )
     if evidence:
         return f"Rental property worksheet needs {', '.join(evidence)} before accountant review."
     if review:
-        return f"Rental property worksheet stays accountant review for {', '.join(review)} before manual copy."
-    return "Rental property worksheet stays accountant review before manual copy."
+        return f"Rental property worksheet requires accountant review before entry because of {', '.join(review)}."
+    return "Rental property worksheet requires accountant review before entry."
 
 
 def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
@@ -17988,10 +19071,25 @@ def ess_rows(raw: Any) -> List[Dict[str, Any]]:
             "Employee share schemes",
             "ESS statement and discount workflow",
             answer,
-            "ESS discounts need the ESS statement, deferred taxing-point timing, foreign-source split, and label mapping reviewed before manual copy.",
+            "ESS discounts need the ESS statement, deferred taxing-point timing, foreign-source split, and label mapping reviewed before entry.",
             status,
             [ATO_ESS_SOURCE, ATO_ESS_STATEMENT_SOURCE],
             tab_text=tab_text,
+            row_kind="extended-section",
+            facts=[
+                *handoff_facts(
+                    ("employer", "Employer", raw.get("employer")),
+                    ("provider", "Provider", raw.get("provider")),
+                    ("scheme", "Scheme", raw.get("scheme")),
+                    ("taxed-upfront-discount", "Prepared taxed-upfront discount total", taxed_upfront),
+                    ("deferred-discount", "Prepared deferred discount total", deferred),
+                    ("foreign-source-discount", "Prepared foreign-source discount total", foreign_source),
+                    ("tfn-withheld", "Prepared TFN amount withheld total", tfn_withheld),
+                    ("statement", "ESS statement", raw.get("statement")),
+                    ("decline-signals", "Decline signals", decline_text or "none"),
+                ),
+                *indexed_item_handoff_facts("ess-item", "ESS item", items),
+            ],
         )
     ]
 
@@ -18318,9 +19416,124 @@ def uncommon_income_rows(raw_values: Any) -> List[Dict[str, Any]]:
                 "Accountant review",
                 ATO_INDIVIDUAL_SOURCE,
                 tab_text="Uncommon income needs later workflow or accountant review.",
+                row_kind="extended-section",
+                facts=handoff_facts(
+                    ("uncommon-income", "Uncommon income supplied", value),
+                ),
             )
         )
     return rows
+
+
+def handoff_facts(
+    *entries: tuple[str, str, Any],
+) -> List[Dict[str, Any]]:
+    """Build explicit non-mapped facts for an intake-owned row."""
+    supplied = [entry for entry in entries if not is_missing(entry[2])]
+    if not supplied and entries:
+        key, label, _value = entries[0]
+        supplied = [(key, label, "Not supplied")]
+    return [
+        taxmate_handoff.fact(key, label, value)
+        for key, label, value in supplied
+    ]
+
+
+def atomic_handoff_facts(
+    key_prefix: str,
+    label_prefix: str,
+    value: Any,
+    *,
+    action_kind: str = "",
+) -> List[Dict[str, Any]]:
+    """Flatten a supplied container into stable labelled scalar facts."""
+    if isinstance(value, dict):
+        facts: List[Dict[str, Any]] = []
+        for key, item in value.items():
+            if str(key).startswith("_"):
+                continue
+            key_part = handoff_key_part(key)
+            label_part = handoff_label_part(key)
+            facts.extend(
+                atomic_handoff_facts(
+                    f"{key_prefix}-{key_part}",
+                    f"{label_prefix} - {label_part}",
+                    item,
+                    action_kind=action_kind,
+                )
+            )
+        return facts
+    if isinstance(value, (list, tuple)):
+        facts = []
+        for index, item in enumerate(value, start=1):
+            facts.extend(
+                atomic_handoff_facts(
+                    f"{key_prefix}-{index}",
+                    f"{label_prefix} {index}",
+                    item,
+                    action_kind=action_kind,
+                )
+            )
+        return facts
+    if is_missing(value):
+        return []
+    return [
+        taxmate_handoff.fact(
+            key_prefix,
+            label_prefix,
+            value,
+            action_kind=action_kind,
+        )
+    ]
+
+
+def indexed_item_handoff_facts(
+    key_prefix: str,
+    label_prefix: str,
+    items: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    facts: List[Dict[str, Any]] = []
+    for index, item in enumerate(items, start=1):
+        facts.extend(
+            atomic_handoff_facts(
+                f"{key_prefix}-{index}",
+                f"{label_prefix} {index}",
+                item,
+            )
+        )
+    return facts
+
+
+def handoff_key_part(value: Any) -> str:
+    key = re.sub(r"[^a-z0-9]+", "-", text(value).strip().lower()).strip("-")
+    return key or "value"
+
+
+HANDOFF_LABEL_ACRONYMS = {
+    "abn": "ABN",
+    "bas": "BAS",
+    "cgt": "CGT",
+    "ess": "ESS",
+    "gst": "GST",
+    "id": "ID",
+    "mls": "MLS",
+    "payg": "PAYG",
+    "psb": "PSB",
+    "psi": "PSI",
+    "tfn": "TFN",
+    "url": "URL",
+    "wfh": "WFH",
+}
+
+
+def handoff_label_part(value: Any) -> str:
+    words = re.sub(r"[_-]+", " ", text(value)).strip().lower().split()
+    if not words:
+        return "Value"
+    return " ".join(
+        HANDOFF_LABEL_ACRONYMS.get(word, word.capitalize() if index == 0 else word)
+        for index, word in enumerate(words)
+    )
 
 
 def guide_row(
@@ -18332,7 +19545,21 @@ def guide_row(
     status: Any,
     source: Any,
     tab_text: Optional[str] = None,
+    *,
+    row_kind: str,
+    facts: List[Dict[str, Any]],
+    checked_at: Optional[str] = None,
 ) -> Dict[str, Any]:
+    if not row_kind.strip():
+        raise ValueError("guide row_kind must be nonblank")
+    if not facts:
+        raise ValueError("guide facts must be non-empty")
+    contract = taxmate_handoff.build_row_contract(
+        row_kind,
+        status,
+        facts,
+        income_year=DEFAULT_INCOME_YEAR,
+    )
     return {
         "number": number,
         "ato_area": area,
@@ -18341,9 +19568,28 @@ def guide_row(
         "why_included": why,
         "status": status,
         "source_urls": source if isinstance(source, list) else [source],
-        "checked_at": generation_checked_at(),
+        "checked_at": checked_at if checked_at is not None else generation_checked_at(),
         "tab_text": tab_text or why,
+        **contract,
     }
+
+
+def finalize_guide_row(row: Dict[str, Any], income_year: str) -> Dict[str, Any]:
+    normalized = dict(row)
+    facts = normalized.get("facts")
+    if not isinstance(facts, list) or not facts:
+        raise ValueError("internal guide row missing explicit facts")
+    row_kind = text(normalized.get("row_kind")).strip()
+    if not row_kind:
+        raise ValueError("internal guide row missing explicit row_kind")
+    contract = taxmate_handoff.build_row_contract(
+        row_kind,
+        normalized.get("status"),
+        facts,
+        income_year=income_year,
+    )
+    normalized.update(contract)
+    return normalized
 
 
 def generation_checked_at() -> str:

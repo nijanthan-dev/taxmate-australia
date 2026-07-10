@@ -20,6 +20,7 @@ import skillgen
 import taxmate_calc
 import taxmate_coverage
 import taxmate_finance
+import taxmate_handoff
 import taxmate_refresh
 import taxmate_skills
 import taxmate_taxpack
@@ -480,6 +481,7 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("finance_investment_income_classifies_as_income", finance_investment_income_classifies_as_income(), "")
     add("finance_investment_income_outranks_business_tag", finance_investment_income_outranks_business_tag(), "")
     add("taxpack_guide_html_contract", taxpack_guide_html_contract(), "")
+    add("handoff_destination_contract", handoff_destination_contract(), "")
     add("validate_json_uses_check_field", validate_json_uses_check_field(), "")
     add("recrawl_link_host_filter_strict", recrawl_link_host_filter_strict(), "")
     add("super_seed_matches_registry", super_seed_matches_registry(registry), "")
@@ -2608,6 +2610,530 @@ def finance_investment_income_outranks_business_tag() -> bool:
     return finding.bucket == "investment_income" and finding.tax_treatment == "tax_statement_record"
 
 
+HANDOFF_TAXONOMY = {
+    "enter-reviewed-value",
+    "answer-guided-question",
+    "retain-evidence",
+    "resolve-before-entry",
+    "accountant-handoff-only",
+    "not-entered-directly",
+    "destination-requires-review",
+}
+HANDOFF_DESTINATION_KINDS = {"verified", "requires-review", "not-entered"}
+HANDOFF_VERIFIED_CHANNEL_KINDS = {"verified", "requires-review", "not-entered", "read-only"}
+HANDOFF_ACTION_DESTINATION_MATRIX = {
+    "enter-reviewed-value": {"verified"},
+    "answer-guided-question": {"verified"},
+    "retain-evidence": {"not-entered"},
+    "resolve-before-entry": {"verified", "requires-review"},
+    "accountant-handoff-only": {"verified", "requires-review", "not-entered"},
+    "not-entered-directly": {"not-entered"},
+    "destination-requires-review": {"requires-review"},
+}
+HANDOFF_ENTRY_WORDING = re.compile(r"\b(?:copy|enter)\b", re.IGNORECASE)
+HANDOFF_EXPECTED_SOURCE_IDS = {
+    "phi-tax-claim-code": {"mytax": "ato-f99c3a4ad079", "paper": "ato-2a2cf8a8c462"},
+    "phi-premiums-j": {"mytax": "ato-f99c3a4ad079", "paper": "ato-2a2cf8a8c462"},
+    "phi-rebate-k": {"mytax": "ato-f99c3a4ad079", "paper": "ato-2a2cf8a8c462"},
+    "phi-benefit-code-l": {"mytax": "ato-f99c3a4ad079", "paper": "ato-2a2cf8a8c462"},
+    "m1-exemption-question": {"mytax": "ato-4cedc9f93767", "paper": "ato-39155fe09d00"},
+    "m1-full-days-v": {"mytax": "ato-4cedc9f93767", "paper": "ato-39155fe09d00"},
+    "m1-half-days-w": {"mytax": "ato-4cedc9f93767", "paper": "ato-39155fe09d00"},
+    "m2-cover-question-e": {"mytax": "ato-836a84c52e60", "paper": "ato-b8cc03014dc1"},
+    "m2-days-not-liable-a": {"mytax": "ato-836a84c52e60", "paper": "ato-b8cc03014dc1"},
+    "spouse-had-question": {"mytax": "ato-815a889d0a59", "paper": "ato-29a73bbec8f5"},
+}
+HANDOFF_EXPECTED_CHANNEL_KINDS = {
+    mapping_id: {"mytax": "verified", "paper": "verified"}
+    for mapping_id in HANDOFF_EXPECTED_SOURCE_IDS
+}
+HANDOFF_EXPECTED_CHANNEL_KINDS["m1-exemption-question"]["paper"] = "requires-review"
+HANDOFF_EXPECTED_CHANNEL_KINDS["m2-days-not-liable-a"]["mytax"] = "requires-review"
+HANDOFF_EXPECTED_CHANNEL_KINDS["spouse-had-question"]["paper"] = "requires-review"
+HANDOFF_EXPECTED_LOCATIONS = {
+    "phi-tax-claim-code": {
+        "mytax": "Prepare return > Medicare and private health insurance > Private health insurance > Statement line panel > Tax claim code",
+        "paper": "Private health insurance policy details > Tax claim code box",
+    },
+    "phi-premiums-j": {
+        "mytax": "Prepare return > Medicare and private health insurance > Private health insurance > Your premiums eligible for Australian Government rebate",
+        "paper": "Private health insurance policy details > label J",
+    },
+    "phi-rebate-k": {
+        "mytax": "Prepare return > Medicare and private health insurance > Private health insurance > Your Australian Government rebate received",
+        "paper": "Private health insurance policy details > label K",
+    },
+    "phi-benefit-code-l": {
+        "mytax": "Prepare return > Medicare and private health insurance > Private health insurance > Benefit code",
+        "paper": "Private health insurance policy details > label L",
+    },
+    "m1-exemption-question": {
+        "mytax": "Prepare return > Medicare and private health insurance details > Medicare levy exemption > Were you in an exemption category during 2025-26?",
+        "paper": "Question M1 category instructions; no equivalent generic paper yes/no label is verified",
+    },
+    "m1-full-days-v": {
+        "mytax": "Prepare return > Medicare and private health insurance details > Full 2% levy exemption - number of days",
+        "paper": "Question M1 > label V",
+    },
+    "m1-half-days-w": {
+        "mytax": "Prepare return > Medicare and private health insurance details > Half 2% levy exemption - number of days",
+        "paper": "Question M1 > label W",
+    },
+    "m2-cover-question-e": {
+        "mytax": "Prepare return > Medicare and private health insurance > Medicare levy surcharge > Were you and all your dependants covered by an appropriate level of private patient hospital cover from 1 July 2025 to 30 June 2026?",
+        "paper": "Question M2 > label E Yes/No - full-year appropriate private patient hospital cover for you and all dependants",
+    },
+    "m2-days-not-liable-a": {
+        "mytax": "After an explicit No to full-year appropriate family cover, myTax may skip this field after its income check; if shown: Number of days you do not have to pay the surcharge",
+        "paper": "Question M2 > label A",
+    },
+    "spouse-had-question": {
+        "mytax": "Personalise return > Did you have a spouse at any time between 1 July 2025 and 30 June 2026?",
+        "paper": "Spouse details - married or de facto section; no separate paper had-spouse label is verified",
+    },
+}
+HANDOFF_EXPECTED_HASHES = {
+    "ato-f99c3a4ad079": "da3592fbaa5668af33905a526362d13a976695834084d0d0f8b7bbc405e4d1d1",
+    "ato-2a2cf8a8c462": "38a3018c329e8c1e168a6b169a35530c730f89f1a199bc834e81488003117cc6",
+    "ato-4cedc9f93767": "2c7c4e2623459a338d146c41899f7a3b5ad5f2ea70c1b95640d950e9cad6d23c",
+    "ato-39155fe09d00": "272598694ee4ca50ee47cef9b8130dbd93a7c16dbcdb868aedeeaed5abc752b7",
+    "ato-836a84c52e60": "ef48900dec7c99657f728f1751f49f83fd3eea6ff5d9401476cffc5554874f24",
+    "ato-b8cc03014dc1": "b604f09774f9a6ee18e63d98afa7fee9e678cb6f7429b1f71fba9a5a0797c163",
+    "ato-815a889d0a59": "ea256593bfa3b5d30a4cc742970e6a88d02c9645ccb2db497ae4b1e35728d016",
+    "ato-29a73bbec8f5": "29f2101f9c146bcfd111bd457799c3eb049a6a725b4362175ea4abb4670c99fe",
+}
+HANDOFF_EXPECTED_SOURCE_STATE = {
+    "ato-f99c3a4ad079": (
+        "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/medicare-and-private-health-insurance/private-health-insurance",
+        "2026-07-10T06:27:17Z",
+    ),
+    "ato-2a2cf8a8c462": (
+        "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/medicare-levy-questions-m1-m2-individual-tax-return-2026/private-health-insurance-policy-details-2026",
+        "2026-07-10T06:27:17Z",
+    ),
+    "ato-4cedc9f93767": (
+        "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/medicare-and-private-health-insurance/medicare-levy-reduction-or-exemption",
+        "2026-07-10T06:27:17Z",
+    ),
+    "ato-39155fe09d00": (
+        "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/medicare-levy-questions-m1-m2-individual-tax-return-2026/m1-medicare-levy-reduction-or-exemption-2026",
+        "2026-07-10T06:27:17Z",
+    ),
+    "ato-836a84c52e60": (
+        "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/medicare-and-private-health-insurance/medicare-levy-surcharge",
+        "2026-07-10T06:27:18Z",
+    ),
+    "ato-b8cc03014dc1": (
+        "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/medicare-levy-questions-m1-m2-individual-tax-return-2026/m2-medicare-levy-surcharge-2026",
+        "2026-07-10T06:27:18Z",
+    ),
+    "ato-815a889d0a59": (
+        "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/other-mytax-instructions-including-spouse-details-and-income-tests/spouse-details",
+        "2026-07-10T06:27:18Z",
+    ),
+    "ato-29a73bbec8f5": (
+        "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/spouse-details-married-or-de-facto-2026",
+        "2026-07-10T06:27:48Z",
+    ),
+}
+
+
+def handoff_source_valid(source: Any) -> bool:
+    required_source_fields = ("source_id", "title", "url", "checked_at", "content_hash")
+    return (
+        isinstance(source, dict)
+        and all(str(source.get(field, "")).strip() for field in required_source_fields)
+        and str(source.get("url", "")).startswith("https://www.ato.gov.au/")
+        and re.fullmatch(r"[0-9a-f]{64}", str(source.get("content_hash", ""))) is not None
+    )
+
+
+def verified_destination_channels_valid(destination: Dict[str, Any]) -> bool:
+    channels = destination.get("channels")
+    if not isinstance(channels, dict) or set(channels) != {"mytax", "paper"}:
+        return False
+    aggregate_sources = destination.get("sources")
+    if not isinstance(aggregate_sources, list) or not aggregate_sources:
+        return False
+    if any(not handoff_source_valid(source) for source in aggregate_sources):
+        return False
+    aggregate_source_keys = {
+        (source.get("source_id"), source.get("content_hash"))
+        for source in aggregate_sources
+        if isinstance(source, dict)
+    }
+    verified_channels = 0
+    for channel_name in ("mytax", "paper"):
+        channel = channels.get(channel_name)
+        if not isinstance(channel, dict):
+            return False
+        channel_kind = channel.get("kind")
+        location = str(channel.get("location", "")).strip()
+        sources = channel.get("sources")
+        if channel_kind not in HANDOFF_VERIFIED_CHANNEL_KINDS or not location:
+            return False
+        if str(destination.get(channel_name, "")).strip() != location:
+            return False
+        if not isinstance(sources, list) or not sources or any(not handoff_source_valid(source) for source in sources):
+            return False
+        if any(
+            (source.get("source_id"), source.get("content_hash")) not in aggregate_source_keys
+            for source in sources
+            if isinstance(source, dict)
+        ):
+            return False
+        if channel_kind == "verified":
+            verified_channels += 1
+    return verified_channels >= 1
+
+
+def handoff_destination_valid(handoff: Any) -> bool:
+    if not isinstance(handoff, dict):
+        return False
+    action_kind = handoff.get("kind")
+    if action_kind not in HANDOFF_TAXONOMY:
+        return False
+    if handoff.get("label") != taxmate_handoff.TAXONOMY[action_kind]["label"]:
+        return False
+    if handoff.get("next_action") != taxmate_handoff.ACTION_TEXT[action_kind]:
+        return False
+    destination = handoff.get("destination")
+    if not isinstance(destination, dict):
+        return False
+    destination_kind = destination.get("kind")
+    if destination_kind not in HANDOFF_DESTINATION_KINDS:
+        return False
+    if not str(destination.get("label", "")).strip():
+        return False
+    action_text = str(handoff.get("next_action", ""))
+    if action_kind == "accountant-handoff-only" and HANDOFF_ENTRY_WORDING.search(action_text):
+        return False
+    if destination_kind not in HANDOFF_ACTION_DESTINATION_MATRIX[action_kind]:
+        return False
+    destination_label = str(destination.get("label", "")).strip().lower()
+    if destination_kind == "requires-review" and "review" not in destination_label:
+        return False
+    if destination_kind == "not-entered" and "not entered" not in destination_label:
+        return False
+    if destination_kind == "verified":
+        if not str(destination.get("mapping_id", "")).strip():
+            return False
+        if not verified_destination_channels_valid(destination):
+            return False
+    elif destination.get("sources") not in (None, []):
+        return False
+    return True
+
+
+def handoff_payload_contract(payload: Any, root: Optional[str] = None) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    repository = Path(root) if root is not None else Path(__file__).resolve().parents[1]
+    income_year = (
+        payload["income_year"]
+        if "income_year" in payload
+        else taxmate_handoff.DEFAULT_INCOME_YEAR
+    )
+    rows: List[Dict[str, Any]] = []
+    for section in ("items", "abn_items", "bas_items", "missing_facts", "evidence_items"):
+        section_rows = payload.get(section)
+        if not isinstance(section_rows, list):
+            return False
+        if any(not isinstance(row, dict) for row in section_rows):
+            return False
+        rows.extend(section_rows)
+    extractions = payload.get("extracted_values")
+    if not isinstance(extractions, list):
+        return False
+    if not rows and not extractions:
+        return False
+
+    for row in rows:
+        row_kind = str(row.get("row_kind", "")).strip()
+        if not row_kind or row_kind == "unclassified-row" or not handoff_destination_valid(row.get("handoff")):
+            return False
+        facts = row.get("facts")
+        if not isinstance(facts, list) or not facts:
+            return False
+        fact_keys: List[str] = []
+        for fact in facts:
+            if not isinstance(fact, dict):
+                return False
+            fact_key = str(fact.get("key", "")).strip()
+            fact_label = str(fact.get("label", "")).strip()
+            if not fact_key or not fact_label:
+                return False
+            if fact_key == "prepared-answer" or fact_key.startswith("prepared-detail-"):
+                return False
+            if fact_label.lower().startswith("prepared detail"):
+                return False
+            if "value" not in fact:
+                return False
+            if not handoff_destination_valid(fact.get("handoff")):
+                return False
+            fact_keys.append(fact_key)
+        if len(fact_keys) != len(set(fact_keys)):
+            return False
+
+        fact_fields = {
+            "key",
+            "binding_key",
+            "label",
+            "value",
+            "why",
+            "action_kind",
+            "destination_key",
+            "destination_context",
+            "handoff",
+        }
+        if any(set(fact) != fact_fields for fact in facts):
+            return False
+        declarative_facts = [
+            {
+                field: fact[field]
+                for field in (
+                    "key",
+                    "label",
+                    "value",
+                    "why",
+                    "action_kind",
+                    "destination_key",
+                    "destination_context",
+                )
+            }
+            for fact in facts
+        ]
+        effective_status = taxmate_handoff.effective_status_kind(
+            row.get("status"),
+            row.get("status_kind"),
+            row.get("tab_kind"),
+        )
+        canonical = taxmate_handoff.normalize_row_contract(
+            row_kind=row_kind,
+            facts=declarative_facts,
+            handoff={},
+            status=effective_status,
+            income_year=income_year,
+            question="",
+            answer="",
+            why="",
+            root=repository,
+        )
+        if canonical["facts"] != facts or canonical["handoff"] != row["handoff"]:
+            return False
+
+        review_like = any(
+            taxmate_handoff.review_like_status(row.get(field))
+            for field in ("status", "status_kind", "tab_kind")
+            if field in row
+        )
+        if review_like:
+            handoffs = [row["handoff"], *(fact["handoff"] for fact in facts)]
+            if any(handoff.get("kind") != "accountant-handoff-only" for handoff in handoffs):
+                return False
+            if any(HANDOFF_ENTRY_WORDING.search(str(handoff.get("next_action", ""))) for handoff in handoffs):
+                return False
+
+        if "source_urls" not in row or "checked_at" not in row:
+            return False
+        source_urls = row.get("source_urls")
+        if not isinstance(source_urls, list):
+            return False
+        if source_urls and not taxmate_handoff.text_value(row.get("checked_at")):
+            return False
+
+    for index, extraction in enumerate(extractions, start=1):
+        if not isinstance(extraction, dict):
+            return False
+        if extraction.get("row_kind") != "ai-extraction":
+            return False
+        if not handoff_destination_valid(extraction.get("handoff")):
+            return False
+        facts = extraction.get("facts")
+        if not isinstance(facts, list) or not facts:
+            return False
+        if not any(field in extraction for field in ("document", "source_file", "page", "source_note")):
+            return False
+        fact_keys = []
+        for fact in facts:
+            if not isinstance(fact, dict):
+                return False
+            fact_key = str(fact.get("key", "")).strip()
+            fact_label = str(fact.get("label", "")).strip()
+            if not fact_key or not fact_label:
+                return False
+            if fact_key == "prepared-answer" or fact_key.startswith("prepared-detail-"):
+                return False
+            if fact_label.lower().startswith("prepared detail"):
+                return False
+            if "value" not in fact:
+                return False
+            if not handoff_destination_valid(fact.get("handoff")):
+                return False
+            fact_keys.append(fact_key)
+        if len(fact_keys) != len(set(fact_keys)):
+            return False
+        canonical_extraction = taxmate_handoff.normalize_extraction_row(
+            extraction,
+            income_year,
+            index=index,
+            root=repository,
+        )
+        if canonical_extraction != extraction:
+            return False
+        review_like = any(
+            taxmate_handoff.review_like_status(extraction.get(field))
+            for field in ("status", "status_kind", "tab_kind")
+            if field in extraction
+        )
+        if review_like:
+            handoffs = [extraction["handoff"], *(fact["handoff"] for fact in facts)]
+            if any(handoff.get("kind") != "accountant-handoff-only" for handoff in handoffs):
+                return False
+            if any(HANDOFF_ENTRY_WORDING.search(str(handoff.get("next_action", ""))) for handoff in handoffs):
+                return False
+    return True
+
+
+def handoff_destination_contract(root: Optional[str] = None) -> bool:
+    repository = Path(root) if root is not None else Path(__file__).resolve().parents[1]
+    if set(taxmate_handoff.TAXONOMY) != HANDOFF_TAXONOMY:
+        return False
+    if any(
+        not str(entry.get("label", "")).strip() or not str(entry.get("description", "")).strip()
+        for entry in taxmate_handoff.TAXONOMY.values()
+    ):
+        return False
+    if taxmate_handoff.destination_mapping_errors(repository):
+        return False
+
+    try:
+        manifest = taxmate_handoff.load_destination_manifest(repository)
+        mappings = manifest["destinations"]
+    except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):
+        return False
+    if manifest.get("schema_version") != 2 or manifest.get("income_year") != taxmate_handoff.DEFAULT_INCOME_YEAR:
+        return False
+    if not isinstance(mappings, dict) or set(mappings) != set(HANDOFF_EXPECTED_SOURCE_IDS):
+        return False
+    for mapping_id, channels in HANDOFF_EXPECTED_SOURCE_IDS.items():
+        mapping = mappings.get(mapping_id)
+        if not isinstance(mapping, dict):
+            return False
+        for channel_name, expected_source_id in channels.items():
+            channel = mapping.get(channel_name)
+            if not isinstance(channel, dict):
+                return False
+            if channel.get("kind") != HANDOFF_EXPECTED_CHANNEL_KINDS[mapping_id][channel_name]:
+                return False
+            if channel.get("location") != HANDOFF_EXPECTED_LOCATIONS[mapping_id][channel_name]:
+                return False
+            if channel.get("source_id") != expected_source_id:
+                return False
+            if channel.get("content_hash") != HANDOFF_EXPECTED_HASHES[expected_source_id]:
+                return False
+
+    try:
+        coverage, registry = taxmate_handoff.source_state(repository)
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        return False
+    if not set(HANDOFF_EXPECTED_SOURCE_STATE).issubset(coverage) or not set(HANDOFF_EXPECTED_SOURCE_STATE).issubset(registry):
+        return False
+    for source_id, (expected_url, expected_checked_at) in HANDOFF_EXPECTED_SOURCE_STATE.items():
+        covered = coverage[source_id]
+        record = registry[source_id]
+        expected_hash = HANDOFF_EXPECTED_HASHES[source_id]
+        registry_url = taxmate_handoff.canonical_url(str(record.get("final_url") or record.get("url") or ""))
+        if (
+            covered.get("status") != "verified"
+            or covered.get("canonical_url") != expected_url
+            or covered.get("content_hash") != expected_hash
+            or covered.get("checked_at") != expected_checked_at
+            or record.get("content_verified") is not True
+            or record.get("content_hash") != expected_hash
+            or record.get("last_checked") != expected_checked_at
+            or registry_url != expected_url
+        ):
+            return False
+    for mapping_id in mappings:
+        context = {"tax_claim_code": "A"} if mapping_id.startswith("phi-") else {}
+        destination = taxmate_handoff.verified_destination(
+            mapping_id,
+            income_year="2025-26",
+            root=repository,
+            context=context,
+        )
+        if not handoff_destination_valid(
+            {
+                "kind": "enter-reviewed-value",
+                "label": taxmate_handoff.TAXONOMY["enter-reviewed-value"]["label"],
+                "next_action": "Use the reviewed value at the verified destination.",
+                "destination": destination,
+            }
+        ):
+            return False
+
+    malformed = taxmate_handoff.normalize_row_contract(
+        row_kind="",
+        facts=None,
+        handoff={"kind": "enter-reviewed-value"},
+        status="Used",
+        income_year=taxmate_handoff.DEFAULT_INCOME_YEAR,
+        question="Malformed direct row",
+        answer=False,
+        why="Malformed input stays visible.",
+        root=repository,
+    )
+    if malformed["handoff"]["kind"] != "destination-requires-review":
+        return False
+    if malformed["handoff"]["destination"]["kind"] != "requires-review":
+        return False
+    if malformed["facts"][0].get("value") is not False:
+        return False
+
+    falsey = taxmate_handoff.build_row_contract(
+        "validation-falsey-row",
+        "Evidence",
+        [
+            taxmate_handoff.fact("zero", "Zero", 0, action_kind="retain-evidence"),
+            taxmate_handoff.fact("false", "False", False, action_kind="retain-evidence"),
+        ],
+        root=repository,
+    )
+    falsey_values = [fact.get("value") for fact in falsey["facts"]]
+    if (
+        len(falsey_values) != 2
+        or type(falsey_values[0]) is not int
+        or falsey_values[0] != 0
+        or falsey_values[1] is not False
+    ):
+        return False
+
+    first_mapping = next(iter(mappings))
+    reviewed = taxmate_handoff.normalize_handoff(
+        {
+            "kind": "enter-reviewed-value",
+            "next_action": "Enter this value.",
+            "destination": {"mapping_id": first_mapping, "kind": "verified", "label": "Verified destination"},
+        },
+        status_kind="review",
+        income_year="2025-26",
+        root=repository,
+    )
+    if reviewed["kind"] != "accountant-handoff-only":
+        return False
+    if HANDOFF_ENTRY_WORDING.search(reviewed["next_action"]):
+        return False
+
+    try:
+        import taxmate_intake
+
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+    except Exception:
+        return False
+    return handoff_payload_contract(payload, str(repository))
+
+
 def taxpack_guide_html_contract() -> bool:
     try:
         body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_data(None))
@@ -2619,37 +3145,54 @@ def taxpack_guide_html_contract() -> bool:
         "Prepared by user",
         "Not an ATO form",
         "Not fileable",
-        "background:#fff0f1",
-        "background:#eef5ff",
-        "background:#effbf4",
-        "background:#fff7dc",
-        "left:-64px",
-        "spotlight-target",
-        "hide-tabs",
-        "only-review",
-        "only-evidence",
-        '<button type="button" class="tab',
-        '<span class="tab-text">',
-        "event.key==='Enter'||event.key===' '",
-        "Tax items and review flags",
-        "ATO-aligned manual copy worksheet",
-        "<th>Source</th>",
+        "Preparation aid only",
+        "Return fields and next actions",
+        'class="handoff-card',
+        'class="fact-list"',
+        "Next action",
+        "Where it belongs",
+        "Why this action",
+        "Source context",
+        'class="context-index"',
+        "Review-required queue",
+        "Accountant review queue",
+        'class="queue-item"',
+        "Source/provenance appendix",
+        'class="source-id"',
+        'data-review-required="true"',
+        'data-filter="all"',
+        'data-filter="review"',
+        'data-filter="evidence"',
+        "@media screen and (max-width:520px)",
+        "@media print",
+        "beforeprint",
+        "getElementById",
+        "reviewRequired",
+        "break-inside",
+        '<ul class="taxonomy-list">',
         "source-url",
         "Checked 2026-06-23T09:04:57Z",
     ]
-    if not all(item in body for item in required):
+    if not all(token in body for token in required):
         return False
-    if "Deductions and review flags" in body or "ATO-aligned deduction worksheet" in body:
+    forbidden = [
+        "<table",
+        "Prepared detail",
+        "ATO-aligned manual copy worksheet",
+        "Tax items and review flags",
+        "querySelector('[data-anchor=",
+        "Prepared by " + "TaxMate",
+    ]
+    if any(token in body for token in forbidden):
         return False
-    if "target-dot" in body or "border-radius:50%" in body:
+    if any(token in body.lower() for token in ("copy-ready", "copy ready", "manual copy", "double-dip")):
         return False
-    if ("Prepared by " + "TaxMate") in body:
+
+    anchors = re.findall(r'<article class="handoff-card[^"]*" id="([^"]+)"', body)
+    targets = re.findall(r'href="#(row-[^"]+)"', body)
+    if not anchors or len(anchors) != len(set(anchors)):
         return False
-    if "function findTarget" not in body or "tab.dataset.target+'" in body:
-        return False
-    targets = set(re.findall(r'data-target="([^"]+)"', body))
-    anchors = set(re.findall(r'data-anchor="([^"]+)"', body))
-    if not targets or not targets.issubset(anchors):
+    if not targets or not set(targets).issubset(set(anchors)) or not set(anchors).issubset(set(targets)):
         return False
 
     quoted = taxmate_taxpack.guide_item(
@@ -2660,7 +3203,7 @@ def taxpack_guide_html_contract() -> bool:
             "answer": "User-entered value",
             "why_included": "Selector escape regression.",
             "status": "Evidence",
-            "tab_text": "Quoted row number should not break tabs.",
+            "tab_text": "Quoted row number should not break links.",
         }
     )
     quoted_body = taxmate_taxpack.render_html(
@@ -2671,12 +3214,15 @@ def taxpack_guide_html_contract() -> bool:
             items=[quoted],
         )
     )
+    quoted_anchors = re.findall(r'<article class="handoff-card[^"]*" id="([^"]+)"', quoted_body)
+    quoted_targets = re.findall(r'href="#(row-[^"]+)"', quoted_body)
     quoted_ok = (
-        'data-anchor="row-1-D&quot;1"' in quoted_body
-        and 'data-target="row-1-D&quot;1"' in quoted_body
-        and "findTarget(spread,tab.dataset.target)" in quoted_body
-        and "tab.dataset.target+'" not in quoted_body
+        len(quoted_anchors) == 1
+        and quoted_targets
+        and set(quoted_targets) == set(quoted_anchors)
+        and "querySelector('[data-anchor=" not in quoted_body
     )
+
     duplicate = taxmate_taxpack.guide_item(
         {
             "number": "D1",
@@ -2696,12 +3242,13 @@ def taxpack_guide_html_contract() -> bool:
             items=[duplicate, duplicate],
         )
     )
-    duplicate_anchors = re.findall(r'<td data-anchor="([^"]+)"', duplicate_body)
-    duplicate_targets = [
-        target
-        for target in re.findall(r'<button type="button" class="tab [^"]+" data-target="([^"]+)"', duplicate_body)
-        if target.startswith("row-")
-    ]
+    duplicate_anchors = re.findall(r'<article class="handoff-card[^"]*" id="([^"]+)"', duplicate_body)
+    duplicate_targets = re.findall(r'href="#(row-[^"]+)"', duplicate_body)
+    duplicate_ok = (
+        duplicate_anchors == ["row-main-1-D1", "row-main-2-D1"]
+        and set(duplicate_targets) == set(duplicate_anchors)
+    )
+
     source_url = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/records-you-need-to-keep"
     second_url = "https://www.ato.gov.au/individuals-and-families/your-tax-return/how-to-lodge-your-tax-return"
     sourced = taxmate_taxpack.guide_item(
@@ -2730,197 +3277,79 @@ def taxpack_guide_html_contract() -> bool:
         f'<span class="source-url">{source_url}</span>' in sourced_body
         and f'<span class="source-url">{second_url}</span>' in sourced_body
         and '<span class="checked-at">Checked 2026-06-28T00:00:00Z</span>' in sourced_body
-        and sourced_body.count(f'<span class="source-url">{source_url}</span>') == 1
+        and 'href="#row-main-1-S1"' in sourced_body
     )
-    stale_kinds = ["evidence", "answer", "ato", "skipped", "grey"]
-    downgraded_badges = [
-        '<span class="status gap">Evidence</span>',
-        '<span class="status used">Used</span>',
-        '<span class="status label">ATO label</span>',
-        '<span class="status skipped">N/A skipped</span>',
-    ]
-    conflicting_ok = True
-    for status_kind in stale_kinds:
-        for tab_kind in stale_kinds:
-            conflicting = taxmate_taxpack.guide_item(
-                {
-                    "number": "R1",
-                    "ato_area": "Other",
-                    "question": "Conflicting status?",
-                    "answer": "User-entered value",
-                    "why_included": "Explicit review status must not be downgraded.",
-                    "status": "Accountant review",
-                    "status_kind": status_kind,
-                    "tab_kind": tab_kind,
-                    "tab_text": "Conflicting status fields require accountant review.",
-                }
-            )
-            conflicting_body = taxmate_taxpack.render_html(
-                taxmate_taxpack.GuideData(
-                    income_year="2025-26",
-                    generated_date=taxmate_taxpack.default_generated_date(),
-                    summary_note="Conflicting status regression.",
-                    items=[conflicting],
-                )
-            )
-            if not (
-                conflicting.status_kind == "review"
-                and conflicting.tab_kind == "review"
-                and '<span class="status review-badge">Accountant review</span>' in conflicting_body
-                and 'class="tab red review"' in conflicting_body
-                and '<ul class="review-list">' in conflicting_body
-                and "<li>Conflicting status fields require accountant review.</li>" in conflicting_body
-                and not any(badge in conflicting_body for badge in downgraded_badges)
-            ):
-                conflicting_ok = False
-    for review_field in ("status", "status_kind", "tab_kind"):
-        raw = {
+
+    conflicting = taxmate_taxpack.guide_item(
+        {
             "number": "R1",
             "ato_area": "Other",
-            "question": "Split status?",
+            "question": "Conflicting status?",
             "answer": "User-entered value",
-            "why_included": "Any explicit review field must control output.",
-            "status": "Evidence",
+            "why_included": "Review status must retain precedence.",
+            "status": "Accountant review required",
             "status_kind": "evidence",
-            "tab_kind": "evidence",
-            "tab_text": "One field still requires accountant review.",
+            "tab_kind": "answer",
+            "tab_text": "Conflicting status fields require accountant review.",
         }
-        raw[review_field] = "Accountant review"
-        conflicting = taxmate_taxpack.guide_item(raw)
-        conflicting_body = taxmate_taxpack.render_html(
-            taxmate_taxpack.GuideData(
-                income_year="2025-26",
-                generated_date=taxmate_taxpack.default_generated_date(),
-                summary_note="Split status regression.",
-                items=[conflicting],
-            )
+    )
+    conflicting_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Status regression.",
+            items=[conflicting],
         )
-        if not (
-            conflicting.status_kind == "review"
-            and conflicting.tab_kind == "review"
-            and "<li>One field still requires accountant review.</li>" in conflicting_body
-            and not any(badge in conflicting_body for badge in downgraded_badges)
-        ):
-            conflicting_ok = False
-    review_like_labels = [
-        "Accountant review required",
-        "Requires accountant review",
-        "Review required",
-        "Needs review",
-        "Tax agent review required",
-    ]
-    for label in review_like_labels:
-        conflicting = taxmate_taxpack.guide_item(
-            {
-                "number": "R1",
-                "ato_area": "Other",
-                "question": "Review-like label?",
-                "answer": "User-entered value",
-                "why_included": "Review-like status labels must not be downgraded.",
-                "status": label,
-                "status_kind": "evidence",
-                "tab_kind": "answer",
-                "tab_text": "Review-like label requires accountant review.",
-            }
-        )
-        conflicting_body = taxmate_taxpack.render_html(
-            taxmate_taxpack.GuideData(
-                income_year="2025-26",
-                generated_date=taxmate_taxpack.default_generated_date(),
-                summary_note="Review-like status regression.",
-                items=[conflicting],
-            )
-        )
-        if not (
-            conflicting.status_kind == "review"
-            and conflicting.tab_kind == "review"
-            and '<span class="status review-badge">Accountant review</span>' in conflicting_body
-            and "<li>Review-like label requires accountant review.</li>" in conflicting_body
-            and not any(badge in conflicting_body for badge in downgraded_badges)
-        ):
-            conflicting_ok = False
-    blank_review = taxmate_taxpack.guide_item(
+    )
+    conflicting_contract = taxmate_taxpack.item_contract(conflicting, "2025-26")
+    conflicting_ok = (
+        conflicting.status_kind == "review"
+        and conflicting.tab_kind == "review"
+        and conflicting_contract["handoff"]["kind"] == "accountant-handoff-only"
+        and HANDOFF_ENTRY_WORDING.search(conflicting_contract["handoff"]["next_action"]) is None
+        and '<span class="status review-badge">Accountant review</span>' in conflicting_body
+        and 'href="#row-main-1-R1"' in conflicting_body
+        and "Review status must retain precedence." in conflicting_body
+    )
+
+    precedence = taxmate_taxpack.guide_item(
         {
-            "number": "R2",
+            "number": "P1",
             "ato_area": "Other",
-            "question": "Blank review explanation?",
-            "answer": "User-entered value",
-            "status": "Accountant review",
-            "status_kind": "review",
-            "tab_kind": "review",
+            "question": "Status precedence?",
+            "answer": 0,
+            "status": "N/A skipped",
+            "status_kind": "ATO label",
+            "tab_kind": "Used",
         }
     )
-    blank_review_body = taxmate_taxpack.render_html(
-        taxmate_taxpack.GuideData(
-            income_year="2025-26",
-            generated_date=taxmate_taxpack.default_generated_date(),
-            summary_note="Blank review regression.",
-            items=[blank_review],
-        )
-    )
-    blank_review_ok = (
-        blank_review.tab_text == "Row R2: Accountant review."
-        and "<li>Row R2: Accountant review.</li>" in blank_review_body
-        and '<span class="tab-text">Row R2: Accountant review.</span>' in blank_review_body
-    )
-    direct_blank = taxmate_taxpack.GuideItem(
-        number="R3",
+    direct_precedence = taxmate_taxpack.GuideItem(
+        number="P2",
         ato_area="Other",
-        question="Direct blank review?",
-        answer="User-entered value",
-        why_included="",
+        question="Direct status precedence?",
+        answer=False,
+        why_included="Direct status precedence.",
         source_urls=[],
         checked_at="",
-        status="Accountant review",
-        status_kind="review",
-        tab_title="Row R3 direct review",
+        status="N/A skipped",
+        status_kind="answer",
+        tab_title="",
         tab_text="",
-        tab_kind="review",
+        tab_kind="evidence",
     )
-    direct_blank_body = taxmate_taxpack.render_html(
+    precedence_ok = (
+        precedence.status_kind == "answer"
+        and precedence.tab_kind == "answer"
+        and direct_precedence.row_kind == "external-row"
+        and taxmate_taxpack.effective_status_kind(direct_precedence) == "evidence"
+        and taxmate_taxpack.effective_tab_kind(direct_precedence) == "evidence"
+    )
+
+    extended_body = taxmate_taxpack.render_html(
         taxmate_taxpack.GuideData(
             income_year="2025-26",
             generated_date=taxmate_taxpack.default_generated_date(),
-            summary_note="Direct blank review regression.",
-            items=[direct_blank],
-        )
-    )
-    direct_blank_ok = (
-        "<li>Row R3: Accountant review.</li>" in direct_blank_body
-        and '<span class="tab-text">Row R3: Accountant review.</span>' in direct_blank_body
-    )
-    direct_conflict = taxmate_taxpack.GuideItem(
-        number="R4",
-        ato_area="Other",
-        question="Direct conflicting review?",
-        answer="User-entered value",
-        why_included="",
-        source_urls=[],
-        checked_at="",
-        status="Accountant review required",
-        status_kind="evidence",
-        tab_title="Row R4 direct conflict",
-        tab_text="",
-        tab_kind="answer",
-    )
-    direct_conflict_body = taxmate_taxpack.render_html(
-        taxmate_taxpack.GuideData(
-            income_year="2025-26",
-            generated_date=taxmate_taxpack.default_generated_date(),
-            summary_note="Direct conflict regression.",
-            items=[direct_conflict],
-        )
-    )
-    direct_conflict_ok = (
-        '<span class="status review-badge">Accountant review</span>' in direct_conflict_body
-        and 'class="tab red review"' in direct_conflict_body
-        and "<li>Row R4: Accountant review.</li>" in direct_conflict_body
-    )
-    extended_review_body = taxmate_taxpack.render_html(
-        taxmate_taxpack.GuideData(
-            income_year="2025-26",
-            generated_date=taxmate_taxpack.default_generated_date(),
-            summary_note="Extended review regression.",
+            summary_note="Extended section regression.",
             items=[],
             abn_items=[
                 taxmate_taxpack.GuideItem(
@@ -2928,7 +3357,7 @@ def taxpack_guide_html_contract() -> bool:
                     ato_area="Sole-trader ABN",
                     question="ABN review row?",
                     answer="Income 100.00; expenses 40.00",
-                    why_included="Extended ABN review must appear in side tabs and queue.",
+                    why_included="ABN review stays visible.",
                     source_urls=[],
                     checked_at="",
                     status="Accountant review",
@@ -2941,10 +3370,10 @@ def taxpack_guide_html_contract() -> bool:
             bas_items=[
                 taxmate_taxpack.GuideItem(
                     number="BAS",
-                    ato_area="BAS worksheet",
+                    ato_area="BAS preparation",
                     question="BAS review row?",
-                    answer="1A 10.00; 1B 5.00; net GST 5.00",
-                    why_included="Extended BAS review must appear in side tabs and queue.",
+                    answer="1A 10.00; 1B 5.00",
+                    why_included="BAS review stays visible.",
                     source_urls=[],
                     checked_at="",
                     status="Accountant review",
@@ -2959,8 +3388,8 @@ def taxpack_guide_html_contract() -> bool:
                     number="MISS-1",
                     ato_area="Missing facts",
                     question="Missing review row?",
-                    answer="Missing WFH weekdays",
-                    why_included="Missing review rows must have tab targets.",
+                    answer="Missing weekdays",
+                    why_included="Missing fact stays visible.",
                     source_urls=[],
                     checked_at="",
                     status="Accountant review",
@@ -2976,7 +3405,7 @@ def taxpack_guide_html_contract() -> bool:
                     ato_area="Evidence",
                     question="Evidence review row?",
                     answer="Missing receipt",
-                    why_included="Evidence review rows must have tab targets.",
+                    why_included="Evidence gap stays visible.",
                     source_urls=[],
                     checked_at="",
                     status="Accountant review",
@@ -2988,21 +3417,26 @@ def taxpack_guide_html_contract() -> bool:
             ],
         )
     )
-    extended_review_ok = (
-        'data-anchor="row-201-ABN"' in extended_review_body
-        and 'data-target="row-201-ABN"' in extended_review_body
-        and 'data-anchor="row-301-BAS"' in extended_review_body
-        and 'data-target="row-301-BAS"' in extended_review_body
-        and 'data-anchor="row-401-MISS-1"' in extended_review_body
-        and 'data-target="row-401-MISS-1"' in extended_review_body
-        and 'data-anchor="row-501-EVID-1"' in extended_review_body
-        and 'data-target="row-501-EVID-1"' in extended_review_body
-        and "<li>ABN review queue text.</li>" in extended_review_body
-        and "<li>BAS review queue text.</li>" in extended_review_body
-        and "<li>Missing review queue text.</li>" in extended_review_body
-        and "<li>Evidence review queue text.</li>" in extended_review_body
-        and "ABN review queue text.; BAS review queue text." not in extended_review_body
+    extended_anchors = {
+        "row-abn-1-ABN",
+        "row-bas-1-BAS",
+        "row-missing-1-MISS-1",
+        "row-evidence-1-EVID-1",
+    }
+    extended_ok = (
+        all(f'id="{anchor}"' in extended_body for anchor in extended_anchors)
+        and all(f'href="#{anchor}"' in extended_body for anchor in extended_anchors)
+        and all(
+            text in extended_body
+            for text in (
+                "ABN review row?",
+                "BAS review row?",
+                "Missing review row?",
+                "Evidence review row?",
+            )
+        )
     )
+
     falsey = taxmate_taxpack.guide_item(
         {
             "number": 0,
@@ -3015,13 +3449,18 @@ def taxpack_guide_html_contract() -> bool:
             "tab_title": 0,
             "tab_text": 0,
             "source_urls": [False],
+            "row_kind": "validation-falsey",
+            "facts": [
+                {"key": "zero", "label": "Zero", "value": 0},
+                {"key": "false", "label": "False", "value": False},
+            ],
         }
     )
     falsey_body = taxmate_taxpack.render_html(
         taxmate_taxpack.GuideData(
             income_year="2025-26",
             generated_date=taxmate_taxpack.default_generated_date(),
-            summary_note="Falsey value regression.",
+            summary_note="Falsey regression.",
             items=[falsey],
         )
     )
@@ -3032,118 +3471,57 @@ def taxpack_guide_html_contract() -> bool:
         and falsey.answer == "0"
         and falsey.why_included == "0"
         and falsey.checked_at == "0"
-        and falsey.tab_title == "0"
-        and falsey.tab_text == "0"
         and falsey.source_urls == ["false"]
-        and "<td>0</td>" in falsey_body
-        and "<td>false</td>" in falsey_body
-        and "<b>0</b>" in falsey_body
-        and '<span class="tab-text">0</span>' in falsey_body
-        and "Checked 0" in falsey_body
+        and '<span class="row-number">0</span>' in falsey_body
+        and '<span class="fact-value">0</span>' in falsey_body
+        and '<span class="fact-value">false</span>' in falsey_body
         and '<span class="source-url">false</span>' in falsey_body
+        and "Checked 0" in falsey_body
+        and 'id="row-main-1-0"' in falsey_body
     )
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json") as handle:
-        json.dump(
-            {
-                "income_year": 0,
-                "generated_date": False,
-                "summary_note": 0,
-                "items": [
-                    {
-                        "number": 0,
-                        "ato_area": 0,
-                        "question": False,
-                        "answer": 0,
-                        "why_included": 0,
-                        "status": "Evidence",
-                    }
-                ],
-            },
-            handle,
-        )
-        handle.flush()
-        falsey_file = taxmate_taxpack.load_guide_data(handle.name)
-    falsey_file_body = taxmate_taxpack.render_html(falsey_file)
-    falsey_file_ok = (
-        falsey_file.income_year == "0"
-        and falsey_file.generated_date == "false"
-        and falsey_file.summary_note == "0"
-        and "Income year 0" in falsey_file_body
-        and "Generated false" in falsey_file_body
-        and "0</p>" in falsey_file_body
+
+    malformed = taxmate_taxpack.load_guide_payload(
+        {
+            "income_year": "2025-26",
+            "items": [
+                {
+                    "number": "MALFORMED-HANDOFF",
+                    "ato_area": "Other",
+                    "question": "Malformed handoff",
+                    "answer": False,
+                    "why_included": "Malformed input stays visible.",
+                    "status": "Used",
+                    "handoff": {"kind": "enter-reviewed-value"},
+                }
+            ],
+            "missing_facts": {"bad": "shape"},
+            "evidence_items": ["bad row"],
+            "extracted_values": {"bad": "shape"},
+        }
     )
-    direct_falsey = taxmate_taxpack.GuideItem(
-        number=0,
-        ato_area=0,
-        question=False,
-        answer=0,
-        why_included=0,
-        source_urls=[0],
-        checked_at=0,
-        status="Evidence",
-        status_kind="evidence",
-        tab_title=0,
-        tab_text=0,
-        tab_kind="evidence",
+    malformed_body = taxmate_taxpack.render_html(malformed)
+    malformed_ok = (
+        "Destination requires review" in malformed_body
+        and "Malformed missing_facts input" in malformed_body
+        and "Malformed evidence_items-1 input" in malformed_body
+        and "Malformed AI extraction input" in malformed_body
+        and "Accountant handoff only" in malformed_body
+        and '<span class="fact-value">false</span>' in malformed_body
     )
-    direct_falsey_body = taxmate_taxpack.render_html(
-        taxmate_taxpack.GuideData(
-            income_year="2025-26",
-            generated_date=taxmate_taxpack.default_generated_date(),
-            summary_note="Direct falsey value regression.",
-            items=[direct_falsey],
+
+    return all(
+        (
+            quoted_ok,
+            duplicate_ok,
+            sourced_ok,
+            conflicting_ok,
+            precedence_ok,
+            extended_ok,
+            falsey_ok,
+            malformed_ok,
         )
     )
-    direct_falsey_ok = (
-        "<td>0</td>" in direct_falsey_body
-        and "<td>false</td>" in direct_falsey_body
-        and '<span class="source-url">0</span>' in direct_falsey_body
-        and "<b>0</b>" in direct_falsey_body
-        and '<span class="tab-text">0</span>' in direct_falsey_body
-        and "Checked 0" in direct_falsey_body
-        and 'data-anchor="row-1-0"' in direct_falsey_body
-    )
-    direct_blank_false_number = taxmate_taxpack.GuideItem(
-        number=False,
-        ato_area="Other",
-        question="Direct false number?",
-        answer=0,
-        why_included="",
-        source_urls=[],
-        checked_at="",
-        status="Accountant review",
-        status_kind="review",
-        tab_title="Direct false number",
-        tab_text="",
-        tab_kind="review",
-    )
-    direct_blank_false_number_body = taxmate_taxpack.render_html(
-        taxmate_taxpack.GuideData(
-            income_year="2025-26",
-            generated_date=taxmate_taxpack.default_generated_date(),
-            summary_note="Direct false number fallback.",
-            items=[direct_blank_false_number],
-        )
-    )
-    direct_blank_false_number_ok = (
-        "Row false: Accountant review." in direct_blank_false_number_body
-        and 'data-anchor="row-1-false"' in direct_blank_false_number_body
-    )
-    return (
-        quoted_ok
-        and duplicate_anchors == ["row-1-D1", "row-2-D1"]
-        and duplicate_targets == ["row-1-D1", "row-2-D1"]
-        and sourced_ok
-        and conflicting_ok
-        and blank_review_ok
-        and direct_blank_ok
-        and direct_conflict_ok
-        and extended_review_ok
-        and falsey_ok
-        and falsey_file_ok
-        and direct_falsey_ok
-        and direct_blank_false_number_ok
-    )
+
 
 
 def validate_json_uses_check_field() -> bool:

@@ -46,7 +46,11 @@ for rel in \
   "mcp/server.cjs" \
   "scripts/taxmate" \
   "scripts/taxmate.py" \
+  "scripts/taxmate_handoff.py" \
   "scripts/taxmate_intake.py" \
+  "config/handoff-destinations.json" \
+  "data/ato_knowledge_base/source_coverage.json" \
+  "data/ato_knowledge_base/source_registry.json" \
   "runtime/skills/research/SKILL.md" \
   "wrappers/taxmate-australia/SKILL.md"; do
   if [[ ! -e "$INSTALLED_PATH/$rel" ]]; then
@@ -73,8 +77,8 @@ grep -q "Accountant review" "$GUIDE_HTML" || {
   echo "error: generated HTML missing accountant review marker" >&2
   exit 1
 }
-grep -q "Manual copy only" "$GUIDE_HTML" || {
-  echo "error: generated HTML missing manual copy marker" >&2
+grep -q "Return fields and next actions" "$GUIDE_HTML" || {
+  echo "error: generated HTML missing handoff heading" >&2
   exit 1
 }
 

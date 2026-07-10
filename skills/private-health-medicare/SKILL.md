@@ -44,6 +44,19 @@ Use for private health and Medicare levy questions. Do not use for deductibility
 - Refuse requests to submit, lodge, file, transmit, finalise, or send prepared material to the ATO.
 - Do not present outputs as lodging-ready advice.
 
+## Runtime handoff contract
+
+- When the full runtime creates an HTML handoff, the runtime owns each atomic fact's action, destination, explanation, and provenance. Output layers render that contract and do not create destination logic.
+- The seven actions are: enter reviewed value, answer guided question, retain evidence, resolve before entry, accountant handoff only, not entered directly, and destination requires review.
+- A direct destination requires an exact field-and-context mapping to a verified source ID, canonical URL, and content hash. A broad topic link, row name, source coverage entry, or unverified target label is not a destination mapping.
+- Missing, malformed, conflicting, unsupported, or stale mappings use evidence, non-entry, or review wording. `Accountant review` overrides entry-ready wording.
+- Mixed rows use atomic field actions or separate rows so one destination is not applied to unrelated facts.
+- Private health statement routes depend on the supplied tax claim code: A, B, and C can map the code and J/K/L fields in myTax and paper after review; D is read-only in myTax and maps the code and J/K/L fields on paper; E maps the code but not J/K/L in myTax and maps the code and J/K/L fields on paper; F maps the code but J/K/L are not entered in either channel.
+- Medicare levy M1 maps the guided myTax exemption-category question and supported full/half exemption day fields; paper mapping is limited to verified labels V and W, while the generic paper category question requires review. An explicit no-exemption answer with no category or day values makes those detail fields not entered directly; supplied category or positive-day conflicts require review.
+- Medicare levy surcharge M2 maps question E only from an explicit local answer to whether the user and all dependants had an appropriate level of private patient hospital cover for the full income year. A true answer also requires 365 supplied cover days, an explicit appropriate-cover signal, and no period conflict. Days not liable can map to paper label A only after an explicit No at E; myTax may skip its days field after the income check, so that channel keeps conditional review wording. E Yes makes the days field non-entry, and missing or conflicting E context requires review.
+- The had-spouse question has a verified myTax destination. The generic paper had-spouse destination and spouse income aggregates require review unless an exact mapping is added.
+- These mappings prepare questions and reviewed values only. They do not calculate a levy, surcharge, rebate, entitlement, or final tax.
+
 ## Output states
 
 - Supported record

@@ -47,39 +47,41 @@ Developer runtime details: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTAL
 
 The optional `npx skills` install produces source-backed guidance, missing-evidence prompts, and conservative `Accountant review` routing. It does not install the renderer and does not render files.
 
-The plugin runtime produces a print-first HTML handoff from reviewed or user-supplied facts. The handoff is a custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable. Users manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff after evidence and review queues are resolved.
+The plugin runtime produces a print-first HTML handoff from reviewed or user-supplied facts. Each worksheet card shows the supplied facts as labelled bullets, the next action, an exact verified myTax/paper destination or explicit non-entry/review wording, why the action applies, and its provenance. The handoff is a custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable.
+
+The runtime-owned handoff taxonomy is: enter reviewed value, answer guided question, retain evidence, resolve before entry, accountant handoff only, not entered directly, and destination requires review. Output layers render this contract and do not infer destinations from row names, broad topic links, or unverified target labels.
 
 The current individual-return handoff includes:
 
 - prep-only boundary and manual-copy warning;
-- intake summary and AI extraction confirmation table;
-- individual return field guide;
+- intake summary and AI extraction confirmation cards;
+- individual return action cards with labelled fact bullets, next actions, destinations, explanations, and context links;
 - primary and secondary PAYG income statement rows with payer, ABN, occupation, gross, withholding, allowances, RFBA, RESC, lump sum labels, statement evidence, and aggregate reconciliation;
 - itemized private health statement lines with insurer or fund, membership or policy identifier, benefit code, premiums eligible for rebate, rebate received, tax claim code, cover days or period, statement evidence, and row-specific provenance, plus Medicare levy/surcharge, spouse, and dependant review rows;
 - itemized investment income rows for bank interest, dividends/franking, managed fund/ETF/AMIT distributions, and trust distribution routing;
 - general CGT event schedule and itemized non-crypto/non-rental CGT event rows with records, current-year and carried-forward loss facts, discount, foreign-resident discount, main residence, and small-business CGT concession review signals, source provenance, reconciliation prompts, and amount-not-worked-out wording;
 - itemized deduction rows for gifts/donations, tax affairs costs, income protection, self-education, union/professional fees, work travel/car/public transport, tools/equipment/assets, personal super contribution deduction prep, and offset routing, all with evidence and review queues;
-- phone plan/data/device/incidental-use rows with WFH fixed-rate double-dip blocking, employer paid/reimbursed/provided exclusions, evidence prompts, and ABN/GST/BAS review routing;
+- phone plan/data/device/incidental-use rows with WFH fixed-rate duplicate-claim prevention, employer paid/reimbursed/provided exclusions, evidence prompts, and ABN/GST/BAS review routing;
 - ABN prep section and BAS worksheet, including ABN profile, income streams, expense categories, 1A/1B, GST-free/input-taxed sales, adjustments, PAYG labels, tax invoice evidence, and accounting-basis review;
-- missing facts queue, evidence queue, and accountant-review queue;
-- source/provenance appendix with source URLs and checked-at dates.
+- missing facts queue, evidence queue, and accountant-review queue using the same row context;
+- row-associated supporting provenance and verified destination-mapping sources.
 
 ## Preview
 
 ![Example TaxMate Australia self-prepared guide output for synthetic John Doe data](assets/readme/taxmate-guide-john-doe.png)
 
-Example guide from synthetic sample data. Shows the overview, prep boundary, manual-copy warning, AI extraction confirmation table, field guide rows, PAYG income statement rows, investment income prep rows, evidence prompts, and `Accountant review` flags. Not an ATO form. Not fileable.
+Example guide from synthetic sample data. Shows the overview, prep boundary, handoff taxonomy, action-card index, and `Accountant review` boundary. Not an ATO form. Not fileable.
 
-![Example TaxMate Australia manual-copy worksheet for synthetic John Doe data](assets/readme/taxmate-guide-john-doe-worksheet.png)
+![Example TaxMate Australia action-card worksheet for synthetic John Doe data](assets/readme/taxmate-guide-john-doe-worksheet.png)
 
-The lower handoff preview shows itemized private health statement plus Medicare levy and surcharge review rows with accountant-review tabs and row-level provenance. The generated HTML also includes spouse and dependant review, investment, deduction, super and offset prep, ABN prep, BAS worksheet, missing facts, evidence queue, accountant-review queue, and source/provenance appendix.
+The worksheet preview shows itemized private health statement, Medicare levy, surcharge, and spouse facts as labelled bullets. Each card keeps its next action, destination or explicit review wording, explanation, and provenance together. The generated HTML also covers dependant, investment, deduction, super, offset, CGT, ABN, BAS, missing-fact, evidence, and accountant-review rows.
 
 The sample data is synthetic. Screenshot maintenance is a contributor task documented in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## What It Does
 
 - Helps users prepare PAYG income statements, itemized private health statement and Medicare/spouse/dependant review facts, ABN/sole-trader facts, GST/BAS facts, investment statements, general CGT event and main residence exemption claim facts, rental property facts, crypto events, deductions, superannuation, offsets, and other individual-return material.
-- Keeps missing-evidence prompts, review queues, source-backed notes, and conservative `Accountant review` flags visible.
+- Keeps next actions, verified destinations or explicit review wording, missing-evidence prompts, review queues, and conservative `Accountant review` flags visible.
 - Keeps source URLs, checked-at dates, source coverage checks, and generated topic skills visible.
 - Audits verified source coverage against runtime/docs/tests status with `./scripts/taxmate coverage audit`.
 - Builds taxpack and print-first HTML guide handoffs from reviewed data.
@@ -150,7 +152,7 @@ Use the installed TaxMate Australia plugin to prepare the print-first individual
 ```
 
 ```text
-I have a reviewed answers file. Use TaxMate to create the prep-only HTML handoff with the AI confirmation table, PAYG rows, private health statement and Medicare/spouse/dependant review rows, investment rows, deduction/super/offset rows, CGT schedule and item rows, detailed ABN prep, BAS worksheet, review queues, and source/provenance appendix.
+I have a reviewed answers file. Use TaxMate to create the prep-only HTML handoff with AI confirmation cards, labelled fact bullets, next actions, verified destinations or explicit review wording, PAYG rows, private health statement and Medicare/spouse/dependant review rows, investment rows, deduction/super/offset rows, CGT schedule and item rows, detailed ABN prep, BAS worksheet, review queues, and source/provenance appendix.
 ```
 
 If you are using `npx skills` guidance only, the agent can build the checklist, review prompts, manual-copy guidance, and source-backed review flags in chat. Rendering the HTML file needs the plugin runtime.
@@ -191,7 +193,7 @@ Use TaxMate Australia to validate the runtime.
 Use TaxMate Australia to write sample individual answers and render the individual-return HTML guide.
 ```
 
-Open the HTML in a browser and use print/save as PDF. The printed PDF keeps the same guide layout and hides the preview toolbar. Rows can include `source_url`, `source_urls`, and `checked_at`; the guide keeps those provenance fields visible in the worksheet.
+Open the HTML in a browser and use print/save as PDF. The printed PDF keeps each action card together where possible and hides navigation controls. Rows can include `source_url`, `source_urls`, and `checked_at`; the guide keeps supporting provenance separate from verified destination-mapping provenance.
 
 Developer fallback from a cloned repository is documented in [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md).
 
