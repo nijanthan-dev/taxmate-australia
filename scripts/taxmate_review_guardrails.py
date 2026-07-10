@@ -562,11 +562,11 @@ def handoff_ast_findings(intake_text: str, taxpack_text: str, mapping_ids: set[s
             for node in ast.walk(intake_tree)
             if isinstance(node, ast.Call) and ast_call_name(node) == "guide_row"
         ]
-        if len(guide_calls) != 67:
+        if len(guide_calls) != 70:
             findings.append(
                 Finding(
                     HANDOFF_DESTINATION_CONTRACT,
-                    f"intake must retain 67 explicit guide_row producers; found {len(guide_calls)}",
+                    f"intake must retain 70 explicit guide_row producers; found {len(guide_calls)}",
                 )
             )
         for node in guide_calls:
@@ -963,6 +963,25 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     capital_gains_rules = read_optional(root, "skills/capital-gains-tax/references/rules.md")
     capital_gains_evidence = read_optional(root, "skills/capital-gains-tax/references/evidence.md")
     findings: List[Finding] = []
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            text,
+            [
+                "REVIEWABLE_PARTNERSHIP_TRUST_FIELDS = (",
+                "PARTNERSHIP_TRUST_FLAT_FIELDS = {",
+                "def partnership_trust_flat_item(",
+                "def partnership_trust_share_rows(",
+                "def partnership_trust_share_evidence_rows(",
+                "ATO_PARTNERSHIP_TRUST_INCOME_SOURCE =",
+                "ATO_COMPENSATION_INCOME_SOURCE =",
+                "ATO_SCHOLARSHIP_PRIZE_SOURCE =",
+                "items.extend(partnership_trust_share_rows(answers))",
+                "rows.extend(partnership_trust_share_evidence_rows(answers))",
+                "def uncommon_income_route(",
+            ],
+        )
+    )
     generic_offset_sources = re.search(r"ATO_OFFSET_SOURCES\s*=\s*\[(.*?)\]\nATO_SUPER_OFFSET_SOURCES", text, re.DOTALL)
     if not generic_offset_sources:
         findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "missing split generic/super offset source constants"))

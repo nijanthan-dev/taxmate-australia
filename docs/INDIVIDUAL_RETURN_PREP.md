@@ -27,6 +27,10 @@ For private health and Medicare prep, keep every private health statement line s
 
 For investment income prep, collect itemized bank interest by payer/account, dividends with franked/unfranked amounts, franking credits and withholding, managed fund/ETF/AMIT distribution statement components, and trust distribution statement facts for individual beneficiaries. Reconcile item totals to supplied aggregate interest/dividend totals. Keep missing statements, AMIT/cost-base adjustments, foreign components, trust distributions, franking uncertainty, and mismatched totals in Evidence or `Accountant review`.
 
+Individual partnership-share and residual trust-beneficiary/share statements use a separate supplementary-income route. Collect entity name, ABN/TFN where supplied, statement status, income and loss components, withholding, credits, source URLs, checked-at dates, and evidence status. This route does not duplicate managed fund/ETF/AMIT or investment trust-distribution rows. Missing statements, malformed amounts, mixed components, losses, uncertain credits, entitlement or allocation questions, and entity-return context stay Evidence or `Accountant review`. Full partnership and trust returns remain future work under #42 and #43.
+
+Uncommon income uses narrow review labels only when verified official source coverage supports them: compensation/insurance payments and scholarships/prizes/awards. Unsupported, unknown, mixed, entity-related, or free-form residual income stays preserved as an uncommon-income review row with evidence gaps visible. TaxMate does not decide final treatment, destination, or copy-ready values.
+
 For rental property prep, collect property identity, ownership, income, loan interest, repairs, capital works, depreciation, other expenses, private-use or holiday-home days, available-for-rent days, records, and net rental loss facts. Treat repairs-versus-capital ambiguity, private use, depreciation, capital works, and net rental loss as review-first; TaxMate prepares a worksheet only.
 
 For sole-trader ABN prep, collect ABN, business name, activity, start/end dates, GST registration status/date, accounting basis, record system, business income streams, and expense categories. Keep private apportionment, home-business, motor vehicle, depreciation, capital expense, losses, PSI, business-versus-hobby, and non-commercial-loss facts visible in Evidence or `Accountant review`.
@@ -52,6 +56,8 @@ For general non-crypto/non-rental CGT event prep, collect top-level facts or ite
 | Phone plan/data/device/incidental use | Structured | Dedicated rows, WFH fixed-rate block, evidence queue, ABN/GST/BAS review routing. |
 | WFH fixed-rate | Structured | 2025-26 calendar helper with records/method review. |
 | CGT, crypto, rental, investment workflows | Structured | Review-first rows with source provenance; no final treatment. |
+| Partnership/trust share statements | Structured | Individual statement facts only; separate from investment distributions and full entity returns. |
+| Uncommon income | Review-first | Narrow compensation/insurance and scholarship/prize/award labels; unsupported facts stay free-form review rows. |
 | Itemized deductions | Structured | Gifts/donations, tax affairs, income protection, self-education, union/professional fees, travel/car/public transport, tools/equipment/assets; all review-first with evidence and duplicate/GST/private-use queues. |
 | Personal super contribution deductions | Structured | Notice of intent, fund acknowledgement, intended deduction, cap, and Division 293 review signals. |
 | Offset routing | Structured | Spouse/super/zone/remote/other offset facts route to Evidence or `Accountant review`; no final offset calculation. |

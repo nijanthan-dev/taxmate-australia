@@ -58,7 +58,8 @@ The current individual-return handoff includes:
 - individual return action cards with labelled fact bullets, next actions, destinations, explanations, and context links;
 - primary and secondary PAYG income statement rows with payer, ABN, occupation, gross, withholding, allowances, RFBA, RESC, lump sum labels, statement evidence, and aggregate reconciliation;
 - itemized private health statement lines with insurer or fund, membership or policy identifier, benefit code, premiums eligible for rebate, rebate received, tax claim code, cover days or period, statement evidence, and row-specific provenance, plus Medicare levy/surcharge, spouse, and dependant review rows;
-- itemized investment income rows for bank interest, dividends/franking, managed fund/ETF/AMIT distributions, and trust distribution routing;
+- itemized investment income rows for bank interest, dividends/franking, managed fund/ETF/AMIT distributions, and investment trust distribution routing;
+- separate individual partnership-share and trust-beneficiary statement rows, plus narrow compensation/insurance and scholarship/prize/award review routing;
 - general CGT event schedule and itemized non-crypto/non-rental CGT event rows with records, current-year and carried-forward loss facts, discount, foreign-resident discount, main residence, and small-business CGT concession review signals, source provenance, reconciliation prompts, and amount-not-worked-out wording;
 - itemized deduction rows for gifts/donations, tax affairs costs, income protection, self-education, union/professional fees, work travel/car/public transport, tools/equipment/assets, personal super contribution deduction prep, and offset routing, all with evidence and review queues;
 - phone plan/data/device/incidental-use rows with WFH fixed-rate duplicate-claim prevention, employer paid/reimbursed/provided exclusions, evidence prompts, and ABN/GST/BAS review routing;
@@ -115,6 +116,10 @@ Use the taxmate-australia-individual-return skill to prepare PAYG income stateme
 
 ```text
 Use the taxmate-australia-individual-return skill to prepare investment income rows from my bank interest, dividend/franking, managed fund/ETF/AMIT, and trust distribution statements.
+```
+
+```text
+Use the taxmate-australia-individual-return skill to prepare my individual partnership-share or trust-beneficiary statement facts separately from managed fund/ETF/AMIT distributions. Preserve statement components, losses, withholding, credits, source links, and evidence gaps. Route uncommon compensation, insurance, scholarship, prize, award, or unsupported income to prep-only review; do not prepare an entity return or decide allocations.
 ```
 
 ```text
