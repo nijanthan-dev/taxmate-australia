@@ -368,9 +368,9 @@ class ReviewGuardrailTests(unittest.TestCase):
                 "if isinstance(value, dict):",
             ),
             (
-                'field not in {"notes", "source_urls", "checked_at"}',
-                'field not in {"notes"}',
-                'field not in {"notes", "source_urls", "checked_at"}',
+                "sanitized, supplied = private_health_detail_with_metadata(\n            value,",
+                "sanitized, supplied = (value, {}) if False else (value, {})\n        #",
+                "private_health_detail_with_metadata(",
             ),
             (
                 "if not contains_unknown(value) and normalized in PRIVATE_HEALTH_NOOP_TEXT:\n            return PRIVATE_HEALTH_NO_VALUE",
@@ -405,7 +405,212 @@ class ReviewGuardrailTests(unittest.TestCase):
 
                 findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
 
-            self.assertTrue(any(expected in finding.detail for finding in findings))
+            self.assertTrue(
+                any(expected in finding.detail for finding in findings),
+                (old, [finding.detail for finding in findings]),
+            )
+
+    def test_private_health_guardrail_requires_dependant_denial_normalization(self) -> None:
+        mutations = (
+            (
+                'if bare and normalized in {"0", "false", "no", "nil", "zero"}:',
+                'if False and normalized in {"0", "false", "no", "nil", "zero"}:',
+                'if bare and normalized in {"0", "false", "no", "nil", "zero"}:',
+            ),
+            (
+                "return any(private_health_dependant_denial_value(item) for item in value)",
+                "return False",
+                "return any(private_health_dependant_denial_value(item) for item in value)",
+            ),
+            (
+                "if private_health_summary_substantive(summary):\n            represented.update(summary)",
+                "if False:\n            represented.update(summary)",
+                "if private_health_summary_substantive(summary):\n            represented.update(summary)",
+            ),
+            (
+                "if wrapper_keys:\n            represented.update(parent)",
+                "if False:\n            represented.update(parent)",
+                "if wrapper_keys:\n            represented.update(parent)",
+            ),
+            (
+                "or private_health_dependant_summary_entries(value)",
+                "or False",
+                "or private_health_dependant_summary_entries(value)",
+            ),
+            (
+                "private_health_record_metadata(\n                parent,\n                source_aliases,\n                checked_at_aliases,",
+                "private_health_record_metadata(\n                {},\n                source_aliases,\n                checked_at_aliases,",
+                "private_health_record_metadata(\n                parent,\n                source_aliases,\n                checked_at_aliases,",
+            ),
+            (
+                'and re.sub(r"[^a-z0-9]+", " ", value.lower()).strip() == "none"',
+                "and False",
+                'strip() == "none"',
+            ),
+            (
+                "def dependant_rows(summary: Any, items: Any) -> List[Dict[str, Any]]:\n"
+                "    summary = private_health_dependant_summary_from_values(summary, items)",
+                "def dependant_rows(summary: Any, items: Any) -> List[Dict[str, Any]]:\n"
+                "    summary = {}",
+                "dependant denial normalization missing from dependant_rows",
+            ),
+            (
+                "dependant_summary = private_health_dependant_summary_from_values(\n"
+                '        raw.get("dependant_summary", {}),\n'
+                '        raw.get("dependants", []),\n'
+                "    )",
+                'dependant_summary = raw.get("dependant_summary", {})',
+                "dependant denial normalization missing from private_health_medicare_required_answer",
+            ),
+        )
+        for old, new, expected in mutations:
+            with self.subTest(old=old), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                for rel in (
+                    "scripts/taxmate_intake.py",
+                    "config/runtime-coverage.json",
+                    "data/ato_knowledge_base/source_coverage.json",
+                ):
+                    destination = root / rel
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ROOT / rel, destination)
+                intake_path = root / "scripts/taxmate_intake.py"
+                intake = intake_path.read_text(encoding="utf-8")
+                self.assertIn(old, intake)
+                intake_path.write_text(intake.replace(old, new, 1), encoding="utf-8")
+
+                findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+                self.assertTrue(
+                    any(expected in finding.detail for finding in findings),
+                    (old, [finding.detail for finding in findings]),
+                )
+
+    def test_private_health_guardrail_requires_partial_before_negation(self) -> None:
+        mutations = (
+            (
+                r"part\s+(?:of\s+(?:the\s+)?)?(?:income\s+)?year",
+                r"part\s+(?:around\s+(?:the\s+)?)?(?:income\s+)?year",
+                r"part\s+(?:of\s+(?:the\s+)?)?(?:income\s+)?year",
+            ),
+            (
+                "if private_health_partial_cover_text(normalized):\n        return True",
+                "if private_health_partial_cover_text(normalized):\n        return False",
+                "if private_health_partial_cover_text(normalized):\n        return True",
+            ),
+            (
+                "if private_health_continuous_cover_text(normalized):\n        return False",
+                "if private_health_continuous_cover_text(normalized):\n        return True",
+                "if private_health_continuous_cover_text(normalized):\n        return False",
+            ),
+            (
+                "private_health_partial_cover_text(covered_raw)",
+                "private_health_partial_text(covered_raw)",
+                "private_health_partial_cover_text(covered_raw)",
+            ),
+            (
+                "private_health_partial_cover_text(cover_raw)",
+                "private_health_partial_text(cover_raw)",
+                "MLS review must use partial cover classification for gaps and evidence",
+            ),
+            (
+                "if private_health_negated_spouse_absence_text(normalized):\n        return True",
+                "if private_health_negated_spouse_absence_text(normalized):\n        return False",
+                "if private_health_negated_spouse_absence_text(normalized):\n        return True",
+            ),
+            (
+                'separator = r"(?:(?:to|and|until|through(?:\\s+to)?)\\s+)?"',
+                'separator = r"(?:to\\s+)?"',
+                'separator = r"(?:(?:to|and|until|through(?:\\s+to)?)\\s+)?"',
+            ),
+        )
+        for old, new, expected in mutations:
+            with self.subTest(old=old), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                for rel in (
+                    "scripts/taxmate_intake.py",
+                    "config/runtime-coverage.json",
+                    "data/ato_knowledge_base/source_coverage.json",
+                ):
+                    destination = root / rel
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ROOT / rel, destination)
+                intake_path = root / "scripts/taxmate_intake.py"
+                intake = intake_path.read_text(encoding="utf-8")
+                self.assertIn(old, intake)
+                intake_path.write_text(intake.replace(old, new, 1), encoding="utf-8")
+
+                findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+
+            self.assertTrue(
+                any(expected in finding.detail for finding in findings),
+                (old, [finding.detail for finding in findings]),
+            )
+
+    def test_private_health_guardrail_requires_workflow_boundary_invariants(self) -> None:
+        mutations = (
+            (
+                '| {"income_year"}',
+                '| set()',
+                '| {"income_year"}',
+            ),
+            (
+                "false_is_value=isinstance(value, dict)",
+                "false_is_value=False",
+                "false_is_value=isinstance(value, dict)",
+            ),
+            (
+                "private_health_capture_cover_lineage(merged, records)",
+                "pass",
+                "private_health_capture_cover_lineage(merged, records)",
+            ),
+            (
+                "raw = private_health_normalize_workflow_boundary(raw)",
+                "raw = dict(raw)",
+                "raw = private_health_normalize_workflow_boundary(raw)",
+            ),
+            (
+                'note: Dict[str, Any] = {"private_health_statement": detail}',
+                "note: Dict[str, Any] = {}",
+                'note: Dict[str, Any] = {"private_health_statement": detail}',
+            ),
+            (
+                "inherited.pop(inherited_key, None)",
+                "pass",
+                "inherited.pop(inherited_key, None)",
+            ),
+            (
+                'record["_income_year"] = income_year\n    return record',
+                'record.setdefault("_income_year", income_year)\n    return record',
+                'record["_income_year"] = income_year',
+            ),
+            (
+                "if key not in PRIVATE_HEALTH_WORKFLOW_NOTE_KEYS",
+                "if True",
+                "if key not in PRIVATE_HEALTH_WORKFLOW_NOTE_KEYS",
+            ),
+        )
+        for old, new, expected in mutations:
+            with self.subTest(old=old), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                for rel in (
+                    "scripts/taxmate_intake.py",
+                    "config/runtime-coverage.json",
+                    "data/ato_knowledge_base/source_coverage.json",
+                ):
+                    destination = root / rel
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ROOT / rel, destination)
+                intake_path = root / "scripts/taxmate_intake.py"
+                intake = intake_path.read_text(encoding="utf-8")
+                self.assertIn(old, intake)
+                intake_path.write_text(intake.replace(old, new, 1), encoding="utf-8")
+
+                findings = taxmate_review_guardrails.check_private_health_medicare_contract(root)
+
+            self.assertTrue(
+                any(expected in finding.detail for finding in findings),
+                (old, [finding.detail for finding in findings]),
+            )
 
     def test_private_health_guardrail_requires_recursive_noop_docs(self) -> None:
         cases = (
@@ -419,6 +624,16 @@ class ReviewGuardrailTests(unittest.TestCase):
                 "Carry source context onto supplemental review rows",
                 "supplemental provenance",
             ),
+            (
+                taxmate_review_guardrails.PRIVATE_HEALTH_MEDICARE_DEPENDANT_DENIAL_DOC_PHRASE,
+                "Keep explicit dependant denials visible",
+                "dependant denial",
+            ),
+            (
+                taxmate_review_guardrails.PRIVATE_HEALTH_MEDICARE_PARTIAL_COVER_DOC_PHRASE,
+                "Keep partial cover wording visible",
+                "partial cover",
+            ),
         )
         for phrase, replacement, label in cases:
             with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
@@ -429,6 +644,8 @@ class ReviewGuardrailTests(unittest.TestCase):
                     "config/runtime-coverage.json",
                     "data/ato_knowledge_base/source_coverage.json",
                     "skills/private-health-medicare/references/rules.md",
+                    "skills/individual-return/SKILL.md",
+                    "skills/individual-return/references/rules.md",
                     "docs/INDIVIDUAL_RETURN_PREP.md",
                 )
                 for rel in files:
@@ -438,6 +655,8 @@ class ReviewGuardrailTests(unittest.TestCase):
                 for rel in (
                     "scripts/skillgen.py",
                     "skills/private-health-medicare/references/rules.md",
+                    "skills/individual-return/SKILL.md",
+                    "skills/individual-return/references/rules.md",
                     "docs/INDIVIDUAL_RETURN_PREP.md",
                 ):
                     path = root / rel
@@ -455,6 +674,8 @@ class ReviewGuardrailTests(unittest.TestCase):
                 {
                     f"{label} contract missing from scripts/skillgen.py",
                     f"{label} contract missing from skills/private-health-medicare/references/rules.md",
+                    f"{label} contract missing from skills/individual-return/SKILL.md",
+                    f"{label} contract missing from skills/individual-return/references/rules.md",
                     f"{label} contract missing from docs/INDIVIDUAL_RETURN_PREP.md",
                 },
                 missing_docs,

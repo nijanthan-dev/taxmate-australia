@@ -291,9 +291,12 @@ class PrivateHealthMedicareWorkflowTests(unittest.TestCase):
         for answers in cases:
             with self.subTest(answers=answers):
                 payload = self.payload(answers)
+                rows = self.rows(payload)
 
                 self.assertEqual([], self.private_health_rows(payload))
                 self.assertEqual([], self.phi_evidence(payload))
+                for key in taxmate_intake.MEDICARE_PRIVATE_HEALTH_BASE_FIELDS:
+                    self.assertNotIn(key, rows)
 
     def test_unknown_and_ambiguous_answers_are_not_noops(self) -> None:
         cases = (
@@ -1137,6 +1140,656 @@ class PrivateHealthMedicareWorkflowTests(unittest.TestCase):
 
                 self.assertIn("partial-year", evidence)
 
+    def test_partial_cover_phrase_families_precede_categorical_negation(self) -> None:
+        for phrase in (
+            "partial year",
+            "part-year",
+            "part_year",
+            "part of year",
+            "part of the year",
+            "part of the income year",
+            "some of year",
+            "some of the year",
+            "some but not all of the year",
+        ):
+            with self.subTest(kind="period", phrase=phrase):
+                self.assertTrue(taxmate_intake.private_health_partial_text(phrase))
+
+        for phrase in (
+            "not covered for part of the year",
+            "not covered for all of the year",
+            "not covered for the whole of the year",
+            "not covered throughout the year",
+            "not fully covered",
+            "not always covered",
+            "not continuously covered",
+            "covered for part of the year",
+            "had mixed hospital cover",
+            "mixed coverage during the year",
+            "covered on and off",
+            "intermittent hospital cover",
+            "had a gap in hospital cover",
+            "gap in hospital coverage",
+            "hospital cover lapsed during the year",
+            "covered for the first half of the year",
+            "covered for half of the year",
+            "covered for six months",
+            "covered only 6 months",
+            "covered most of the year",
+            "not covered for the full year",
+            "not all year",
+            "had hospital cover full year except June",
+            "all but June",
+            "policy lapsed mid-year",
+            "cover started mid-year",
+            "cover ended mid-year",
+            "no hospital cover until January",
+            "no cover after January",
+            "not covered between July and December",
+            "not covered from July to December",
+            "no cover for six months",
+            "without hospital cover for 3 months",
+            "did not have hospital cover for 3 months",
+            "no cover during June",
+            "not covered in June",
+        ):
+            with self.subTest(kind="partial cover", phrase=phrase):
+                self.assertTrue(taxmate_intake.private_health_partial_cover_text(phrase))
+                self.assertIs(taxmate_intake.private_health_cover_bool(phrase), True)
+
+        for phrase in (
+            "no cover",
+            "never covered",
+            "not covered at all",
+            "not covered at any time",
+            "no coverage",
+            "without coverage",
+            "never insured",
+            "uninsured all year",
+            "no cover during the income year",
+            "I didn't have hospital cover",
+            "I don't have hospital cover",
+            "I haven't had hospital cover",
+            "I hadn't had hospital cover",
+        ):
+            with self.subTest(kind="categorical no cover", phrase=phrase):
+                self.assertFalse(taxmate_intake.private_health_partial_cover_text(phrase))
+                self.assertIs(taxmate_intake.private_health_cover_bool(phrase), False)
+
+        for phrase in (
+            "no gaps in hospital cover",
+            "without interruptions in hospital cover",
+            "no lapses in hospital cover",
+            "without any lapse in cover",
+            "no gaps in hospital coverage",
+            "policy never lapsed",
+            "hospital cover never lapsed",
+            "cover did not lapse",
+            "cover did not have any gaps",
+            "cover did not break",
+            "not on and off cover",
+            "continuous hospital cover",
+            "continuously covered",
+            "uninterrupted hospital cover",
+            "cover never had a gap",
+            "coverage had zero gaps",
+            "not a single gap in hospital cover",
+            "there was never a gap in hospital cover",
+            "hospital cover without a gap",
+            "hospital cover was not interrupted",
+            "hospital cover wasn't interrupted",
+            "cover does not have any gaps",
+            "cover doesn't have any gaps",
+            "cover has not had any gaps",
+            "cover hasn't had any gaps",
+            "cover had not had any gaps",
+            "cover hadn't had any gaps",
+            "cover was not on and off",
+            "cover wasn't on and off",
+        ):
+            with self.subTest(kind="continuous cover", phrase=phrase):
+                self.assertFalse(
+                    taxmate_intake.private_health_partial_cover_text(phrase)
+                )
+                self.assertIs(taxmate_intake.private_health_cover_bool(phrase), True)
+
+        for phrase in (
+            "covered for the full year",
+            "covered all year with no gaps",
+            "hospital cover all year",
+            "coverage all year",
+            "full year coverage",
+            "covered for the whole of the year",
+        ):
+            with self.subTest(kind="explicit full cover", phrase=phrase):
+                self.assertFalse(
+                    taxmate_intake.private_health_partial_cover_text(phrase)
+                )
+                self.assertIs(taxmate_intake.private_health_cover_bool(phrase), True)
+
+        for phrase in (
+            "no mixed hospital cover",
+            "not partial year cover",
+            "no partial-year cover",
+            "cover was not partial year",
+        ):
+            with self.subTest(kind="negated partial state", phrase=phrase):
+                self.assertFalse(
+                    taxmate_intake.private_health_partial_cover_text(phrase)
+                )
+                self.assertIsNone(taxmate_intake.private_health_cover_bool(phrase))
+
+        for phrase in (
+            "cannot confirm no cover",
+            "cannot say I had cover",
+            "maybe no cover",
+            "possibly no cover",
+            "could have no cover",
+            "may not have cover",
+            "if I had cover",
+            "no cover if policy lapsed",
+            "unlikely to have cover",
+            "I do not think I have cover",
+            "not true that I have cover",
+            "can't verify cover",
+            "unable to confirm cover",
+            "possibly not covered throughout the income year",
+            "I do not know whether I had private hospital cover",
+            "I cannot remember whether I had private hospital cover",
+            "I am doubtful that I had private hospital cover",
+            "I think I had hospital cover",
+            "I believe I had hospital cover",
+            "I suppose I had hospital cover",
+            "I assume I had hospital cover",
+            "apparently I had hospital cover",
+            "I doubt I had hospital cover",
+            "I couldn't confirm I had hospital cover",
+            "I wasn't sure I had hospital cover",
+            "I cannot have hospital cover",
+            "I can't have hospital cover",
+            "I couldn't have hospital cover",
+            "I have not verified private hospital cover",
+            "I could not confirm private hospital cover",
+            "it is unverified that I had private hospital cover",
+            "confirmation is pending that I had private hospital cover",
+            "I expect to have private hospital cover",
+            "I plan to have private hospital cover",
+            "I used to have private hospital cover",
+            "I had private hospital cover last year",
+            "I will have private hospital cover next year",
+        ):
+            with self.subTest(kind="uncertain cover", phrase=phrase):
+                self.assertFalse(
+                    taxmate_intake.private_health_partial_cover_text(phrase)
+                )
+                self.assertIsNone(taxmate_intake.private_health_cover_bool(phrase))
+                payload = self.payload(
+                    {
+                        "private_health_medicare": {
+                            "private_health_cover": phrase,
+                        }
+                    }
+                )
+                rows = self.rows(payload)
+                evidence = self.phi_evidence_text(payload)
+
+                self.assertIn(phrase, rows["PHI-OVERVIEW"]["answer"])
+                self.assertIn(phrase, rows["MLS-REVIEW"]["answer"])
+                self.assertIn("confirm private hospital cover status", evidence)
+                self.assertNotIn("no-cover answer conflicts", evidence)
+
+    def test_part_of_year_cover_routes_consistently_across_input_shapes(self) -> None:
+        phrase = "not covered for part of the year"
+        statement = self.statement()
+        cover = {
+            "covered": phrase,
+            "period_start": "2025-07-01",
+            "period_end": "2026-06-30",
+            "days_covered": 365,
+            "evidence": "policy held",
+        }
+        flat = {
+            "private_health_cover": phrase,
+            "private_health_cover_start": "2025-07-01",
+            "private_health_cover_end": "2026-06-30",
+            "private_health_days_covered": 365,
+            "private_health_cover_evidence": "policy held",
+            "private_health_statements": [statement],
+        }
+        cases = (
+            ("top-level flat", flat),
+            (
+                "top-level section scalar",
+                {
+                    "private_health": phrase,
+                    "private_health_statements": [statement],
+                },
+            ),
+            ("nested flat", {"private_health_medicare": flat}),
+            (
+                "nested section scalar",
+                {
+                    "private_health_medicare": {
+                        "private_health": phrase,
+                        "statements": [statement],
+                    }
+                },
+            ),
+            (
+                "nested section",
+                {
+                    "private_health_medicare": {
+                        "private_health": cover,
+                        "statements": [statement],
+                    }
+                },
+            ),
+            (
+                "workflow list",
+                {
+                    "private_health_medicare": [
+                        {
+                            **flat,
+                        }
+                    ]
+                },
+            ),
+            (
+                "section list",
+                {
+                    "private_health_medicare": {
+                        "private_health": [cover, "policy wording retained"],
+                        "statements": [statement],
+                    }
+                },
+            ),
+        )
+        for label, answers in cases:
+            with self.subTest(label=label):
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {"income_year": "2025-26", **answers}
+                )
+                payload = self.payload(answers)
+                rows = self.rows(payload)
+                evidence = self.phi_evidence_text(payload)
+                covered = taxmate_intake.normalized_item_field(
+                    raw["private_health"],
+                    taxmate_intake.PRIVATE_HEALTH_FIELD_ALIASES["covered"],
+                )
+
+                self.assertEqual(phrase, covered)
+                self.assertIs(taxmate_intake.private_health_cover_bool(covered), True)
+                self.assertIn(phrase, rows["PHI-OVERVIEW"]["answer"])
+                self.assertIn("partial-year private hospital cover", evidence)
+                self.assertIn("partial-year appropriate hospital cover", evidence)
+                self.assertNotIn("no-cover answer conflicts", evidence)
+                self.assertEqual("Accountant review", rows["PHI-OVERVIEW"]["status"])
+                self.assertEqual("Accountant review", rows["MLS-REVIEW"]["status"])
+
+        for label, answers in (
+            (
+                "top-level MLS field",
+                {"appropriate_hospital_cover": phrase},
+            ),
+            (
+                "nested flat MLS field",
+                {
+                    "private_health_medicare": {
+                        "appropriate_hospital_cover": phrase
+                    }
+                },
+            ),
+            (
+                "nested MLS field",
+                {
+                    "private_health_medicare": {
+                        "mls": {"appropriate_hospital_cover": phrase}
+                    }
+                },
+            ),
+        ):
+            with self.subTest(label=label):
+                payload = self.payload(answers)
+                rows = self.rows(payload)
+                evidence = self.phi_evidence_text(payload)
+
+                self.assertIn(phrase, rows["MLS-REVIEW"]["answer"])
+                self.assertIn("partial-year appropriate hospital cover", evidence)
+                self.assertNotIn("no-cover answer conflicts", evidence)
+
+    def test_cover_duration_status_distinguishes_partial_full_and_invalid(self) -> None:
+        for phrase in (
+            "covered for 6 months",
+            "no cover for six months",
+            "had cover 6 out of 12 months",
+            "no cover 6 out of 12 months",
+            "had cover less than 12 months",
+            "had cover nearly 12 months",
+        ):
+            with self.subTest(kind="partial", phrase=phrase):
+                self.assertEqual(
+                    "partial",
+                    taxmate_intake.private_health_cover_duration_status(phrase),
+                )
+                self.assertTrue(
+                    taxmate_intake.private_health_partial_cover_text(phrase)
+                )
+                self.assertIs(taxmate_intake.private_health_cover_bool(phrase), True)
+
+        for phrase in (
+            "covered for 12 months",
+            "covered for 52 weeks",
+            "covered for 365 days",
+        ):
+            with self.subTest(kind="full", phrase=phrase):
+                self.assertEqual(
+                    "full",
+                    taxmate_intake.private_health_cover_duration_status(phrase),
+                )
+                self.assertFalse(
+                    taxmate_intake.private_health_partial_cover_text(phrase)
+                )
+                self.assertIs(taxmate_intake.private_health_cover_bool(phrase), True)
+
+        self.assertIs(
+            taxmate_intake.private_health_cover_bool("no cover for 12 months"),
+            False,
+        )
+
+        for phrase in (
+            "covered for 0 months",
+            "covered for 13 months",
+            "covered for 53 weeks",
+            "covered for 366 days",
+            "had cover more than 12 months",
+            "had cover at least 12 months",
+            "had cover between 6 and 12 months",
+            "had cover 10 to 12 months",
+        ):
+            with self.subTest(kind="invalid", phrase=phrase):
+                self.assertEqual(
+                    "invalid",
+                    taxmate_intake.private_health_cover_duration_status(phrase),
+                )
+                self.assertFalse(
+                    taxmate_intake.private_health_partial_cover_text(phrase)
+                )
+                self.assertIsNone(taxmate_intake.private_health_cover_bool(phrase))
+
+        for phrase in (
+            "hospital cover has a 12 month waiting period",
+            "cover quote valid for 12 months",
+            "cover records retained for 12 months",
+            "cover premium paid over 12 months",
+        ):
+            with self.subTest(kind="unrelated duration", phrase=phrase):
+                self.assertIsNone(
+                    taxmate_intake.private_health_cover_duration_status(phrase)
+                )
+                self.assertIsNone(taxmate_intake.private_health_cover_bool(phrase))
+
+    def test_full_income_year_ranges_and_spouse_noun_phrases_keep_polarity(self) -> None:
+        for phrase in (
+            "covered from 1 July 2025 to 30 June 2026",
+            "covered from 2025-07-01 to 2026-06-30",
+        ):
+            with self.subTest(kind="positive cover", phrase=phrase):
+                self.assertIs(taxmate_intake.private_health_cover_bool(phrase), True)
+                self.assertFalse(
+                    taxmate_intake.private_health_partial_cover_text(phrase)
+                )
+
+        for phrase in (
+            "not covered from 1 July 2025 to 30 June 2026",
+            "didn't have cover from 2025-07-01 to 2026-06-30",
+        ):
+            with self.subTest(kind="negative cover", phrase=phrase):
+                self.assertIs(taxmate_intake.private_health_cover_bool(phrase), False)
+                self.assertFalse(
+                    taxmate_intake.private_health_partial_cover_text(phrase)
+                )
+
+        for phrase in (
+            "spouse all year",
+            "spouse for the full year",
+            "partner all year",
+            "spouse throughout the income year",
+            "spouse from 1 July 2025 to 30 June 2026",
+        ):
+            with self.subTest(kind="positive spouse", phrase=phrase):
+                self.assertIs(taxmate_intake.private_health_spouse_bool(phrase), True)
+
+        for phrase in (
+            "no spouse from 1 July 2025 to 30 June 2026",
+            "didn't have a spouse from 2025-07-01 to 2026-06-30",
+        ):
+            with self.subTest(kind="negative spouse", phrase=phrase):
+                self.assertIs(taxmate_intake.private_health_spouse_bool(phrase), False)
+
+    def test_mixed_cover_and_partial_spouse_language_stay_review_inputs(self) -> None:
+        for phrase in (
+            "had mixed hospital cover",
+            "covered on and off",
+            "had a gap in hospital cover",
+        ):
+            with self.subTest(kind="mixed cover", phrase=phrase):
+                payload = self.payload(
+                    {
+                        "private_health_medicare": self.private_health(
+                            private_health_cover=phrase
+                        )
+                    }
+                )
+                evidence = self.phi_evidence_text(payload)
+
+                self.assertIn("partial-year private hospital cover", evidence)
+                self.assertNotIn("no-cover answer conflicts", evidence)
+
+        for phrase in (
+            "did not have a spouse for part of the year",
+            "no spouse for part of the year",
+            "for part of the year did not have a spouse",
+            "had a spouse for part of the year",
+            "did not have a spouse for all of the year",
+            "no spouse for half of the year",
+            "no spouse until January",
+            "without spouse after March",
+            "did not have a spouse before January",
+            "no spouse from July to December",
+            "no spouse between July and December",
+            "currently no spouse",
+            "might have no spouse this year",
+            "I cannot recall whether I had a spouse",
+            "I think I had a spouse",
+            "I believe I had a partner",
+            "I assume I had a spouse",
+            "I couldn't confirm I had a spouse",
+            "I wasn't sure I had a spouse",
+            "I cannot have a spouse",
+            "I did not verify that I had a spouse",
+            "it is unverified that I had a spouse",
+            "I used to have a spouse",
+            "I had a spouse last year",
+            "I will have a spouse next year",
+        ):
+            with self.subTest(kind="spouse", phrase=phrase):
+                self.assertIsNone(taxmate_intake.private_health_spouse_bool(phrase))
+                payload = self.payload(
+                    {
+                        "private_health_medicare": {
+                            "spouse": {
+                                "had_spouse": phrase,
+                                "period_start": "2025-07-01",
+                                "period_end": "2026-06-30",
+                                "income_for_tests": 0,
+                                "income_evidence": "statement held",
+                            }
+                        }
+                    }
+                )
+                evidence = self.phi_evidence_text(payload)
+
+                self.assertIn("confirm whether taxpayer had a spouse", evidence)
+                self.assertNotIn("no-spouse answer conflicts", evidence)
+
+        for phrase in (
+            "no spouse at any time in the income year",
+            "no spouse this income year",
+            "no spouse throughout the income year",
+            "I didn't have a spouse",
+            "I don't have a spouse",
+            "I haven't had a spouse",
+            "I hadn't had a spouse",
+        ):
+            with self.subTest(kind="categorical no spouse", phrase=phrase):
+                self.assertIs(taxmate_intake.private_health_spouse_bool(phrase), False)
+
+    def test_categorical_no_cover_controls_still_surface_statement_conflicts(self) -> None:
+        for phrase in (
+            "no cover",
+            "never covered",
+            "not covered at all",
+            "not covered at any time",
+        ):
+            with self.subTest(phrase=phrase):
+                payload = self.payload(
+                    {
+                        "private_health_medicare": self.private_health(
+                            private_health_cover=phrase,
+                            days_covered=0,
+                        )
+                    }
+                )
+                evidence = self.phi_evidence_text(payload)
+
+                self.assertIn("no-cover answer conflicts", evidence)
+                self.assertNotIn("partial-year private hospital cover", evidence)
+
+        private_health = {
+            "private_health_cover": False,
+            "cover_period_start": "2025-07-01",
+            "cover_period_end": "2026-06-30",
+            "days_covered": 0,
+            "spouse_had": False,
+            "dependant_count": 0,
+        }
+        payload = self.payload({"private_health_medicare": private_health})
+        evidence = self.phi_evidence_text(payload)
+
+        self.assertIn(
+            "no-cover answer conflicts with a supplied private hospital cover period",
+            evidence,
+        )
+        self.assertIn(
+            "no-cover answer conflicts with a supplied hospital cover period",
+            evidence,
+        )
+
+        false_placeholders: tuple[Any, ...] = (
+            False,
+            [False],
+            [[False]],
+            {"value": False},
+            [{"value": False}],
+        )
+        for field in ("cover_period", "cover_period_start", "cover_period_end"):
+            for placeholder in (*false_placeholders, 0):
+                with self.subTest(field=field, placeholder=placeholder):
+                    payload = self.payload(
+                        {
+                            "private_health_medicare": {
+                                "private_health_cover": False,
+                                "days_covered": 0,
+                                "spouse_had": False,
+                                "dependant_count": 0,
+                                field: placeholder,
+                            }
+                        }
+                    )
+                    evidence = self.phi_evidence_text(payload)
+
+                    self.assertNotIn(
+                        "no-cover answer conflicts with a supplied private hospital cover period",
+                        evidence,
+                    )
+                    self.assertNotIn(
+                        "no-cover answer conflicts with a supplied hospital cover period",
+                        evidence,
+                    )
+                    if taxmate_intake.private_health_false_only_placeholder(
+                        placeholder
+                    ):
+                        self.assertNotIn("confirm private hospital cover period", evidence)
+                        self.assertNotIn("confirm hospital cover period", evidence)
+                    else:
+                        self.assertIn("confirm private hospital cover period", evidence)
+                        self.assertIn("confirm hospital cover period", evidence)
+
+        for field in ("period", "period_start", "period_end"):
+            for placeholder in (*false_placeholders, 0):
+                with self.subTest(scope="spouse", field=field, placeholder=placeholder):
+                    payload = self.payload(
+                        {
+                            "private_health_medicare": {
+                                "spouse": {
+                                    "had_spouse": False,
+                                    field: placeholder,
+                                },
+                                "dependant_count": 0,
+                            }
+                        }
+                    )
+                    evidence = self.phi_evidence_text(payload)
+
+                    self.assertNotIn(
+                        "no-spouse answer conflicts with supplied spouse period or income facts",
+                        evidence,
+                    )
+                    if taxmate_intake.private_health_false_only_placeholder(
+                        placeholder
+                    ):
+                        self.assertNotIn("confirm spouse period", evidence)
+                    else:
+                        self.assertIn("confirm spouse period", evidence)
+
+    def test_no_spouse_zero_amount_defaults_do_not_create_conflicts(self) -> None:
+        zero_fields = (
+            "income_for_tests",
+            "reportable_fringe_benefits",
+            "reportable_super",
+            "net_investment_loss",
+        )
+        for field in zero_fields:
+            for value in (0, False):
+                with self.subTest(field=field, value=value):
+                    payload = self.payload(
+                        {
+                            "private_health_medicare": {
+                                "spouse": {"had_spouse": False, field: value},
+                                "dependant_count": 0,
+                            }
+                        }
+                    )
+                    self.assertNotIn(
+                        "no-spouse answer conflicts",
+                        self.phi_evidence_text(payload),
+                    )
+
+        for field in zero_fields:
+            with self.subTest(kind="positive", field=field):
+                payload = self.payload(
+                    {
+                        "private_health_medicare": {
+                            "spouse": {"had_spouse": False, field: 1},
+                            "dependant_count": 0,
+                        }
+                    }
+                )
+                self.assertIn(
+                    "no-spouse answer conflicts",
+                    self.phi_evidence_text(payload),
+                )
+
     def test_false_statement_collection_is_noop_with_no_cover(self) -> None:
         cases = (
             {"statements": False},
@@ -1188,6 +1841,16 @@ class PrivateHealthMedicareWorkflowTests(unittest.TestCase):
                     "mls": {
                         "sources": ["https://example.test/mls-metadata"],
                         "checked_at": "2026-07-10",
+                    }
+                }
+            },
+            {
+                "private_health_medicare": {
+                    "dependants": {
+                        "custom": {
+                            "source_url": "https://example.test/dependant-metadata-only",
+                            "checked_at": "2026-07-10",
+                        }
                     }
                 }
             },
@@ -1768,6 +2431,284 @@ class PrivateHealthMedicareWorkflowTests(unittest.TestCase):
         )
         self.assertIn("2026-07-10", nested_overview["answer"])
         self.assertNotIn("n/a", nested_overview["answer"].lower())
+
+    def test_effective_mls_preserves_cover_lineage_without_source_leakage(self) -> None:
+        source_one = "https://example.test/cover-source-one"
+        source_two = "https://example.test/cover-source-two"
+        answers = {
+            "private_health_medicare": {
+                "private_health": {
+                    "covered": True,
+                    "period": "full year",
+                    "days_covered": 365,
+                    "evidence": "policy held",
+                    "source_url": source_one,
+                    "sources": [source_two],
+                    "checked_at": "2026-07-09",
+                    "source_checked_at": "2026-07-10",
+                }
+            }
+        }
+        rows = self.rows(self.payload(answers))
+        mls = rows["MLS-REVIEW"]
+
+        self.assertIn(source_one, mls["source_urls"])
+        self.assertIn(source_two, mls["source_urls"])
+        self.assertIn("2026-07-09", mls["answer"])
+        self.assertIn("2026-07-10", mls["answer"])
+
+        direct = {
+            "private_health": {
+                "covered": True,
+                "period": "full year",
+                "days_covered": 365,
+                "evidence": "policy held",
+                "source_url": source_one,
+                "sources": [source_two],
+                "checked_at": "2026-07-09",
+                "source_checked_at": "2026-07-10",
+            },
+            "statements": [],
+            "medicare_levy": {},
+            "mls": {},
+            "spouse": {},
+            "dependant_summary": {},
+            "dependants": [],
+            "notes": [],
+        }
+        direct_rows = {
+            str(row["number"]): row
+            for row in taxmate_intake.private_health_medicare_rows(direct)
+        }
+        self.assertIn(source_one, direct_rows["MLS-REVIEW"]["source_urls"])
+        self.assertIn(source_two, direct_rows["MLS-REVIEW"]["source_urls"])
+
+        conflict_payload = self.payload(
+            {
+                "private_health_medicare": {
+                    "private_health": {
+                        "covered": True,
+                        "cover": False,
+                        "period": "full year",
+                        "evidence": "policy held",
+                    }
+                }
+            }
+        )
+        conflict_text = (
+            self.rows(conflict_payload)["MLS-REVIEW"]["answer"]
+            + " "
+            + self.phi_evidence_text(conflict_payload)
+        ).lower()
+        self.assertIn("alias conflict", conflict_text)
+        self.assertIn("covered true", conflict_text)
+        self.assertIn("cover false", conflict_text)
+
+        statement_source = "https://example.test/statement-only-source"
+        statement_payload = self.payload(
+            {
+                "private_health_medicare": {
+                    "private_health": {
+                        "covered": True,
+                        "period": "full year",
+                        "days_covered": 365,
+                        "evidence": "policy held",
+                    },
+                    "statements": {
+                        "evidence": "statement pending",
+                        "source_url": statement_source,
+                    },
+                }
+            }
+        )
+        statement_rows = self.rows(statement_payload)
+        self.assertIn(
+            statement_source,
+            statement_rows["PHI-OVERVIEW"]["source_urls"],
+        )
+        self.assertNotIn(
+            statement_source,
+            statement_rows["MLS-REVIEW"]["source_urls"],
+        )
+
+    def test_metadata_only_cover_and_mls_branches_do_not_leak_across_siblings(self) -> None:
+        spouse = {
+            "had_spouse": True,
+            "period": "full year",
+            "income_for_tests": 0,
+            "income_evidence": "statement held",
+        }
+        cases = (
+            (
+                "private health metadata",
+                {
+                    "private_health": {
+                        "source_url": "https://example.test/metadata-only-cover"
+                    },
+                    "spouse": spouse,
+                },
+                "https://example.test/metadata-only-cover",
+            ),
+            (
+                "MLS metadata",
+                {
+                    "mls": {
+                        "source_url": "https://example.test/metadata-only-mls"
+                    },
+                    "spouse": spouse,
+                },
+                "https://example.test/metadata-only-mls",
+            ),
+        )
+        for label, workflow, source in cases:
+            with self.subTest(label=label):
+                rows = self.rows(
+                    self.payload({"private_health_medicare": workflow})
+                )
+
+                self.assertNotIn("PHI-OVERVIEW", rows)
+                self.assertIn("MLS-REVIEW", rows)
+                self.assertNotIn(source, rows["MLS-REVIEW"]["source_urls"])
+
+        for branch in ("private_health", "mls", "spouse"):
+            with self.subTest(kind="metadata conflict", branch=branch):
+                payload = self.payload(
+                    {
+                        "private_health_medicare": {
+                            branch: [
+                                {"checked_at": "2026-07-09"},
+                                {"checked_at": "2026-07-10"},
+                            ]
+                        }
+                    }
+                )
+                self.assertEqual([], self.private_health_rows(payload))
+                self.assertEqual([], self.phi_evidence(payload))
+
+    def test_effective_mls_keeps_local_uncertainty_and_matching_sources(self) -> None:
+        inherited_source = "https://example.test/inherited-cover"
+        local_source = "https://example.test/local-mls"
+        answers = {
+            "private_health_medicare": {
+                "private_health": {
+                    "covered": True,
+                    "period": "full year",
+                    "days_covered": 365,
+                    "evidence": "policy held",
+                    "source_url": inherited_source,
+                },
+                "mls": {
+                    "appropriate_hospital_cover": "unknown",
+                    "cover_period": "unknown",
+                    "hospital_cover_days": "unknown",
+                    "evidence": "unknown",
+                    "source_url": local_source,
+                },
+            }
+        }
+        payload = self.payload(answers)
+        row = self.rows(payload)["MLS-REVIEW"]
+        text = f"{row['answer']} {self.phi_evidence_text(payload)}".lower()
+
+        self.assertIn("appropriate hospital cover unknown", text)
+        self.assertIn("hospital cover days unknown", text)
+        self.assertIn("period unknown", text)
+        self.assertIn("evidence unknown", text)
+        self.assertIn("inherited true vs local unknown", text)
+        self.assertIn(inherited_source, row["source_urls"])
+        self.assertIn(local_source, row["source_urls"])
+
+        concrete = self.payload(
+            {
+                "private_health_medicare": {
+                    "private_health": {
+                        "covered": True,
+                        "period": "full year",
+                        "days_covered": 365,
+                        "evidence": "policy held",
+                    },
+                    "mls": {"appropriate_hospital_cover": False},
+                }
+            }
+        )
+        concrete_text = self.rows(concrete)["MLS-REVIEW"]["answer"].lower()
+        self.assertIn("appropriate hospital cover false", concrete_text)
+        self.assertIn("inherited true vs local false", concrete_text)
+
+    def test_cover_lineage_is_captured_before_unrelated_records_merge(self) -> None:
+        cover_source = "https://example.test/cover-lineage"
+        note_source = "https://example.test/note-lineage"
+        conflict_source = "https://example.test/conflicting-cover-lineage"
+        payload = self.payload(
+            {
+                "private_health_medicare": {
+                    "private_health": [
+                        {
+                            "covered": True,
+                            "period": "full year",
+                            "days_covered": 365,
+                            "evidence": "policy held",
+                            "source_url": cover_source,
+                        },
+                        {
+                            "notes": "rebate statement pending",
+                            "source_url": note_source,
+                        },
+                    ]
+                }
+            }
+        )
+        mls = self.rows(payload)["MLS-REVIEW"]
+        self.assertIn(cover_source, mls["source_urls"])
+        self.assertNotIn(note_source, mls["source_urls"])
+
+        conflict = self.payload(
+            {
+                "private_health_medicare": {
+                    "private_health": [
+                        {"covered": True, "source_url": cover_source},
+                        {"covered": False, "source_url": conflict_source},
+                    ]
+                }
+            }
+        )
+        conflict_row = self.rows(conflict)["MLS-REVIEW"]
+        self.assertIn(cover_source, conflict_row["source_urls"])
+        self.assertIn(conflict_source, conflict_row["source_urls"])
+        self.assertIn("covered true vs false", conflict_row["answer"].lower())
+
+    def test_direct_workflow_income_year_and_conflict_mapping_match_parser(self) -> None:
+        direct = {
+            "income_year": "2025-26",
+            "private_health": {
+                "covered": True,
+                "period": "full year",
+                "days_covered": 365,
+                "evidence": "policy held",
+                "notes": "cover note",
+                "note": "different cover note",
+            },
+            "statements": [],
+            "medicare_levy": {},
+            "mls": {},
+            "spouse": {},
+            "dependant_summary": {},
+            "dependants": [],
+            "notes": [],
+        }
+        rows = {
+            str(row["number"]): row
+            for row in taxmate_intake.private_health_medicare_rows(direct)
+        }
+        evidence = "\n".join(
+            str(row["answer"])
+            for row in taxmate_intake.private_health_medicare_evidence_rows(direct)
+        ).lower()
+
+        self.assertIn("MLS-REVIEW", rows)
+        self.assertNotIn("partial-year private hospital cover", evidence)
+        self.assertNotIn("partial-year appropriate hospital cover", evidence)
+        self.assertNotIn("notes alias conflict", rows["MLS-REVIEW"]["answer"].lower())
 
     def test_supplemental_provenance_reaches_matching_rows(self) -> None:
         statement_cases = (
@@ -2492,10 +3433,10 @@ class PrivateHealthMedicareWorkflowTests(unittest.TestCase):
         dependant_rows = self.rows(dependant_payload)
 
         self.assertFalse(any(re.fullmatch(r"DEPENDANT-\d+", number) for number in dependant_rows))
-        self.assertTrue(
-            raw["dependant_children"] == 0
-            or "no dependants" in self.private_health_text(dependant_payload)
-        )
+        self.assertIs(type(raw["dependant_children"]), int)
+        self.assertEqual(0, raw["dependant_children"])
+        self.assertIn("DEPENDANT-SUMMARY", dependant_rows)
+        self.assertIn("count 0", dependant_rows["DEPENDANT-SUMMARY"]["answer"])
 
         contradictory_answers = {
             "private_health_medicare": {
@@ -2511,6 +3452,940 @@ class PrivateHealthMedicareWorkflowTests(unittest.TestCase):
 
         self.assertIn("DEPENDANT-1", self.rows(contradictory_payload))
         self.assertIn("reconcile dependant count 0 with 1 item rows", self.phi_evidence_text(contradictory_payload))
+
+    def test_dependant_denials_normalize_to_integer_zero_across_input_shapes(self) -> None:
+        cases: list[tuple[str, dict[str, Any]]] = [
+            ("dependants false", {"private_health_medicare": {"dependants": False}}),
+            ("dependents false", {"private_health_medicare": {"dependents": False}}),
+            ("false list", {"private_health_medicare": {"dependants": [False]}}),
+            (
+                "text list",
+                {"private_health_medicare": {"dependents": ["no dependants"]}},
+            ),
+            (
+                "items false",
+                {"private_health_medicare": {"dependants": {"items": False}}},
+            ),
+            (
+                "status list",
+                {
+                    "private_health_medicare": {
+                        "dependants": [{"status": "no dependents"}]
+                    }
+                },
+            ),
+            (
+                "workflow list",
+                {"private_health_medicare": [{"dependants": False}]},
+            ),
+            (
+                "private health section",
+                {
+                    "private_health_medicare": {
+                        "private_health": {"dependants": False}
+                    }
+                },
+            ),
+            ("global collection", {"dependants": False}),
+        ]
+        for alias in (
+            "dependant_count",
+            "dependent_count",
+            "dependant_children",
+            "dependent_children_count",
+        ):
+            cases.append(
+                (
+                    alias,
+                    {"private_health_medicare": {alias: False}},
+                )
+            )
+        for value in (
+            0,
+            "0",
+            "false",
+            "no",
+            "no dependants",
+            "zero dependents",
+            "without children",
+            "did not have any students",
+            "I don't have any dependants",
+        ):
+            cases.append(
+                (
+                    f"scalar {value!r}",
+                    {"private_health_medicare": {"dependants": value}},
+                )
+            )
+
+        for label, answers in cases:
+            with self.subTest(label=label):
+                complete_answers = {"income_year": "2025-26", **answers}
+                raw = taxmate_intake.private_health_medicare_answers(complete_answers)
+                payload = taxmate_intake.answers_to_pack_payload(complete_answers)
+                rows = self.rows(payload)
+
+                self.assertIs(type(raw["dependant_children"]), int)
+                self.assertEqual(0, raw["dependant_children"])
+                self.assertEqual(
+                    0,
+                    taxmate_intake.normalized_item_field(
+                        raw["dependant_summary"],
+                        taxmate_intake.DEPENDANT_SUMMARY_FIELD_ALIASES["count"],
+                    ),
+                )
+                self.assertIn("DEPENDANT-SUMMARY", rows)
+                self.assertIn("count 0", rows["DEPENDANT-SUMMARY"]["answer"])
+                self.assertFalse(
+                    any(re.fullmatch(r"DEPENDANT-\d+", number) for number in rows)
+                )
+                self.assertFalse(
+                    any(
+                        spec.key == "dependant_children"
+                        for spec in taxmate_intake.missing_required_answers(complete_answers)
+                    )
+                )
+                self.assertNotIn("confirm dependant count", self.phi_evidence_text(payload))
+
+    def test_dependant_denial_normalization_covers_direct_boundaries(self) -> None:
+        for summary in (False, {"count": False}, {"status": False}):
+            with self.subTest(summary=summary):
+                direct = {
+                    "private_health": {},
+                    "statements": [],
+                    "medicare_levy": {},
+                    "mls": {},
+                    "spouse": {},
+                    "dependant_summary": summary,
+                    "dependants": [],
+                    "notes": [],
+                }
+                rows = {
+                    str(row["number"]): row
+                    for row in taxmate_intake.private_health_medicare_rows(direct)
+                }
+                evidence = "\n".join(
+                    str(row["answer"])
+                    for row in taxmate_intake.private_health_medicare_evidence_rows(direct)
+                ).lower()
+
+                self.assertTrue(taxmate_intake.has_private_health_medicare_inputs(direct))
+                self.assertEqual(
+                    0,
+                    taxmate_intake.private_health_medicare_required_answer(
+                        direct,
+                        "dependant_children",
+                    ),
+                )
+                self.assertIn("DEPENDANT-SUMMARY", rows)
+                self.assertIn("count 0", rows["DEPENDANT-SUMMARY"]["answer"])
+                self.assertNotIn("confirm dependant count", evidence)
+
+    def test_dependant_denial_conflicts_and_provenance_stay_branch_specific(self) -> None:
+        item_source = "https://example.test/dependant-denial-item"
+        denial_source = "https://example.test/dependant-denial-summary"
+        answers = {
+            "private_health_medicare": {
+                "dependants": [
+                    self.dependant(source_url=item_source),
+                    {
+                        "status": False,
+                        "source_url": denial_source,
+                        "checked_at": "2026-07-10",
+                    },
+                ]
+            }
+        }
+        payload = self.payload(answers)
+        rows = self.rows(payload)
+
+        self.assertIn(denial_source, rows["DEPENDANT-SUMMARY"]["source_urls"])
+        self.assertNotIn(item_source, rows["DEPENDANT-SUMMARY"]["source_urls"])
+        self.assertIn(item_source, rows["DEPENDANT-1"]["source_urls"])
+        self.assertNotIn(denial_source, rows["DEPENDANT-1"]["source_urls"])
+        self.assertIn("2026-07-10", rows["DEPENDANT-SUMMARY"]["answer"])
+        self.assertIn(
+            "reconcile dependant count 0 with 1 item rows",
+            self.phi_evidence_text(payload),
+        )
+
+        count_conflict = self.payload(
+            {
+                "private_health_medicare": {
+                    "dependants": {"count": 2, "items": False}
+                }
+            }
+        )
+        conflict_rows = self.rows(count_conflict)
+        conflict_text = self.phi_evidence_text(count_conflict)
+
+        self.assertIn("count 0", conflict_rows["DEPENDANT-SUMMARY"]["answer"])
+        self.assertIn("count 0 vs 2", conflict_rows["DEPENDANT-SUMMARY"]["answer"])
+        self.assertIn("count 0 vs 2", conflict_text)
+
+    def test_mixed_dependant_count_containers_preserve_every_candidate(self) -> None:
+        cases = (
+            (
+                {"count": [False, 2]},
+                0,
+                ("count 0 vs 2",),
+            ),
+            (
+                {"count": [False, "unknown"]},
+                0,
+                ("count_candidates", "unknown"),
+            ),
+            (
+                {"count": {"value": 2, "confirmed": False}},
+                2,
+                ("count_context", "confirmed", "false"),
+            ),
+            (
+                {"status": [False, "review pending"]},
+                0,
+                ("review pending",),
+            ),
+        )
+        for dependants, expected_count, expected_terms in cases:
+            with self.subTest(dependants=dependants):
+                payload = self.payload(
+                    {"private_health_medicare": {"dependants": dependants}}
+                )
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {
+                        "income_year": "2025-26",
+                        "private_health_medicare": {"dependants": dependants},
+                    }
+                )
+                row = self.rows(payload)["DEPENDANT-SUMMARY"]
+                text = f"{row['answer']} {self.phi_evidence_text(payload)}".lower()
+
+                self.assertEqual(expected_count, raw["dependant_children"])
+                for term in expected_terms:
+                    self.assertIn(term.lower(), text)
+
+        uncertain_status = self.payload(
+            {
+                "private_health_medicare": {
+                    "dependants": {
+                        "status": {
+                            "confirmed": False,
+                            "reason": "review pending",
+                        }
+                    }
+                }
+            }
+        )
+        uncertain_raw = taxmate_intake.private_health_medicare_answers(
+            {
+                "income_year": "2025-26",
+                "private_health_medicare": {
+                    "dependants": {
+                        "status": {
+                            "confirmed": False,
+                            "reason": "review pending",
+                        }
+                    }
+                },
+            }
+        )
+        uncertain_text = self.private_health_text(uncertain_status)
+
+        self.assertIsNone(uncertain_raw["dependant_children"])
+        self.assertIn("review pending", uncertain_text)
+        self.assertIn("false", uncertain_text)
+
+    def test_dependant_count_alias_denial_conflicts_with_positive_alias(self) -> None:
+        payload = self.payload(
+            {
+                "private_health_medicare": {
+                    "dependant_count": False,
+                    "dependent_count": 2,
+                }
+            }
+        )
+        row = self.rows(payload)["DEPENDANT-SUMMARY"]
+        evidence = self.phi_evidence_text(payload)
+
+        self.assertIn("count 0", row["answer"])
+        self.assertIn("count 0 vs 2", row["answer"])
+        self.assertIn("count 0 vs 2", evidence)
+
+    def test_recursive_positive_dependant_summaries_keep_provenance(self) -> None:
+        source = "https://example.test/dependant-positive-summary"
+        payload = self.payload(
+            {
+                "private_health_medicare": {
+                    "dependants": [{"count": 2, "source_url": source}]
+                }
+            }
+        )
+        raw = taxmate_intake.private_health_medicare_answers(
+            {
+                "income_year": "2025-26",
+                "private_health_medicare": {
+                    "dependants": [{"count": 2, "source_url": source}]
+                },
+            }
+        )
+        row = self.rows(payload)["DEPENDANT-SUMMARY"]
+
+        self.assertEqual(2, raw["dependant_children"])
+        self.assertIn("count 2", row["answer"])
+        self.assertIn(source, row["source_urls"])
+        self.assertFalse(
+            any(
+                spec.key == "dependant_children"
+                for spec in taxmate_intake.missing_required_answers(
+                    {
+                        "income_year": "2025-26",
+                        "private_health_medicare": {
+                            "dependants": [{"count": 2, "source_url": source}]
+                        },
+                    }
+                )
+            )
+        )
+
+    def test_item_shaped_denial_siblings_preserve_item_facts(self) -> None:
+        cases = (
+            ({"status": False}, False),
+            ({"notes": "no dependants"}, True),
+            ({"items": False}, True),
+        )
+        for sibling, denial_expected in cases:
+            with self.subTest(sibling=sibling):
+                item = self.dependant("Retained Child", **sibling)
+                payload = self.payload(
+                    {"private_health_medicare": {"dependants": [item]}}
+                )
+                rows = self.rows(payload)
+                evidence = self.phi_evidence_text(payload)
+
+                self.assertIn("DEPENDANT-1", rows)
+                self.assertIn("Retained Child", rows["DEPENDANT-1"]["answer"])
+                if denial_expected:
+                    self.assertIn("DEPENDANT-SUMMARY", rows)
+                    self.assertIn("count 0", rows["DEPENDANT-SUMMARY"]["answer"])
+                    self.assertIn(
+                        "reconcile dependant count 0 with 1 item rows",
+                        evidence,
+                    )
+                else:
+                    self.assertNotIn("count 0", rows["DEPENDANT-SUMMARY"]["answer"])
+
+    def test_item_shaped_count_aliases_reach_summary_reconciliation(self) -> None:
+        for field, value, expected in (
+            ("count", False, 0),
+            ("dependant_count", 0, 0),
+            ("dependent_count", 2, 2),
+        ):
+            with self.subTest(field=field, value=value):
+                item = self.dependant("Counted Child", **{field: value})
+                answers = {"private_health_medicare": {"dependants": item}}
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {"income_year": "2025-26", **answers}
+                )
+                payload = self.payload(answers)
+                rows = self.rows(payload)
+                evidence = self.phi_evidence_text(payload)
+
+                self.assertEqual(expected, raw["dependant_children"])
+                self.assertIn("DEPENDANT-1", rows)
+                self.assertIn(f"count {expected}", rows["DEPENDANT-SUMMARY"]["answer"])
+                self.assertIn(
+                    f"reconcile dependant count {expected} with 1 item rows",
+                    evidence,
+                )
+
+    def test_nested_dependant_candidate_metadata_stays_source_mapped(self) -> None:
+        source_zero = "https://example.test/dependant-zero"
+        source_two = "https://example.test/dependant-two"
+        dependants = {
+            "count": [
+                {
+                    "value": False,
+                    "source_url": source_zero,
+                    "checked_at": "2026-07-09",
+                },
+                {
+                    "value": 2,
+                    "sources": [source_two],
+                    "source_checked_at": "2026-07-10",
+                },
+            ]
+        }
+        payload = self.payload(
+            {"private_health_medicare": {"dependants": dependants}}
+        )
+        row = self.rows(payload)["DEPENDANT-SUMMARY"]
+
+        self.assertIn("count 0 vs 2", row["answer"])
+        self.assertIn(source_zero, row["source_urls"])
+        self.assertIn(source_two, row["source_urls"])
+        self.assertIn("2026-07-09", row["answer"])
+        self.assertIn("2026-07-10", row["answer"])
+
+        status_source = "https://example.test/dependant-status-zero"
+        status_payload = self.payload(
+            {
+                "private_health_medicare": {
+                    "dependants": {
+                        "status": {
+                            "value": False,
+                            "source_url": status_source,
+                        }
+                    }
+                }
+            }
+        )
+        self.assertIn(
+            status_source,
+            self.rows(status_payload)["DEPENDANT-SUMMARY"]["source_urls"],
+        )
+
+    def test_nested_supplemental_metadata_maps_only_surviving_facts(self) -> None:
+        source = "https://example.test/nested-dependant-context"
+        checked_at = "2026-07-10"
+        cases = (
+            {
+                "family_arrangement": {
+                    "value": "review pending",
+                    "source_url": source,
+                    "checked_at": checked_at,
+                }
+            },
+            {
+                "custom": [
+                    {
+                        "value": "review pending",
+                        "source_url": source,
+                        "checked_at": checked_at,
+                    }
+                ]
+            },
+            {
+                "status": [
+                    {
+                        "value": "review pending",
+                        "source_url": source,
+                        "checked_at": checked_at,
+                    }
+                ]
+            },
+            {
+                "notes": [
+                    {
+                        "value": "review pending",
+                        "source_url": source,
+                        "checked_at": checked_at,
+                    }
+                ]
+            },
+            {
+                "count": {
+                    "value": 2,
+                    "context": {
+                        "note": "review pending",
+                        "source_url": source,
+                        "checked_at": checked_at,
+                    },
+                }
+            },
+        )
+        for dependants in cases:
+            with self.subTest(dependants=dependants):
+                payload = self.payload(
+                    {"private_health_medicare": {"dependants": dependants}}
+                )
+                row = self.rows(payload)["DEPENDANT-SUMMARY"]
+
+                self.assertIn("review pending", row["answer"])
+                self.assertIn(source, row["source_urls"])
+                self.assertIn(checked_at, row["answer"])
+
+        metadata_only_cases = (
+            {
+                "family_arrangement": {
+                    "source_url": source,
+                    "checked_at": checked_at,
+                }
+            },
+            {
+                "custom": [
+                    {"source_urls": [source], "source_checked_at": checked_at}
+                ]
+            },
+            {
+                "count": {
+                    "context": {"source_url": source, "checked_at": checked_at}
+                }
+            },
+        )
+        for dependants in metadata_only_cases:
+            with self.subTest(kind="metadata only", dependants=dependants):
+                payload = self.payload(
+                    {"private_health_medicare": {"dependants": dependants}}
+                )
+                self.assertEqual([], self.private_health_rows(payload))
+                self.assertEqual([], self.phi_evidence(payload))
+
+        direct = {
+            "private_health": {},
+            "statements": [],
+            "medicare_levy": {},
+            "mls": {},
+            "spouse": {},
+            "dependant_summary": {
+                "custom": {"source_url": source, "checked_at": checked_at}
+            },
+            "dependants": [],
+            "notes": [],
+        }
+        self.assertEqual([], taxmate_intake.private_health_medicare_rows(direct))
+        self.assertEqual(
+            [],
+            taxmate_intake.private_health_medicare_evidence_rows(direct),
+        )
+
+    def test_unresolved_status_is_not_duplicated_as_supplemental_fact(self) -> None:
+        raw = taxmate_intake.private_health_medicare_answers(
+            {
+                "income_year": "2025-26",
+                "private_health_medicare": {
+                    "dependants": {"status": [False, "review pending"]}
+                },
+            }
+        )
+
+        self.assertIn(
+            "review pending",
+            taxmate_intake.display_value(raw["dependant_summary"]["status"]),
+        )
+        self.assertNotIn(
+            "dependant_supplemental_facts",
+            raw["dependant_summary"],
+        )
+
+    def test_metadata_only_and_context_only_count_wrappers_do_not_become_counts(self) -> None:
+        for dependants in (
+            {"count": {"source_url": "https://example.test/count-only"}},
+            {"status": {"source_url": "https://example.test/status-only"}},
+        ):
+            with self.subTest(kind="metadata only", dependants=dependants):
+                answers = {"private_health_medicare": {"dependants": dependants}}
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {"income_year": "2025-26", **answers}
+                )
+
+                self.assertIsNone(raw["dependant_children"])
+                self.assertNotIn("DEPENDANT-SUMMARY", self.rows(self.payload(answers)))
+
+        for count in (
+            {"confirmed": False, "reason": "review pending"},
+            {"value": None, "confirmed": False},
+            {"value": "n/a", "confirmed": False},
+        ):
+            with self.subTest(kind="context only", count=count):
+                answers = {
+                    "private_health_medicare": {
+                        "dependants": {"count": count}
+                    }
+                }
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {"income_year": "2025-26", **answers}
+                )
+                row = self.rows(self.payload(answers))["DEPENDANT-SUMMARY"]
+
+                self.assertIsNone(raw["dependant_children"])
+                self.assertIn("count unknown", row["answer"])
+                self.assertIn("count_context", row["answer"])
+                self.assertTrue(
+                    any(
+                        spec.key == "dependant_children"
+                        for spec in taxmate_intake.missing_required_answers(
+                            {"income_year": "2025-26", **answers}
+                        )
+                    )
+                )
+
+    def test_direct_dependant_item_shapes_reach_rows_and_evidence(self) -> None:
+        item = self.dependant("Direct Child")
+        for dependants in (
+            item,
+            {"items": [item]},
+            {"count": 1, "items": [item]},
+        ):
+            with self.subTest(dependants=dependants):
+                direct = {
+                    "private_health": {},
+                    "statements": [],
+                    "medicare_levy": {},
+                    "mls": {},
+                    "spouse": {},
+                    "dependant_summary": {},
+                    "dependants": dependants,
+                    "notes": [],
+                }
+                rows = {
+                    str(row["number"]): row
+                    for row in taxmate_intake.private_health_medicare_rows(direct)
+                }
+                evidence = "\n".join(
+                    str(row["answer"])
+                    for row in taxmate_intake.private_health_medicare_evidence_rows(
+                        direct
+                    )
+                )
+
+                self.assertIn("Direct Child", rows["DEPENDANT-1"]["answer"])
+                self.assertNotIn("confirm dependant or student details", evidence)
+
+    def test_dependant_item_nested_metadata_maps_without_json_leakage(self) -> None:
+        source = "https://example.test/dependant-item-nested"
+        checked_at = "2026-07-10"
+        for field, value in (
+            (
+                "custom",
+                {
+                    "value": "review pending",
+                    "source_url": source,
+                    "checked_at": checked_at,
+                },
+            ),
+            (
+                "notes",
+                {
+                    "value": "needs review",
+                    "source_url": source,
+                    "checked_at": checked_at,
+                },
+            ),
+            (
+                "evidence",
+                {
+                    "value": "held",
+                    "source_url": source,
+                    "checked_at": checked_at,
+                },
+            ),
+        ):
+            with self.subTest(field=field):
+                item = self.dependant("Nested Metadata Child", **{field: value})
+                payload = self.payload(
+                    {"private_health_medicare": {"dependants": [item]}}
+                )
+                rows = self.rows(payload)
+                row = rows["DEPENDANT-1"]
+
+                self.assertIn(source, row["source_urls"])
+                self.assertIn(checked_at, row["answer"])
+                self.assertNotIn("source_url", row["answer"])
+                self.assertNotIn("_income_year", row["answer"])
+                self.assertNotIn(source, rows["DEPENDANT-SUMMARY"]["source_urls"])
+
+        metadata_only = self.dependant(
+            "Metadata Only Child",
+            custom={"source_url": source, "checked_at": checked_at},
+        )
+        metadata_only_row = self.rows(
+            self.payload(
+                {"private_health_medicare": {"dependants": [metadata_only]}}
+            )
+        )["DEPENDANT-1"]
+        self.assertNotIn("custom", metadata_only_row["answer"])
+        self.assertNotIn(source, metadata_only_row["source_urls"])
+
+    def test_qualified_dependant_denials_remain_unresolved(self) -> None:
+        for phrase in (
+            "no dependants for part of the year",
+            "did not have children for part of the year",
+            "no dependants until January",
+            "no dependants except one child",
+            "no dependants for the first half of the year",
+            "no dependants for most of the year",
+            "no dependants for 6 months",
+            "currently no dependants",
+            "no dependants as at 30 June",
+            "no dependants from July to December",
+            "no dependants between July and December",
+            "no dependants in June",
+            "no dependants other than one child",
+            "no dependants unless a student qualifies",
+            "not zero dependants",
+            "not without dependants",
+            "cannot confirm no dependants",
+            "no dependants now",
+            "no dependants as of today",
+            "no dependants at the moment",
+            "no dependants anymore",
+            "no dependants at year end",
+            "no dependants for half the year",
+            "no dependants for a few months",
+            "no dependants in the first six months",
+            "no dependants July to December",
+            "no dependants besides one child",
+            "no dependants save for one child",
+            "possibly no dependants this year",
+            "might have no dependants this income year",
+            "I do not think there are no dependants",
+            "not true that there are no dependants",
+            "cannot say there are no dependants",
+            "no dependants if my student does not qualify",
+            "no dependants this year until March",
+            "no dependants throughout the year after January",
+            "no dependants for 0 days",
+            "no dependants for zero months",
+            "no dependants for 13 months",
+            "no dependants for 53 weeks",
+            "no dependants for 366 days",
+            "no dependants as at 2026-06-30",
+            "no dependants on 30/06/2026",
+            "no dependants at 30 Jun 2026",
+            "no dependants as of 30-06-2026",
+            "no dependants at EOFY",
+            "no dependants July-Dec",
+            "no dependants Jan-Jun",
+            "no dependants for less than 12 months",
+            "no dependants for under 12 months",
+            "no dependants for approx 6 months",
+            "no dependants for roughly six months",
+            "no dependants for six to eight months",
+            "no dependants first half",
+            "no dependants for 180 days",
+            "no dependants when lodging",
+            "no dependants upon lodgment",
+            "no dependants at tax time",
+            "no dependants at the end of June",
+            "no dependants for a quarter",
+            "no dependants in Q1",
+            "no dependants intermittently",
+            "no dependants on and off",
+        ):
+            with self.subTest(phrase=phrase):
+                payload = self.payload(
+                    {"private_health_medicare": {"dependants": phrase}}
+                )
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {
+                        "income_year": "2025-26",
+                        "private_health_medicare": {"dependants": phrase},
+                    }
+                )
+                row = self.rows(payload)["DEPENDANT-SUMMARY"]
+
+                self.assertNotEqual(0, raw["dependant_children"])
+                self.assertIn(phrase, row["answer"])
+                self.assertIn("confirm dependant count", self.phi_evidence_text(payload))
+
+        for phrase in (
+            "no dependants at any time in the income year",
+            "no dependants this income year",
+            "no dependants throughout the income year",
+            "no dependants during the income year",
+            "no dependants for 12 months",
+            "no dependants for 52 weeks",
+            "no dependants for 365 days",
+            "no dependants all year",
+        ):
+            with self.subTest(kind="categorical", phrase=phrase):
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {
+                        "income_year": "2025-26",
+                        "private_health_medicare": {"dependants": phrase},
+                    }
+                )
+                self.assertEqual(0, raw["dependant_children"])
+
+    def test_student_type_and_false_student_flag_require_reconciliation(self) -> None:
+        conflicting = self.dependant(
+            "Student Conflict",
+            type="student",
+            student=False,
+        )
+        payload = self.payload(
+            {
+                "private_health_medicare": {
+                    "dependant_count": 1,
+                    "dependants": [conflicting],
+                }
+            }
+        )
+        self.assertIn(
+            "student dependant type conflicts with student status false",
+            self.phi_evidence_text(payload),
+        )
+
+        for dependant_type in ("child", "non-student child"):
+            with self.subTest(dependant_type=dependant_type):
+                control = self.payload(
+                    {
+                        "private_health_medicare": {
+                            "dependant_count": 1,
+                            "dependants": [
+                                self.dependant(
+                                    "Child Control",
+                                    type=dependant_type,
+                                    student=False,
+                                )
+                            ],
+                        }
+                    }
+                )
+                self.assertNotIn(
+                    "student dependant type conflicts",
+                    self.phi_evidence_text(control),
+                )
+
+    def test_dependant_zero_text_requires_unambiguous_semantics(self) -> None:
+        for phrase in (
+            "zero",
+            "nil",
+            "0 dependants",
+            "0 dependent children",
+            "dependants: 0",
+            "dependant count 0",
+            "none dependants",
+            "no child",
+            "zero student",
+            "without a child",
+            "did not have a child",
+            "does not have a student",
+            "child count 0",
+            "student total zero",
+            "0.00 dependants",
+            "0.000 children",
+            "00 dependants",
+            "no children/students",
+            "0 children/students",
+            "no dependants/children",
+            "0 dependants/students",
+            "no dependent children/students",
+            "no dependant children/students",
+            "0 dependant children/students",
+            "without children/students",
+        ):
+            with self.subTest(kind="zero", phrase=phrase):
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {
+                        "income_year": "2025-26",
+                        "private_health_medicare": {"dependants": phrase},
+                    }
+                )
+                self.assertEqual(0, raw["dependant_children"])
+
+        for phrase in (
+            "not 0 dependants",
+            "not exactly zero dependants",
+            "more than zero dependants",
+            "at least zero dependants",
+            "one or 0 dependants",
+            "zero dependants or one student",
+            "one or no dependants",
+            "no dependants or one student",
+            "one or none dependants",
+            "none dependants or one child",
+            "I do not have zero dependants",
+            "unlikely to be zero dependants",
+            "https://example.test/no-dependants",
+            "See https://example.test/zero-children",
+            "/zero-children",
+            "NO-DEPENDANTS.pdf",
+            "no-dependants.example.com",
+            "source: no-dependants.example.com",
+            "no-dependants.md",
+            "zero-children.yaml",
+            "no-dependants.xml",
+            "records/no-dependants",
+            "no dependant records",
+            "no child records",
+            "no student evidence",
+            "without dependant evidence",
+            "do not have dependant records",
+            "don't have child documents",
+            "no dependant details",
+            "no child information",
+            "no student facts",
+            "without dependant data",
+        ):
+            with self.subTest(kind="qualified", phrase=phrase):
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {
+                        "income_year": "2025-26",
+                        "private_health_medicare": {"dependants": phrase},
+                    }
+                )
+                self.assertNotEqual(0, raw["dependant_children"])
+
+        for phrase in (
+            "zero dependants or students",
+            "0 children or students",
+        ):
+            with self.subTest(kind="zero category enumeration", phrase=phrase):
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {
+                        "income_year": "2025-26",
+                        "private_health_medicare": {"dependants": phrase},
+                    }
+                )
+                self.assertEqual(0, raw["dependant_children"])
+
+    def test_multistage_dependant_conflicts_survive_repeated_normalization(self) -> None:
+        answers = {
+            "private_health_medicare": {
+                "dependant_count": False,
+                "dependent_count": 2,
+                "dependants": {"count": 3},
+            }
+        }
+        payload = self.payload(answers)
+        text = (
+            self.rows(payload)["DEPENDANT-SUMMARY"]["answer"]
+            + " "
+            + self.phi_evidence_text(payload)
+        )
+
+        self.assertIn("count 0 vs 2", text)
+        self.assertIn("count 0 vs 3", text)
+
+    def test_direct_collection_denials_reach_all_output_boundaries(self) -> None:
+        for dependants in (
+            False,
+            [False],
+            ["no dependants"],
+            {"items": False},
+            {"status": False},
+        ):
+            with self.subTest(dependants=dependants):
+                direct = {
+                    "private_health": {},
+                    "statements": [],
+                    "medicare_levy": {},
+                    "mls": {},
+                    "spouse": {},
+                    "dependant_summary": {},
+                    "dependants": dependants,
+                    "notes": [],
+                }
+                rows = {
+                    str(row["number"]): row
+                    for row in taxmate_intake.private_health_medicare_rows(direct)
+                }
+                evidence = "\n".join(
+                    str(row["answer"])
+                    for row in taxmate_intake.private_health_medicare_evidence_rows(direct)
+                ).lower()
+
+                self.assertTrue(taxmate_intake.has_private_health_medicare_inputs(direct))
+                self.assertEqual(
+                    0,
+                    taxmate_intake.private_health_medicare_required_answer(
+                        direct,
+                        "dependant_children",
+                    ),
+                )
+                self.assertIn("count 0", rows["DEPENDANT-SUMMARY"]["answer"])
+                self.assertNotIn("confirm dependant count", evidence)
 
     def test_conflicting_checked_at_aliases_remain_visible_and_queued(self) -> None:
         statement = self.statement(
@@ -2870,6 +4745,238 @@ class PrivateHealthMedicareWorkflowTests(unittest.TestCase):
             any(number.startswith("PHI-STMT-") for number in self.rows(scalar_payload))
         )
         self.assertIn("insurer statement pending", self.phi_evidence_text(scalar_payload))
+
+    def test_scoped_none_and_scalar_dependants_keep_one_summary_fact(self) -> None:
+        for value in ("none", "NONE", {"count": "none"}):
+            with self.subTest(value=value):
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {
+                        "income_year": "2025-26",
+                        "private_health_medicare": {"dependants": value},
+                    }
+                )
+                self.assertEqual(0, raw["dependant_children"])
+                self.assertEqual([], raw["dependants"])
+
+        for value in ([2], {"items": 2}, ["unknown"]):
+            with self.subTest(value=value):
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {
+                        "income_year": "2025-26",
+                        "private_health_medicare": {"dependants": value},
+                    }
+                )
+                self.assertEqual([], raw["dependants"])
+                self.assertNotIn(
+                    "dependant_supplemental_facts",
+                    raw["dependant_summary"],
+                )
+
+        for value in ([["none"]], {"notes": "none"}):
+            with self.subTest(value=value):
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {
+                        "income_year": "2025-26",
+                        "private_health_medicare": {"dependants": value},
+                    }
+                )
+                self.assertIsNone(raw["dependant_children"])
+
+        for key in ("dependant_students", "dependent_students"):
+            with self.subTest(key=key):
+                raw = taxmate_intake.private_health_medicare_answers(
+                    {
+                        "income_year": "2025-26",
+                        "private_health_medicare": {key: False},
+                    }
+                )
+                self.assertEqual(0, raw["dependant_children"])
+
+    def test_repeated_normalization_keeps_supplemental_and_lineage_flat(self) -> None:
+        source = "https://example.test/dependant-summary"
+        first = taxmate_intake.private_health_medicare_answers(
+            {
+                "income_year": "2025-26",
+                "private_health_medicare": {
+                    "dependants": {
+                        "custom": {
+                            "value": "review pending",
+                            "source_url": source,
+                            "checked_at": "2026-07-10",
+                        }
+                    }
+                },
+            }
+        )
+        second = taxmate_intake.private_health_medicare_answers(
+            {
+                "income_year": "2025-26",
+                "private_health_medicare": first,
+            }
+        )
+        self.assertEqual(
+            first["dependant_summary"]["dependant_supplemental_facts"],
+            second["dependant_summary"]["dependant_supplemental_facts"],
+        )
+
+        cover_source = "https://example.test/cover"
+        note_source = "https://example.test/note"
+        normalized = taxmate_intake.private_health_medicare_answers(
+            {
+                "income_year": "2025-26",
+                "private_health_medicare": {
+                    "private_health": [
+                        {
+                            "covered": True,
+                            "period": "full year",
+                            "evidence": "policy held",
+                            "source_url": cover_source,
+                            "checked_at": "2026-07-09",
+                        },
+                        {
+                            "notes": "separate note",
+                            "source_url": note_source,
+                            "checked_at": "2026-07-10",
+                        },
+                    ]
+                },
+            }
+        )
+        repeated = taxmate_intake.private_health_medicare_answers(
+            {
+                "income_year": "2025-26",
+                "private_health_medicare": normalized,
+            }
+        )
+        for workflow in (normalized, repeated):
+            with self.subTest(repeated=workflow is repeated):
+                self.assertEqual(
+                    [cover_source],
+                    workflow["private_health"]["_cover_source_urls"],
+                )
+                self.assertEqual(
+                    ["2026-07-09"],
+                    workflow["private_health"]["_cover_checked_at"],
+                )
+                mls = self.rows(
+                    self.payload({"private_health_medicare": workflow})
+                )["MLS-REVIEW"]
+                self.assertNotIn("checked_at", mls["answer"])
+                self.assertNotIn("alias conflict", mls["answer"])
+
+    def test_direct_notes_and_statement_boundaries_are_idempotent(self) -> None:
+        for workflow in (
+            {"notes": "root note"},
+            {"statements": "statement pending"},
+            {"statements": {"evidence": False}},
+        ):
+            with self.subTest(workflow=workflow):
+                direct = {"income_year": "2025-26", **workflow}
+                first = taxmate_intake.private_health_medicare_answers(
+                    {
+                        "income_year": "2025-26",
+                        "private_health_medicare": workflow,
+                    }
+                )
+                second = taxmate_intake.private_health_medicare_answers(
+                    {
+                        "income_year": "2025-26",
+                        "private_health_medicare": first,
+                    }
+                )
+
+                def rendered(raw: dict[str, Any]) -> tuple[list[Any], list[Any]]:
+                    return (
+                        taxmate_intake.private_health_medicare_rows(raw),
+                        taxmate_intake.private_health_medicare_evidence_rows(raw),
+                    )
+
+                self.assertEqual(rendered(direct), rendered(first))
+                self.assertEqual(rendered(first), rendered(second))
+
+    def test_continuous_and_full_year_language_preserves_polarity(self) -> None:
+        for phrase in (
+            "never uninsured",
+            "was never without private hospital cover",
+            "did not go without cover",
+            "no period without cover",
+            "not a single day without cover",
+            "hospital cover throughout the year",
+        ):
+            with self.subTest(kind="continuous", phrase=phrase):
+                self.assertFalse(
+                    taxmate_intake.private_health_partial_cover_text(phrase)
+                )
+                self.assertIs(taxmate_intake.private_health_cover_bool(phrase), True)
+
+        for date_range in (
+            "1/7/2025 to 30/6/2026",
+            "between 1 July 2025 and 30 June 2026",
+            "from 1 July 2025 until 30 June 2026",
+            "from 1 July 2025 through to 30 June 2026",
+            "1 July 2025 - 30 June 2026",
+        ):
+            with self.subTest(kind="range", date_range=date_range):
+                positive = f"covered {date_range}"
+                negative = f"no cover {date_range}"
+                self.assertIs(taxmate_intake.private_health_cover_bool(positive), True)
+                self.assertIs(taxmate_intake.private_health_cover_bool(negative), False)
+                self.assertFalse(
+                    taxmate_intake.private_health_partial_cover_text(positive)
+                )
+                self.assertFalse(
+                    taxmate_intake.private_health_partial_cover_text(negative)
+                )
+
+        for phrase in (
+            "never without a spouse",
+            "did not lack a spouse",
+            "did not go without a spouse",
+        ):
+            with self.subTest(kind="spouse", phrase=phrase):
+                self.assertIs(taxmate_intake.private_health_spouse_bool(phrase), True)
+
+    def test_invalid_provenance_is_unresolved_not_verified(self) -> None:
+        direct = {
+            "income_year": "2025-26",
+            "private_health": {
+                "covered": True,
+                "source_url": "not a url",
+                "checked_at": "not a date",
+            },
+        }
+        rows = {
+            str(row["number"]): row
+            for row in taxmate_intake.private_health_medicare_rows(direct)
+        }
+        evidence = " ".join(
+            str(row["answer"])
+            for row in taxmate_intake.private_health_medicare_evidence_rows(direct)
+        ).lower()
+
+        overview = rows["PHI-OVERVIEW"]
+        self.assertNotIn("not a url", overview["source_urls"])
+        self.assertNotIn("supplied source urls not a url", overview["answer"].lower())
+        self.assertNotIn("supplied checked at not a date", overview["answer"].lower())
+        self.assertIn("unresolved_source_provenance", evidence)
+        self.assertIn("unresolved_checked_at_provenance", evidence)
+
+    def test_statement_membership_identifier_aliases_map_to_policy_field(self) -> None:
+        for alias in ("membership", "membership_identifier", "policy_identifier"):
+            with self.subTest(alias=alias):
+                statement = self.statement()
+                statement.pop("membership_id")
+                statement[alias] = "MEM-ALIAS"
+                payload = self.payload(
+                    {
+                        "private_health_medicare": self.private_health(
+                            statements=[statement]
+                        )
+                    }
+                )
+                answer = self.rows(payload)["PHI-STMT-1"]["answer"]
+                self.assertIn("MEM-ALIAS", answer)
+                self.assertNotIn("policy/membership unknown", answer)
 
 
 if __name__ == "__main__":

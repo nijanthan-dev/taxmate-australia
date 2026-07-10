@@ -109,29 +109,79 @@ PRIVATE_HEALTH_MEDICARE_ISOLATION_SYMBOLS = (
 )
 PRIVATE_HEALTH_MEDICARE_TYPED_HELPERS = (
     ("private_health_collection_entries", "List[Dict[str, Any]]"),
-    ("private_health_count_value", "Optional[int]"),
+    ("private_health_scoped_dependant_none", "bool"),
     ("private_health_provenance_urls", "List[str]"),
     ("private_health_sanitized_value", "Any"),
     ("private_health_sanitized_note_value", "Any"),
+    ("private_health_metadata_aliases", "tuple[set[str], set[str]]"),
+    ("private_health_detail_with_metadata", "tuple[Any, Dict[str, Any]]"),
+    ("private_health_note_detail_with_metadata", "tuple[Any, Dict[str, Any]]"),
     ("private_health_filter_record_values", "Dict[str, Any]"),
     ("private_health_statement_items", "List[Dict[str, Any]]"),
     ("private_health_dependant_items", "List[Dict[str, Any]]"),
+    ("private_health_dependant_item_container", "bool"),
+    ("private_health_dependant_entries", "List[Dict[str, Any]]"),
     ("private_health_dependant_collection_notes", "List[Any]"),
+    ("private_health_dependant_qualified_denial_text", "bool"),
+    ("private_health_dependant_denial_candidate", "bool"),
+    ("private_health_dependant_denial_scalars", "List[Any]"),
+    ("private_health_dependant_denial_value", "bool"),
+    ("private_health_dependant_remaining_record", "tuple[Any, Dict[str, Any]]"),
+    ("private_health_dependant_supplemental_detail", "tuple[Any, Dict[str, Any]]"),
+    ("private_health_dependant_item_record", "Dict[str, Any]"),
+    ("private_health_dependant_metadata", "Dict[str, Any]"),
+    ("private_health_dependant_count_records", "List[Dict[str, Any]]"),
+    ("private_health_normalize_dependant_summary", "Dict[str, Any]"),
+    ("private_health_dependant_denial_records", "List[Dict[str, Any]]"),
+    ("private_health_dependant_summary_entries", "List[Dict[str, Any]]"),
+    ("private_health_dependant_summary_base", "Dict[str, Any]"),
+    ("private_health_dependant_summary_from_values", "Dict[str, Any]"),
+    ("private_health_dependant_summary_records", "List[Dict[str, Any]]"),
     ("private_health_dependant_supplemental_records", "List[tuple[Any, Dict[str, Any]]]"),
     ("private_health_dependant_supplemental_values", "List[Any]"),
     ("private_health_statement_supplemental_records", "List[tuple[Any, Dict[str, Any]]]"),
     ("private_health_statement_collection_metadata", "Dict[str, Any]"),
     ("private_health_dependant_collection_metadata", "Dict[str, Any]"),
     ("private_health_medicare_supplemental_metadata", "Dict[str, Any]"),
+    ("private_health_medicare_wrapper_known_keys", "set[str]"),
+    ("private_health_workflow_note_metadata", "Dict[str, Any]"),
+    ("private_health_unknown_metadata", "Dict[str, Any]"),
     ("private_health_recursive_urls", "List[str]"),
+    ("private_health_source_like_text", "bool"),
+    ("private_health_epistemic_uncertainty_text", "bool"),
+    ("private_health_full_income_year_range_text", "bool"),
+    ("private_health_qualified_period_text", "bool"),
+    ("private_health_partial_text", "bool"),
+    ("private_health_negated_partial_cover_text", "bool"),
+    ("private_health_continuous_cover_text", "bool"),
+    ("private_health_cover_duration_status", "Optional[str]"),
+    ("private_health_partial_cover_text", "bool"),
+    ("private_health_negated_spouse_absence_text", "bool"),
+    ("private_health_false_only_placeholder", "bool"),
+    ("private_health_without_false_period_placeholders", "Dict[str, Any]"),
+    ("private_health_period_fact_supplied", "bool"),
+    ("private_health_false_cover_period_gaps", "List[str]"),
     ("private_health_record_metadata", "Dict[str, Any]"),
+    ("private_health_value_with_income_year", "Any"),
+    ("private_health_workflow_section_record", "Dict[str, Any]"),
+    ("private_health_normalize_workflow_boundary", "Dict[str, Any]"),
+    ("private_health_workflow_with_income_year", "Dict[str, Any]"),
+    ("private_health_mls_inherited_aliases", "Dict[str, tuple[str, ...]]"),
+    ("private_health_mls_inherited_cover_has_inputs", "bool"),
+    ("private_health_mls_inherited_conflicts", "List[str]"),
+    ("private_health_singleton_value", "Any"),
+    ("private_health_valid_checked_at_values", "List[str]"),
+    ("private_health_invalid_source_values", "List[Any]"),
+    ("private_health_invalid_checked_at_values", "List[Any]"),
+    ("private_health_capture_cover_lineage", "None"),
     ("private_health_add_metadata", "None"),
 )
 PRIVATE_HEALTH_MEDICARE_NOOP_FRAGMENTS = (
     "PRIVATE_HEALTH_NOOP_TEXT = frozenset(",
     "PRIVATE_HEALTH_NO_VALUE = object()",
+    "PRIVATE_HEALTH_DEPENDANT_DENIAL_KEYS = (",
     "notes.extend(private_health_collection_notes(item))",
-    'field not in {"notes", "source_urls", "checked_at"}',
+    "private_health_detail_with_metadata(",
     'notes = private_health_sanitized_note_value(raw.get("notes"))',
     'statements = private_health_statement_items(raw.get("statements"))',
     'dependants = private_health_dependant_items(raw.get("dependants"))',
@@ -150,6 +200,12 @@ PRIVATE_HEALTH_MEDICARE_NOOP_DOC_PHRASE = (
 )
 PRIVATE_HEALTH_MEDICARE_PROVENANCE_DOC_PHRASE = (
     "Carry matching valid source URLs and checked-at dates onto the review row whenever supplemental facts survive"
+)
+PRIVATE_HEALTH_MEDICARE_DEPENDANT_DENIAL_DOC_PHRASE = (
+    "Normalize explicit dependant collection or count denials to integer 0 before collection filtering"
+)
+PRIVATE_HEALTH_MEDICARE_PARTIAL_COVER_DOC_PHRASE = (
+    "Treat temporal, partial, mixed, or qualified-negative cover wording as review input before categorical no-cover classification"
 )
 
 
@@ -2372,18 +2428,942 @@ def check_private_health_medicare_contract(root: Path) -> List[Finding]:
         fail_if_missing(
             PRIVATE_HEALTH_MEDICARE_CONTRACT,
             filter_record,
-            ('field not in {"notes", "source_urls", "checked_at"}',),
+            (
+                'if field == "source_urls":',
+                'if field == "checked_at":',
+                'field == "count"',
+                'value.strip().lower() == "none"',
+                "private_health_detail_with_metadata(",
+                "private_health_add_metadata(filtered, metadata, field_aliases)",
+            ),
+        )
+    )
+    collection_entries = python_function_text(
+        intake,
+        "private_health_collection_entries",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            collection_entries,
+            ("private_health_scoped_dependant_none(value)",),
+        )
+    )
+    scoped_none = python_function_text(
+        intake,
+        "private_health_scoped_dependant_none",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            scoped_none,
+            (
+                'DEPENDANT_SUMMARY_FIELD_ALIASES["count"]',
+                "for key in DEPENDANT_SECTION_KEYS:",
+                "if is_none(dependant_value):",
+            ),
+        )
+    )
+    merge_records = python_function_text(intake, "private_health_merge_records")
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            merge_records,
+            (
+                "inherited_conflicts: List[Any] = []",
+                'if key == "_source_conflicts":',
+                "inherited_conflicts.extend(",
+                "private_health_recursive_scalar_values(value)",
+                "all_conflicts = private_health_unique_values(",
+                "[*inherited_conflicts, *conflicts]",
+                'merged["_source_conflicts"] = all_conflicts',
+            ),
+        )
+    )
+    base_items_text = python_function_text(intake, "base_items")
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            base_items_text,
+            (
+                "has_private_health_structure = any(",
+                "key in answers for key in MEDICARE_PRIVATE_HEALTH_BASE_FIELDS",
+                "has_private_health_medicare or has_private_health_structure",
+            ),
+        )
+    )
+    root_known_keys = python_function_text(intake, "private_health_root_known_keys")
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            root_known_keys,
+            ('| {"income_year"}',),
+        )
+    )
+    detail_with_metadata = python_function_text(
+        intake,
+        "private_health_detail_with_metadata",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            detail_with_metadata,
+            (
+                'if key.startswith("_"):',
+                "private_health_invalid_source_values(item)",
+                "private_health_invalid_checked_at_values(item)",
+                'details["unresolved_source_provenance"]',
+                'details["unresolved_checked_at_provenance"]',
+                "if not details:\n            return PRIVATE_HEALTH_NO_VALUE, {}",
+                "private_health_add_metadata(\n            metadata,\n            local_metadata,",
+            ),
+        )
+    )
+    note_detail = python_function_text(
+        intake,
+        "private_health_note_detail_with_metadata",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            note_detail,
+            (
+                "private_health_note_detail_with_metadata(item)",
+                "false_is_value=isinstance(value, dict)",
+            ),
+        )
+    )
+    workflow_section = python_function_text(
+        intake,
+        "private_health_workflow_section_record",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            workflow_section,
+            (
+                "private_health_section_records(",
+                "private_health_merge_records(records, field_aliases)",
+                "if field_aliases is PRIVATE_HEALTH_FIELD_ALIASES:",
+                "private_health_capture_cover_lineage(merged, records)",
+            ),
+        )
+    )
+    workflow_boundary = python_function_text(
+        intake,
+        "private_health_normalize_workflow_boundary",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            workflow_boundary,
+            (
+                "private_health_workflow_section_record(",
+                "private_health_dependant_summary_from_values(",
+                "private_health_dependant_supplemental_records(",
+                'workflow["dependant_summary"]["dependant_supplemental_facts"]',
+                "private_health_statement_items(statement_value)",
+                "private_health_statement_supplemental_records(",
+                'note: Dict[str, Any] = {"private_health_statement": detail}',
+            ),
+        )
+    )
+    workflow_income_year = python_function_text(
+        intake,
+        "private_health_workflow_with_income_year",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            workflow_income_year,
+            (
+                "raw = private_health_normalize_workflow_boundary(raw)",
+                'income_year = text(raw.get("income_year"), DEFAULT_INCOME_YEAR)',
+                'workflow["income_year"] = income_year',
+                "private_health_value_with_income_year(",
+            ),
+        )
+    )
+    value_income_year = python_function_text(
+        intake,
+        "private_health_value_with_income_year",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            value_income_year,
+            (
+                "set(PRIVATE_HEALTH_STATEMENT_ITEM_KEYS)",
+                "PRIVATE_HEALTH_DEPENDANT_ITEM_KEYS",
+                'record["_income_year"] = income_year',
+            ),
+        )
+    )
+    if 'setdefault("_income_year"' in value_income_year:
+        findings.append(
+            Finding(
+                PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                "direct workflow income year must override stale internal markers",
+            )
+        )
+    epistemic_uncertainty = python_function_text(
+        intake,
+        "private_health_epistemic_uncertainty_text",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            epistemic_uncertainty,
+            (
+                "return bool(",
+                "cannot|can\\s+t|unable\\s+to",
+                "uncertain|unsure|unconfirmed|possibly|probably|maybe|perhaps|likely|unlikely",
+                "(?:may|might|could)\\s+(?:not\\s+)?(?:have|be)",
+                "not\\s+true\\s+that",
+                "\\bif\\b",
+            ),
+        )
+    )
+    qualified_period = python_function_text(
+        intake,
+        "private_health_qualified_period_text",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            qualified_period,
+            (
+                "if private_health_partial_text(normalized):\n        return True",
+                "except|excluding|apart\\s+from|other\\s+than|besides|save\\s+for|unless",
+                "fully|always|continuously",
+                "throughout\\s+(?:the\\s+)?(?:income\\s+)?year",
+                "if private_health_epistemic_uncertainty_text(normalized):\n        return True",
+                "currently|at\\s+present|right\\s+now|at\\s+the\\s+moment",
+                "zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\\d{1,4}",
+                "return amount != limit",
+                "\\bbetween\\b.+\\band\\b|\\bfrom\\b.+\\bto\\b",
+                "if re.search(r\"\\b(?:from|until|since|before|after)\\b\", normalized):",
+                "\\bat\\s+any\\s+time\\b|\\bthroughout",
+                "return False",
+            ),
+        )
+    )
+    full_income_year_range = python_function_text(
+        intake,
+        "private_health_full_income_year_range_text",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            full_income_year_range,
+            (
+                'separator = r"(?:(?:to|and|until|through(?:\\s+to)?)\\s+)?"',
+                "(?:(?:from|between)\\s+)?",
+                "0?1\\s+0?7",
+                "30\\s+0?6",
+                "int(match.group(2)) == int(match.group(1)) + 1",
+            ),
+        )
+    )
+    categorical_period = "if re.search(\n        r\"\\bat\\s+any\\s+time\\b|\\bthroughout"
+    if not contains_in_order(
+        qualified_period,
+        (
+            "private_health_epistemic_uncertainty_text(normalized)",
+            "return amount != limit",
+            "if re.search(\n        rf\"\\bbetween",
+            categorical_period,
+        ),
+    ):
+        findings.append(
+            Finding(
+                PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                "qualified period checks must precede categorical full-year fallback",
+            )
+        )
+    qualified_denial = python_function_text(
+        intake,
+        "private_health_dependant_qualified_denial_text",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            qualified_denial,
+            (
+                "if private_health_qualified_period_text(value):\n        return True",
+                "more\\s+than|less\\s+than|at\\s+least|at\\s+most",
+                'positive = (',
+                'zero = rf"(?:0|zero|no|none|nil)',
+                "\\bor\\b",
+                "\\bunlikely\\b",
+            ),
+        )
+    )
+    source_like = python_function_text(intake, "private_health_source_like_text")
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            source_like,
+            (
+                "return bool(",
+                "(?:https?|file)://",
+                "[a-z]{2,24}",
+                'or "/" in stripped',
+                "csv|docx?|html?|json|md|pdf|txt|xlsx?|xml|ya?ml",
+            ),
+        )
+    )
+    dependant_denial_candidate = python_function_text(
+        intake,
+        "private_health_dependant_denial_candidate",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            dependant_denial_candidate,
+            (
+                "return bare",
+                "if private_health_source_like_text(value):\n        return False",
+                "private_health_dependant_qualified_denial_text(value)",
+                'if bare and normalized in {"0", "false", "no", "nil", "zero"}:',
+                'subject = r"(?:dependants?|dependents?|child(?:ren)?|students?)"',
+                "(?:no|none|nil|zero|0|without)",
+                "(?:dependant|dependent)\\s+count",
+            ),
+        )
+    )
+    denial_scalars = python_function_text(
+        intake,
+        "private_health_dependant_denial_scalars",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            denial_scalars,
+            (
+                "values.extend(private_health_dependant_denial_scalars(item, bare=bare))",
+                "bare=bare if key in PRIVATE_HEALTH_DEPENDANT_VALUE_KEYS else False",
+                "private_health_dependant_denial_candidate(value, bare=bare)",
+            ),
+        )
+    )
+    dependant_denial = python_function_text(
+        intake,
+        "private_health_dependant_denial_value",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            dependant_denial,
+            (
+                "return any(private_health_dependant_denial_value(item) for item in value)",
+                "item_shaped = private_health_dependant_record_has_signal(value)",
+                "for key in PRIVATE_HEALTH_DEPENDANT_ITEM_KEYS",
+                "for key in PRIVATE_HEALTH_DEPENDANT_DENIAL_KEYS",
+                "bare=False",
+            ),
+        )
+    )
+    remaining_record = python_function_text(
+        intake,
+        "private_health_dependant_remaining_record",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            remaining_record,
+            (
+                "kept, supplied = private_health_dependant_remaining_record(",
+                "local_metadata = private_health_dependant_metadata(",
+                "if key.startswith(\"_\") or key in PRIVATE_HEALTH_WORKFLOW_METADATA_KEYS:\n                continue",
+                "bare=bare if key in PRIVATE_HEALTH_DEPENDANT_VALUE_KEYS else False",
+                "if private_health_dependant_denial_candidate(value, bare=bare):",
+                "return PRIVATE_HEALTH_NO_VALUE, {}",
+                "private_health_sanitized_value(value, false_is_value=True)",
+                "(PRIVATE_HEALTH_NO_VALUE, {})",
+            ),
+        )
+    )
+    supplemental_detail = python_function_text(
+        intake,
+        "private_health_dependant_supplemental_detail",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            supplemental_detail,
+            (
+                "detail, supplied = private_health_dependant_supplemental_detail(",
+                "local_metadata = private_health_dependant_metadata(",
+                "if key.startswith(\"_\") or key in PRIVATE_HEALTH_WORKFLOW_METADATA_KEYS:\n                continue",
+                "private_health_sanitized_value(value, false_is_value=True)",
+                "(PRIVATE_HEALTH_NO_VALUE, {})",
+            ),
+        )
+    )
+    dependant_item_record = python_function_text(
+        intake,
+        "private_health_dependant_item_record",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            dependant_item_record,
+            (
+                "inherited_metadata = private_health_dependant_metadata(value)",
+                'if key.startswith("_"):',
+                "if key in metadata_aliases:\n            continue",
+                "detail, supplied = private_health_dependant_supplemental_detail(",
+                'for wrapper in ("value", "answer", "response")',
+                "if len(wrapper_keys) == 1 and len(detail) == 1:",
+                "private_health_add_metadata(\n            metadata,",
+                "private_health_add_metadata(record, metadata, DEPENDANT_FIELD_ALIASES)",
+                "return private_health_filter_record_values(record, DEPENDANT_FIELD_ALIASES)",
+            ),
+        )
+    )
+    dependant_metadata = python_function_text(
+        intake,
+        "private_health_dependant_metadata",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            dependant_metadata,
+            (
+                'set(DEPENDANT_FIELD_ALIASES["source_urls"])',
+                'set(DEPENDANT_SUMMARY_FIELD_ALIASES["source_urls"])',
+                'set(DEPENDANT_FIELD_ALIASES["checked_at"])',
+                'set(DEPENDANT_SUMMARY_FIELD_ALIASES["checked_at"])',
+                "private_health_add_metadata(",
+            ),
+        )
+    )
+    count_records = python_function_text(
+        intake,
+        "private_health_dependant_count_records",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            count_records,
+            (
+                "private_health_dependant_count_records(\n                    item,\n                    metadata,\n                    allow_bare_none=False,",
+                'records[0]["count_candidates"] = count_candidates',
+                "metadata = private_health_dependant_metadata(value, metadata)",
+                "value_keys = [key for key in PRIVATE_HEALTH_DEPENDANT_VALUE_KEYS if key in payload]",
+                "context, context_metadata = private_health_dependant_supplemental_detail(",
+                "if context is PRIVATE_HEALTH_NO_VALUE:\n                return []",
+                'record["count_context"] = context',
+                "denial = private_health_dependant_denial_candidate(value, bare=True)",
+                "0\n            if denial",
+                "private_health_add_metadata(record, metadata or {}, DEPENDANT_SUMMARY_FIELD_ALIASES)",
+            ),
+        )
+    )
+    denial_records = python_function_text(
+        intake,
+        "private_health_dependant_denial_records",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            denial_records,
+            (
+                "private_health_dependant_denial_records(",
+                "local_metadata = private_health_dependant_metadata(value, metadata)",
+                "if key.startswith(\"_\") or key in PRIVATE_HEALTH_WORKFLOW_METADATA_KEYS:\n                continue",
+                "if not private_health_dependant_denial_candidate(value, bare=bare):",
+                'record: Dict[str, Any] = {"count": 0}',
+                "if preserve_note and isinstance(value, str):",
+                "private_health_add_metadata(record, metadata or {}, DEPENDANT_SUMMARY_FIELD_ALIASES)",
+            ),
+        )
+    )
+    summary_entries = python_function_text(
+        intake,
+        "private_health_dependant_summary_entries",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            summary_entries,
+            (
+                "private_health_dependant_summary_entries(\n                    item,\n                    inherited_metadata,\n                    allow_bare_none=False,",
+                "metadata = private_health_dependant_metadata(value, inherited_metadata)",
+                "for key in PRIVATE_HEALTH_DEPENDANT_ITEM_KEYS:",
+                "item_shaped = private_health_dependant_record_has_signal(value)",
+                "for key in DEPENDANT_SUMMARY_FIELD_ALIASES[\"count\"]:",
+                "private_health_dependant_count_records(value[key], metadata)",
+                "private_health_dependant_denial_records(",
+                "remaining, status_metadata = private_health_dependant_remaining_record(",
+                "remaining, note_metadata = private_health_dependant_remaining_record(",
+            ),
+        )
+    )
+    if not contains_in_order(
+        summary_entries,
+        (
+            "item_shaped = private_health_dependant_record_has_signal(value)",
+            'for key in DEPENDANT_SUMMARY_FIELD_ALIASES["count"]:',
+            "if not item_shaped:",
+        ),
+    ):
+        findings.append(
+            Finding(
+                PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                "dependant count aliases must survive item-shaped records",
+            )
+        )
+    summary_base = python_function_text(
+        intake,
+        "private_health_dependant_summary_base",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            summary_base,
+            (
+                "record = private_health_filter_record_values(value, DEPENDANT_SUMMARY_FIELD_ALIASES)",
+                '*DEPENDANT_SUMMARY_FIELD_ALIASES["count"],',
+                '*DEPENDANT_SUMMARY_FIELD_ALIASES["notes"],',
+                "*PRIVATE_HEALTH_DEPENDANT_ITEM_KEYS,",
+                "record.pop(key, None)",
+                "detail, supplied = private_health_dependant_supplemental_detail(item)",
+                "if detail is PRIVATE_HEALTH_NO_VALUE:\n            record.pop(key)",
+                "private_health_add_metadata(\n        record,\n        metadata,",
+            ),
+        )
+    )
+    dependant_summary = python_function_text(
+        intake,
+        "private_health_normalize_dependant_summary",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            dependant_summary,
+            (
+                "private_health_dependant_summary_base(value)",
+                "*private_health_dependant_summary_entries(value)",
+                "return private_health_merge_records(records, DEPENDANT_SUMMARY_FIELD_ALIASES)",
+            ),
+        )
+    )
+    summary_from_values = python_function_text(
+        intake,
+        "private_health_dependant_summary_from_values",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            summary_from_values,
+            (
+                "private_health_normalize_dependant_summary(summary)",
+                "*private_health_dependant_summary_entries(dependants)",
+                "private_health_merge_records(records, DEPENDANT_SUMMARY_FIELD_ALIASES)",
+            ),
+        )
+    )
+    summary_records = python_function_text(
+        intake,
+        "private_health_dependant_summary_records",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            summary_records,
+            (
+                'private_health_flat_alias_subset(record, "dependant_summary")',
+                "for key in DEPENDANT_SECTION_KEYS:",
+                'if key in {"dependant_summary", "dependent_summary"}:',
+                "summary_base = private_health_dependant_summary_base(value)",
+                "rows.extend(private_health_dependant_summary_entries(value))",
+            ),
+        )
+    )
+    item_container = python_function_text(
+        intake,
+        "private_health_dependant_item_container",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            item_container,
+            (
+                "if any(key in value for key in PRIVATE_HEALTH_DEPENDANT_ITEM_KEYS):",
+                "if private_health_dependant_record_has_signal(value):",
+            ),
+        )
+    )
+    dependant_answers = python_function_text(
+        intake,
+        "private_health_dependant_answers",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            dependant_answers,
+            (
+                "for row in private_health_dependant_entries(value)",
+                "if private_health_dependant_record_has_signal(row)",
+            ),
+        )
+    )
+    dependant_entries = python_function_text(
+        intake,
+        "private_health_dependant_entries",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            dependant_entries,
+            (
+                "rows.extend(private_health_dependant_entries(value.get(key)))",
+                "parent = private_health_dependant_item_record(parent_value)",
+                "rows.insert(0, parent)",
+                "rows.append(parent)",
+                "if private_health_dependant_denial_value(parent):\n            return []",
+            ),
+        )
+    )
+    if not contains_in_order(
+        dependant_entries,
+        (
+            "rows.insert(0, parent)",
+            "rows.append(parent)",
+            "if private_health_dependant_denial_value(parent):",
+        ),
+    ):
+        findings.append(
+            Finding(
+                PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                "dependant item facts must be preserved before denial-only filtering",
+            )
+        )
+    supplemental_records = python_function_text(
+        intake,
+        "private_health_dependant_supplemental_records",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            supplemental_records,
+            (
+                'if key in DEPENDANT_SUMMARY_FIELD_ALIASES["count"] or key in {',
+                '"dependant_supplemental_facts",',
+                '"status",',
+                "sanitized, supplied = private_health_dependant_remaining_record(",
+                "sanitized, supplied = private_health_dependant_supplemental_detail(",
+                "details_metadata",
+                "if details:\n            records.append((details, details_metadata))",
+                "private_health_record_metadata(\n                parent,\n                source_aliases,\n                checked_at_aliases,",
+                "if private_health_summary_substantive(summary):\n            represented.update(summary)",
+                "if wrapper_keys:\n            represented.update(parent)",
+                "or private_health_dependant_summary_entries(value)",
+            ),
+        )
+    )
+    count_records_none = python_function_text(
+        intake,
+        "private_health_dependant_count_records",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            count_records_none,
+            (
+                "allow_bare_none: bool = True",
+                "allow_bare_none=False",
+                'strip() == "none"',
+            ),
+        )
+    )
+    medicare_answers = python_function_text(
+        intake,
+        "private_health_medicare_answers",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            medicare_answers,
+            (
+                "if key not in PRIVATE_HEALTH_WORKFLOW_NOTE_KEYS",
+                "private_health_workflow_note_metadata(root)",
+                "private_health_unknown_metadata(root, root_known_keys)",
+                'result["private_health"],\n        record_groups["private_health"],',
+                "private_health_add_metadata(\n        result[\"private_health\"],\n        supplemental_metadata,",
+            ),
+        )
+    )
+    summary_helper_by_boundary = {
+        "private_health_medicare_required_answer": "private_health_dependant_summary_from_values(",
+        "has_private_health_medicare_inputs": "private_health_dependant_summary_from_values(",
+        "private_health_mls_has_context": "private_health_dependant_summary_from_values(",
+        "dependant_rows": "private_health_dependant_summary_from_values(",
+        "private_health_medicare_evidence_rows": "private_health_dependant_summary_from_values(",
+        "private_health_medicare_answers": "private_health_normalize_dependant_summary(",
+        "private_health_dependant_summary_has_inputs": "private_health_normalize_dependant_summary(",
+        "dependant_summary_gaps": "private_health_normalize_dependant_summary(",
+    }
+    for function_name, helper in summary_helper_by_boundary.items():
+        function_text = python_function_text(intake, function_name)
+        if helper not in function_text:
+            findings.append(
+                Finding(
+                    PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                    f"dependant denial normalization missing from {function_name}",
+                )
+            )
+
+    partial_text = python_function_text(intake, "private_health_partial_text")
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            partial_text,
+            (
+                're.sub(r"[^a-z0-9]+", " ", value.lower()).strip()',
+                "part\\s+(?:of\\s+(?:the\\s+)?)?(?:income\\s+)?year",
+                "some(?:\\s+but\\s+not\\s+all)?\\s+of",
+                "return any(re.search(pattern, normalized) for pattern in patterns)",
+            ),
+        )
+    )
+    partial_cover = python_function_text(intake, "private_health_partial_cover_text")
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            partial_cover,
+            (
+                "if private_health_negated_partial_cover_text(normalized):\n        return False",
+                "if private_health_epistemic_uncertainty_text(normalized):\n        return False",
+                "duration_status = private_health_cover_duration_status(normalized)",
+                'if duration_status is not None:\n        return duration_status == "partial"',
+                "if private_health_qualified_period_text(normalized):\n        return True",
+                "if private_health_continuous_cover_text(normalized):\n        return False",
+                "mixed\\s+(?:hospital\\s+|health\\s+)?cover",
+                "intermittent(?:ly)?",
+                "(?:started|ended|lapsed|expired)",
+                "(?:gaps?|breaks?|interruptions?|lapses?)",
+                "all(?:\\s+of)?\\s+(?:the\\s+)?(?:income\\s+)?year",
+                "except|excluding|apart\\s+from|but",
+                "\\ball\\s+but\\b",
+                "(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven)\\s+months?",
+                "if any(re.search(pattern, normalized) for pattern in patterns):\n        return True",
+                "return months is not None and 0 < int(months.group(1)) < 12",
+            ),
+        )
+    )
+    if not contains_in_order(
+        partial_cover,
+        (
+            "private_health_negated_partial_cover_text(normalized)",
+            "private_health_epistemic_uncertainty_text(normalized)",
+            "private_health_cover_duration_status(normalized)",
+            "private_health_continuous_cover_text(normalized)",
+            "private_health_qualified_period_text(normalized)",
+            "patterns = (",
+        ),
+    ):
+        findings.append(
+            Finding(
+                PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                "partial cover exclusions and duration classification must precede broad phrase matching",
+            )
+        )
+    cover_bool = python_function_text(intake, "private_health_cover_bool")
+    partial_cover_block = "if private_health_partial_cover_text(normalized):\n        return True"
+    categorical_no_cover = (
+        'if re.search(rf"\\b{negative}\\b(?:\\s+\\w+){{0,5}}\\s+\\b{cover}\\b", normalized):'
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            cover_bool,
+            (
+                "if private_health_epistemic_uncertainty_text(normalized):\n        return None",
+                "if private_health_negated_partial_cover_text(normalized):\n        return None",
+                "duration_status = private_health_cover_duration_status(normalized)",
+                'if duration_status == "invalid":\n        return None',
+                'if duration_status == "partial":\n        return True',
+                "if private_health_continuous_cover_text(normalized):\n        return True",
+                partial_cover_block,
+                categorical_no_cover,
+                "if private_health_full_income_year_range_text(normalized):\n        return True",
+                'if duration_status == "full":\n        return True',
+                "return None",
+            ),
+        )
+    )
+    if not contains_in_order(
+        cover_bool,
+        (
+            "private_health_epistemic_uncertainty_text(normalized)",
+            "private_health_negated_partial_cover_text(normalized)",
+            'duration_status == "partial"',
+            "private_health_continuous_cover_text(normalized)",
+            partial_cover_block,
+            categorical_no_cover,
+            "private_health_full_income_year_range_text(normalized)",
+            'duration_status == "full"',
+        ),
+    ):
+        findings.append(
+            Finding(
+                PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                "partial cover classification must precede categorical no-cover classification",
+            )
+        )
+    spouse_bool = python_function_text(intake, "private_health_spouse_bool")
+    negated_spouse_absence = python_function_text(
+        intake,
+        "private_health_negated_spouse_absence_text",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            negated_spouse_absence,
+            (
+                "negated_absence = (",
+                "without",
+                "lack(?:ed|ing)?",
+                "(?:go|went)",
+            ),
+        )
+    )
+    spouse_partial_block = 'if re.search(r"\\b(spouse|partner)\\b", normalized) and ('
+    spouse_negative = (
+        'if re.search(rf"\\b{negative}\\b(?:\\s+\\w+){{0,5}}\\s+\\b(spouse|partner)\\b", normalized):'
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            spouse_bool,
+            (
+                "if private_health_negated_spouse_absence_text(normalized):\n        return True",
+                spouse_partial_block,
+                "private_health_epistemic_uncertainty_text(normalized)",
+                "private_health_qualified_period_text(normalized)",
+                're.search(r"\\b(no longer|separated)\\b", normalized)',
+                spouse_negative,
+                "if private_health_full_income_year_range_text(normalized):\n        return True",
+                "throughout\\s+(?:the\\s+)?(?:income\\s+)?year",
+            ),
+        )
+    )
+    if not contains_in_order(
+        spouse_bool,
+        (
+            "private_health_negated_spouse_absence_text(normalized)",
+            spouse_partial_block,
+            "private_health_epistemic_uncertainty_text(normalized)",
+            "private_health_qualified_period_text(normalized)",
+            spouse_negative,
+            "private_health_full_income_year_range_text(normalized)",
+        ),
+    ):
+        findings.append(
+            Finding(
+                PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                "partial spouse classification must precede categorical no-spouse classification",
+            )
+        )
+    overview_gaps = python_function_text(intake, "private_health_overview_gaps")
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            overview_gaps,
+            (
+                "private_health_partial_cover_text(covered_raw)",
+                "private_health_false_cover_period_gaps(",
+                "PRIVATE_HEALTH_FIELD_ALIASES,",
+                "no-cover answer conflicts with a supplied private hospital cover period",
+            ),
+        )
+    )
+    mls_gaps = python_function_text(intake, "mls_review_gaps")
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            mls_gaps,
+            (
+                "private_health_false_cover_period_gaps(",
+                "MLS_FIELD_ALIASES,",
+                "no-cover answer conflicts with a supplied hospital cover period",
+            ),
+        )
+    )
+    if mls_gaps.count("private_health_partial_cover_text(cover_raw)") < 2:
+        findings.append(
+            Finding(
+                PRIVATE_HEALTH_MEDICARE_CONTRACT,
+                "MLS review must use partial cover classification for gaps and evidence",
+            )
+        )
+    effective_mls = python_function_text(
+        intake,
+        "private_health_effective_mls_record",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            effective_mls,
+            (
+                "private_health_false_only_placeholder(local.get(alias))",
+                "private_health_mls_inherited_cover_has_inputs(private_health)",
+                'if "_cover_source_urls" in private_health',
+                'if "_cover_checked_at" in private_health',
+                'if "_cover_source_conflicts" in private_health',
+                "inherited.pop(inherited_key, None)",
+                "private_health_provenance_urls(local)",
+                "*inherited_conflicts,\n            *local_conflicts,",
+            ),
+        )
+    )
+    capture_lineage = python_function_text(
+        intake,
+        "private_health_capture_cover_lineage",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            capture_lineage,
+            (
+                "eligible_supplied = [",
+                'if "_cover_source_urls" in supplied',
+                'if "_cover_checked_at" in supplied',
+                'supplied.get("_cover_source_conflicts")',
+                "private_health_mls_inherited_conflicts(supplied)",
+                'record["_cover_source_urls"]',
+                'record["_cover_checked_at"]',
+                'record["_cover_source_conflicts"]',
+            ),
+        )
+    )
+    inherited_mls_conflicts = python_function_text(
+        intake,
+        "private_health_mls_inherited_conflicts",
+    )
+    findings.extend(
+        fail_if_missing(
+            PRIVATE_HEALTH_MEDICARE_CONTRACT,
+            inherited_mls_conflicts,
+            ('if field not in {"source_urls", "checked_at"}',),
         )
     )
     for rel in (
         "scripts/skillgen.py",
         "skills/private-health-medicare/references/rules.md",
+        "skills/individual-return/SKILL.md",
+        "skills/individual-return/references/rules.md",
         "docs/INDIVIDUAL_RETURN_PREP.md",
     ):
         text = read_optional(root, rel)
         for phrase, label in (
             (PRIVATE_HEALTH_MEDICARE_NOOP_DOC_PHRASE, "recursive no-op"),
             (PRIVATE_HEALTH_MEDICARE_PROVENANCE_DOC_PHRASE, "supplemental provenance"),
+            (PRIVATE_HEALTH_MEDICARE_DEPENDANT_DENIAL_DOC_PHRASE, "dependant denial"),
+            (PRIVATE_HEALTH_MEDICARE_PARTIAL_COVER_DOC_PHRASE, "partial cover"),
         ):
             if phrase not in text:
                 findings.append(
