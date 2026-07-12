@@ -27,7 +27,7 @@ These rules are self-contained. Do not depend on or assume `~/.codex/AGENTS.md` 
 - Before merge, run Gitleaks on local history/current tree and PR diff; inspect remote PR state for secrets. If a secret reached remote Git, stop and remove it from branch history.
 - Squash merge only. After merge, verify PR/issue closure and relevant main CI, update main, and clean safe merged branches/worktrees.
 - Planning/issue-only requests stop at planning/issues unless implementation is explicit. End plans with extremely concise unresolved questions, if any.
-- Fix all issues encountered during the session, including pre-existing test/lint failures; do not hide or ignore them.
+- Fix issues introduced by current work and failures blocking required validation. Report unrelated pre-existing failures clearly; do not expand scope to fix them unless the user authorizes it.
 - Never print, log, commit, screenshot, or comment secrets. Do not ask users to paste raw secrets.
 
 - Keep changes conservative and source-backed.
