@@ -14,7 +14,7 @@ These rules are self-contained. Do not depend on or assume `~/.codex/AGENTS.md` 
 - Do not reread unchanged files, logs, PR state, or tool output. Recheck only when state may have changed or a required gate demands it.
 - Start with zero skills. Load exactly one only when clearly applicable, explicitly requested, or required. Prefer the narrowest skill; never load precautionary or overlapping skills.
 - Before loading a second skill, state the distinct missing capability and why current tools/skill cannot cover it. Maximum two unless user or higher-priority instructions require more.
-- At first skill use, report `Skills: <name> — <reason>`. Final response must report every skill used; report `Skills: none` if none.
+- At first skill use, report `Skills: <name> — <reason>`. In normal prose finals, report every skill used; report `Skills: none` if none. Omit this line when higher-priority instructions or an exact machine-readable output format forbids extra text.
 - Use subagents only for independent work. Give narrow briefs and minimal history. Skip delegation when coordination costs exceed the work.
 - Prefer deterministic scripts for repeated audits, polling, parsing, and verification. Return aggregates plus exceptions, not raw records.
 - Keep the strongest model for ambiguous, high-risk, architecture, debugging, and review work. Use cheaper/faster models only for bounded mechanical work with deterministic validation.
