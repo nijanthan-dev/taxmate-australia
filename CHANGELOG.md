@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.23.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.22.0...v0.23.0) (2026-07-13)
+
+
+### Features
+
+* add entity return routing ([#147](https://github.com/nijanthan-dev/taxmate-australia/issues/147)) ([32733e3](https://github.com/nijanthan-dev/taxmate-australia/commit/32733e343994bd631aa73d323f0318388e2d02e6))
+
 ## [0.22.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.21.0...v0.22.0) (2026-07-10)
 
 
