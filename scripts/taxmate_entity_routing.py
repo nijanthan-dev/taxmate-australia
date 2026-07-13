@@ -350,13 +350,24 @@ def route_entity_returns(
                 evidence.append(_unsupported_evidence(kind, unsupported, evidence_index))
                 evidence_index += 1
             if gaps:
+                gap_facts = [{
+                    "key": "missing",
+                    "label": "Missing or ambiguous facts",
+                    "value": list(dict.fromkeys(gaps)),
+                }]
+                if invalid_sources:
+                    gap_facts.append({
+                        "key": "unresolved-source-provenance",
+                        "label": "Unresolved source provenance",
+                        "value": invalid_sources,
+                    })
                 evidence.append({
                     "number": f"ENTITY-EVID-{evidence_index}", "ato_area": f"{LABELS[kind]} return evidence",
                     "question": f"{LABELS[kind]} evidence required", "answer": f"Confirm {', '.join(dict.fromkeys(gaps))}",
                     "why_included": "Incomplete or ambiguous entity facts fail closed before any workflow handoff.",
                     "status": "Evidence", "source_urls": [SOURCES[kind]], "checked_at": CHECKED_AT,
                     "row_kind": f"entity-return-{kind}-evidence",
-                    "facts": [{"key": "missing", "label": "Missing or ambiguous facts", "value": list(dict.fromkeys(gaps))}],
+                    "facts": gap_facts,
                 })
                 evidence_index += 1
     for value in malformed:

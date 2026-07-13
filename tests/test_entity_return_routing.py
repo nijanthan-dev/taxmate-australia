@@ -291,14 +291,23 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertNotIn('href="not a url"', body)
         self.assertIn("Unresolved source provenance", body)
 
-        routed = self.payload({
-            "trust_return": {"name": "Entity", "source_url": "https://example.invalid/bad path"},
-        })
-        self.assertNotIn("https://example.invalid/bad path", routed["trust_items"][0]["source_urls"])
-        self.assertIn(
-            "source provenance",
-            " ".join(row["answer"] for row in routed["evidence_items"]),
-        )
+        invalid_by_kind = {
+            "company": "not a url",
+            "trust": "https://example.invalid/bad path",
+            "partnership": ["bad", 0, False],
+        }
+        for kind, invalid in invalid_by_kind.items():
+            with self.subTest(kind=kind):
+                routed = self.payload({f"{kind}_return": {"name": "Entity", "source_urls": invalid}})
+                evidence = next(
+                    row for row in routed["evidence_items"]
+                    if row["row_kind"] == f"entity-return-{kind}-evidence"
+                )
+                unresolved = next(
+                    fact for fact in evidence["facts"]
+                    if fact["key"] == "unresolved-source-provenance"
+                )
+                self.assertEqual(invalid if isinstance(invalid, list) else [invalid], unresolved["value"])
 
         scalar = taxmate_taxpack.load_guide_payload({
             "trust_items": [{
