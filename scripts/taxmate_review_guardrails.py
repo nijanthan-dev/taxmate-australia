@@ -950,6 +950,7 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
                 "taxmate_entity_routing.source_provenance(normalized)",
                 'normalized.pop("source_url", None)',
                 '"key": "unresolved-source-provenance"',
+                '"key": "raw-facts"',
     ]
     findings.extend(fail_if_missing(TAXPACK_OUTPUT_LAYER, text, required))
     forbidden = [
@@ -1001,6 +1002,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 'def _entity_marker(',
                 'def _entity_input(',
                 "LEGACY_SHARE_FIELDS = {",
+                '"trust_share_income"',
+                '"partnership_share_income"',
                 '"0", "off", "unchecked"',
                 "isinstance(value, (int, float)) and not isinstance(value, bool) and value == 0",
                 'return_key = f"{kind}_return_{field}"',

@@ -274,11 +274,17 @@ def entity_section_items(
             taxmate_entity_routing.SOURCES[kind],
             *valid_sources,
         ]))
-        if invalid_sources and isinstance(normalized.get("facts"), list):
-            normalized["facts"] = [
-                *normalized["facts"],
-                {"key": "unresolved-source-provenance", "label": "Unresolved source provenance", "value": invalid_sources},
-            ]
+        if invalid_sources:
+            supplied_facts = normalized.get("facts")
+            facts = list(supplied_facts) if isinstance(supplied_facts, list) else []
+            if supplied_facts is not None and not isinstance(supplied_facts, list):
+                facts.append({"key": "raw-facts", "label": "Raw facts", "value": supplied_facts})
+            facts.append({
+                "key": "unresolved-source-provenance",
+                "label": "Unresolved source provenance",
+                "value": invalid_sources,
+            })
+            normalized["facts"] = facts
         checked_at = normalized.get("checked_at")
         if not taxmate_entity_routing.valid_checked_at(checked_at):
             normalized["checked_at"] = taxmate_entity_routing.CHECKED_AT

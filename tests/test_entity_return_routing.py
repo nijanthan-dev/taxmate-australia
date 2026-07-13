@@ -284,6 +284,17 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertNotIn('href="not a url"', scalar_body)
         self.assertIn("Unresolved source provenance", scalar_body)
 
+        no_facts = taxmate_taxpack.load_guide_payload({
+            "partnership_items": [{
+                "number": "DIRECT-NO-FACTS",
+                "source_url": "not a url",
+                "answer": "Preserve provenance gap",
+            }],
+        })
+        no_facts_body = taxmate_taxpack.render_html(no_facts)
+        self.assertNotIn('href="not a url"', no_facts_body)
+        self.assertIn("Unresolved source provenance", no_facts_body)
+
     def test_identical_alias_records_do_not_duplicate_routes(self):
         record = {"name": "Same Co", "income_year": "2025-26", "residency": "Australian", "business_activity": "Design", "directors": 0, "shareholders": 0}
         payload = self.payload({"company_return": record, "company_intake": dict(record)})
@@ -422,6 +433,7 @@ class EntityReturnRoutingTests(unittest.TestCase):
                     f"{kind}_return": nested,
                     f"{kind}_name": "Entity-only flat name",
                     f"{kind}_statement": "missing",
+                    f"{kind}_share_income": 0,
                 })
                 self.assertFalse(any(
                     row["number"].startswith(("TRUST-SHARE-", "PART-SHARE-"))

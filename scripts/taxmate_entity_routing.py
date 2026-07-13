@@ -52,10 +52,20 @@ ROUTING_METADATA = {
 }
 REQUEST_MARKER = "__entity_return_requested__"
 LEGACY_SHARE_FIELDS = {
-    "trust": ("trust", "trust_entity_return_context"),
+    "trust": (
+        "trust", "trust_share_entity_name", "trust_beneficiary_entity_name",
+        "trust_share_abn", "trust_beneficiary_abn", "trust_share_tfn",
+        "trust_beneficiary_tfn", "trust_share_statement", "trust_share_statement_status",
+        "trust_beneficiary_statement", "trust_beneficiary_statement_status",
+        "trust_share_income", "trust_beneficiary_income", "trust_share_loss",
+        "trust_beneficiary_loss", "trust_share_tax_withheld", "trust_beneficiary_tax_withheld",
+        "trust_share_credits", "trust_beneficiary_credits", "trust_entity_return_context",
+        "trust_beneficiary_entity_return_context",
+    ),
     "partnership": (
-        "partnership", "partnership_statement", "partnership_statement_status",
-        "partnership_income", "partnership_loss", "partnership_tax_withheld",
+        "partnership", "partnership_entity_name", "partnership_statement",
+        "partnership_statement_status", "partnership_income", "partnership_share_income",
+        "partnership_loss", "partnership_share_loss", "partnership_tax_withheld",
         "partnership_credits", "partnership_entity_return_context",
     ),
 }
