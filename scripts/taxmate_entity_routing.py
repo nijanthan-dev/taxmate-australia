@@ -49,6 +49,14 @@ ROUTING_METADATA = {
     "status", "review_status",
 }
 REQUEST_MARKER = "__entity_return_requested__"
+LEGACY_SHARE_FIELDS = {
+    "trust": ("trust",),
+    "partnership": (
+        "partnership", "partnership_statement", "partnership_statement_status",
+        "partnership_income", "partnership_loss", "partnership_tax_withheld",
+        "partnership_credits", "partnership_entity_return_context",
+    ),
+}
 
 
 def _missing(value: Any) -> bool:
@@ -83,6 +91,10 @@ def _entity_marker(value: Any) -> bool:
     if value is True:
         return True
     return isinstance(value, str) and value.strip().lower() in {"yes", "true", "on", "checked"}
+
+
+def _entity_input(value: Any) -> bool:
+    return not _decline(value) and not _missing(value)
 
 
 def _first_meaningful(record: Dict[str, Any], keys: Tuple[str, ...]) -> Any:
@@ -124,10 +136,12 @@ def individual_share_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     sanitized = dict(answers)
     metadata_fields = ("source_url", "source_urls", "checked_at", "status", "review_status")
     for kind in ("trust", "partnership"):
-        if not any(_entity_marker(answers.get(alias)) for alias in ALIASES[kind]):
+        if not any(alias in answers and _entity_input(answers[alias]) for alias in ALIASES[kind]):
             continue
         for field in (*FIELDS[kind], *metadata_fields):
             sanitized.pop(f"{kind}_{field}", None)
+        for key in LEGACY_SHARE_FIELDS[kind]:
+            sanitized.pop(key, None)
     return sanitized
 
 

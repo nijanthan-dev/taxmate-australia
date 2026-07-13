@@ -315,6 +315,27 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertTrue(any(row["number"].startswith("PART-SHARE-") for row in payload["items"]))
         self.assertFalse(any(row["number"].startswith("ENTITY-EVID-") for row in payload["evidence_items"]))
 
+    def test_nested_and_list_entity_aliases_isolate_flat_share_fields(self):
+        for kind, nested in (
+            ("trust", {"name": "Nested Trust"}),
+            ("partnership", [{"name": "List Partnership"}]),
+        ):
+            with self.subTest(kind=kind):
+                payload = self.payload({
+                    f"{kind}_return": nested,
+                    f"{kind}_name": "Entity-only flat name",
+                    f"{kind}_statement": "missing",
+                })
+                self.assertFalse(any(
+                    row["number"].startswith(("TRUST-SHARE-", "PART-SHARE-"))
+                    for row in payload["items"]
+                ))
+                self.assertFalse(any(
+                    row["number"].startswith("PT-EVID-")
+                    for row in payload["evidence_items"]
+                ))
+                self.assertEqual(1, len(payload[f"{kind}_items"]))
+
     def test_nonoverlapping_return_flat_aliases_route_without_legacy_collision(self):
         payload = self.payload({
             "company_return_name": "Return Co",
