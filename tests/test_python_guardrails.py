@@ -245,6 +245,10 @@ class SourceRegistrationTests(unittest.TestCase):
         self.assertEqual(64, len(content_hash))
         self.assertTrue(verified)
 
+        for url, title in atodata.SOURCE_TITLE_OVERRIDES.items():
+            with self.subTest(url=url):
+                self.assertEqual(title, atodata.source_title(url, text))
+
     def test_new_sources_require_https_ato_host(self) -> None:
         self.assertTrue(atodata.ato_url_allowed("https://www.ato.gov.au/api/public/content/example"))
         self.assertFalse(atodata.ato_url_allowed("http://www.ato.gov.au/example"))

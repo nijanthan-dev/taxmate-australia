@@ -700,7 +700,7 @@ def recrawl(root: str, max_pages: int) -> SourceRegistry:
                 url=item.url,
                 final_url=fetched.final_url,
                 status=fetched.status,
-                title=title_of(text),
+                title=source_title(item.url, text),
                 last_updated=modified_of(fetched.body, text),
                 raw_file=raw_file,
                 text_file=text_file,
@@ -768,7 +768,7 @@ def refresh_record(root: str, rec: SourceRecord) -> RefreshResult:
 
     rec.final_url = fetched.final_url
     rec.status = fetched.status
-    rec.title = SOURCE_TITLE_OVERRIDES.get(rec.url, title_of(text))
+    rec.title = source_title(rec.url, text)
     rec.last_updated = modified_of(fetched.body, text)
     rec.last_checked = utc_timestamp()
     rec.content_hash = new_hash
@@ -802,7 +802,7 @@ def add_url(root: str, raw_url: str) -> Tuple[Optional[SourceRecord], RefreshRes
         url=raw_url,
         final_url=fetched.final_url,
         status=fetched.status,
-        title=SOURCE_TITLE_OVERRIDES.get(raw_url, title_of(text)),
+        title=source_title(raw_url, text),
         last_updated=modified_of(fetched.body, text),
         raw_file=raw_file,
         text_file=text_file,
@@ -824,6 +824,10 @@ def content_state(body: bytes) -> Tuple[str, str, bool]:
     text = clean_text(body)
     content_hash = hash_text(text)
     return text, content_hash, bool(text.strip()) and content_hash != hash_text("")
+
+
+def source_title(url: str, text: str) -> str:
+    return SOURCE_TITLE_OVERRIDES.get(url, title_of(text))
 
 
 def ato_url_allowed(raw_url: str) -> bool:
