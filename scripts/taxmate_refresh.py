@@ -63,7 +63,7 @@ def run(argv: List[str]) -> int:
                 continue
             record, result = atodata.AddURL(root, raw_url)
             results.append(result.to_dict())
-            if record is not None:
+            if record is not None and not source_known(record, known):
                 registry.records.append(record)
                 known.add(record.url)
                 known.add(record.final_url)
@@ -104,6 +104,10 @@ def run(argv: List[str]) -> int:
         }
     )
     return 0
+
+
+def source_known(record: atodata.SourceRecord, known: set[str]) -> bool:
+    return record.url in known or record.final_url in known
 
 
 def main(argv: Optional[List[str]] = None) -> int:

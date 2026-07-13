@@ -261,7 +261,7 @@ def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
             grouped[kind].append({REQUEST_MARKER: request_marker})
     for collection_key in ("entities", "entity_returns"):
         entities = answers.get(collection_key, [])
-        if entities in (None, "", [], {}):
+        if _decline(entities) or _missing(entities):
             continue
         collection = entities if isinstance(entities, list) else [entities]
         for item in collection:

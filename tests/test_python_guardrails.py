@@ -224,6 +224,20 @@ def date_weekday(value: str) -> int:
 
 
 class SourceRegistrationTests(unittest.TestCase):
+    def test_canonical_source_duplicates_are_known(self) -> None:
+        record = atodata.SourceRecord(
+            url="https://www.ato.gov.au/new",
+            final_url="https://www.ato.gov.au/existing",
+            status=200,
+            title="Existing",
+            last_updated="",
+            raw_file="raw/existing.html",
+            text_file="text/existing.txt",
+        )
+        self.assertTrue(taxmate_refresh.source_known(
+            record, {"https://www.ato.gov.au/existing"},
+        ))
+
     def test_pdf_sources_use_raw_hash_without_extracted_text(self) -> None:
         text, content_hash, verified = atodata.content_state(b"%PDF-1.7\nentity instructions")
 

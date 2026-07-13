@@ -43,6 +43,19 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertEqual([], payload["partnership_items"])
         self.assertFalse(any(row["row_kind"].startswith("entity-return-") for row in payload["evidence_items"]))
 
+    def test_declined_entity_collections_are_no_entity_answers(self):
+        for key in ("entities", "entity_returns"):
+            for value in (False, 0, "no", "not applicable", "n/a", [], {}):
+                with self.subTest(key=key, value=value):
+                    payload = self.payload({key: value})
+                    self.assertEqual([], payload["company_items"])
+                    self.assertEqual([], payload["trust_items"])
+                    self.assertEqual([], payload["partnership_items"])
+                    self.assertFalse(any(
+                        row["row_kind"] == "entity-return-malformed"
+                        for row in payload["evidence_items"]
+                    ))
+
     def test_marker_only_aliases_preserve_request_and_fail_closed(self):
         aliases = {
             "company": ("company_return", "company_intake", "company_entity"),
