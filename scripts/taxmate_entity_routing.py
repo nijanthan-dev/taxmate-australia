@@ -9,9 +9,9 @@ from typing import Any, Dict, List, Tuple
 
 CHECKED_AT = "2026-07-13"
 SOURCES = {
-    "company": "https://www.ato.gov.au/api/public/content/0-e220713e-6a6f-4401-b966-8bddf3ba96fd",
-    "trust": "https://www.ato.gov.au/api/public/content/0-70d99f71-9469-4fd4-97fe-e328d58b37ab",
-    "partnership": "https://www.ato.gov.au/api/public/content/1453e44ff39e4eb789ea83eeb6eac10b?v=5c58b86f",
+    "company": "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions",
+    "trust": "https://www.ato.gov.au/forms-and-instructions/trust-tax-return-2026-instructions",
+    "partnership": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions",
 }
 ALIASES = {
     "company": ("company_return", "company_intake", "company_entity"),

@@ -6845,6 +6845,22 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-8dbb465686c8",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions",
+      "source_title": "Partnership tax return instructions 2026",
+      "source_last_updated": "2026-05-29T14:00:00.000+00:00",
+      "checked_at": "2026-07-13T13:48:52Z",
+      "content_hash": "b03d9f97a9557d9b460909b8c3130236e3a630a8a483775ac5d596a40c9d92ae",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
+    },
+    {
       "source_id": "ato-8e227b9aad9c",
       "original_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-tests",
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-tests",
@@ -7676,6 +7692,22 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-a221b99ef7aa",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/trust-tax-return-2026-instructions",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/trust-tax-return-2026-instructions",
+      "source_title": "Trust tax return instructions 2026",
+      "source_last_updated": "2026-05-30T06:21:00.000+00:00",
+      "checked_at": "2026-07-13T13:48:52Z",
+      "content_hash": "0b2b046fa31a676c4df685207351be7a2308a90a1b407b17e01a7c85cad38a3c",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
+    },
+    {
       "source_id": "ato-a5980ce6ec9b",
       "original_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim",
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim",
@@ -8176,7 +8208,7 @@
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/claiming-deductions",
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
-      "checked_at": "2026-07-13T12:40:45Z",
+      "checked_at": "2026-07-13T13:48:52Z",
       "content_hash": "",
       "status": "duplicate",
       "skills": [],
@@ -10010,6 +10042,22 @@
       "duplicate_of": "",
       "duplicate_evidence": "",
       "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-e2c3433de47f",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions",
+      "source_title": "Company tax return instructions 2026",
+      "source_last_updated": "2026-05-29T22:58:00.000+00:00",
+      "checked_at": "2026-07-13T13:48:51Z",
+      "content_hash": "5156e04259623562ed485ca6537362c3a45dd980e8b519ec1bdf9f8899d07cb8",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
     },
     {
       "source_id": "ato-e2e25b63b60c",

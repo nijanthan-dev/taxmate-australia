@@ -27,9 +27,9 @@ SCOPE = (
 )
 
 SOURCE_TITLE_OVERRIDES = {
-    "https://www.ato.gov.au/api/public/content/0-e220713e-6a6f-4401-b966-8bddf3ba96fd": "Company tax return instructions 2025",
-    "https://www.ato.gov.au/api/public/content/0-70d99f71-9469-4fd4-97fe-e328d58b37ab": "Trust tax return instructions 2025",
-    "https://www.ato.gov.au/api/public/content/1453e44ff39e4eb789ea83eeb6eac10b?v=5c58b86f": "Partnership tax return instructions 2025",
+    "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions": "Company tax return instructions 2026",
+    "https://www.ato.gov.au/forms-and-instructions/trust-tax-return-2026-instructions": "Trust tax return instructions 2026",
+    "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions": "Partnership tax return instructions 2026",
 }
 
 SEED_URLS = [

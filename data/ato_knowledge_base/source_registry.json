@@ -1,6 +1,6 @@
 {
   "fetched_at": "2026-06-23T08:53:57Z",
-  "refreshed_at": "2026-07-13T12:40:45Z",
+  "refreshed_at": "2026-07-13T13:48:52Z",
   "scope": "ATO official pages relevant to Australian FY2025-26 individual, employment, ABN/sole trader, GST/BAS, PAYG instalments, PAYG withholding, STP, TPAR, FBT, CGT, ETF/investment, crypto, rental-property records, super, and private health tax preparation.",
   "records": [
     {
@@ -3866,6 +3866,42 @@
       "content_hash": "d543c131e7b5f4d7c926b986552a462a08020e0641afdebf691a4cf5d440d56b",
       "content_verified": true,
       "last_checked": "2026-07-13T12:40:45Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions",
+      "final_url": "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions",
+      "status": 200,
+      "title": "Company tax return instructions 2026",
+      "last_updated": "2026-05-29T22:58:00.000+00:00",
+      "raw_file": "raw/forms-and-instructions__company-tax-return-2026-instructions__ef2a6f81.html",
+      "text_file": "text/forms-and-instructions__company-tax-return-2026-instructions__ef2a6f81.txt",
+      "content_hash": "5156e04259623562ed485ca6537362c3a45dd980e8b519ec1bdf9f8899d07cb8",
+      "content_verified": true,
+      "last_checked": "2026-07-13T13:48:51Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/forms-and-instructions/trust-tax-return-2026-instructions",
+      "final_url": "https://www.ato.gov.au/forms-and-instructions/trust-tax-return-2026-instructions",
+      "status": 200,
+      "title": "Trust tax return instructions 2026",
+      "last_updated": "2026-05-30T06:21:00.000+00:00",
+      "raw_file": "raw/forms-and-instructions__trust-tax-return-2026-instructions__f3c30e63.html",
+      "text_file": "text/forms-and-instructions__trust-tax-return-2026-instructions__f3c30e63.txt",
+      "content_hash": "0b2b046fa31a676c4df685207351be7a2308a90a1b407b17e01a7c85cad38a3c",
+      "content_verified": true,
+      "last_checked": "2026-07-13T13:48:52Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions",
+      "final_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions",
+      "status": 200,
+      "title": "Partnership tax return instructions 2026",
+      "last_updated": "2026-05-29T14:00:00.000+00:00",
+      "raw_file": "raw/forms-and-instructions__partnership-tax-return-2026-instructions__96f417d9.html",
+      "text_file": "text/forms-and-instructions__partnership-tax-return-2026-instructions__96f417d9.txt",
+      "content_hash": "b03d9f97a9557d9b460909b8c3130236e3a630a8a483775ac5d596a40c9d92ae",
+      "content_verified": true,
+      "last_checked": "2026-07-13T13:48:52Z"
     }
   ],
   "failures": [

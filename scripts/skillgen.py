@@ -812,7 +812,11 @@ def _build(
             canonical = rec.url
         record_id = sourceID(rec.url, canonical)
         record_text = atodata.RecordText(root, rec).strip()
-        topic_match, score = assignTopic(rec, record_text)
+        topic_match, score = (
+            (None, 0)
+            if rec.url in atodata.SOURCE_TITLE_OVERRIDES
+            else assignTopic(rec, record_text)
+        )
         record_hash = (rec.content_hash or "").strip()
         registry_hash_verified = rec.content_verified and validContentHash(record_hash)
         text_hash = ""
