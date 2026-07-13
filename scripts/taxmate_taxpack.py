@@ -268,10 +268,16 @@ def entity_section_items(
             items.append(malformed_section_item(f"{key}-{index}", raw, income_year))
             continue
         normalized = dict(raw)
+        valid_sources, invalid_sources = taxmate_entity_routing.source_provenance(normalized)
         normalized["source_urls"] = list(dict.fromkeys([
             taxmate_entity_routing.SOURCES[kind],
-            *source_urls(normalized),
+            *valid_sources,
         ]))
+        if invalid_sources and isinstance(normalized.get("facts"), list):
+            normalized["facts"] = [
+                *normalized["facts"],
+                {"key": "unresolved-source-provenance", "label": "Unresolved source provenance", "value": invalid_sources},
+            ]
         checked_at = normalized.get("checked_at")
         if not taxmate_entity_routing.valid_checked_at(checked_at):
             normalized["checked_at"] = taxmate_entity_routing.CHECKED_AT

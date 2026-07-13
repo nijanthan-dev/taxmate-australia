@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import datetime
 from typing import Any, Dict, List, Tuple
 
 CHECKED_AT = "2026-07-13"
@@ -81,12 +81,29 @@ def _display(value: Any) -> str:
 
 
 def valid_checked_at(value: Any) -> bool:
-    if not isinstance(value, str):
+    if not isinstance(value, str) or not value.strip():
         return False
     try:
-        return date.fromisoformat(value).isoformat() == value
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return True
     except ValueError:
         return False
+
+
+def source_provenance(record: Dict[str, Any]) -> Tuple[List[str], List[Any]]:
+    supplied: List[Any] = []
+    for source_key in ("source_urls", "source_url"):
+        source_value = record.get(source_key)
+        if _missing(source_value):
+            continue
+        supplied.extend(source_value if isinstance(source_value, list) else [source_value])
+    valid = [
+        value.strip()
+        for value in supplied
+        if isinstance(value, str) and value.strip().startswith(("https://", "http://"))
+    ]
+    invalid = [value for value in supplied if value not in valid and str(value).strip() not in valid]
+    return valid, invalid
 
 
 def _decline(value: Any) -> bool:
@@ -289,29 +306,12 @@ def route_entity_returns(
                 if not valid_values:
                     gaps.append("partner share percentages")
             answer = "; ".join(f"{field.replace('_', ' ')} {_display(value)}" for field, value in facts)
-            supplied_sources: List[Any] = []
-            for source_key in ("source_urls", "source_url"):
-                source_value = raw.get(source_key)
-                if _missing(source_value):
-                    continue
-                supplied_sources.extend(source_value if isinstance(source_value, list) else [source_value])
-            invalid_sources = [
-                value
-                for value in supplied_sources
-                if not isinstance(value, str)
-                or not value.strip().startswith(("https://", "http://"))
-            ]
+            valid_sources, invalid_sources = source_provenance(raw)
             if invalid_sources:
                 gaps.append("source provenance")
             checked_at = raw.get("checked_at")
             if "checked_at" in raw and not _missing(checked_at) and not valid_checked_at(checked_at):
                 gaps.append(f"checked-at provenance ({_display(checked_at)})")
-            valid_sources = [
-                value.strip()
-                for value in supplied_sources
-                if isinstance(value, str)
-                and value.strip().startswith(("https://", "http://"))
-            ]
             source_urls = [SOURCES[kind], *valid_sources]
             row = {
                 "number": f"{kind.upper()}-{index}", "ato_area": f"{LABELS[kind]} return preparation",

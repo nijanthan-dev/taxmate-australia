@@ -947,6 +947,8 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "taxmate_entity_routing.SOURCES[kind]",
                 "taxmate_entity_routing.CHECKED_AT",
                 "taxmate_entity_routing.valid_checked_at(checked_at)",
+                "taxmate_entity_routing.source_provenance(normalized)",
+                '"key": "unresolved-source-provenance"',
     ]
     findings.extend(fail_if_missing(TAXPACK_OUTPUT_LAYER, text, required))
     forbidden = [
@@ -1010,6 +1012,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 'if kind == "partnership" and "share_percentages" in raw:',
                 "and sum(values) == 100",
                 "def valid_checked_at(",
+                "def source_provenance(",
+                'datetime.fromisoformat(value.replace("Z", "+00:00"))',
                 'gaps.append(f"checked-at provenance ({_display(checked_at)})")',
                 'kind in {"trust", "partnership"} and kind in answers',
                 "ROUTING_METADATA = {",

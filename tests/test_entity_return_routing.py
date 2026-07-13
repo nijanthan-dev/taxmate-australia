@@ -227,6 +227,33 @@ class EntityReturnRoutingTests(unittest.TestCase):
                     getattr(direct, f"{kind}_items")[0].checked_at,
                 )
 
+    def test_iso_timestamp_and_direct_source_provenance_are_normalized(self):
+        timestamp = "2026-06-23T09:04:57Z"
+        payload = self.payload({
+            "company_return": {"name": "Entity", "checked_at": timestamp},
+        })
+        self.assertEqual(timestamp, payload["company_items"][0]["checked_at"])
+        self.assertNotIn(
+            "checked-at provenance",
+            " ".join(row["answer"] for row in payload["evidence_items"]),
+        )
+
+        direct = taxmate_taxpack.load_guide_payload({
+            "company_items": [{
+                "number": "DIRECT", "checked_at": timestamp,
+                "source_urls": ["not a url", "https://example.invalid/entity"],
+                "facts": [{"key": "name", "value": "Entity"}],
+            }],
+        })
+        item = direct.company_items[0]
+        self.assertEqual(timestamp, item.checked_at)
+        self.assertNotIn("not a url", item.source_urls)
+        self.assertIn("https://example.invalid/entity", item.source_urls)
+        self.assertTrue(any(fact["key"] == "unresolved-source-provenance" for fact in item.facts))
+        body = taxmate_taxpack.render_html(direct)
+        self.assertNotIn('href="not a url"', body)
+        self.assertIn("Unresolved source provenance", body)
+
     def test_identical_alias_records_do_not_duplicate_routes(self):
         record = {"name": "Same Co", "income_year": "2025-26", "residency": "Australian", "business_activity": "Design", "directors": 0, "shareholders": 0}
         payload = self.payload({"company_return": record, "company_intake": dict(record)})
