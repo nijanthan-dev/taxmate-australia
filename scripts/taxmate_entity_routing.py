@@ -182,13 +182,27 @@ def individual_share_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     sanitized = dict(answers)
     metadata_fields = ("source_url", "source_urls", "checked_at", "status", "review_status")
     for kind in ("trust", "partnership"):
-        if not any(alias in answers and _entity_input(answers[alias]) for alias in ALIASES[kind]):
+        if not _entity_request_present(answers, kind):
             continue
         for field in (*FIELDS[kind], *metadata_fields):
             sanitized.pop(f"{kind}_{field}", None)
         for key in LEGACY_SHARE_FIELDS[kind]:
             sanitized.pop(key, None)
     return sanitized
+
+
+def _entity_request_present(answers: Dict[str, Any], kind: str) -> bool:
+    if any(key.startswith(f"{kind}_return_") for key in answers):
+        return True
+    return any(
+        alias in answers
+        and not _decline(answers[alias])
+        and (
+            _entity_input(answers[alias])
+            or isinstance(answers[alias], (dict, list))
+        )
+        for alias in ALIASES[kind]
+    )
 
 
 def entity_facts_present(value: Any) -> bool:

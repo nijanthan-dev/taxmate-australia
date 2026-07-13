@@ -487,6 +487,29 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertFalse(any(row["number"].startswith("TRUST-SHARE-") for row in trust["items"]))
         self.assertFalse(any(row["number"].startswith("PT-EVID-") for row in trust["evidence_items"]))
 
+    def test_flat_and_blank_entity_requests_block_individual_share_routing(self):
+        for kind, request in (
+            ("trust", {"trust_return_name": "Flat Trust"}),
+            ("trust", {"trust_return": {}}),
+            ("partnership", {"partnership_return_name": "Flat Partnership"}),
+            ("partnership", {"partnership_return": []}),
+        ):
+            with self.subTest(kind=kind, request=request):
+                payload = self.payload({
+                    **request,
+                    f"{kind}_name": "Must stay entity-only",
+                    f"{kind}_statement": "held",
+                    f"{kind}_share_income": 1,
+                })
+                self.assertFalse(any(
+                    row["number"].startswith(("TRUST-SHARE-", "PART-SHARE-"))
+                    for row in payload["items"]
+                ))
+                self.assertTrue(payload[f"{kind}_items"] or any(
+                    row["row_kind"] == f"entity-return-{kind}-request"
+                    for row in payload["evidence_items"]
+                ))
+
     def test_singleton_nested_and_return_flat_facts_merge_with_conflicts_preserved(self):
         cases = {
             "company": ("residency", "Australian"),
