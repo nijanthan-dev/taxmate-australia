@@ -75,6 +75,73 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertTrue(payload["trust_items"])
         self.assertTrue(payload["partnership_items"])
 
+    def test_empty_required_containers_fail_closed_but_falsey_scalars_survive(self):
+        payload = self.payload({
+            "company_return": {"name": "Empty Co", "directors": [], "shareholders": {}},
+            "trust_return": {"name": "Empty Trust", "beneficiaries": [], "deed_evidence": False},
+            "partnership_return": {"name": "Empty Partnership", "partners": {}, "share_percentages": [], "accounting_basis": False},
+        })
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+        for required in ("directors", "shareholders", "beneficiaries", "partners", "share percentages"):
+            self.assertIn(required, evidence)
+        self.assertIn("deed evidence false", payload["trust_items"][0]["answer"])
+        self.assertIn("accounting basis false", payload["partnership_items"][0]["answer"])
+
+    def test_nested_empty_required_structures_fail_closed(self):
+        payload = self.payload({
+            "company_return": {"name": "Nested Co", "directors": [{}], "shareholders": {"owners": []}},
+            "trust_return": {"name": "Nested Trust", "beneficiaries": [{"owners": []}]},
+            "partnership_return": {"name": "Nested Partnership", "partners": [{"owners": []}], "share_percentages": [{}]},
+        })
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+        for required in ("directors", "shareholders", "beneficiaries", "partners", "share percentages"):
+            self.assertIn(required, evidence)
+
+        falsey = self.payload({
+            "company_return": {"name": "Falsey Co", "directors": [0], "shareholders": [False]},
+            "trust_return": {"name": "Falsey Trust", "beneficiaries": [0]},
+            "partnership_return": {"name": "Falsey Partnership", "partners": [False], "share_percentages": [0, 100]},
+        })
+        evidence = " ".join(row["answer"] for row in falsey["evidence_items"])
+        for required in ("directors", "shareholders", "beneficiaries", "partners", "share percentages"):
+            self.assertNotIn(required, evidence)
+
+    def test_both_itemized_collection_aliases_are_merged(self):
+        payload = self.payload({
+            "entities": [{"entity_type": "company", "name": "Collection Co"}],
+            "entity_returns": [{"entity_type": "trust", "name": "Collection Trust"}],
+        })
+        self.assertEqual(1, len(payload["company_items"]))
+        self.assertEqual(1, len(payload["trust_items"]))
+
+        fallback = self.payload({
+            "entities": [],
+            "entity_returns": [{"entity_type": "partnership", "name": "Fallback Partnership"}],
+        })
+        self.assertEqual(1, len(fallback["partnership_items"]))
+
+    def test_empty_primary_type_and_source_aliases_do_not_mask_fallbacks(self):
+        payload = self.payload({"entities": [{
+            "entity_type": "", "type": "company", "name": "Alias Co",
+            "source_urls": [], "source_url": "https://example.invalid/alias-company",
+        }]})
+        self.assertEqual(1, len(payload["company_items"]))
+        self.assertIn("https://example.invalid/alias-company", payload["company_items"][0]["source_urls"])
+
+    def test_direct_entity_sections_force_fail_closed_status_and_kind(self):
+        payload = {
+            "company_items": [{"number": "DIRECT-C", "status": "Used", "facts": [], "answer": "empty"}],
+            "trust_items": [{"number": "DIRECT-T", "status": "Used", "facts": [{"key": "beneficiaries", "value": 0}]}],
+            "partnership_items": [{"number": "DIRECT-P", "status": "N/A skipped", "facts": [{"key": "partners", "value": False}]}],
+        }
+        data = taxmate_taxpack.load_guide_payload(payload)
+        self.assertEqual("Evidence", data.company_items[0].status)
+        self.assertEqual("Accountant review", data.trust_items[0].status)
+        self.assertEqual("Accountant review", data.partnership_items[0].status)
+        self.assertEqual("entity-return-company", data.company_items[0].row_kind)
+        self.assertEqual("entity-return-trust", data.trust_items[0].row_kind)
+        self.assertEqual("entity-return-partnership", data.partnership_items[0].row_kind)
+
 
 if __name__ == "__main__":
     unittest.main()

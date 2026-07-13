@@ -937,6 +937,7 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "default_generated_date()",
         "canonical_status(kind)",
         "def malformed_section_item(",
+        "def entity_section_items(",
     ]
     findings.extend(fail_if_missing(TAXPACK_OUTPUT_LAYER, text, required))
     forbidden = [
@@ -981,6 +982,11 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 '"status": "Evidence"',
                 "SOURCES = {",
                 "CHECKED_AT =",
+                'isinstance(value, (list, dict))',
+                "not any(not _missing(item) for item in values)",
+                'for collection_key in ("entities", "entity_returns")',
+                'def _first_meaningful(',
+                'for source_key in ("source_urls", "source_url")',
             ],
         )
     )

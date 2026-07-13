@@ -196,9 +196,9 @@ def load_guide_payload(payload: Dict[str, Any]) -> GuideData:
     extraction_rows = extracted_values(payload.get("extracted_values", []), income_year)
     abn_items = section_items(payload, "abn_items", income_year, "ABN")
     bas_items = section_items(payload, "bas_items", income_year, "BAS")
-    company_items = section_items(payload, "company_items", income_year, "COMPANY")
-    trust_items = section_items(payload, "trust_items", income_year, "TRUST")
-    partnership_items = section_items(payload, "partnership_items", income_year, "PARTNERSHIP")
+    company_items = entity_section_items(payload, "company", income_year)
+    trust_items = entity_section_items(payload, "trust", income_year)
+    partnership_items = entity_section_items(payload, "partnership", income_year)
     missing_facts = section_items(payload, "missing_facts", income_year, "MISS")
     evidence_items = section_items(payload, "evidence_items", income_year, "EVID")
     if not any((items, extraction_rows, abn_items, bas_items, company_items, trust_items, partnership_items, missing_facts, evidence_items)):
@@ -249,6 +249,36 @@ def section_items(
             )
         else:
             items.append(malformed_section_item(f"{key}-{index}", raw, income_year))
+    return items
+
+
+def entity_section_items(
+    payload: Dict[str, Any],
+    kind: str,
+    income_year: str = DEFAULT_INCOME_YEAR,
+) -> List[GuideItem]:
+    key = f"{kind}_items"
+    raw_items = payload.get(key, [])
+    if not isinstance(raw_items, list):
+        return [malformed_section_item(key, raw_items, income_year)]
+    items: List[GuideItem] = []
+    for index, raw in enumerate(raw_items, start=1):
+        if not isinstance(raw, dict):
+            items.append(malformed_section_item(f"{key}-{index}", raw, income_year))
+            continue
+        normalized = dict(raw)
+        facts = normalized.get("facts")
+        normalized["status"] = "Accountant review" if isinstance(facts, list) and facts else "Evidence"
+        normalized["status_kind"] = normalized["status"]
+        normalized["tab_kind"] = normalized["status"]
+        normalized["row_kind"] = f"entity-return-{kind}"
+        items.append(
+            guide_item(
+                normalized,
+                income_year=income_year,
+                fallback_number=f"{kind.upper()}-{index}",
+            )
+        )
     return items
 
 

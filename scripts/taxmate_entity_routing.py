@@ -49,6 +49,9 @@ LABELS = {"company": "Company", "trust": "Trust", "partnership": "Partnership"}
 def _missing(value: Any) -> bool:
     if value is None:
         return True
+    if isinstance(value, (list, dict)):
+        values = value.values() if isinstance(value, dict) else value
+        return not any(not _missing(item) for item in values)
     if not isinstance(value, str):
         return False
     normalized = value.strip().lower()
@@ -69,6 +72,14 @@ def _decline(value: Any) -> bool:
     return isinstance(value, str) and value.strip().lower() in {
         "no", "false", "none", "not applicable",
     }
+
+
+def _first_meaningful(record: Dict[str, Any], keys: Tuple[str, ...]) -> Any:
+    for key in keys:
+        value = record.get(key)
+        if not _missing(value):
+            return value
+    return None
 
 
 def _flat_record(answers: Dict[str, Any], kind: str) -> Dict[str, Any]:
@@ -96,14 +107,16 @@ def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
         flat = _flat_record(answers, kind)
         if flat:
             grouped[kind].append(flat)
-    entities = answers.get("entities", answers.get("entity_returns", []))
-    if entities not in (None, "", [], {}):
-        entities = entities if isinstance(entities, list) else [entities]
-        for item in entities:
+    for collection_key in ("entities", "entity_returns"):
+        entities = answers.get(collection_key, [])
+        if entities in (None, "", [], {}):
+            continue
+        collection = entities if isinstance(entities, list) else [entities]
+        for item in collection:
             if not isinstance(item, dict):
                 malformed.append(item)
                 continue
-            kind = str(item.get("entity_type", item.get("type", ""))).strip().lower()
+            kind = str(_first_meaningful(item, ("entity_type", "type")) or "").strip().lower()
             if kind in grouped:
                 grouped[kind].append(item)
             elif kind not in {"", "individual", "sole trader", "sole_trader"}:
@@ -151,9 +164,12 @@ def route_entity_returns(
                 if not values or invalid_values or sum(values) != 100:
                     gaps.append("partner share percentages")
             answer = "; ".join(f"{field.replace('_', ' ')} {_display(value)}" for field, value in facts)
-            supplied_sources = raw.get("source_urls", raw.get("source_url", []))
-            if not isinstance(supplied_sources, list):
-                supplied_sources = [supplied_sources]
+            supplied_sources: List[Any] = []
+            for source_key in ("source_urls", "source_url"):
+                source_value = raw.get(source_key)
+                if _missing(source_value):
+                    continue
+                supplied_sources.extend(source_value if isinstance(source_value, list) else [source_value])
             invalid_sources = [
                 value
                 for value in supplied_sources
