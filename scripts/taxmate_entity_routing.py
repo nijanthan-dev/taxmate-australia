@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from typing import Any, Dict, List, Tuple
 
 CHECKED_AT = "2026-07-13"
@@ -79,6 +80,15 @@ def _display(value: Any) -> str:
     return str(value)
 
 
+def valid_checked_at(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        return date.fromisoformat(value).isoformat() == value
+    except ValueError:
+        return False
+
+
 def _decline(value: Any) -> bool:
     if value is False:
         return True
@@ -118,6 +128,8 @@ def _flat_record(answers: Dict[str, Any], kind: str) -> Dict[str, Any]:
             record[field] = answers[return_key]
         elif has_legacy_marker and legacy_key in answers:
             record[field] = answers[legacy_key]
+        elif field == "name" and has_legacy_marker and kind in {"trust", "partnership"} and kind in answers:
+            record[field] = answers[kind]
     for field in ("source_url", "source_urls", "checked_at", "status", "review_status"):
         return_key = f"{kind}_return_{field}"
         legacy_key = f"{kind}_{field}"
@@ -291,6 +303,9 @@ def route_entity_returns(
             ]
             if invalid_sources:
                 gaps.append("source provenance")
+            checked_at = raw.get("checked_at")
+            if "checked_at" in raw and not _missing(checked_at) and not valid_checked_at(checked_at):
+                gaps.append(f"checked-at provenance ({_display(checked_at)})")
             valid_sources = [
                 value.strip()
                 for value in supplied_sources
@@ -303,7 +318,7 @@ def route_entity_returns(
                 "question": f"{LABELS[kind]} return intake", "answer": answer,
                 "why_included": f"Separate prep-only {kind} return routing; no individual-return entry or final treatment.",
                 "status": "Accountant review", "source_urls": list(dict.fromkeys(source_urls)),
-                "checked_at": raw.get("checked_at") if not _missing(raw.get("checked_at")) else CHECKED_AT,
+                "checked_at": checked_at if valid_checked_at(checked_at) else CHECKED_AT,
                 "row_kind": f"entity-return-{kind}",
                 "facts": [{"key": field.replace("_", "-"), "label": field.replace("_", " ").title(), "value": value} for field, value in facts],
                 "tab_text": f"{LABELS[kind]} facts stay in the separate prep-only workflow and require accountant review.",

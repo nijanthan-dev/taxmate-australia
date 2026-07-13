@@ -273,7 +273,7 @@ def entity_section_items(
             *source_urls(normalized),
         ]))
         checked_at = normalized.get("checked_at")
-        if checked_at is None or (isinstance(checked_at, str) and not checked_at.strip()):
+        if not taxmate_entity_routing.valid_checked_at(checked_at):
             normalized["checked_at"] = taxmate_entity_routing.CHECKED_AT
         facts = normalized.get("facts")
         explicit_status = item_status_kind(normalized)

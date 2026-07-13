@@ -195,6 +195,38 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertFalse(any(row["number"].startswith(("TRUST-SHARE-", "PART-SHARE-")) for row in payload["items"]))
         self.assertFalse(any(row["number"].startswith("PT-EVID-") for row in payload["evidence_items"]))
 
+    def test_legacy_bare_names_promote_only_for_explicit_entity_markers(self):
+        payload = self.payload({
+            "trust_return": True,
+            "trust": "Bare Trust",
+            "partnership_return": "yes",
+            "partnership": "Bare Partnership",
+        })
+        self.assertIn("name Bare Trust", payload["trust_items"][0]["answer"])
+        self.assertIn("name Bare Partnership", payload["partnership_items"][0]["answer"])
+        self.assertFalse(any(row["number"].startswith(("TRUST-SHARE-", "PART-SHARE-")) for row in payload["items"]))
+
+    def test_malformed_checked_at_fails_closed_and_uses_verified_default(self):
+        for kind in ("company", "trust", "partnership"):
+            with self.subTest(kind=kind):
+                payload = self.payload({
+                    f"{kind}_return": {"name": "Entity", "checked_at": "not-a-date"},
+                })
+                self.assertEqual(taxmate_entity_routing.CHECKED_AT, payload[f"{kind}_items"][0]["checked_at"])
+                evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+                self.assertIn("checked-at provenance (not-a-date)", evidence)
+
+                direct = taxmate_taxpack.load_guide_payload({
+                    f"{kind}_items": [{
+                        "number": "DIRECT", "checked_at": "not-a-date",
+                        "facts": [{"key": "name", "value": "Entity"}],
+                    }],
+                })
+                self.assertEqual(
+                    taxmate_entity_routing.CHECKED_AT,
+                    getattr(direct, f"{kind}_items")[0].checked_at,
+                )
+
     def test_identical_alias_records_do_not_duplicate_routes(self):
         record = {"name": "Same Co", "income_year": "2025-26", "residency": "Australian", "business_activity": "Design", "directors": 0, "shareholders": 0}
         payload = self.payload({"company_return": record, "company_intake": dict(record)})

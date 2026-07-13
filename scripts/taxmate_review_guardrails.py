@@ -945,7 +945,8 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "def entity_section_items(",
         "taxmate_entity_routing.entity_facts_present(facts)",
         "taxmate_entity_routing.SOURCES[kind]",
-        "taxmate_entity_routing.CHECKED_AT",
+                "taxmate_entity_routing.CHECKED_AT",
+                "taxmate_entity_routing.valid_checked_at(checked_at)",
     ]
     findings.extend(fail_if_missing(TAXPACK_OUTPUT_LAYER, text, required))
     forbidden = [
@@ -1008,6 +1009,9 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 'for source_key in ("source_urls", "source_url")',
                 'if kind == "partnership" and "share_percentages" in raw:',
                 "and sum(values) == 100",
+                "def valid_checked_at(",
+                'gaps.append(f"checked-at provenance ({_display(checked_at)})")',
+                'kind in {"trust", "partnership"} and kind in answers',
                 "ROUTING_METADATA = {",
                 'REQUEST_MARKER = "__entity_return_requested__"',
                 'elif request_marker is not None and len(grouped[kind]) == initial_count:',
