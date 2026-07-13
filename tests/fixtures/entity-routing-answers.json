@@ -1,0 +1,31 @@
+{
+  "income_year": "2025-26",
+  "company_return": {
+    "name": "Synthetic Company Pty Ltd",
+    "abn": "12 345 678 901",
+    "income_year": "2025-26",
+    "residency": "Australian",
+    "business_activity": "Software design",
+    "directors": 1,
+    "shareholders": 1
+  },
+  "trust_return": {
+    "name": "Synthetic Family Trust",
+    "trustee": "Synthetic Company Pty Ltd",
+    "trust_type": "discretionary",
+    "income_year": "2025-26",
+    "residency": "Australian",
+    "deed_evidence": false,
+    "beneficiaries": 0
+  },
+  "partnership_return": {
+    "name": "Synthetic Partnership",
+    "abn": "98 765 432 109",
+    "income_year": "2025-26",
+    "partners": 2,
+    "share_percentages": [50, 50],
+    "business_activity": "Consulting",
+    "accounting_basis": "cash",
+    "agreement_evidence": true
+  }
+}

@@ -630,6 +630,38 @@ class RuntimeContractTests(unittest.TestCase):
 
         self.assertFalse(taxmate_validate.handoff_payload_contract(payload))
 
+    def test_payload_validation_covers_each_entity_section(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.update({
+            "company_return": {"name": "Example Co", "residency": "Australian"},
+            "trust_return": {"name": "Example Trust", "trustee": "Example Pty Ltd"},
+            "partnership_return": {
+                "name": "Example Partnership",
+                "partners": 2,
+                "share_percentages": [50, 50],
+            },
+        })
+        baseline = taxmate_intake.answers_to_pack_payload(answers)
+        self.assertTrue(taxmate_validate.handoff_payload_contract(baseline))
+
+        for section in ("company_items", "trust_items", "partnership_items"):
+            with self.subTest(section=section):
+                payload = copy.deepcopy(baseline)
+                payload[section][0].pop("facts")
+                self.assertFalse(taxmate_validate.handoff_payload_contract(payload))
+
+    def test_payload_validation_requires_entity_section_lists(self) -> None:
+        baseline = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        for section in ("company_items", "trust_items", "partnership_items"):
+            absent = copy.deepcopy(baseline)
+            absent.pop(section)
+            self.assertTrue(taxmate_validate.handoff_payload_contract(absent))
+            for invalid in (None, {}):
+                with self.subTest(section=section, invalid=invalid):
+                    payload = copy.deepcopy(baseline)
+                    payload[section] = invalid
+                    self.assertFalse(taxmate_validate.handoff_payload_contract(payload))
+
     def test_payload_validation_requires_canonical_handoff_label_and_action(self) -> None:
         baseline = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
         row = baseline["items"][0]
@@ -713,7 +745,10 @@ class RuntimeContractTests(unittest.TestCase):
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
         values = [
             fact["value"]
-            for section in ("items", "abn_items", "bas_items", "missing_facts", "evidence_items")
+            for section in (
+                "items", "abn_items", "bas_items", "company_items", "trust_items",
+                "partnership_items", "missing_facts", "evidence_items",
+            )
             for row in payload[section]
             for fact in row["facts"]
         ]
@@ -761,6 +796,9 @@ class RuntimeContractTests(unittest.TestCase):
             "items": [],
             "abn_items": [],
             "bas_items": [],
+            "company_items": [],
+            "trust_items": [],
+            "partnership_items": [],
             "missing_facts": [],
             "evidence_items": [],
             "extracted_values": [],

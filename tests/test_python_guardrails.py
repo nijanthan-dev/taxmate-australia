@@ -223,6 +223,38 @@ def date_weekday(value: str) -> int:
     return date.fromisoformat(value).weekday()
 
 
+class SourceRegistrationTests(unittest.TestCase):
+    def test_canonical_source_duplicates_are_known(self) -> None:
+        record = atodata.SourceRecord(
+            url="https://www.ato.gov.au/new",
+            final_url="https://www.ato.gov.au/existing",
+            status=200,
+            title="Existing",
+            last_updated="",
+            raw_file="raw/existing.html",
+            text_file="text/existing.txt",
+        )
+        self.assertTrue(taxmate_refresh.source_known(
+            record, {"https://www.ato.gov.au/existing"},
+        ))
+
+    def test_pdf_sources_use_raw_hash_without_extracted_text(self) -> None:
+        text, content_hash, verified = atodata.content_state(b"%PDF-1.7\nentity instructions")
+
+        self.assertEqual("", text)
+        self.assertEqual(64, len(content_hash))
+        self.assertTrue(verified)
+
+        for url, title in atodata.SOURCE_TITLE_OVERRIDES.items():
+            with self.subTest(url=url):
+                self.assertEqual(title, atodata.source_title(url, text))
+
+    def test_new_sources_require_https_ato_host(self) -> None:
+        self.assertTrue(atodata.ato_url_allowed("https://www.ato.gov.au/api/public/content/example"))
+        self.assertFalse(atodata.ato_url_allowed("http://www.ato.gov.au/example"))
+        self.assertFalse(atodata.ato_url_allowed("https://example.com/ato"))
+
+
 class PngCropTests(unittest.TestCase):
     def test_crop_rgba_png(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

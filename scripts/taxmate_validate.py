@@ -2835,8 +2835,22 @@ def handoff_payload_contract(payload: Any, root: Optional[str] = None) -> bool:
         else taxmate_handoff.DEFAULT_INCOME_YEAR
     )
     rows: List[Dict[str, Any]] = []
-    for section in ("items", "abn_items", "bas_items", "missing_facts", "evidence_items"):
-        section_rows = payload.get(section)
+    optional_sections = {"company_items", "trust_items", "partnership_items"}
+    for section in (
+        "items",
+        "abn_items",
+        "bas_items",
+        "company_items",
+        "trust_items",
+        "partnership_items",
+        "missing_facts",
+        "evidence_items",
+    ):
+        section_rows = (
+            payload.get(section, [])
+            if section in optional_sections
+            else payload.get(section)
+        )
         if not isinstance(section_rows, list):
             return False
         if any(not isinstance(row, dict) for row in section_rows):

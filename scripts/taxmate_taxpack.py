@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import taxmate_handoff
+import taxmate_entity_routing
 
 
 DEFAULT_INCOME_YEAR = "2025-26"
@@ -52,6 +53,9 @@ class GuideData:
     extracted_values: List[Dict[str, Any]] = field(default_factory=list)
     abn_items: List[GuideItem] = field(default_factory=list)
     bas_items: List[GuideItem] = field(default_factory=list)
+    company_items: List[GuideItem] = field(default_factory=list)
+    trust_items: List[GuideItem] = field(default_factory=list)
+    partnership_items: List[GuideItem] = field(default_factory=list)
     missing_facts: List[GuideItem] = field(default_factory=list)
     evidence_items: List[GuideItem] = field(default_factory=list)
 
@@ -193,9 +197,12 @@ def load_guide_payload(payload: Dict[str, Any]) -> GuideData:
     extraction_rows = extracted_values(payload.get("extracted_values", []), income_year)
     abn_items = section_items(payload, "abn_items", income_year, "ABN")
     bas_items = section_items(payload, "bas_items", income_year, "BAS")
+    company_items = entity_section_items(payload, "company", income_year)
+    trust_items = entity_section_items(payload, "trust", income_year)
+    partnership_items = entity_section_items(payload, "partnership", income_year)
     missing_facts = section_items(payload, "missing_facts", income_year, "MISS")
     evidence_items = section_items(payload, "evidence_items", income_year, "EVID")
-    if not any((items, extraction_rows, abn_items, bas_items, missing_facts, evidence_items)):
+    if not any((items, extraction_rows, abn_items, bas_items, company_items, trust_items, partnership_items, missing_facts, evidence_items)):
         raise ValueError("guide input must include at least one row or queue item")
     generated_date = text_value(payload, "generated_date", default_generated_date())
     return GuideData(
@@ -206,6 +213,9 @@ def load_guide_payload(payload: Dict[str, Any]) -> GuideData:
         extracted_values=extraction_rows,
         abn_items=abn_items,
         bas_items=bas_items,
+        company_items=company_items,
+        trust_items=trust_items,
+        partnership_items=partnership_items,
         missing_facts=missing_facts,
         evidence_items=evidence_items,
     )
@@ -240,6 +250,61 @@ def section_items(
             )
         else:
             items.append(malformed_section_item(f"{key}-{index}", raw, income_year))
+    return items
+
+
+def entity_section_items(
+    payload: Dict[str, Any],
+    kind: str,
+    income_year: str = DEFAULT_INCOME_YEAR,
+) -> List[GuideItem]:
+    key = f"{kind}_items"
+    raw_items = payload.get(key, [])
+    if not isinstance(raw_items, list):
+        return [malformed_section_item(key, raw_items, income_year)]
+    items: List[GuideItem] = []
+    for index, raw in enumerate(raw_items, start=1):
+        if not isinstance(raw, dict):
+            items.append(malformed_section_item(f"{key}-{index}", raw, income_year))
+            continue
+        normalized = dict(raw)
+        valid_sources, invalid_sources = taxmate_entity_routing.source_provenance(normalized)
+        normalized.pop("source_url", None)
+        normalized["source_urls"] = list(dict.fromkeys([
+            taxmate_entity_routing.SOURCES[kind],
+            *valid_sources,
+        ]))
+        if invalid_sources:
+            supplied_facts = normalized.get("facts")
+            facts = list(supplied_facts) if isinstance(supplied_facts, list) else []
+            if supplied_facts is not None and not isinstance(supplied_facts, list):
+                facts.append({"key": "raw-facts", "label": "Raw facts", "value": supplied_facts})
+            facts.append({
+                "key": "unresolved-source-provenance",
+                "label": "Unresolved source provenance",
+                "value": invalid_sources,
+            })
+            normalized["facts"] = facts
+        checked_at = normalized.get("checked_at")
+        if not taxmate_entity_routing.valid_checked_at(checked_at):
+            normalized["checked_at"] = taxmate_entity_routing.CHECKED_AT
+        facts = normalized.get("facts")
+        explicit_status = item_status_kind(normalized)
+        normalized["status"] = (
+            "Accountant review"
+            if explicit_status == "review" or taxmate_entity_routing.entity_facts_present(facts)
+            else "Evidence"
+        )
+        normalized["status_kind"] = normalized["status"]
+        normalized["tab_kind"] = normalized["status"]
+        normalized["row_kind"] = f"entity-return-{kind}"
+        items.append(
+            guide_item(
+                normalized,
+                income_year=income_year,
+                fallback_number=f"{kind.upper()}-{index}",
+            )
+        )
     return items
 
 
@@ -504,6 +569,9 @@ def build_render_rows(data: GuideData) -> List[RenderRow]:
         ("ai", "AI extraction confirmation", extraction_items),
         ("abn", "ABN preparation", data.abn_items),
         ("bas", "BAS preparation", data.bas_items),
+        ("company", "Company return preparation", data.company_items),
+        ("trust", "Trust return preparation", data.trust_items),
+        ("partnership", "Partnership return preparation", data.partnership_items),
         ("missing", "Missing facts queue", data.missing_facts),
         ("evidence", "Evidence queue", data.evidence_items),
     )
@@ -541,6 +609,9 @@ def row_reference(row: RenderRow) -> str:
         "ai": "AI extraction",
         "abn": "ABN item",
         "bas": "BAS item",
+        "company": "Company item",
+        "trust": "Trust item",
+        "partnership": "Partnership item",
         "missing": "Missing fact",
         "evidence": "Evidence item",
     }

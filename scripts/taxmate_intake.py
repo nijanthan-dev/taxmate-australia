@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import taxmate_taxpack
 import taxmate_handoff
+import taxmate_entity_routing
 
 
 DEFAULT_INCOME_YEAR = "2025-26"
@@ -2167,6 +2168,8 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     bas_items = bas_rows(answers) if has_bas_inputs(answers) else []
     missing_items = missing_fact_rows(answers)
     evidence_items = evidence_rows(answers, private_health_medicare)
+    entity_sections, entity_evidence = taxmate_entity_routing.route_entity_returns(answers)
+    evidence_items.extend(entity_evidence)
     items.extend(private_health_medicare_rows(private_health_medicare))
     items.extend(deduction_rows(deductions, answers))
     items.extend(personal_super_contribution_rows(personal_super_contributions))
@@ -2183,7 +2186,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items.extend(cgt_rows(cgt))
     items.extend(payg_rows(payg, answers))
     items.extend(investment_rows(investment, answers))
-    items.extend(partnership_trust_share_rows(answers))
+    items.extend(partnership_trust_share_rows(taxmate_entity_routing.individual_share_answers(answers)))
     items.extend(ess_rows(ess_answers(answers)))
     items.extend(uncommon_income_rows(answers))
     payload = {
@@ -2193,10 +2196,11 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
         "extracted_values": extracted_values,
         "abn_items": abn_items,
         "bas_items": bas_items,
+        **entity_sections,
         "missing_facts": missing_items,
         "evidence_items": evidence_items,
     }
-    for key in ("items", "abn_items", "bas_items", "missing_facts", "evidence_items"):
+    for key in ("items", "abn_items", "bas_items", "company_items", "trust_items", "partnership_items", "missing_facts", "evidence_items"):
         payload[key] = [finalize_guide_row(row, income_year) for row in payload[key]]
     payload["extracted_values"] = [
         finalize_guide_row(row, income_year) for row in payload["extracted_values"]
@@ -3994,7 +3998,11 @@ def evidence_rows(
     rows.extend(offset_evidence_rows(offset_answers(answers)))
     rows.extend(phone_evidence_rows(phone_answers(answers), answers))
     rows.extend(investment_evidence_rows(investment_answers(answers), answers))
-    rows.extend(partnership_trust_share_evidence_rows(answers))
+    rows.extend(
+        partnership_trust_share_evidence_rows(
+            taxmate_entity_routing.individual_share_answers(answers)
+        )
+    )
     rows.extend(uncommon_income_evidence_rows(answers))
     rows.extend(payg_evidence_rows(payg_answers(answers), answers))
     rows.extend(abn_business_evidence_rows(answers))

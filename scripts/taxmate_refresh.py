@@ -21,6 +21,7 @@ def run(argv: List[str]) -> int:
     parser.add_argument("--limit", type=int, default=12, help="Max query matches to refresh.")
     parser.add_argument("--max-pages", type=int, default=250, help="Max pages for --recrawl.")
     parser.add_argument("--url", action="append", default=[], help="Refresh explicit indexed ATO URL. Repeatable.")
+    parser.add_argument("--add-url", action="append", default=[], help="Fetch and register a new explicit ATO URL. Repeatable.")
 
     args = parser.parse_args(argv)
 
@@ -53,17 +54,30 @@ def run(argv: List[str]) -> int:
 
     selected = []
     missing: List[str] = []
+    added = 0
+    results = []
+    if args.add_url:
+        known = {record.url for record in registry.records} | {record.final_url for record in registry.records}
+        for raw_url in args.add_url:
+            if raw_url in known:
+                continue
+            record, result = atodata.AddURL(root, raw_url)
+            results.append(result.to_dict())
+            if record is not None and not source_known(record, known):
+                registry.records.append(record)
+                known.add(record.url)
+                known.add(record.final_url)
+                added += 1
     if args.all:
         selected = registry.records
     elif len(args.url) > 0:
         selected, missing = atodata.SelectByURL(registry.records, args.url)
     elif args.query:
         selected = atodata.SelectByQuery(root, registry.records, args.query, args.limit)
-    else:
-        atodata.Errorf("use --query, --url, --all, or --recrawl")
+    elif not args.add_url:
+        atodata.Errorf("use --query, --url, --add-url, --all, or --recrawl")
         return 2
 
-    results = []
     for raw_url in missing:
         results.append(atodata.RefreshResult(url=raw_url, error="not in source registry").to_dict())
 
@@ -74,7 +88,7 @@ def run(argv: List[str]) -> int:
             changed += 1
         results.append(item.to_dict())
 
-    if selected:
+    if selected or added:
         try:
             atodata.SaveRegistry(root, registry)
         except Exception as exc:
@@ -85,10 +99,15 @@ def run(argv: List[str]) -> int:
         {
             "matched": len(selected),
             "changed": changed,
+            "added": added,
             "results": results,
         }
     )
     return 0
+
+
+def source_known(record: atodata.SourceRecord, known: set[str]) -> bool:
+    return record.url in known or record.final_url in known
 
 
 def main(argv: Optional[List[str]] = None) -> int:

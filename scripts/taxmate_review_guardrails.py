@@ -783,6 +783,9 @@ def check_handoff_contract(root: Path) -> List[Finding]:
                 "canonical_extraction != extraction",
                 "source_urls",
                 "checked_at",
+                '"company_items",',
+                '"trust_items",',
+                '"partnership_items",',
             ],
         )
     )
@@ -803,6 +806,8 @@ def check_handoff_contract(root: Path) -> List[Finding]:
                 "test_action_destination_matrix_is_exact",
                 "test_field_level_is_not_a_destination_kind",
                 "test_duplicate_fact_keys_fail_payload_validation",
+                "test_payload_validation_covers_each_entity_section",
+                "test_payload_validation_requires_entity_section_lists",
                 "test_queue_only_and_extended_only_payloads_validate",
                 "test_payload_validation_requires_canonical_handoff_label_and_action",
                 "test_payload_validation_rejects_forged_destination_mapping_and_sources",
@@ -929,11 +934,23 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "def render_source_appendix(",
         "data.abn_items",
         "data.bas_items",
+        "data.company_items",
+        "data.trust_items",
+        "data.partnership_items",
         "data.missing_facts",
         "data.evidence_items",
         "default_generated_date()",
         "canonical_status(kind)",
         "def malformed_section_item(",
+        "def entity_section_items(",
+        "taxmate_entity_routing.entity_facts_present(facts)",
+        "taxmate_entity_routing.SOURCES[kind]",
+                "taxmate_entity_routing.CHECKED_AT",
+                "taxmate_entity_routing.valid_checked_at(checked_at)",
+                "taxmate_entity_routing.source_provenance(normalized)",
+                'normalized.pop("source_url", None)',
+                '"key": "unresolved-source-provenance"',
+                '"key": "raw-facts"',
     ]
     findings.extend(fail_if_missing(TAXPACK_OUTPUT_LAYER, text, required))
     forbidden = [
@@ -963,6 +980,78 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     capital_gains_rules = read_optional(root, "skills/capital-gains-tax/references/rules.md")
     capital_gains_evidence = read_optional(root, "skills/capital-gains-tax/references/evidence.md")
     findings: List[Finding] = []
+    entity_text = read_optional(root, "scripts/taxmate_entity_routing.py")
+    source_state = read_optional(root, "data/ato_knowledge_base/source_registry.json") + read_optional(
+        root, "data/ato_knowledge_base/source_coverage.json"
+    )
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            text + "\n" + entity_text,
+            [
+                "route_entity_returns(answers)",
+                '"company_items"',
+                '"trust_items"',
+                '"partnership_items"',
+                'f"entity-return-{kind}"',
+                '"status": "Accountant review"',
+                '"status": "Evidence"',
+                "SOURCES = {",
+                "CHECKED_AT =",
+                'isinstance(value, (list, dict))',
+                "not any(not _missing(item) for item in values)",
+                'for collection_key in ("entities", "entity_returns")',
+                'def _first_meaningful(',
+                'def _entity_marker(',
+                'def _entity_input(',
+                "LEGACY_SHARE_FIELDS = {",
+                '"trust_share_income"',
+                '"partnership_share_income"',
+                '"0", "off", "unchecked"',
+                "isinstance(value, (int, float)) and not isinstance(value, bool) and value == 0",
+                'return_key = f"{kind}_return_{field}"',
+                "has_legacy_marker",
+                'def individual_share_answers(',
+                "def _entity_request_present(",
+                'key.startswith(f"{kind}_return_")',
+                "or isinstance(answers[alias], (dict, list))",
+                "for key in LEGACY_SHARE_FIELDS[kind]:",
+                'def entity_facts_present(',
+                'taxmate_entity_routing.individual_share_answers(answers)',
+                'for source_key in ("source_urls", "source_url")',
+                'if kind == "partnership" and "share_percentages" in raw:',
+                "and sum(values) == 100",
+                "def valid_checked_at(",
+                "def source_provenance(",
+                're.fullmatch(r"https?://[^\\s]+", value.strip())',
+                'datetime.fromisoformat(value.replace("Z", "+00:00"))',
+                'gaps.append(f"checked-at provenance ({_display(checked_at)})")',
+                'kind in {"trust", "partnership"} and kind in answers',
+                "ROUTING_METADATA = {",
+                'REQUEST_MARKER = "__entity_return_requested__"',
+                'elif request_marker is not None and len(grouped[kind]) == initial_count:',
+                'if REQUEST_MARKER in raw:',
+                "isinstance(value, (dict, list)) and _missing(value)",
+                "_decline(answers[alias]) or answers[alias] is None",
+                'elif kind not in {"individual", "sole trader", "sole_trader"}:',
+                'prefix = f"{kind}_return_"',
+                'nested["conflicting_flat_facts"] = conflicts',
+                "def _unsupported_evidence(",
+                '"facts": [{"key": "unsupported", "label": "Unsupported entity facts", "value": unsupported}]',
+            ],
+        )
+    )
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            source_state,
+            [
+                "0-e220713e-6a6f-4401-b966-8bddf3ba96fd",
+                "0-70d99f71-9469-4fd4-97fe-e328d58b37ab",
+                "1453e44ff39e4eb789ea83eeb6eac10b",
+            ],
+        )
+    )
     findings.extend(
         fail_if_missing(
             INDIVIDUAL_INTAKE_CONTRACT,
@@ -995,8 +1084,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "ATO_PARTNERSHIP_TRUST_INCOME_SOURCE =",
                 "ATO_COMPENSATION_INCOME_SOURCE =",
                 "ATO_SCHOLARSHIP_PRIZE_SOURCE =",
-                "items.extend(partnership_trust_share_rows(answers))",
-                "rows.extend(partnership_trust_share_evidence_rows(answers))",
+                "items.extend(partnership_trust_share_rows(taxmate_entity_routing.individual_share_answers(answers)))",
+                "partnership_trust_share_evidence_rows(",
                 "def uncommon_income_route(",
             ],
         )
