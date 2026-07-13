@@ -48,6 +48,7 @@ ROUTING_METADATA = {
     "entity_type", "type", "source_url", "source_urls", "checked_at",
     "status", "review_status",
 }
+REQUEST_MARKER = "__entity_return_requested__"
 
 
 def _missing(value: Any) -> bool:
@@ -151,16 +152,21 @@ def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
     grouped = {kind: [] for kind in ALIASES}
     malformed: List[Any] = []
     for kind, aliases in ALIASES.items():
+        initial_count = len(grouped[kind])
+        request_marker: Any = None
         for alias in aliases:
             if alias not in answers or _decline(answers[alias]) or answers[alias] is None:
                 continue
             value = answers[alias]
             if _entity_marker(value):
+                request_marker = value
                 continue
             grouped[kind].extend(value if isinstance(value, list) else [value])
         flat = _flat_record(answers, kind)
         if flat:
             grouped[kind].append(flat)
+        elif request_marker is not None and len(grouped[kind]) == initial_count:
+            grouped[kind].append({REQUEST_MARKER: request_marker})
     for collection_key in ("entities", "entity_returns"):
         entities = answers.get(collection_key, [])
         if entities in (None, "", [], {}):
@@ -199,6 +205,20 @@ def route_entity_returns(
         for index, raw in enumerate(records, start=1):
             if not isinstance(raw, dict):
                 malformed.append(raw)
+                continue
+            if REQUEST_MARKER in raw:
+                missing = [field.replace("_", " ") for field in REQUIRED[kind]]
+                evidence.append({
+                    "number": f"ENTITY-EVID-{evidence_index}",
+                    "ato_area": f"{LABELS[kind]} return intake evidence",
+                    "question": f"{LABELS[kind]} return requested; intake facts required",
+                    "answer": f"Confirm {', '.join(missing)}",
+                    "why_included": "An explicit entity-return request fails closed until skeleton intake facts are supplied.",
+                    "status": "Evidence", "source_urls": [SOURCES[kind]],
+                    "checked_at": CHECKED_AT, "row_kind": f"entity-return-{kind}-request",
+                    "facts": [{"key": "request", "label": "Entity return requested", "value": raw[REQUEST_MARKER]}],
+                })
+                evidence_index += 1
                 continue
             facts = [(field, raw[field]) for field in FIELDS[kind] if field in raw]
             unsupported = {

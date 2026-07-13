@@ -17,6 +17,49 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertEqual([], payload["trust_items"])
         self.assertEqual([], payload["partnership_items"])
 
+    def test_marker_only_aliases_preserve_request_and_fail_closed(self):
+        aliases = {
+            "company": ("company_return", "company_intake", "company_entity"),
+            "trust": ("trust_return", "trust_intake", "trust_entity"),
+            "partnership": ("partnership_return", "partnership_intake", "partnership_entity"),
+        }
+        for kind, kind_aliases in aliases.items():
+            for alias in kind_aliases:
+                for marker in (True, "yes", "true", "on", "checked"):
+                    with self.subTest(kind=kind, alias=alias, marker=marker):
+                        payload = self.payload({alias: marker})
+                        rows = [
+                            row for row in payload["evidence_items"]
+                            if row["row_kind"] == f"entity-return-{kind}-request"
+                        ]
+                        self.assertEqual(1, len(rows))
+                        self.assertEqual(marker, rows[0]["facts"][0]["value"])
+                        self.assertIn("intake facts required", rows[0]["question"])
+
+            payload = self.payload({alias: True for alias in kind_aliases})
+            rows = [
+                row for row in payload["evidence_items"]
+                if row["row_kind"] == f"entity-return-{kind}-request"
+            ]
+            self.assertEqual(1, len(rows))
+
+            payload = self.payload({kind_aliases[0]: True, f"{kind}_return_name": "Named"})
+            self.assertEqual(1, len(payload[f"{kind}_items"]))
+            self.assertFalse(any(
+                row["row_kind"] == f"entity-return-{kind}-request"
+                for row in payload["evidence_items"]
+            ))
+
+            nested = self.payload({kind_aliases[0]: True, kind_aliases[1]: {"name": "Nested"}})
+            self.assertEqual(1, len(nested[f"{kind}_items"]))
+            self.assertFalse(any(
+                row["row_kind"] == f"entity-return-{kind}-request"
+                for row in nested["evidence_items"]
+            ))
+
+        declined = self.payload({"company_return": False, "trust_return": "no"})
+        self.assertFalse(any("-request" in row["row_kind"] for row in declined["evidence_items"]))
+
     def test_three_nested_entities_route_to_isolated_sections(self):
         payload = self.payload({
             "company_return": {"name": "Zero Co", "abn": "12 345 678 901", "income_year": "2025-26", "residency": "Australian", "business_activity": "Design", "directors": 0, "shareholders": False, "source_url": "https://example.invalid/company", "checked_at": "2026-07-13"},
