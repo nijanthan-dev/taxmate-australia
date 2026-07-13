@@ -265,6 +265,25 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertNotIn('href="not a url"', body)
         self.assertIn("Unresolved source provenance", body)
 
+        routed = self.payload({
+            "trust_return": {"name": "Entity", "source_url": "https://example.invalid/bad path"},
+        })
+        self.assertNotIn("https://example.invalid/bad path", routed["trust_items"][0]["source_urls"])
+        self.assertIn(
+            "source provenance",
+            " ".join(row["answer"] for row in routed["evidence_items"]),
+        )
+
+        scalar = taxmate_taxpack.load_guide_payload({
+            "trust_items": [{
+                "number": "DIRECT", "source_url": "not a url",
+                "facts": [{"key": "name", "value": "Entity"}],
+            }],
+        })
+        scalar_body = taxmate_taxpack.render_html(scalar)
+        self.assertNotIn('href="not a url"', scalar_body)
+        self.assertIn("Unresolved source provenance", scalar_body)
+
     def test_identical_alias_records_do_not_duplicate_routes(self):
         record = {"name": "Same Co", "income_year": "2025-26", "residency": "Australian", "business_activity": "Design", "directors": 0, "shareholders": 0}
         payload = self.payload({"company_return": record, "company_intake": dict(record)})

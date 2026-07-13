@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime
 from typing import Any, Dict, List, Tuple
 
@@ -100,9 +101,13 @@ def source_provenance(record: Dict[str, Any]) -> Tuple[List[str], List[Any]]:
     valid = [
         value.strip()
         for value in supplied
-        if isinstance(value, str) and value.strip().startswith(("https://", "http://"))
+        if isinstance(value, str) and re.fullmatch(r"https?://[^\s]+", value.strip())
     ]
-    invalid = [value for value in supplied if value not in valid and str(value).strip() not in valid]
+    invalid = [
+        value
+        for value in supplied
+        if not isinstance(value, str) or not re.fullmatch(r"https?://[^\s]+", value.strip())
+    ]
     return valid, invalid
 
 

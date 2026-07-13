@@ -948,6 +948,7 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
                 "taxmate_entity_routing.CHECKED_AT",
                 "taxmate_entity_routing.valid_checked_at(checked_at)",
                 "taxmate_entity_routing.source_provenance(normalized)",
+                'normalized.pop("source_url", None)',
                 '"key": "unresolved-source-provenance"',
     ]
     findings.extend(fail_if_missing(TAXPACK_OUTPUT_LAYER, text, required))
@@ -1014,6 +1015,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "and sum(values) == 100",
                 "def valid_checked_at(",
                 "def source_provenance(",
+                're.fullmatch(r"https?://[^\\s]+", value.strip())',
                 'datetime.fromisoformat(value.replace("Z", "+00:00"))',
                 'gaps.append(f"checked-at provenance ({_display(checked_at)})")',
                 'kind in {"trust", "partnership"} and kind in answers',

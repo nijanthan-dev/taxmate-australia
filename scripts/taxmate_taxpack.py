@@ -269,6 +269,7 @@ def entity_section_items(
             continue
         normalized = dict(raw)
         valid_sources, invalid_sources = taxmate_entity_routing.source_provenance(normalized)
+        normalized.pop("source_url", None)
         normalized["source_urls"] = list(dict.fromkeys([
             taxmate_entity_routing.SOURCES[kind],
             *valid_sources,
