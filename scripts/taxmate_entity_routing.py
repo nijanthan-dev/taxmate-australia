@@ -44,6 +44,10 @@ REQUIRED = {
     ),
 }
 LABELS = {"company": "Company", "trust": "Trust", "partnership": "Partnership"}
+ROUTING_METADATA = {
+    "entity_type", "type", "source_url", "source_urls", "checked_at",
+    "status", "review_status",
+}
 
 
 def _missing(value: Any) -> bool:
@@ -108,6 +112,10 @@ def _flat_record(answers: Dict[str, Any], kind: str) -> Dict[str, Any]:
             record[field] = answers[return_key]
         elif has_legacy_marker and legacy_key in answers:
             record[field] = answers[legacy_key]
+    prefix = f"{kind}_return_"
+    for key, value in answers.items():
+        if key.startswith(prefix):
+            record.setdefault(key[len(prefix):], value)
     return record
 
 
@@ -124,6 +132,19 @@ def individual_share_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
 
 def entity_facts_present(value: Any) -> bool:
     return not _missing(value)
+
+
+def _unsupported_evidence(kind: str, unsupported: Dict[str, Any], index: int) -> Dict[str, Any]:
+    return {
+        "number": f"ENTITY-EVID-{index}",
+        "ato_area": f"{LABELS[kind]} return scope review",
+        "question": f"{LABELS[kind]} facts outside skeleton scope",
+        "answer": f"Preserved for accountant review only: {_display(unsupported)}",
+        "why_included": "Facts outside skeleton routing are retained without importing downstream tax treatment.",
+        "status": "Accountant review", "source_urls": [SOURCES[kind]],
+        "checked_at": CHECKED_AT, "row_kind": f"entity-return-{kind}-unsupported",
+        "facts": [{"key": "unsupported", "label": "Unsupported entity facts", "value": unsupported}],
+    }
 
 
 def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
@@ -152,7 +173,7 @@ def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
             kind = str(_first_meaningful(item, ("entity_type", "type")) or "").strip().lower()
             if kind in grouped:
                 grouped[kind].append(item)
-            elif kind not in {"", "individual", "sole trader", "sole_trader"}:
+            elif kind not in {"individual", "sole trader", "sole_trader"}:
                 malformed.append(item)
     for kind, values in grouped.items():
         unique: List[Any] = []
@@ -180,8 +201,17 @@ def route_entity_returns(
                 malformed.append(raw)
                 continue
             facts = [(field, raw[field]) for field in FIELDS[kind] if field in raw]
+            unsupported = {
+                key: value
+                for key, value in raw.items()
+                if key not in FIELDS[kind] and key not in ROUTING_METADATA
+            }
             if not facts:
-                malformed.append(raw)
+                if unsupported:
+                    evidence.append(_unsupported_evidence(kind, unsupported, evidence_index))
+                    evidence_index += 1
+                else:
+                    malformed.append(raw)
                 continue
             gaps = [
                 field.replace("_", " ")
@@ -234,6 +264,9 @@ def route_entity_returns(
                 "tab_text": f"{LABELS[kind]} facts stay in the separate prep-only workflow and require accountant review.",
             }
             sections[f"{kind}_items"].append(row)
+            if unsupported:
+                evidence.append(_unsupported_evidence(kind, unsupported, evidence_index))
+                evidence_index += 1
             if gaps:
                 evidence.append({
                     "number": f"ENTITY-EVID-{evidence_index}", "ato_area": f"{LABELS[kind]} return evidence",

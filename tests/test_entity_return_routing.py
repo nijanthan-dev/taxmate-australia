@@ -73,6 +73,53 @@ class EntityReturnRoutingTests(unittest.TestCase):
         evidence = " ".join(row["answer"] for row in valid["evidence_items"])
         self.assertNotIn("partner share percentages", evidence)
 
+    def test_untyped_and_unsupported_entity_facts_are_preserved_for_review(self):
+        payload = self.payload({
+            "entities": [
+                {"name": "Untyped Trust", "tfn": "123"},
+                {
+                    "entity_type": "company",
+                    "name": "Scoped Co",
+                    "franking_credits": 0,
+                    "carried_losses": False,
+                },
+                {
+                    "type": "trust",
+                    "name": "Scoped Trust",
+                    "distributions": {"beneficiary": 0},
+                },
+                {
+                    "entity_type": "partnership",
+                    "name": "Scoped Partnership",
+                    "cgt_details": [],
+                },
+            ]
+        })
+        evidence = [
+            row for row in payload["evidence_items"]
+            if row["row_kind"].startswith("entity-return-")
+        ]
+        rendered = " ".join(row["answer"] for row in evidence)
+        self.assertIn("Untyped Trust", rendered)
+        self.assertIn('"franking_credits": 0', rendered)
+        self.assertIn('"carried_losses": false', rendered)
+        self.assertIn('"beneficiary": 0', rendered)
+        self.assertIn('"cgt_details": []', rendered)
+        self.assertTrue(all(row["status"] in {"Evidence", "Accountant review"} for row in evidence))
+        self.assertFalse(any("franking" in row["answer"].lower() for row in payload["company_items"]))
+
+    def test_nested_alias_lists_and_flat_unsupported_facts_are_evidence_only(self):
+        payload = self.payload({
+            "company_intake": [{"name": "Alias Co", "dividends": False}],
+            "trust_entity": {"name": "Alias Trust", "distributions": 0},
+            "partnership_return_losses": {"carried_forward": 0},
+        })
+        rendered = " ".join(row["answer"] for row in payload["evidence_items"])
+        self.assertIn('"dividends": false', rendered)
+        self.assertIn('"distributions": 0', rendered)
+        self.assertIn('"losses": {"carried_forward": 0}', rendered)
+        self.assertEqual([], payload["partnership_items"])
+
     def test_flat_aliases_and_renderer_sections_sources_and_anchors(self):
         payload = self.payload({
             "company_return": True, "company_name": "Flat Co", "company_acn": 0, "company_residency": "unclear",

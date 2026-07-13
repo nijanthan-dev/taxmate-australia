@@ -1001,6 +1001,11 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 'for source_key in ("source_urls", "source_url")',
                 'if kind == "partnership" and "share_percentages" in raw:',
                 "and sum(values) == 100",
+                "ROUTING_METADATA = {",
+                'elif kind not in {"individual", "sole trader", "sole_trader"}:',
+                'prefix = f"{kind}_return_"',
+                "def _unsupported_evidence(",
+                '"facts": [{"key": "unsupported", "label": "Unsupported entity facts", "value": unsupported}]',
             ],
         )
     )
