@@ -1001,6 +1001,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 'def _entity_input(',
                 "LEGACY_SHARE_FIELDS = {",
                 '"0", "off", "unchecked"',
+                "isinstance(value, (int, float)) and not isinstance(value, bool) and value == 0",
                 'return_key = f"{kind}_return_{field}"',
                 "has_legacy_marker",
                 'def individual_share_answers(',

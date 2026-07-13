@@ -69,13 +69,24 @@ class EntityReturnRoutingTests(unittest.TestCase):
         declined = self.payload({"company_return": False, "trust_return": "no"})
         self.assertFalse(any("-request" in row["row_kind"] for row in declined["evidence_items"]))
 
-        for token in ("0", "off", "unchecked"):
+        for token in ("0", "off", "unchecked", 0, 0.0):
             payload = self.payload({f"{kind}_return": token for kind in aliases})
             self.assertFalse(any(payload[f"{kind}_items"] for kind in aliases))
             self.assertFalse(any(
                 row["row_kind"].startswith("entity-return-")
                 for row in payload["evidence_items"]
             ))
+
+        shares = self.payload({
+            "trust_return": 0,
+            "trust_name": "Individual Trust",
+            "trust_share_income": 1,
+            "partnership_return": 0.0,
+            "partnership_name": "Individual Partnership",
+            "partnership_share_income": 2,
+        })
+        self.assertTrue(any(row["number"].startswith("TRUST-SHARE-") for row in shares["items"]))
+        self.assertTrue(any(row["number"].startswith("PART-SHARE-") for row in shares["items"]))
 
     def test_three_nested_entities_route_to_isolated_sections(self):
         payload = self.payload({

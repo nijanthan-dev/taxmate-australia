@@ -109,6 +109,8 @@ def source_provenance(record: Dict[str, Any]) -> Tuple[List[str], List[Any]]:
 def _decline(value: Any) -> bool:
     if value is False:
         return True
+    if isinstance(value, (int, float)) and not isinstance(value, bool) and value == 0:
+        return True
     return isinstance(value, str) and value.strip().lower() in {
         "no", "false", "none", "not applicable", "0", "off", "unchecked",
     }
