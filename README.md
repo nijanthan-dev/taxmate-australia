@@ -64,6 +64,7 @@ The current individual-return handoff includes:
 - itemized deduction rows for gifts/donations, tax affairs costs, income protection, self-education, union/professional fees, work travel/car/public transport, tools/equipment/assets, personal super contribution deduction prep, and offset routing, all with evidence and review queues;
 - phone plan/data/device/incidental-use rows with WFH fixed-rate duplicate-claim prevention, employer paid/reimbursed/provided exclusions, evidence prompts, and ABN/GST/BAS review routing;
 - ABN prep section and BAS worksheet, including ABN profile, income streams, expense categories, 1A/1B, GST-free/input-taxed sales, adjustments, PAYG labels, tax invoice evidence, and accounting-basis review;
+- separate prep-only company, trust, and partnership intake sections with isolated routing, official-source provenance, missing-evidence prompts, and accountant-review handoff; no entity worksheet, allocation, lodgment, or final advice;
 - missing facts queue, evidence queue, and accountant-review queue using the same row context;
 - row-associated supporting provenance and verified destination-mapping sources.
 

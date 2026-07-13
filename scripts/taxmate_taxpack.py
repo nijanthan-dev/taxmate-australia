@@ -52,6 +52,9 @@ class GuideData:
     extracted_values: List[Dict[str, Any]] = field(default_factory=list)
     abn_items: List[GuideItem] = field(default_factory=list)
     bas_items: List[GuideItem] = field(default_factory=list)
+    company_items: List[GuideItem] = field(default_factory=list)
+    trust_items: List[GuideItem] = field(default_factory=list)
+    partnership_items: List[GuideItem] = field(default_factory=list)
     missing_facts: List[GuideItem] = field(default_factory=list)
     evidence_items: List[GuideItem] = field(default_factory=list)
 
@@ -193,9 +196,12 @@ def load_guide_payload(payload: Dict[str, Any]) -> GuideData:
     extraction_rows = extracted_values(payload.get("extracted_values", []), income_year)
     abn_items = section_items(payload, "abn_items", income_year, "ABN")
     bas_items = section_items(payload, "bas_items", income_year, "BAS")
+    company_items = section_items(payload, "company_items", income_year, "COMPANY")
+    trust_items = section_items(payload, "trust_items", income_year, "TRUST")
+    partnership_items = section_items(payload, "partnership_items", income_year, "PARTNERSHIP")
     missing_facts = section_items(payload, "missing_facts", income_year, "MISS")
     evidence_items = section_items(payload, "evidence_items", income_year, "EVID")
-    if not any((items, extraction_rows, abn_items, bas_items, missing_facts, evidence_items)):
+    if not any((items, extraction_rows, abn_items, bas_items, company_items, trust_items, partnership_items, missing_facts, evidence_items)):
         raise ValueError("guide input must include at least one row or queue item")
     generated_date = text_value(payload, "generated_date", default_generated_date())
     return GuideData(
@@ -206,6 +212,9 @@ def load_guide_payload(payload: Dict[str, Any]) -> GuideData:
         extracted_values=extraction_rows,
         abn_items=abn_items,
         bas_items=bas_items,
+        company_items=company_items,
+        trust_items=trust_items,
+        partnership_items=partnership_items,
         missing_facts=missing_facts,
         evidence_items=evidence_items,
     )
@@ -504,6 +513,9 @@ def build_render_rows(data: GuideData) -> List[RenderRow]:
         ("ai", "AI extraction confirmation", extraction_items),
         ("abn", "ABN preparation", data.abn_items),
         ("bas", "BAS preparation", data.bas_items),
+        ("company", "Company return preparation", data.company_items),
+        ("trust", "Trust return preparation", data.trust_items),
+        ("partnership", "Partnership return preparation", data.partnership_items),
         ("missing", "Missing facts queue", data.missing_facts),
         ("evidence", "Evidence queue", data.evidence_items),
     )
@@ -541,6 +553,9 @@ def row_reference(row: RenderRow) -> str:
         "ai": "AI extraction",
         "abn": "ABN item",
         "bas": "BAS item",
+        "company": "Company item",
+        "trust": "Trust item",
+        "partnership": "Partnership item",
         "missing": "Missing fact",
         "evidence": "Evidence item",
     }

@@ -929,6 +929,9 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "def render_source_appendix(",
         "data.abn_items",
         "data.bas_items",
+        "data.company_items",
+        "data.trust_items",
+        "data.partnership_items",
         "data.missing_facts",
         "data.evidence_items",
         "default_generated_date()",
@@ -963,6 +966,24 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     capital_gains_rules = read_optional(root, "skills/capital-gains-tax/references/rules.md")
     capital_gains_evidence = read_optional(root, "skills/capital-gains-tax/references/evidence.md")
     findings: List[Finding] = []
+    entity_text = read_optional(root, "scripts/taxmate_entity_routing.py")
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            text + "\n" + entity_text,
+            [
+                "route_entity_returns(answers)",
+                '"company_items"',
+                '"trust_items"',
+                '"partnership_items"',
+                'f"entity-return-{kind}"',
+                '"status": "Accountant review"',
+                '"status": "Evidence"',
+                "SOURCES = {",
+                "CHECKED_AT =",
+            ],
+        )
+    )
     findings.extend(
         fail_if_missing(
             INDIVIDUAL_INTAKE_CONTRACT,
