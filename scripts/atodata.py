@@ -33,6 +33,7 @@ SOURCE_TITLE_OVERRIDES = {
 }
 
 SEED_URLS = [
+    *SOURCE_TITLE_OVERRIDES,
     "https://www.ato.gov.au/individuals-and-families/your-tax-return",
     "https://www.ato.gov.au/individuals-and-families/your-tax-return/how-to-lodge-your-tax-return",
     "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records",

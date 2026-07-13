@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+import atodata
 import taxmate_intake
 import taxmate_entity_routing
 import taxmate_taxpack
@@ -21,6 +22,7 @@ class EntityReturnRoutingTests(unittest.TestCase):
         covered = {row["original_url"]: row for row in coverage["sources"]}
         for kind, url in taxmate_entity_routing.SOURCES.items():
             with self.subTest(kind=kind):
+                self.assertIn(url, atodata.SEED_URLS)
                 self.assertTrue(records[url]["content_verified"])
                 self.assertEqual(64, len(records[url]["content_hash"]))
                 self.assertIn(kind.title(), records[url]["title"])
