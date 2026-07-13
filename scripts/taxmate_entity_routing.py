@@ -155,7 +155,7 @@ def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
         initial_count = len(grouped[kind])
         request_marker: Any = None
         for alias in aliases:
-            if alias not in answers or _decline(answers[alias]) or answers[alias] is None:
+            if alias not in answers or _decline(answers[alias]) or _missing(answers[alias]):
                 continue
             value = answers[alias]
             if _entity_marker(value):

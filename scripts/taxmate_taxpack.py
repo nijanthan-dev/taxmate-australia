@@ -268,6 +268,13 @@ def entity_section_items(
             items.append(malformed_section_item(f"{key}-{index}", raw, income_year))
             continue
         normalized = dict(raw)
+        normalized["source_urls"] = list(dict.fromkeys([
+            taxmate_entity_routing.SOURCES[kind],
+            *source_urls(normalized),
+        ]))
+        checked_at = normalized.get("checked_at")
+        if checked_at is None or (isinstance(checked_at, str) and not checked_at.strip()):
+            normalized["checked_at"] = taxmate_entity_routing.CHECKED_AT
         facts = normalized.get("facts")
         explicit_status = item_status_kind(normalized)
         normalized["status"] = (

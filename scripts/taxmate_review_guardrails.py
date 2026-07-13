@@ -944,6 +944,8 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "def malformed_section_item(",
         "def entity_section_items(",
         "taxmate_entity_routing.entity_facts_present(facts)",
+        "taxmate_entity_routing.SOURCES[kind]",
+        "taxmate_entity_routing.CHECKED_AT",
     ]
     findings.extend(fail_if_missing(TAXPACK_OUTPUT_LAYER, text, required))
     forbidden = [
@@ -1005,6 +1007,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 'REQUEST_MARKER = "__entity_return_requested__"',
                 'elif request_marker is not None and len(grouped[kind]) == initial_count:',
                 'if REQUEST_MARKER in raw:',
+                "_decline(answers[alias]) or _missing(answers[alias])",
                 'elif kind not in {"individual", "sole trader", "sole_trader"}:',
                 'prefix = f"{kind}_return_"',
                 "def _unsupported_evidence(",

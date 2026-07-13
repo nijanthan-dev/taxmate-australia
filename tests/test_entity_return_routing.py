@@ -4,6 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import taxmate_intake
+import taxmate_entity_routing
 import taxmate_taxpack
 
 
@@ -12,10 +13,18 @@ class EntityReturnRoutingTests(unittest.TestCase):
         return taxmate_intake.answers_to_pack_payload({"income_year": "2025-26", **answers})
 
     def test_no_entity_has_no_entity_sections(self):
-        payload = self.payload({"company_return": False, "trust_return": "no", "partnership_return": None})
+        payload = self.payload({
+            "company_return": False,
+            "trust_return": "no",
+            "partnership_return": None,
+            "company_intake": "n/a",
+            "trust_intake": "unknown",
+            "partnership_intake": "",
+        })
         self.assertEqual([], payload["company_items"])
         self.assertEqual([], payload["trust_items"])
         self.assertEqual([], payload["partnership_items"])
+        self.assertFalse(any(row["row_kind"].startswith("entity-return-") for row in payload["evidence_items"]))
 
     def test_marker_only_aliases_preserve_request_and_fail_closed(self):
         aliases = {
@@ -256,6 +265,13 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertEqual("entity-return-company", data.company_items[0].row_kind)
         self.assertEqual("entity-return-trust", data.trust_items[0].row_kind)
         self.assertEqual("entity-return-partnership", data.partnership_items[0].row_kind)
+        for kind in ("company", "trust", "partnership"):
+            item = getattr(data, f"{kind}_items")[0]
+            self.assertIn(taxmate_entity_routing.SOURCES[kind], item.source_urls)
+            self.assertEqual(taxmate_entity_routing.CHECKED_AT, item.checked_at)
+        body = taxmate_taxpack.render_html(data)
+        self.assertIn("Source/provenance appendix", body)
+        self.assertIn(taxmate_entity_routing.SOURCES["company"], body)
 
         for key in ("company_items", "trust_items", "partnership_items"):
             with self.subTest(key=key):
