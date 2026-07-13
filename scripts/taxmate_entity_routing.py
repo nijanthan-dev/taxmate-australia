@@ -215,9 +215,14 @@ def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
         initial_count = len(grouped[kind])
         request_marker: Any = None
         for alias in aliases:
-            if alias not in answers or _decline(answers[alias]) or _missing(answers[alias]):
+            if alias not in answers or _decline(answers[alias]) or answers[alias] is None:
                 continue
             value = answers[alias]
+            if isinstance(value, (dict, list)) and _missing(value):
+                request_marker = value
+                continue
+            if _missing(value):
+                continue
             if _entity_marker(value):
                 request_marker = value
                 continue

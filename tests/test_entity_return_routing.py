@@ -1,3 +1,4 @@
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -11,6 +12,20 @@ import taxmate_taxpack
 class EntityReturnRoutingTests(unittest.TestCase):
     def payload(self, answers):
         return taxmate_intake.answers_to_pack_payload({"income_year": "2025-26", **answers})
+
+    def test_entity_sources_are_registered_with_hashes_and_coverage(self):
+        root = Path(__file__).resolve().parents[1]
+        registry = json.loads((root / "data/ato_knowledge_base/source_registry.json").read_text())
+        coverage = json.loads((root / "data/ato_knowledge_base/source_coverage.json").read_text())
+        records = {row["url"]: row for row in registry["records"]}
+        covered = {row["original_url"]: row for row in coverage["sources"]}
+        for kind, url in taxmate_entity_routing.SOURCES.items():
+            with self.subTest(kind=kind):
+                self.assertTrue(records[url]["content_verified"])
+                self.assertEqual(64, len(records[url]["content_hash"]))
+                self.assertIn(kind.title(), records[url]["title"])
+                self.assertEqual(records[url]["content_hash"], covered[url]["content_hash"])
+                self.assertEqual("metadata_only", covered[url]["status"])
 
     def test_no_entity_has_no_entity_sections(self):
         payload = self.payload({
@@ -87,6 +102,17 @@ class EntityReturnRoutingTests(unittest.TestCase):
         })
         self.assertTrue(any(row["number"].startswith("TRUST-SHARE-") for row in shares["items"]))
         self.assertTrue(any(row["number"].startswith("PART-SHARE-") for row in shares["items"]))
+
+        for kind in aliases:
+            for blank in ({}, []):
+                with self.subTest(kind=kind, blank=blank):
+                    payload = self.payload({f"{kind}_return": blank})
+                    rows = [
+                        row for row in payload["evidence_items"]
+                        if row["row_kind"] == f"entity-return-{kind}-request"
+                    ]
+                    self.assertEqual(1, len(rows))
+                    self.assertEqual(blank, rows[0]["facts"][0]["value"])
 
     def test_three_nested_entities_route_to_isolated_sections(self):
         payload = self.payload({

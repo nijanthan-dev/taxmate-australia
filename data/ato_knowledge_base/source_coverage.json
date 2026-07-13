@@ -760,6 +760,22 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-1393b6b0eb9a",
+      "original_url": "https://www.ato.gov.au/api/public/content/0-70d99f71-9469-4fd4-97fe-e328d58b37ab",
+      "canonical_url": "https://www.ato.gov.au/api/public/content/0-70d99f71-9469-4fd4-97fe-e328d58b37ab",
+      "source_title": "Trust tax return instructions 2025",
+      "source_last_updated": "",
+      "checked_at": "2026-07-13T12:40:45Z",
+      "content_hash": "b25d52a86d36b573c223b7118c02fa81277ed4cc117d42d40d8db5321cca0581",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
+    },
+    {
       "source_id": "ato-14ccda44a0ae",
       "original_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel/motor-vehicle-and-car-expenses/expenses-for-a-car-you-own-or-lease",
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/cars-transport-and-travel/motor-vehicle-and-car-expenses/expenses-for-a-car-you-own-or-lease",
@@ -3852,6 +3868,22 @@
       "duplicate_of": "",
       "duplicate_evidence": "",
       "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-47192cb94d9e",
+      "original_url": "https://www.ato.gov.au/api/public/content/0-e220713e-6a6f-4401-b966-8bddf3ba96fd",
+      "canonical_url": "https://www.ato.gov.au/api/public/content/0-e220713e-6a6f-4401-b966-8bddf3ba96fd",
+      "source_title": "Company tax return instructions 2025",
+      "source_last_updated": "",
+      "checked_at": "2026-07-13T12:40:44Z",
+      "content_hash": "7c817e4575e65cb1f1508150244db12a350f63280024f76c5fedb2ce42a7acdb",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
     },
     {
       "source_id": "ato-47cc6fb47915",
@@ -8144,7 +8176,7 @@
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/claiming-deductions",
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
-      "checked_at": "2026-07-10T06:27:48Z",
+      "checked_at": "2026-07-13T12:40:45Z",
       "content_hash": "",
       "status": "duplicate",
       "skills": [],
@@ -8988,6 +9020,22 @@
       "duplicate_of": "",
       "duplicate_evidence": "",
       "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-c94b842ca8eb",
+      "original_url": "https://www.ato.gov.au/api/public/content/1453e44ff39e4eb789ea83eeb6eac10b?v=5c58b86f",
+      "canonical_url": "https://www.ato.gov.au/api/public/content/1453e44ff39e4eb789ea83eeb6eac10b",
+      "source_title": "Partnership tax return instructions 2025",
+      "source_last_updated": "",
+      "checked_at": "2026-07-13T12:40:45Z",
+      "content_hash": "d543c131e7b5f4d7c926b986552a462a08020e0641afdebf691a4cf5d440d56b",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
     },
     {
       "source_id": "ato-c9f71340235c",

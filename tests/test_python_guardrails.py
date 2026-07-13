@@ -223,6 +223,20 @@ def date_weekday(value: str) -> int:
     return date.fromisoformat(value).weekday()
 
 
+class SourceRegistrationTests(unittest.TestCase):
+    def test_pdf_sources_use_raw_hash_without_extracted_text(self) -> None:
+        text, content_hash, verified = atodata.content_state(b"%PDF-1.7\nentity instructions")
+
+        self.assertEqual("", text)
+        self.assertEqual(64, len(content_hash))
+        self.assertTrue(verified)
+
+    def test_new_sources_require_https_ato_host(self) -> None:
+        self.assertTrue(atodata.ato_url_allowed("https://www.ato.gov.au/api/public/content/example"))
+        self.assertFalse(atodata.ato_url_allowed("http://www.ato.gov.au/example"))
+        self.assertFalse(atodata.ato_url_allowed("https://example.com/ato"))
+
+
 class PngCropTests(unittest.TestCase):
     def test_crop_rgba_png(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

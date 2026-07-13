@@ -14,7 +14,7 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Sequence, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 from urllib.parse import urljoin, urlparse, urlunparse
 
 from datetime import datetime, timezone
@@ -23,8 +23,14 @@ from datetime import datetime, timezone
 SCOPE = (
     "ATO official pages relevant to Australian FY2025-26 individual, employment, ABN/sole trader, GST/BAS, "
     "PAYG instalments, PAYG withholding, STP, TPAR, FBT, CGT, ETF/investment, crypto, rental-property "
-    "records, super, and private health tax preparation."
+    "records, super, private health, and company, trust, and partnership return skeleton preparation."
 )
+
+SOURCE_TITLE_OVERRIDES = {
+    "https://www.ato.gov.au/api/public/content/0-e220713e-6a6f-4401-b966-8bddf3ba96fd": "Company tax return instructions 2025",
+    "https://www.ato.gov.au/api/public/content/0-70d99f71-9469-4fd4-97fe-e328d58b37ab": "Trust tax return instructions 2025",
+    "https://www.ato.gov.au/api/public/content/1453e44ff39e4eb789ea83eeb6eac10b?v=5c58b86f": "Partnership tax return instructions 2025",
+}
 
 SEED_URLS = [
     "https://www.ato.gov.au/individuals-and-families/your-tax-return",
@@ -679,7 +685,7 @@ def recrawl(root: str, max_pages: int) -> SourceRegistry:
             )
             continue
 
-        text = clean_text(fetched.body)
+        text, content_hash, content_verified = content_state(fetched.body)
         slug = slug_for(fetched.final_url)
         raw_file = os.path.join("raw", f"{slug}.html")
         text_file = os.path.join("text", f"{slug}.txt")
@@ -688,10 +694,6 @@ def recrawl(root: str, max_pages: int) -> SourceRegistry:
 
         Path(raw_path).write_bytes(fetched.body)
         Path(text_path).write_text(text, encoding="utf-8")
-        content_hash = hash_text(text)
-        if text.strip() == "":
-            content_hash = ""
-
         registry.records.append(
             SourceRecord(
                 url=item.url,
@@ -702,7 +704,7 @@ def recrawl(root: str, max_pages: int) -> SourceRegistry:
                 raw_file=raw_file,
                 text_file=text_file,
                 content_hash=content_hash,
-                content_verified=content_hash != "" and content_hash != hash_text(""),
+                content_verified=content_verified,
                 last_checked=utc_timestamp(),
             )
         )
@@ -741,7 +743,7 @@ def refresh_record(root: str, rec: SourceRecord) -> RefreshResult:
     if fetched.status >= 400:
         return RefreshResult(url=target, status=fetched.status, error=f"HTTP {fetched.status}")
 
-    text = clean_text(fetched.body)
+    text, new_hash, content_verified = content_state(fetched.body)
     text_path = os.path.join(cache_dir(root), rec.text_file)
     raw_path = os.path.join(cache_dir(root), rec.raw_file)
 
@@ -751,8 +753,11 @@ def refresh_record(root: str, rec: SourceRecord) -> RefreshResult:
     except OSError:
         old_bytes = b""
 
-    old_hash = hash_text(old_bytes.decode("utf-8", errors="ignore"))
-    new_hash = hash_text(text)
+    old_hash = (
+        rec.content_hash
+        if fetched.body.startswith(b"%PDF")
+        else hash_text(old_bytes.decode("utf-8", errors="ignore"))
+    )
     changed = old_hash != new_hash
     if changed:
         Path(raw_path).parent.mkdir(parents=True, exist_ok=True)
@@ -762,12 +767,67 @@ def refresh_record(root: str, rec: SourceRecord) -> RefreshResult:
 
     rec.final_url = fetched.final_url
     rec.status = fetched.status
-    rec.title = title_of(text)
+    rec.title = SOURCE_TITLE_OVERRIDES.get(rec.url, title_of(text))
     rec.last_updated = modified_of(fetched.body, text)
     rec.last_checked = utc_timestamp()
     rec.content_hash = new_hash
-    rec.content_verified = new_hash != "" and new_hash != hash_text("")
+    rec.content_verified = content_verified
     return RefreshResult(url=fetched.final_url, status=fetched.status, changed=changed, title=rec.title)
+
+
+def add_url(root: str, raw_url: str) -> Tuple[Optional[SourceRecord], RefreshResult]:
+    if not ato_url_allowed(raw_url):
+        return None, RefreshResult(url=raw_url, error="new source URL must use https://www.ato.gov.au")
+    try:
+        fetched = fetch(raw_url)
+    except Exception as exc:
+        return None, RefreshResult(url=raw_url, error=str(exc))
+    if fetched.status >= 400:
+        return None, RefreshResult(url=raw_url, status=fetched.status, error=f"HTTP {fetched.status}")
+    if not ato_url_allowed(fetched.final_url):
+        return None, RefreshResult(url=raw_url, status=fetched.status, error="source redirected outside www.ato.gov.au")
+
+    text, content_hash, content_verified = content_state(fetched.body)
+    slug = slug_for(fetched.final_url)
+    raw_file = os.path.join("raw", f"{slug}.html")
+    text_file = os.path.join("text", f"{slug}.txt")
+    raw_path = Path(cache_dir(root), raw_file)
+    text_path = Path(cache_dir(root), text_file)
+    raw_path.parent.mkdir(parents=True, exist_ok=True)
+    text_path.parent.mkdir(parents=True, exist_ok=True)
+    raw_path.write_bytes(fetched.body)
+    text_path.write_text(text, encoding="utf-8")
+    record = SourceRecord(
+        url=raw_url,
+        final_url=fetched.final_url,
+        status=fetched.status,
+        title=SOURCE_TITLE_OVERRIDES.get(raw_url, title_of(text)),
+        last_updated=modified_of(fetched.body, text),
+        raw_file=raw_file,
+        text_file=text_file,
+        content_hash=content_hash,
+        content_verified=content_verified,
+        last_checked=utc_timestamp(),
+    )
+    return record, RefreshResult(
+        url=fetched.final_url,
+        status=fetched.status,
+        changed=True,
+        title=record.title,
+    )
+
+
+def content_state(body: bytes) -> Tuple[str, str, bool]:
+    if body.startswith(b"%PDF"):
+        return "", hashlib.sha256(body).hexdigest(), bool(body)
+    text = clean_text(body)
+    content_hash = hash_text(text)
+    return text, content_hash, bool(text.strip()) and content_hash != hash_text("")
+
+
+def ato_url_allowed(raw_url: str) -> bool:
+    parsed = urlparse(raw_url)
+    return parsed.scheme == "https" and parsed.netloc.lower() == "www.ato.gov.au"
 
 
 def first_non_empty(*values: str) -> str:
@@ -835,6 +895,7 @@ EnsureRoot = ensure_root
 Recrawl = recrawl
 WriteReadme = write_readme
 RefreshRecord = refresh_record
+AddURL = add_url
 Scope = SCOPE
 SeedURLs = SEED_URLS
 PathKeywords = PATH_KEYWORDS

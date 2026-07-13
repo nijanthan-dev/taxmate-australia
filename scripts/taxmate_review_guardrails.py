@@ -981,6 +981,9 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     capital_gains_evidence = read_optional(root, "skills/capital-gains-tax/references/evidence.md")
     findings: List[Finding] = []
     entity_text = read_optional(root, "scripts/taxmate_entity_routing.py")
+    source_state = read_optional(root, "data/ato_knowledge_base/source_registry.json") + read_optional(
+        root, "data/ato_knowledge_base/source_coverage.json"
+    )
     findings.extend(
         fail_if_missing(
             INDIVIDUAL_INTAKE_CONTRACT,
@@ -1026,12 +1029,24 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 'REQUEST_MARKER = "__entity_return_requested__"',
                 'elif request_marker is not None and len(grouped[kind]) == initial_count:',
                 'if REQUEST_MARKER in raw:',
-                "_decline(answers[alias]) or _missing(answers[alias])",
+                "isinstance(value, (dict, list)) and _missing(value)",
+                "_decline(answers[alias]) or answers[alias] is None",
                 'elif kind not in {"individual", "sole trader", "sole_trader"}:',
                 'prefix = f"{kind}_return_"',
                 'nested["conflicting_flat_facts"] = conflicts',
                 "def _unsupported_evidence(",
                 '"facts": [{"key": "unsupported", "label": "Unsupported entity facts", "value": unsupported}]',
+            ],
+        )
+    )
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            source_state,
+            [
+                "0-e220713e-6a6f-4401-b966-8bddf3ba96fd",
+                "0-70d99f71-9469-4fd4-97fe-e328d58b37ab",
+                "1453e44ff39e4eb789ea83eeb6eac10b",
             ],
         )
     )
