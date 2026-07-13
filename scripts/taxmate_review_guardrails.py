@@ -938,6 +938,7 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "canonical_status(kind)",
         "def malformed_section_item(",
         "def entity_section_items(",
+        "taxmate_entity_routing.entity_facts_present(facts)",
     ]
     findings.extend(fail_if_missing(TAXPACK_OUTPUT_LAYER, text, required))
     forbidden = [
@@ -989,6 +990,9 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 'def _entity_marker(',
                 'return_key = f"{kind}_return_{field}"',
                 "has_legacy_marker",
+                'def individual_share_answers(',
+                'def entity_facts_present(',
+                'taxmate_entity_routing.individual_share_answers(answers)',
                 'for source_key in ("source_urls", "source_url")',
             ],
         )
@@ -1025,8 +1029,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "ATO_PARTNERSHIP_TRUST_INCOME_SOURCE =",
                 "ATO_COMPENSATION_INCOME_SOURCE =",
                 "ATO_SCHOLARSHIP_PRIZE_SOURCE =",
-                "items.extend(partnership_trust_share_rows(answers))",
-                "rows.extend(partnership_trust_share_evidence_rows(answers))",
+                "items.extend(partnership_trust_share_rows(taxmate_entity_routing.individual_share_answers(answers)))",
+                "partnership_trust_share_evidence_rows(",
                 "def uncommon_income_route(",
             ],
         )

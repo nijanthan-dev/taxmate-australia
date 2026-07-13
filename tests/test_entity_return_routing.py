@@ -62,6 +62,8 @@ class EntityReturnRoutingTests(unittest.TestCase):
             self.assertIn(title, body)
         self.assertIn("Source/provenance appendix", body)
         self.assertEqual(len(set(row.anchor for row in taxmate_taxpack.build_render_rows(data))), len(taxmate_taxpack.build_render_rows(data)))
+        self.assertFalse(any(row["number"].startswith(("TRUST-SHARE-", "PART-SHARE-")) for row in payload["items"]))
+        self.assertFalse(any(row["number"].startswith("PT-EVID-") for row in payload["evidence_items"]))
 
     def test_identical_alias_records_do_not_duplicate_routes(self):
         record = {"name": "Same Co", "income_year": "2025-26", "residency": "Australian", "business_activity": "Design", "directors": 0, "shareholders": 0}
@@ -141,6 +143,32 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertEqual("entity-return-company", data.company_items[0].row_kind)
         self.assertEqual("entity-return-trust", data.trust_items[0].row_kind)
         self.assertEqual("entity-return-partnership", data.partnership_items[0].row_kind)
+
+        for key in ("company_items", "trust_items", "partnership_items"):
+            with self.subTest(key=key):
+                explicit = taxmate_taxpack.load_guide_payload({
+                    key: [{"number": "DIRECT-REVIEW", "status": "Accountant review", "facts": [{}]}],
+                })
+                self.assertEqual("Accountant review", getattr(explicit, key)[0].status)
+
+        empty = taxmate_taxpack.load_guide_payload({
+            "company_items": [{"number": "DIRECT-EMPTY", "status": "Used", "facts": [{}]}],
+        })
+        self.assertEqual("Evidence", empty.company_items[0].status)
+
+    def test_explicit_share_items_remain_separate_from_marked_entity_flat_fields(self):
+        payload = self.payload({
+            "trust_return": True, "trust_name": "Entity Trust",
+            "trust_share_items": [{"entity_name": "Share Trust", "statement": "held", "income": 1}],
+            "partnership_return": True, "partnership_name": "Entity Partnership",
+            "partnership_share_items": [{"entity_name": "Share Partnership", "statement": "held", "income": 2}],
+        })
+        trust_share = next(row for row in payload["items"] if row["number"].startswith("TRUST-SHARE-"))
+        partnership_share = next(row for row in payload["items"] if row["number"].startswith("PART-SHARE-"))
+        self.assertIn("Share Trust", trust_share["answer"])
+        self.assertNotIn("Entity Trust", trust_share["answer"])
+        self.assertIn("Share Partnership", partnership_share["answer"])
+        self.assertNotIn("Entity Partnership", partnership_share["answer"])
 
     def test_individual_share_statement_aliases_do_not_activate_entity_returns(self):
         payload = self.payload({

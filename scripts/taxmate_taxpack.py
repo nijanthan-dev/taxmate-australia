@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import taxmate_handoff
+import taxmate_entity_routing
 
 
 DEFAULT_INCOME_YEAR = "2025-26"
@@ -268,7 +269,12 @@ def entity_section_items(
             continue
         normalized = dict(raw)
         facts = normalized.get("facts")
-        normalized["status"] = "Accountant review" if isinstance(facts, list) and facts else "Evidence"
+        explicit_status = item_status_kind(normalized)
+        normalized["status"] = (
+            "Accountant review"
+            if explicit_status == "review" or taxmate_entity_routing.entity_facts_present(facts)
+            else "Evidence"
+        )
         normalized["status_kind"] = normalized["status"]
         normalized["tab_kind"] = normalized["status"]
         normalized["row_kind"] = f"entity-return-{kind}"

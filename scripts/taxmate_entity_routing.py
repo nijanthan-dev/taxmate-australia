@@ -111,6 +111,21 @@ def _flat_record(answers: Dict[str, Any], kind: str) -> Dict[str, Any]:
     return record
 
 
+def individual_share_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
+    sanitized = dict(answers)
+    metadata_fields = ("source_url", "source_urls", "checked_at", "status", "review_status")
+    for kind in ("trust", "partnership"):
+        if not any(_entity_marker(answers.get(alias)) for alias in ALIASES[kind]):
+            continue
+        for field in (*FIELDS[kind], *metadata_fields):
+            sanitized.pop(f"{kind}_{field}", None)
+    return sanitized
+
+
+def entity_facts_present(value: Any) -> bool:
+    return not _missing(value)
+
+
 def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
     grouped = {kind: [] for kind in ALIASES}
     malformed: List[Any] = []

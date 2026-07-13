@@ -2186,7 +2186,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items.extend(cgt_rows(cgt))
     items.extend(payg_rows(payg, answers))
     items.extend(investment_rows(investment, answers))
-    items.extend(partnership_trust_share_rows(answers))
+    items.extend(partnership_trust_share_rows(taxmate_entity_routing.individual_share_answers(answers)))
     items.extend(ess_rows(ess_answers(answers)))
     items.extend(uncommon_income_rows(answers))
     payload = {
@@ -3998,7 +3998,11 @@ def evidence_rows(
     rows.extend(offset_evidence_rows(offset_answers(answers)))
     rows.extend(phone_evidence_rows(phone_answers(answers), answers))
     rows.extend(investment_evidence_rows(investment_answers(answers), answers))
-    rows.extend(partnership_trust_share_evidence_rows(answers))
+    rows.extend(
+        partnership_trust_share_evidence_rows(
+            taxmate_entity_routing.individual_share_answers(answers)
+        )
+    )
     rows.extend(uncommon_income_evidence_rows(answers))
     rows.extend(payg_evidence_rows(payg_answers(answers), answers))
     rows.extend(abn_business_evidence_rows(answers))
