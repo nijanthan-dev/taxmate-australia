@@ -74,6 +74,12 @@ def _decline(value: Any) -> bool:
     }
 
 
+def _entity_marker(value: Any) -> bool:
+    if value is True:
+        return True
+    return isinstance(value, str) and value.strip().lower() in {"yes", "true", "on", "checked"}
+
+
 def _first_meaningful(record: Dict[str, Any], keys: Tuple[str, ...]) -> Any:
     for key in keys:
         value = record.get(key)
@@ -84,14 +90,24 @@ def _first_meaningful(record: Dict[str, Any], keys: Tuple[str, ...]) -> Any:
 
 def _flat_record(answers: Dict[str, Any], kind: str) -> Dict[str, Any]:
     record: Dict[str, Any] = {}
+    has_legacy_marker = any(
+        _entity_marker(answers.get(alias))
+        for alias in ALIASES[kind]
+    )
     for field in FIELDS[kind]:
-        key = f"{kind}_{field}"
-        if key in answers:
-            record[field] = answers[key]
+        return_key = f"{kind}_return_{field}"
+        legacy_key = f"{kind}_{field}"
+        if return_key in answers:
+            record[field] = answers[return_key]
+        elif has_legacy_marker and legacy_key in answers:
+            record[field] = answers[legacy_key]
     for field in ("source_url", "source_urls", "checked_at", "status", "review_status"):
-        key = f"{kind}_{field}"
-        if key in answers:
-            record[field] = answers[key]
+        return_key = f"{kind}_return_{field}"
+        legacy_key = f"{kind}_{field}"
+        if return_key in answers:
+            record[field] = answers[return_key]
+        elif has_legacy_marker and legacy_key in answers:
+            record[field] = answers[legacy_key]
     return record
 
 
@@ -103,6 +119,8 @@ def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
             if alias not in answers or _decline(answers[alias]) or answers[alias] is None:
                 continue
             value = answers[alias]
+            if _entity_marker(value):
+                continue
             grouped[kind].extend(value if isinstance(value, list) else [value])
         flat = _flat_record(answers, kind)
         if flat:

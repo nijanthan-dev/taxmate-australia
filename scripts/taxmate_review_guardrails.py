@@ -986,6 +986,9 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "not any(not _missing(item) for item in values)",
                 'for collection_key in ("entities", "entity_returns")',
                 'def _first_meaningful(',
+                'def _entity_marker(',
+                'return_key = f"{kind}_return_{field}"',
+                "has_legacy_marker",
                 'for source_key in ("source_urls", "source_url")',
             ],
         )

@@ -52,9 +52,9 @@ class EntityReturnRoutingTests(unittest.TestCase):
 
     def test_flat_aliases_and_renderer_sections_sources_and_anchors(self):
         payload = self.payload({
-            "company_name": "Flat Co", "company_acn": 0, "company_residency": "unclear",
-            "trust_name": "Flat Trust", "trust_deed_evidence": False,
-            "partnership_name": "Flat Partnership", "partnership_accounting_basis": False,
+            "company_return": True, "company_name": "Flat Co", "company_acn": 0, "company_residency": "unclear",
+            "trust_return": True, "trust_name": "Flat Trust", "trust_deed_evidence": False,
+            "partnership_return": True, "partnership_name": "Flat Partnership", "partnership_accounting_basis": False,
         })
         data = taxmate_taxpack.load_guide_payload(payload)
         body = taxmate_taxpack.render_html(data)
@@ -141,6 +141,34 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertEqual("entity-return-company", data.company_items[0].row_kind)
         self.assertEqual("entity-return-trust", data.trust_items[0].row_kind)
         self.assertEqual("entity-return-partnership", data.partnership_items[0].row_kind)
+
+    def test_individual_share_statement_aliases_do_not_activate_entity_returns(self):
+        payload = self.payload({
+            "trust_name": "Individual Review Trust", "trust_share_income": 1,
+            "trust_source_url": "https://example.invalid/trust-share", "trust_checked_at": "2026-07-13",
+            "trust_status": "Accountant review",
+            "partnership_name": "Individual Partnership", "partnership_abn": "12 345 678 901",
+            "partnership_tfn": "123", "partnership_share_income": 0,
+            "partnership_source_urls": ["https://example.invalid/partnership-share"],
+            "partnership_checked_at": "2026-07-13", "partnership_status": "Accountant review",
+        })
+        self.assertEqual([], payload["trust_items"])
+        self.assertEqual([], payload["partnership_items"])
+        self.assertTrue(any(row["number"].startswith("TRUST-SHARE-") for row in payload["items"]))
+        self.assertTrue(any(row["number"].startswith("PART-SHARE-") for row in payload["items"]))
+        self.assertFalse(any(row["number"].startswith("ENTITY-EVID-") for row in payload["evidence_items"]))
+
+    def test_nonoverlapping_return_flat_aliases_route_without_legacy_collision(self):
+        payload = self.payload({
+            "company_return_name": "Return Co",
+            "trust_return_name": "Return Trust",
+            "trust_return_trustee": "Return Trustee",
+            "partnership_return_name": "Return Partnership",
+            "partnership_return_partners": 0,
+        })
+        self.assertEqual(1, len(payload["company_items"]))
+        self.assertEqual(1, len(payload["trust_items"]))
+        self.assertEqual(1, len(payload["partnership_items"]))
 
 
 if __name__ == "__main__":
