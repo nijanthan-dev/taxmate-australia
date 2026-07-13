@@ -375,6 +375,16 @@ class EntityReturnRoutingTests(unittest.TestCase):
         for required in ("directors", "shareholders", "beneficiaries", "partners", "share percentages"):
             self.assertNotIn(required, evidence)
 
+    def test_not_applicable_required_facts_fail_closed(self):
+        payload = self.payload({
+            "company_return": {"name": "Company", "directors": "not applicable"},
+            "trust_return": {"name": "Trust", "beneficiaries": "Not Applicable"},
+            "partnership_return": {"name": "Partnership", "partners": "not applicable"},
+        })
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+        for required in ("directors", "beneficiaries", "partners"):
+            self.assertIn(required, evidence)
+
     def test_both_itemized_collection_aliases_are_merged(self):
         payload = self.payload({
             "entities": [{"entity_type": "company", "name": "Collection Co"}],

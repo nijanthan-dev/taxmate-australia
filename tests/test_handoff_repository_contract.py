@@ -653,6 +653,9 @@ class RuntimeContractTests(unittest.TestCase):
     def test_payload_validation_requires_entity_section_lists(self) -> None:
         baseline = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
         for section in ("company_items", "trust_items", "partnership_items"):
+            absent = copy.deepcopy(baseline)
+            absent.pop(section)
+            self.assertTrue(taxmate_validate.handoff_payload_contract(absent))
             for invalid in (None, {}):
                 with self.subTest(section=section, invalid=invalid):
                     payload = copy.deepcopy(baseline)

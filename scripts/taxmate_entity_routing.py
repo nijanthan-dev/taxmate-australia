@@ -80,7 +80,9 @@ def _missing(value: Any) -> bool:
     if not isinstance(value, str):
         return False
     normalized = value.strip().lower()
-    return not normalized or normalized in {"unknown", "unclear", "missing", "n/a"}
+    return not normalized or normalized in {
+        "unknown", "unclear", "missing", "n/a", "not applicable",
+    }
 
 
 def _display(value: Any) -> str:
