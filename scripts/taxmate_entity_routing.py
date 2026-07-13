@@ -50,7 +50,7 @@ ROUTING_METADATA = {
 }
 REQUEST_MARKER = "__entity_return_requested__"
 LEGACY_SHARE_FIELDS = {
-    "trust": ("trust",),
+    "trust": ("trust", "trust_entity_return_context"),
     "partnership": (
         "partnership", "partnership_statement", "partnership_statement_status",
         "partnership_income", "partnership_loss", "partnership_tax_withheld",
@@ -83,7 +83,7 @@ def _decline(value: Any) -> bool:
     if value is False:
         return True
     return isinstance(value, str) and value.strip().lower() in {
-        "no", "false", "none", "not applicable",
+        "no", "false", "none", "not applicable", "0", "off", "unchecked",
     }
 
 
@@ -178,7 +178,18 @@ def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
             grouped[kind].extend(value if isinstance(value, list) else [value])
         flat = _flat_record(answers, kind)
         if flat:
-            grouped[kind].append(flat)
+            if len(grouped[kind]) == initial_count + 1 and isinstance(grouped[kind][-1], dict):
+                nested = grouped[kind][-1]
+                conflicts: Dict[str, Dict[str, Any]] = {}
+                for key, value in flat.items():
+                    if key not in nested:
+                        nested[key] = value
+                    elif nested[key] != value:
+                        conflicts[key] = {"nested": nested[key], "flat": value}
+                if conflicts:
+                    nested["conflicting_flat_facts"] = conflicts
+            else:
+                grouped[kind].append(flat)
         elif request_marker is not None and len(grouped[kind]) == initial_count:
             grouped[kind].append({REQUEST_MARKER: request_marker})
     for collection_key in ("entities", "entity_returns"):

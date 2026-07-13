@@ -69,6 +69,14 @@ class EntityReturnRoutingTests(unittest.TestCase):
         declined = self.payload({"company_return": False, "trust_return": "no"})
         self.assertFalse(any("-request" in row["row_kind"] for row in declined["evidence_items"]))
 
+        for token in ("0", "off", "unchecked"):
+            payload = self.payload({f"{kind}_return": token for kind in aliases})
+            self.assertFalse(any(payload[f"{kind}_items"] for kind in aliases))
+            self.assertFalse(any(
+                row["row_kind"].startswith("entity-return-")
+                for row in payload["evidence_items"]
+            ))
+
     def test_three_nested_entities_route_to_isolated_sections(self):
         payload = self.payload({
             "company_return": {"name": "Zero Co", "abn": "12 345 678 901", "income_year": "2025-26", "residency": "Australian", "business_activity": "Design", "directors": 0, "shareholders": False, "source_url": "https://example.invalid/company", "checked_at": "2026-07-13"},
@@ -335,6 +343,38 @@ class EntityReturnRoutingTests(unittest.TestCase):
                     for row in payload["evidence_items"]
                 ))
                 self.assertEqual(1, len(payload[f"{kind}_items"]))
+
+        trust = self.payload({
+            "trust_return": {"name": "Entity Trust"},
+            "trust_entity_return_context": "entity-only",
+        })
+        self.assertFalse(any(row["number"].startswith("TRUST-SHARE-") for row in trust["items"]))
+        self.assertFalse(any(row["number"].startswith("PT-EVID-") for row in trust["evidence_items"]))
+
+    def test_singleton_nested_and_return_flat_facts_merge_with_conflicts_preserved(self):
+        cases = {
+            "company": ("residency", "Australian"),
+            "trust": ("trustee", "Example Trustee"),
+            "partnership": ("partners", 2),
+        }
+        for kind, (field, value) in cases.items():
+            with self.subTest(kind=kind):
+                payload = self.payload({
+                    f"{kind}_return": {"name": "Nested Name"},
+                    f"{kind}_return_{field}": value,
+                })
+                self.assertEqual(1, len(payload[f"{kind}_items"]))
+                facts = {fact["key"]: fact["value"] for fact in payload[f"{kind}_items"][0]["facts"]}
+                self.assertEqual(value, facts[field.replace("_", "-")])
+
+                conflict = self.payload({
+                    f"{kind}_return": {"name": "Nested Name"},
+                    f"{kind}_return_name": "Flat Name",
+                })
+                self.assertEqual(1, len(conflict[f"{kind}_items"]))
+                evidence = " ".join(row["answer"] for row in conflict["evidence_items"])
+                self.assertIn("Nested Name", evidence)
+                self.assertIn("Flat Name", evidence)
 
     def test_nonoverlapping_return_flat_aliases_route_without_legacy_collision(self):
         payload = self.payload({
