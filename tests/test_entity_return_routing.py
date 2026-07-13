@@ -50,6 +50,29 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertIn("partner share percentages", evidence)
         self.assertEqual("Accountant review", payload["company_items"][1]["status"])
 
+    def test_partner_share_percentages_require_numeric_list_totalling_100(self):
+        for value in (False, 0, "50/50", {}, [], [False, 100], [50, 40]):
+            with self.subTest(value=value):
+                payload = self.payload({
+                    "partnership_return": {
+                        "name": "Example Partnership",
+                        "partners": 2,
+                        "share_percentages": value,
+                    }
+                })
+                evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+                self.assertIn("partner share percentages", evidence)
+
+        valid = self.payload({
+            "partnership_return": {
+                "name": "Example Partnership",
+                "partners": 2,
+                "share_percentages": [0, 100],
+            }
+        })
+        evidence = " ".join(row["answer"] for row in valid["evidence_items"])
+        self.assertNotIn("partner share percentages", evidence)
+
     def test_flat_aliases_and_renderer_sections_sources_and_anchors(self):
         payload = self.payload({
             "company_return": True, "company_name": "Flat Co", "company_acn": 0, "company_residency": "unclear",

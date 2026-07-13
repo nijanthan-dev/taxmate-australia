@@ -188,13 +188,18 @@ def route_entity_returns(
                 for field in REQUIRED[kind]
                 if field not in raw or _missing(raw.get(field))
             ]
-            if kind == "partnership" and isinstance(raw.get("share_percentages"), list):
+            if kind == "partnership" and "share_percentages" in raw:
                 values = raw["share_percentages"]
-                invalid_values = any(
-                    not isinstance(value, (int, float)) or isinstance(value, bool)
-                    for value in values
+                valid_values = (
+                    isinstance(values, list)
+                    and bool(values)
+                    and all(
+                        isinstance(value, (int, float)) and not isinstance(value, bool)
+                        for value in values
+                    )
+                    and sum(values) == 100
                 )
-                if not values or invalid_values or sum(values) != 100:
+                if not valid_values:
                     gaps.append("partner share percentages")
             answer = "; ".join(f"{field.replace('_', ' ')} {_display(value)}" for field, value in facts)
             supplied_sources: List[Any] = []

@@ -783,6 +783,9 @@ def check_handoff_contract(root: Path) -> List[Finding]:
                 "canonical_extraction != extraction",
                 "source_urls",
                 "checked_at",
+                '"company_items",',
+                '"trust_items",',
+                '"partnership_items",',
             ],
         )
     )
@@ -803,6 +806,8 @@ def check_handoff_contract(root: Path) -> List[Finding]:
                 "test_action_destination_matrix_is_exact",
                 "test_field_level_is_not_a_destination_kind",
                 "test_duplicate_fact_keys_fail_payload_validation",
+                "test_payload_validation_covers_each_entity_section",
+                "test_payload_validation_requires_entity_section_lists",
                 "test_queue_only_and_extended_only_payloads_validate",
                 "test_payload_validation_requires_canonical_handoff_label_and_action",
                 "test_payload_validation_rejects_forged_destination_mapping_and_sources",
@@ -994,6 +999,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 'def entity_facts_present(',
                 'taxmate_entity_routing.individual_share_answers(answers)',
                 'for source_key in ("source_urls", "source_url")',
+                'if kind == "partnership" and "share_percentages" in raw:',
+                "and sum(values) == 100",
             ],
         )
     )
