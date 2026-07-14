@@ -151,6 +151,9 @@ class WorkbookExportTests(unittest.TestCase):
         self.assertTrue(tabs["capital_gains"])
         self.assertTrue(tabs["other"])
         self.assertTrue(tabs["accountant_review"])
+        review_numbers = {row["number"] for row in tabs["accountant_review"]}
+        self.assertIn("income_year", review_numbers)
+        self.assertIn("resident", review_numbers)
 
     def test_guide_file_is_not_reconverted_as_intake_answers(self) -> None:
         payload = {"items": [row("GUIDE-1", "Evidence")]}

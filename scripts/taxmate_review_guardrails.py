@@ -983,6 +983,7 @@ def check_workbook_output_layer(root: Path) -> List[Finding]:
         "def load_workbook_data(",
         "taxmate_intake.answers_to_pack_payload(payload)",
         "taxmate_taxpack.load_guide_payload(payload)",
+        "taxmate_taxpack.row_review_required(render_row)",
         "def source_rows(",
         "taxmate_taxpack.row_source_entries(render_row)",
         '"source_role": "; ".join(record["roles"])',

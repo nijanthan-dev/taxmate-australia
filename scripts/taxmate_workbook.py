@@ -188,7 +188,11 @@ def build_tabs(data: taxmate_taxpack.GuideData) -> Dict[str, List[Dict[str, str]
     rows = [row for _, row in section_rows]
     main = [row for section, row in section_rows if section in {"main", "ai"}]
     categorized = [(main_tab(row), row) for row in main]
-    review = [row for row in rows if row.status == "Accountant review"]
+    review = [
+        workbook_row(render_row.item, display_value(data.income_year))
+        for render_row in render_rows
+        if taxmate_taxpack.row_review_required(render_row)
+    ]
     evidence = [row for row in rows if row.status == "Evidence"]
     return {
         "readme": [

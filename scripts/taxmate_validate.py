@@ -3227,6 +3227,8 @@ def workbook_export_contract() -> bool:
             and "CRYPTO-CGT" in {row["number"] for row in intake_tabs["capital_gains"]}
             and "CRYPTO-CGT" not in {row["number"] for row in intake_tabs["investments"]}
             and bool(intake_tabs["other"])
+            and "income_year" in {row["number"] for row in intake_tabs["accountant_review"]}
+            and "resident" in {row["number"] for row in intake_tabs["accountant_review"]}
             and all(
                 gate not in {row["number"] for row in intake_tabs["employee"]}
                 for gate in taxmate_workbook.ABN_BAS_GATE_NUMBERS
