@@ -21,6 +21,7 @@ import taxmate_calc
 import taxmate_coverage
 import taxmate_finance
 import taxmate_handoff
+import taxmate_intake
 import taxmate_refresh
 import taxmate_skills
 import taxmate_taxpack
@@ -3171,6 +3172,10 @@ def workbook_export_contract() -> bool:
         )
         tabs = taxmate_workbook.build_tabs(data)
         row = tabs["accountant_review"][0]
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "answers.json"
+            source.write_text(json.dumps(taxmate_intake.sample_answers()), encoding="utf-8")
+            intake_tabs = taxmate_workbook.build_tabs(taxmate_workbook.load_workbook_data(str(source)))
         return (
             set(tabs)
             == {"readme", "employee", "abn", "bas", "investments", "evidence", "accountant_review", "sources"}
@@ -3181,6 +3186,11 @@ def workbook_export_contract() -> bool:
             and row["checked_at"] == "0"
             and bool(row["review_note"])
             and tabs["sources"][0]["source_url"] == "false"
+            and bool(intake_tabs["abn"])
+            and bool(intake_tabs["bas"])
+            and bool(intake_tabs["investments"])
+            and taxmate_workbook.csv_safe_cell("=1+1") == "'=1+1"
+            and taxmate_workbook.csv_safe_cell(" \t@SUM(A1:A2)") == "' \t@SUM(A1:A2)"
         )
     except Exception:
         return False

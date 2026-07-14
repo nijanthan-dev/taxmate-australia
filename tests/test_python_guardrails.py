@@ -770,6 +770,22 @@ class ReviewGuardrailTests(unittest.TestCase):
 
         self.assertTrue(any("forbidden pattern" in finding.detail for finding in findings))
 
+    def test_review_guardrails_require_workbook_input_conversion_and_csv_safety(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            script = root / "scripts" / "taxmate_workbook.py"
+            script.parent.mkdir(parents=True)
+            text = (ROOT / "scripts" / "taxmate_workbook.py").read_text(encoding="utf-8")
+            text = text.replace("taxmate_intake.answers_to_pack_payload(payload)", "payload")
+            text = text.replace("candidate.startswith(CSV_FORMULA_PREFIXES)", "False")
+            script.write_text(text, encoding="utf-8")
+
+            findings = taxmate_review_guardrails.check_workbook_output_layer(root)
+
+        details = "\n".join(finding.detail for finding in findings)
+        self.assertIn("taxmate_intake.answers_to_pack_payload(payload)", details)
+        self.assertIn("candidate.startswith(CSV_FORMULA_PREFIXES)", details)
+
     def test_review_guardrails_require_extended_taxpack_review_tabs(self) -> None:
         text = (
             "def scalar_text(): pass\n"

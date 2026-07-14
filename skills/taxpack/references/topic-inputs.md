@@ -10,6 +10,7 @@ Workbook and taxpack are output layers only. They must consume reviewed classifi
 - Do not infer destinations from row names, broad topic URLs, source coverage alone, or unverified target labels; missing, malformed, conflicting, unsupported, or stale mappings fail closed.
 - Mixed rows need field-level actions or safe row separation so one destination is not implied for unrelated facts.
 - Preserve valid falsey output values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.
+- Workbook exports must convert raw intake answers through the runtime intake contract and neutralize spreadsheet formula prefixes in every CSV cell.
 - Fixes from independent review must cover parsed input, file-backed data, direct renderer/workbook-row paths, generated artifacts, tests, validator, and documentation and instruction validation rules before another review is requested.
 - Falsey output fixes must cover metadata, row fields, list fields, provenance, fallback labels, anchors, and direct constructors.
 - Preserve source URLs and checked-at dates.

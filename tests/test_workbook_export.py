@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import taxmate_taxpack  # noqa: E402
+import taxmate_intake  # noqa: E402
 import taxmate_workbook  # noqa: E402
 
 
@@ -125,6 +126,48 @@ class WorkbookExportTests(unittest.TestCase):
         self.assertEqual("false", exported["question"])
         self.assertEqual("0", exported["answer"])
         self.assertEqual("[false]", exported["source_urls"])
+
+    def test_raw_intake_file_uses_canonical_pack_conversion(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "answers.json"
+            source.write_text(json.dumps(answers), encoding="utf-8")
+
+            data = taxmate_workbook.load_workbook_data(str(source))
+            tabs = taxmate_workbook.build_tabs(data)
+
+        self.assertGreater(len(tabs["employee"]), len(answers.get("extracted_values", [])))
+        self.assertTrue(tabs["abn"])
+        self.assertTrue(tabs["bas"])
+        self.assertTrue(tabs["investments"])
+        self.assertTrue(tabs["accountant_review"])
+
+    def test_guide_file_is_not_reconverted_as_intake_answers(self) -> None:
+        payload = {"items": [row("GUIDE-1", "Evidence")]}
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "guide.json"
+            source.write_text(json.dumps(payload), encoding="utf-8")
+
+            data = taxmate_workbook.load_workbook_data(str(source))
+
+        self.assertEqual(["GUIDE-1"], [item.number for item in data.items])
+
+    def test_csv_writer_neutralizes_formula_prefixes_in_every_cell(self) -> None:
+        dangerous = ("=1+1", "+cmd", "-2+3", "@SUM(A1:A2)", " \t=hidden")
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "safe.csv"
+            taxmate_workbook.write_csv(
+                output,
+                [{f"field_{index}": value for index, value in enumerate(dangerous)}],
+                (),
+            )
+            with output.open(encoding="utf-8", newline="") as handle:
+                exported = next(csv.DictReader(handle))
+
+        self.assertEqual(
+            {f"field_{index}": f"'{value}" for index, value in enumerate(dangerous)},
+            exported,
+        )
 
 
 if __name__ == "__main__":

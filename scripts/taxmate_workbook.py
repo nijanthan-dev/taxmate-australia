@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Sequence
 
 import taxmate_taxpack
+import taxmate_intake
 
 
 ROW_COLUMNS = (
@@ -28,6 +29,21 @@ ROW_COLUMNS = (
     "source_urls",
     "checked_at",
 )
+GUIDE_PAYLOAD_KEYS = frozenset(
+    {
+        "items",
+        "abn_items",
+        "bas_items",
+        "company_items",
+        "trust_items",
+        "partnership_items",
+        "missing_facts",
+        "evidence_items",
+        "generated_date",
+        "summary_note",
+    }
+)
+CSV_FORMULA_PREFIXES = ("=", "+", "-", "@")
 
 
 @dataclass(frozen=True)
@@ -59,6 +75,19 @@ def display_value(value: Any) -> str:
     if isinstance(value, (dict, list)):
         return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return str(value)
+
+
+def csv_safe_cell(value: Any) -> str:
+    text = display_value(value)
+    candidate = text.lstrip(" \t\r\n")
+    return f"'{text}" if candidate.startswith(CSV_FORMULA_PREFIXES) else text
+
+
+def load_workbook_data(path: str) -> taxmate_taxpack.GuideData:
+    payload = taxmate_taxpack.read_json(path)
+    if not GUIDE_PAYLOAD_KEYS.intersection(payload):
+        payload = taxmate_intake.answers_to_pack_payload(payload)
+    return taxmate_taxpack.load_guide_payload(payload)
 
 
 def workbook_row(item: taxmate_taxpack.GuideItem, income_year: str) -> WorkbookRow:
@@ -129,7 +158,8 @@ def write_csv(path: Path, rows: Sequence[Dict[str, str]], fallback_columns: Iter
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=columns, lineterminator="\n")
         writer.writeheader()
-        writer.writerows(rows)
+        for row in rows:
+            writer.writerow({column: csv_safe_cell(row.get(column)) for column in columns})
 
 
 def export_workbook(data: taxmate_taxpack.GuideData, output: str) -> None:
@@ -155,7 +185,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: List[str]) -> int:
     args = build_parser().parse_args(argv)
     try:
-        export_workbook(taxmate_taxpack.load_guide_data(args.input), args.output)
+        export_workbook(load_workbook_data(args.input), args.output)
     except Exception as exc:
         print(exc, file=sys.stderr)
         return 1
