@@ -23,6 +23,7 @@ const COMMANDS = new Set([
   "skills",
   "taxpack",
   "validate",
+  "workbook",
 ]);
 const TOOL_NAMES = {
   run: "taxmate_run",

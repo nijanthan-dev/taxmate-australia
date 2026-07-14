@@ -24,7 +24,7 @@ Use this only for the `nijanthan-dev/taxmate-australia` repo. Prefer `gh` for Gi
 5. Run focused tests for the touched area, then the repo's relevant validation path.
 6. Reply to each review thread with the fix and resolve it.
 7. Push and recheck current-head checks, reviews, and threads.
-8. If `@Codex` only adds eyes, keep polling for the review body. Do not request review again unless asked.
+8. If `@Codex` only adds eyes, end the turn and wait for a review event or user wake. Do not request review again unless asked. If events are unavailable and continued monitoring was explicitly requested, poll no more often than every 5 minutes.
 
 ## Validation Gates
 
@@ -47,7 +47,7 @@ For release/version changes, inspect `.release-please-manifest.json`, `.codex-pl
 1. Squash-merge the fix PR only after live review, validation, and secret-scan gates pass.
 2. Verify issue closure and updated `main` state.
 3. Wait for Release Please to open the next release PR when the fix should ship.
-4. Inspect release PR version bumps and changelog; request/poll latest-head review there too when review flow is in use.
+4. Inspect release PR version bumps and changelog; request latest-head review there too when review flow is in use, then wait event-first with the same 5-minute fallback.
 5. Merge the release PR with squash merge.
 6. Verify tag, GitHub release, version artifacts, and any relevant main CI.
 7. Fast-forward local `main` if safe.

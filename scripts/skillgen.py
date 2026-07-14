@@ -940,6 +940,7 @@ def writeOutputLayers(root: str) -> None:
         body += "- Do not infer destinations from row names, broad topic URLs, source coverage alone, or unverified target labels; missing, malformed, conflicting, unsupported, or stale mappings fail closed.\n"
         body += "- Mixed rows need field-level actions or safe row separation so one destination is not implied for unrelated facts.\n"
         body += "- Preserve valid falsey output values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.\n"
+        body += "- Workbook exports must convert raw intake answers through the runtime intake contract and neutralize spreadsheet formula prefixes in every CSV cell.\n"
         body += "- Fixes from independent review must cover parsed input, file-backed data, direct renderer/workbook-row paths, generated artifacts, tests, validator, and documentation and instruction validation rules before another review is requested.\n"
         body += "- Falsey output fixes must cover metadata, row fields, list fields, provenance, fallback labels, anchors, and direct constructors.\n"
         body += "- Preserve source URLs and checked-at dates.\n"

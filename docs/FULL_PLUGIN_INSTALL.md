@@ -38,6 +38,7 @@ After plugin install, ask your agent to use TaxMate Australia. The plugin expose
 - `review-guardrails`
 - `skills`
 - `taxpack`
+- `workbook`
 - `validate`
 
 Common prompts:
@@ -53,6 +54,12 @@ Use TaxMate Australia to write sample individual answers and render the individu
 The print-first HTML handoff is a custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable. Users manually copy reviewed values into myTax, a paper ATO form, or provide it to an accountant after resolving missing facts, evidence gaps, and `Accountant review` queues.
 
 The individual-return handoff includes the prep-only boundary, action-card context index, labelled fact bullets, next actions, verified myTax/paper destinations or explicit non-entry/review wording, explanations, row-associated provenance, and the same contract for deduction/super/offset, CGT, ABN, BAS, missing-fact, evidence, and accountant-review rows.
+
+Export reviewed guide/intake JSON to dependency-light CSV workbook tabs:
+
+```bash
+./scripts/taxmate workbook --input /tmp/taxmate-reviewed.json --output /tmp/taxmate-workbook
+```
 
 The runtime owns the seven actions: enter reviewed value, answer guided question, retain evidence, resolve before entry, accountant handoff only, not entered directly, and destination requires review. A direct destination must match the exact field and context to a verified source ID, canonical URL, and content hash. Output layers do not infer destinations from row names, broad topic links, source coverage, or unverified target labels.
 

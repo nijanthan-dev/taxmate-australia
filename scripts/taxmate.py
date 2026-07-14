@@ -21,9 +21,10 @@ COMMANDS = {
     "skills": "taxmate_skills.py",
     "taxpack": "taxmate_taxpack.py",
     "validate": "taxmate_validate.py",
+    "workbook": "taxmate_workbook.py",
 }
 
-CALLER_CWD_COMMANDS = {"calc", "finance", "intake", "taxpack"}
+CALLER_CWD_COMMANDS = {"calc", "finance", "intake", "taxpack", "workbook"}
 ROOT_CWD_COMMANDS = {"coverage", "refresh", "review-guardrails", "skills", "validate"}
 
 

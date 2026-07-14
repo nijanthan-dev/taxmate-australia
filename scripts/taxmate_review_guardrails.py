@@ -19,6 +19,7 @@ import taxmate_validate
 
 ROOT_MARKER = os.path.join(".codex-plugin", "plugin.json")
 TAXPACK_OUTPUT_LAYER = "taxpack_output_layer_contract"
+WORKBOOK_OUTPUT_LAYER = "workbook_output_layer_contract"
 HANDOFF_DESTINATION_CONTRACT = "handoff_destination_contract"
 INDIVIDUAL_INTAKE_CONTRACT = "individual_intake_contract"
 PRIVATE_HEALTH_MEDICARE_CONTRACT = "private_health_medicare_contract"
@@ -932,6 +933,7 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "def render_context_index(",
         'href="#{row.anchor}"',
         "def render_source_appendix(",
+        "def row_source_entries(",
         "data.abn_items",
         "data.bas_items",
         "data.company_items",
@@ -970,6 +972,36 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
 
 def check_taxpack_output_layer(root: Path) -> List[Finding]:
     return check_taxpack_output_layer_text(read(root, "scripts/taxmate_taxpack.py"))
+
+
+def check_workbook_output_layer(root: Path) -> List[Finding]:
+    text = read(root, "scripts/taxmate_workbook.py")
+    required = [
+        "def is_guide_payload(",
+        "keys.issubset(GUIDE_SECTION_KEYS | GUIDE_METADATA_KEYS)",
+        'return bool(sections) or "extracted_values" in payload',
+        "def load_workbook_data(",
+        "taxmate_intake.answers_to_pack_payload(payload)",
+        "taxmate_taxpack.load_guide_payload(payload)",
+        "taxmate_taxpack.row_review_required(render_row)",
+        "def source_rows(",
+        "taxmate_taxpack.row_source_entries(render_row)",
+        '"source_role": "; ".join(record["roles"])',
+        "def main_tab(",
+        "ABN_BAS_GATE_NUMBERS",
+        'return "employee"',
+        'return "other"',
+        "def csv_safe_cell(",
+        "CSV_FORMULA_PREFIXES",
+        "candidate.startswith(CSV_FORMULA_PREFIXES)",
+        "writer.writerow({column: csv_safe_cell(row.get(column)) for column in columns})",
+    ]
+    findings = fail_if_missing(WORKBOOK_OUTPUT_LAYER, text, required)
+    cgt_index = text.find('if row_kind == "capital-gains"')
+    investment_index = text.find("if is_investment(row)")
+    if cgt_index < 0 or investment_index < 0 or cgt_index > investment_index:
+        findings.append(Finding(WORKBOOK_OUTPUT_LAYER, "exact CGT routing must precede broad investment routing"))
+    return findings
 
 
 def check_individual_intake_contract(root: Path) -> List[Finding]:
@@ -4689,6 +4721,7 @@ def render_review_patterns(fmt: str) -> str:
 CHECKS: List[Callable[[Path], List[Finding]]] = [
     check_handoff_contract,
     check_taxpack_output_layer,
+    check_workbook_output_layer,
     check_individual_intake_contract,
     check_private_health_medicare_contract,
     check_fetch_boundary,

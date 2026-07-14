@@ -21,9 +21,11 @@ import taxmate_calc
 import taxmate_coverage
 import taxmate_finance
 import taxmate_handoff
+import taxmate_intake
 import taxmate_refresh
 import taxmate_skills
 import taxmate_taxpack
+import taxmate_workbook
 
 
 EMPTY_CONTENT = skillgen.EmptyContentHashValue
@@ -481,6 +483,7 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("finance_investment_income_classifies_as_income", finance_investment_income_classifies_as_income(), "")
     add("finance_investment_income_outranks_business_tag", finance_investment_income_outranks_business_tag(), "")
     add("taxpack_guide_html_contract", taxpack_guide_html_contract(), "")
+    add("workbook_export_contract", workbook_export_contract(), "")
     add("handoff_destination_contract", handoff_destination_contract(), "")
     add("validate_json_uses_check_field", validate_json_uses_check_field(), "")
     add("recrawl_link_host_filter_strict", recrawl_link_host_filter_strict(), "")
@@ -3146,6 +3149,105 @@ def handoff_destination_contract(root: Optional[str] = None) -> bool:
     except Exception:
         return False
     return handoff_payload_contract(payload, str(repository))
+
+
+def workbook_export_contract() -> bool:
+    try:
+        data = taxmate_taxpack.load_guide_payload(
+            {
+                "items": [
+                    {
+                        "number": 0,
+                        "ato_area": "Investment dividends",
+                        "question": False,
+                        "answer": 0,
+                        "status": "Accountant review required",
+                        "status_kind": "evidence",
+                        "tab_kind": "answer",
+                        "source_urls": [False],
+                        "checked_at": 0,
+                    }
+                ]
+            }
+        )
+        tabs = taxmate_workbook.build_tabs(data)
+        row = tabs["accountant_review"][0]
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "answers.json"
+            source.write_text(json.dumps(taxmate_intake.sample_answers()), encoding="utf-8")
+            intake_data = taxmate_workbook.load_workbook_data(str(source))
+            intake_tabs = taxmate_workbook.build_tabs(intake_data)
+        mapping_url = next(
+            source["source_url"]
+            for source in intake_tabs["sources"]
+            if source["number"] == "PHI-STMT-1" and source["source_role"] == "Destination mapping"
+        )
+        intake_data.items.insert(
+            0,
+            taxmate_taxpack.guide_item(
+                {
+                    "number": "SUPPORT-ONLY",
+                    "ato_area": "Records",
+                    "question": "Supporting source only?",
+                    "answer": 0,
+                    "status": "Evidence",
+                    "source_url": mapping_url,
+                    "checked_at": "2026-01-02",
+                }
+            ),
+        )
+        collision_tabs = taxmate_workbook.build_tabs(intake_data)
+        supporting = next(source for source in collision_tabs["sources"] if source["number"] == "SUPPORT-ONLY")
+        extraction_only = {
+            "income_year": "2025-26",
+            "extracted_values": [{"number": "AI-ONLY", "field": "Reviewed", "value": 0, "status": "Evidence"}],
+        }
+        intake_with_guide_helper = taxmate_intake.sample_answers()
+        intake_with_guide_helper["items"] = []
+        malformed_guide = {"income_year": "2025-26", "items": {"unexpected": "object"}}
+        return (
+            set(tabs)
+            == {
+                "readme", "employee", "abn", "bas", "investments", "super", "private_health", "property",
+                "capital_gains", "other", "evidence", "accountant_review", "sources",
+            }
+            and row["number"] == "0"
+            and row["question"] == "false"
+            and row["answer"] == "0"
+            and row["status"] == "Accountant review"
+            and row["checked_at"] == "0"
+            and bool(row["review_note"])
+            and tabs["sources"][0]["source_url"] == "false"
+            and bool(intake_tabs["abn"])
+            and bool(intake_tabs["bas"])
+            and bool(intake_tabs["investments"])
+            and bool(intake_tabs["super"])
+            and bool(intake_tabs["private_health"])
+            and bool(intake_tabs["property"])
+            and bool(intake_tabs["capital_gains"])
+            and "CRYPTO-CGT" in {row["number"] for row in intake_tabs["capital_gains"]}
+            and "CRYPTO-CGT" not in {row["number"] for row in intake_tabs["investments"]}
+            and bool(intake_tabs["other"])
+            and "income_year" in {row["number"] for row in intake_tabs["accountant_review"]}
+            and "resident" in {row["number"] for row in intake_tabs["accountant_review"]}
+            and all(
+                gate not in {row["number"] for row in intake_tabs["employee"]}
+                for gate in taxmate_workbook.ABN_BAS_GATE_NUMBERS
+            )
+            and any(source["source_role"] == "Destination mapping" for source in intake_tabs["sources"])
+            and any(source["source_title"] for source in intake_tabs["sources"])
+            and supporting["source_role"] == "Supporting source"
+            and supporting["source_title"] == ""
+            and supporting["checked_at"] == "2026-01-02"
+            and taxmate_workbook.is_guide_payload(extraction_only)
+            and not taxmate_workbook.is_guide_payload(taxmate_intake.sample_answers())
+            and not taxmate_workbook.is_guide_payload(intake_with_guide_helper)
+            and taxmate_workbook.is_guide_payload(malformed_guide)
+            and taxmate_workbook.csv_safe_cell("=1+1") == "'=1+1"
+            and taxmate_workbook.csv_safe_cell(" \t@SUM(A1:A2)") == "' \t@SUM(A1:A2)"
+        )
+    except Exception:
+        return False
 
 
 def taxpack_guide_html_contract() -> bool:

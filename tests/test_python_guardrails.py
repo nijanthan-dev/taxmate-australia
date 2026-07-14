@@ -770,6 +770,50 @@ class ReviewGuardrailTests(unittest.TestCase):
 
         self.assertTrue(any("forbidden pattern" in finding.detail for finding in findings))
 
+    def test_review_guardrails_require_workbook_input_conversion_and_csv_safety(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            script = root / "scripts" / "taxmate_workbook.py"
+            script.parent.mkdir(parents=True)
+            text = (ROOT / "scripts" / "taxmate_workbook.py").read_text(encoding="utf-8")
+            text = text.replace(
+                "keys.issubset(GUIDE_SECTION_KEYS | GUIDE_METADATA_KEYS)",
+                "False",
+            )
+            text = text.replace('return bool(sections) or "extracted_values" in payload', "return False")
+            text = text.replace("taxmate_intake.answers_to_pack_payload(payload)", "payload")
+            text = text.replace("taxmate_taxpack.row_source_entries(render_row)", "[]")
+            text = text.replace("taxmate_taxpack.row_review_required(render_row)", "False")
+            text = text.replace("ABN_BAS_GATE_NUMBERS", "frozenset()")
+            text = text.replace("candidate.startswith(CSV_FORMULA_PREFIXES)", "False")
+            script.write_text(text, encoding="utf-8")
+
+            findings = taxmate_review_guardrails.check_workbook_output_layer(root)
+
+        details = "\n".join(finding.detail for finding in findings)
+        self.assertIn("keys.issubset(GUIDE_SECTION_KEYS | GUIDE_METADATA_KEYS)", details)
+        self.assertIn('return bool(sections) or "extracted_values" in payload', details)
+        self.assertIn("taxmate_intake.answers_to_pack_payload(payload)", details)
+        self.assertIn("taxmate_taxpack.row_source_entries(render_row)", details)
+        self.assertIn("taxmate_taxpack.row_review_required(render_row)", details)
+        self.assertIn("ABN_BAS_GATE_NUMBERS", details)
+        self.assertIn("candidate.startswith(CSV_FORMULA_PREFIXES)", details)
+
+    def test_review_guardrails_require_exact_cgt_before_broad_investment_routing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            script = root / "scripts" / "taxmate_workbook.py"
+            script.parent.mkdir(parents=True)
+            text = (ROOT / "scripts" / "taxmate_workbook.py").read_text(encoding="utf-8")
+            cgt = 'if row_kind == "capital-gains" or "capital gain" in area or "cgt" in area:'
+            investment = "if is_investment(row):"
+            text = text.replace(cgt, "if False:").replace(investment, cgt).replace("if False:", investment)
+            script.write_text(text, encoding="utf-8")
+
+            findings = taxmate_review_guardrails.check_workbook_output_layer(root)
+
+        self.assertTrue(any("exact CGT routing" in finding.detail for finding in findings))
+
     def test_review_guardrails_require_extended_taxpack_review_tabs(self) -> None:
         text = (
             "def scalar_text(): pass\n"

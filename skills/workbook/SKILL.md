@@ -28,6 +28,7 @@ Read `references/rules.md` before creating a workbook structure.
 - If input fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 - Review queues must not show blank review items; use row number/status fallback when explanation fields are missing.
 - Workbook display fields must preserve valid falsey values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.
+- Convert raw intake answers through the runtime intake contract before export, and neutralize spreadsheet formula prefixes in every CSV cell.
 
 ## Quick Reference
 
@@ -42,6 +43,7 @@ Read `references/rules.md` before creating a workbook structure.
 
 - Creating new tax treatment inside the workbook layer.
 - Dropping falsey values such as `0` or `false`.
+- Exporting raw intake answers without conversion or formula-prefix neutralization.
 - Hiding rows or review flags to make totals look cleaner.
 - Marking BAS nil when GST collected or credits exist.
 
