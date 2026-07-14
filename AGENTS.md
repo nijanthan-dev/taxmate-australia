@@ -80,4 +80,5 @@ These rules are self-contained. Do not depend on or assume `~/.codex/AGENTS.md` 
 - Before PR/merge, run `python3 -m py_compile scripts/*.py`, `./scripts/taxmate validate`, `./scripts/taxmate skills generate --check`, `./scripts/taxmate skills audit --check`, `scripts/check-publication-ready.sh`, and run a secret scan.
 - For PR fix -> merge -> Release Please -> release/tag -> cleanup work, use `$taxmate-release-closeout` when available.
 - Before merge, require latest-head Codex review, green CI, `mergeStateStatus` `CLEAN`, and no unresolved review threads.
-- If a Codex review request gets eyes, keep polling for the review body; do not request review again unless explicitly asked.
+- After requesting review or receiving eyes, do not run short-interval polling loops or request review again. End the turn and wait for a review event or user wake; then check head, latest review body, unresolved threads, and checks once.
+- For each new review finding, state the invariant, scan directly analogous workflows, add the smallest focused regression proof, make one commit/push, reply and resolve, then request review once. Run full validation only after changes or at the final gate.
