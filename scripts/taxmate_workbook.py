@@ -9,7 +9,7 @@ import json
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 import taxmate_taxpack
 import taxmate_intake
@@ -43,6 +43,9 @@ GUIDE_SECTION_KEYS = frozenset(
 )
 GUIDE_METADATA_KEYS = frozenset({"income_year", "generated_date", "summary_note", "extracted_values"})
 CSV_FORMULA_PREFIXES = ("=", "+", "-", "@")
+ABN_BAS_GATE_NUMBERS = frozenset(
+    {"abn_income", "abn_expenses", "gst_registered", "bas_period", "gst_collected", "gst_credits"}
+)
 
 
 @dataclass(frozen=True)
@@ -122,6 +125,33 @@ def is_investment(row: WorkbookRow) -> bool:
     return any(term in value for term in ("investment", "interest", "dividend", "managed-fund", "trust-distribution"))
 
 
+def main_tab(row: WorkbookRow) -> Optional[str]:
+    number = display_value(row.number)
+    area = display_value(row.area).lower()
+    row_kind = display_value(row.row_kind).lower()
+    if number in ABN_BAS_GATE_NUMBERS:
+        return None
+    if is_investment(row):
+        return "investments"
+    if row_kind.startswith(("private-health", "medicare-", "spouse-review", "dependant-review")):
+        return "private_health"
+    if row_kind == "capital-gains" or "capital gain" in area or "cgt" in area:
+        return "capital_gains"
+    if number == "RENTAL-PROPERTY" or "rental property" in area:
+        return "property"
+    if number.startswith("SUPER-") or "superannuation" in area:
+        return "super"
+    if (
+        number.startswith(("PAYG-", "PHONE", "WFH", "ASSET-", "DED-"))
+        or number in {"ETP", "LUMP-ARREARS", "ESS"}
+        or "salary or wages" in area
+        or "employment" in area
+        or "work-related" in area
+    ):
+        return "employee"
+    return "other"
+
+
 def source_rows(render_rows: List[taxmate_taxpack.RenderRow]) -> List[Dict[str, str]]:
     exported: List[Dict[str, str]] = []
     for render_row in render_rows:
@@ -153,6 +183,7 @@ def build_tabs(data: taxmate_taxpack.GuideData) -> Dict[str, List[Dict[str, str]
     ]
     rows = [row for _, row in section_rows]
     main = [row for section, row in section_rows if section in {"main", "ai"}]
+    categorized = [(main_tab(row), row) for row in main]
     review = [row for row in rows if row.status == "Accountant review"]
     evidence = [row for row in rows if row.status == "Evidence"]
     return {
@@ -161,10 +192,15 @@ def build_tabs(data: taxmate_taxpack.GuideData) -> Dict[str, List[Dict[str, str]
             {"key": "generated_date", "value": display_value(data.generated_date)},
             {"key": "boundary", "value": "Preparation aid only; not fileable; human review required."},
         ],
-        "employee": [row.as_dict() for row in main if not is_investment(row)],
+        "employee": [row.as_dict() for tab, row in categorized if tab == "employee"],
         "abn": [row.as_dict() for section, row in section_rows if section == "abn"],
         "bas": [row.as_dict() for section, row in section_rows if section == "bas"],
-        "investments": [row.as_dict() for row in main if is_investment(row)],
+        "investments": [row.as_dict() for tab, row in categorized if tab == "investments"],
+        "super": [row.as_dict() for tab, row in categorized if tab == "super"],
+        "private_health": [row.as_dict() for tab, row in categorized if tab == "private_health"],
+        "property": [row.as_dict() for tab, row in categorized if tab == "property"],
+        "capital_gains": [row.as_dict() for tab, row in categorized if tab == "capital_gains"],
+        "other": [row.as_dict() for tab, row in categorized if tab == "other"],
         "evidence": [row.as_dict() for row in evidence],
         "accountant_review": [row.as_dict() for row in review],
         "sources": source_rows(render_rows),

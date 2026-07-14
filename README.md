@@ -205,7 +205,7 @@ Export reviewed guide/intake JSON as deterministic CSV workbook tabs:
 ./scripts/taxmate workbook --input /tmp/taxmate-reviewed.json --output /tmp/taxmate-workbook
 ```
 
-The export accepts reviewed guide JSON or raw intake answers, writes readme, employee, ABN, BAS, investments, evidence, accountant-review, and source tabs, and neutralizes formula-like CSV cells. It preserves `Accountant review`, Evidence, falsey values, source URLs, and checked-at dates. It is a preparation aid only, not a final return or lodgment file.
+The export accepts reviewed guide JSON or raw intake answers; separates employee, ABN, BAS, investment, super, private-health, property, CGT, other, evidence, accountant-review, and source tabs; and neutralizes formula-like CSV cells. It preserves `Accountant review`, Evidence, falsey values, source URLs, and checked-at dates. It is a preparation aid only, not a final return or lodgment file.
 
 Open the HTML in a browser and use print/save as PDF. The printed PDF keeps each action card together where possible and hides navigation controls. Rows can include `source_url`, `source_urls`, and `checked_at`; the guide keeps supporting provenance separate from verified destination-mapping provenance.
 

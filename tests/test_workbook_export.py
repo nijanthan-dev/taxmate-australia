@@ -86,11 +86,16 @@ class WorkbookExportTests(unittest.TestCase):
                     "abn.csv",
                     "accountant_review.csv",
                     "bas.csv",
+                    "capital_gains.csv",
                     "employee.csv",
                     "evidence.csv",
                     "investments.csv",
+                    "other.csv",
+                    "private_health.csv",
+                    "property.csv",
                     "readme.csv",
                     "sources.csv",
+                    "super.csv",
                 },
                 {path.name for path in output.iterdir()},
             )
@@ -100,7 +105,7 @@ class WorkbookExportTests(unittest.TestCase):
             self.assertEqual("Row ABN-1: Accountant review.", review["review_note"])
             with (output / "investments.csv").open(encoding="utf-8", newline="") as handle:
                 self.assertEqual("INV-1", next(csv.DictReader(handle))["number"])
-            with (output / "employee.csv").open(encoding="utf-8", newline="") as handle:
+            with (output / "other.csv").open(encoding="utf-8", newline="") as handle:
                 self.assertEqual("AI-1", next(csv.DictReader(handle))["number"])
 
     def test_direct_workbook_row_preserves_zero_and_false(self) -> None:
@@ -140,6 +145,11 @@ class WorkbookExportTests(unittest.TestCase):
         self.assertTrue(tabs["abn"])
         self.assertTrue(tabs["bas"])
         self.assertTrue(tabs["investments"])
+        self.assertTrue(tabs["super"])
+        self.assertTrue(tabs["private_health"])
+        self.assertTrue(tabs["property"])
+        self.assertTrue(tabs["capital_gains"])
+        self.assertTrue(tabs["other"])
         self.assertTrue(tabs["accountant_review"])
 
     def test_guide_file_is_not_reconverted_as_intake_answers(self) -> None:
@@ -172,7 +182,7 @@ class WorkbookExportTests(unittest.TestCase):
             data = taxmate_workbook.load_workbook_data(str(source))
             tabs = taxmate_workbook.build_tabs(data)
 
-        self.assertEqual(["AI-ONLY-1"], [row["number"] for row in tabs["employee"]])
+        self.assertEqual(["AI-ONLY-1"], [row["number"] for row in tabs["other"]])
         self.assertFalse(tabs["abn"])
         self.assertFalse(tabs["bas"])
         self.assertEqual(1, len(tabs["evidence"]))
@@ -242,6 +252,31 @@ class WorkbookExportTests(unittest.TestCase):
         self.assertEqual("Supporting source", supporting["source_role"])
         self.assertEqual("", supporting["source_title"])
         self.assertEqual("2026-01-02", supporting["checked_at"])
+
+    def test_main_rows_route_to_specific_tabs_without_abn_bas_duplication(self) -> None:
+        data = taxmate_taxpack.load_guide_payload(
+            taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        )
+        tabs = taxmate_workbook.build_tabs(data)
+        row_tabs = (
+            "employee", "abn", "bas", "investments", "super", "private_health", "property",
+            "capital_gains", "other", "evidence", "accountant_review",
+        )
+        numbers = {tab: {row["number"] for row in tabs[tab]} for tab in row_tabs}
+
+        self.assertIn("PAYG-1", numbers["employee"])
+        self.assertIn("INT-1", numbers["investments"])
+        self.assertIn("SUPER-INCOME", numbers["super"])
+        self.assertIn("PHI-STMT-1", numbers["private_health"])
+        self.assertIn("RENTAL-PROPERTY", numbers["property"])
+        self.assertIn("CGT-SCHEDULE", numbers["capital_gains"])
+        self.assertIn("income_year", numbers["other"])
+        for gate in taxmate_workbook.ABN_BAS_GATE_NUMBERS:
+            self.assertFalse(any(gate in numbers[tab] for tab in (
+                "employee", "investments", "super", "private_health", "property", "capital_gains", "other"
+            )))
+        self.assertTrue(numbers["abn"])
+        self.assertTrue(numbers["bas"])
 
 
 if __name__ == "__main__":

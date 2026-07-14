@@ -3204,7 +3204,10 @@ def workbook_export_contract() -> bool:
         }
         return (
             set(tabs)
-            == {"readme", "employee", "abn", "bas", "investments", "evidence", "accountant_review", "sources"}
+            == {
+                "readme", "employee", "abn", "bas", "investments", "super", "private_health", "property",
+                "capital_gains", "other", "evidence", "accountant_review", "sources",
+            }
             and row["number"] == "0"
             and row["question"] == "false"
             and row["answer"] == "0"
@@ -3215,6 +3218,15 @@ def workbook_export_contract() -> bool:
             and bool(intake_tabs["abn"])
             and bool(intake_tabs["bas"])
             and bool(intake_tabs["investments"])
+            and bool(intake_tabs["super"])
+            and bool(intake_tabs["private_health"])
+            and bool(intake_tabs["property"])
+            and bool(intake_tabs["capital_gains"])
+            and bool(intake_tabs["other"])
+            and all(
+                gate not in {row["number"] for row in intake_tabs["employee"]}
+                for gate in taxmate_workbook.ABN_BAS_GATE_NUMBERS
+            )
             and any(source["source_role"] == "Destination mapping" for source in intake_tabs["sources"])
             and any(source["source_title"] for source in intake_tabs["sources"])
             and supporting["source_role"] == "Supporting source"
