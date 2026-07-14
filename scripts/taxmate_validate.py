@@ -3202,6 +3202,8 @@ def workbook_export_contract() -> bool:
             "income_year": "2025-26",
             "extracted_values": [{"number": "AI-ONLY", "field": "Reviewed", "value": 0, "status": "Evidence"}],
         }
+        intake_with_guide_helper = taxmate_intake.sample_answers()
+        intake_with_guide_helper["items"] = []
         return (
             set(tabs)
             == {
@@ -3236,6 +3238,7 @@ def workbook_export_contract() -> bool:
             and supporting["checked_at"] == "2026-01-02"
             and taxmate_workbook.is_guide_payload(extraction_only)
             and not taxmate_workbook.is_guide_payload(taxmate_intake.sample_answers())
+            and not taxmate_workbook.is_guide_payload(intake_with_guide_helper)
             and taxmate_workbook.csv_safe_cell("=1+1") == "'=1+1"
             and taxmate_workbook.csv_safe_cell(" \t@SUM(A1:A2)") == "' \t@SUM(A1:A2)"
         )

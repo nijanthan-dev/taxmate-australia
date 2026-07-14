@@ -162,6 +162,20 @@ class WorkbookExportTests(unittest.TestCase):
 
         self.assertEqual(["GUIDE-1"], [item.number for item in data.items])
 
+    def test_raw_intake_with_guide_named_helper_still_uses_conversion(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["items"] = []
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "answers.json"
+            source.write_text(json.dumps(answers), encoding="utf-8")
+
+            data = taxmate_workbook.load_workbook_data(str(source))
+            tabs = taxmate_workbook.build_tabs(data)
+
+        self.assertTrue(tabs["employee"])
+        self.assertTrue(tabs["abn"])
+        self.assertTrue(tabs["capital_gains"])
+
     def test_extracted_value_only_guide_is_not_reconverted(self) -> None:
         payload = {
             "income_year": "2025-26",

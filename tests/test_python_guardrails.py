@@ -777,9 +777,10 @@ class ReviewGuardrailTests(unittest.TestCase):
             script.parent.mkdir(parents=True)
             text = (ROOT / "scripts" / "taxmate_workbook.py").read_text(encoding="utf-8")
             text = text.replace(
-                'return "extracted_values" in payload and set(payload).issubset(GUIDE_METADATA_KEYS)',
-                "return False",
+                "keys.issubset(GUIDE_SECTION_KEYS | GUIDE_METADATA_KEYS)",
+                "False",
             )
+            text = text.replace("all(isinstance(payload[key], list) for key in sections)", "False")
             text = text.replace("taxmate_intake.answers_to_pack_payload(payload)", "payload")
             text = text.replace("taxmate_taxpack.row_source_entries(render_row)", "[]")
             text = text.replace("ABN_BAS_GATE_NUMBERS", "frozenset()")
@@ -789,7 +790,8 @@ class ReviewGuardrailTests(unittest.TestCase):
             findings = taxmate_review_guardrails.check_workbook_output_layer(root)
 
         details = "\n".join(finding.detail for finding in findings)
-        self.assertIn('return "extracted_values" in payload', details)
+        self.assertIn("keys.issubset(GUIDE_SECTION_KEYS | GUIDE_METADATA_KEYS)", details)
+        self.assertIn("all(isinstance(payload[key], list) for key in sections)", details)
         self.assertIn("taxmate_intake.answers_to_pack_payload(payload)", details)
         self.assertIn("taxmate_taxpack.row_source_entries(render_row)", details)
         self.assertIn("ABN_BAS_GATE_NUMBERS", details)

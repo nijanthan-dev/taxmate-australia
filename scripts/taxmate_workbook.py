@@ -86,9 +86,13 @@ def csv_safe_cell(value: Any) -> str:
 
 
 def is_guide_payload(payload: Dict[str, Any]) -> bool:
-    if GUIDE_SECTION_KEYS.intersection(payload):
-        return True
-    return "extracted_values" in payload and set(payload).issubset(GUIDE_METADATA_KEYS)
+    keys = set(payload)
+    if not keys.issubset(GUIDE_SECTION_KEYS | GUIDE_METADATA_KEYS):
+        return False
+    sections = GUIDE_SECTION_KEYS.intersection(keys)
+    if sections and not all(isinstance(payload[key], list) for key in sections):
+        return False
+    return bool(sections) or "extracted_values" in payload
 
 
 def load_workbook_data(path: str) -> taxmate_taxpack.GuideData:
