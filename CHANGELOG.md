@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.23.0...v0.24.0) (2026-07-14)
+
+
+### Features
+
+* add runtime workbook export ([#152](https://github.com/nijanthan-dev/taxmate-australia/issues/152)) ([e63c3a5](https://github.com/nijanthan-dev/taxmate-australia/commit/e63c3a5c7bf05c63105e00411af6f4dc1b361755))
+
 ## [0.23.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.22.0...v0.23.0) (2026-07-13)
 
 
