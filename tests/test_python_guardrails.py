@@ -795,6 +795,21 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertIn("ABN_BAS_GATE_NUMBERS", details)
         self.assertIn("candidate.startswith(CSV_FORMULA_PREFIXES)", details)
 
+    def test_review_guardrails_require_exact_cgt_before_broad_investment_routing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            script = root / "scripts" / "taxmate_workbook.py"
+            script.parent.mkdir(parents=True)
+            text = (ROOT / "scripts" / "taxmate_workbook.py").read_text(encoding="utf-8")
+            cgt = 'if row_kind == "capital-gains" or "capital gain" in area or "cgt" in area:'
+            investment = "if is_investment(row):"
+            text = text.replace(cgt, "if False:").replace(investment, cgt).replace("if False:", investment)
+            script.write_text(text, encoding="utf-8")
+
+            findings = taxmate_review_guardrails.check_workbook_output_layer(root)
+
+        self.assertTrue(any("exact CGT routing" in finding.detail for finding in findings))
+
     def test_review_guardrails_require_extended_taxpack_review_tabs(self) -> None:
         text = (
             "def scalar_text(): pass\n"

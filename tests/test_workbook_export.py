@@ -270,6 +270,8 @@ class WorkbookExportTests(unittest.TestCase):
         self.assertIn("PHI-STMT-1", numbers["private_health"])
         self.assertIn("RENTAL-PROPERTY", numbers["property"])
         self.assertIn("CGT-SCHEDULE", numbers["capital_gains"])
+        self.assertIn("CRYPTO-CGT", numbers["capital_gains"])
+        self.assertNotIn("CRYPTO-CGT", numbers["investments"])
         self.assertIn("income_year", numbers["other"])
         for gate in taxmate_workbook.ABN_BAS_GATE_NUMBERS:
             self.assertFalse(any(gate in numbers[tab] for tab in (

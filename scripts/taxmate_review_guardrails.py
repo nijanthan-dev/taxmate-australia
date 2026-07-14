@@ -994,7 +994,12 @@ def check_workbook_output_layer(root: Path) -> List[Finding]:
         "candidate.startswith(CSV_FORMULA_PREFIXES)",
         "writer.writerow({column: csv_safe_cell(row.get(column)) for column in columns})",
     ]
-    return fail_if_missing(WORKBOOK_OUTPUT_LAYER, text, required)
+    findings = fail_if_missing(WORKBOOK_OUTPUT_LAYER, text, required)
+    cgt_index = text.find('if row_kind == "capital-gains"')
+    investment_index = text.find("if is_investment(row)")
+    if cgt_index < 0 or investment_index < 0 or cgt_index > investment_index:
+        findings.append(Finding(WORKBOOK_OUTPUT_LAYER, "exact CGT routing must precede broad investment routing"))
+    return findings
 
 
 def check_individual_intake_contract(root: Path) -> List[Finding]:

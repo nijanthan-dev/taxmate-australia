@@ -3222,6 +3222,8 @@ def workbook_export_contract() -> bool:
             and bool(intake_tabs["private_health"])
             and bool(intake_tabs["property"])
             and bool(intake_tabs["capital_gains"])
+            and "CRYPTO-CGT" in {row["number"] for row in intake_tabs["capital_gains"]}
+            and "CRYPTO-CGT" not in {row["number"] for row in intake_tabs["investments"]}
             and bool(intake_tabs["other"])
             and all(
                 gate not in {row["number"] for row in intake_tabs["employee"]}

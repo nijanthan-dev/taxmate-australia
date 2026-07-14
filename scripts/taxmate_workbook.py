@@ -131,12 +131,12 @@ def main_tab(row: WorkbookRow) -> Optional[str]:
     row_kind = display_value(row.row_kind).lower()
     if number in ABN_BAS_GATE_NUMBERS:
         return None
+    if row_kind == "capital-gains" or "capital gain" in area or "cgt" in area:
+        return "capital_gains"
     if is_investment(row):
         return "investments"
     if row_kind.startswith(("private-health", "medicare-", "spouse-review", "dependant-review")):
         return "private_health"
-    if row_kind == "capital-gains" or "capital gain" in area or "cgt" in area:
-        return "capital_gains"
     if number == "RENTAL-PROPERTY" or "rental property" in area:
         return "property"
     if number.startswith("SUPER-") or "superannuation" in area:
