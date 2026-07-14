@@ -165,7 +165,7 @@ If you are using `npx skills` guidance only, the agent can build the checklist, 
 
 ## Plugin Runtime Quickstart
 
-Plugin install is the real TaxMate install. Use it when you need generated guides, taxpack output, source refresh, finance review, or calculators.
+Plugin install is the real TaxMate install. Use it when you need generated guides, workbook/taxpack output, source refresh, finance review, or calculators.
 
 Prerequisites:
 
@@ -198,6 +198,14 @@ Use TaxMate Australia to validate the runtime.
 ```text
 Use TaxMate Australia to write sample individual answers and render the individual-return HTML guide.
 ```
+
+Export reviewed guide/intake JSON as deterministic CSV workbook tabs:
+
+```bash
+./scripts/taxmate workbook --input /tmp/taxmate-reviewed.json --output /tmp/taxmate-workbook
+```
+
+The export writes readme, employee, ABN, BAS, investments, evidence, accountant-review, and source tabs. It preserves `Accountant review`, Evidence, falsey values, source URLs, and checked-at dates. It is a preparation aid only, not a final return or lodgment file.
 
 Open the HTML in a browser and use print/save as PDF. The printed PDF keeps each action card together where possible and hides navigation controls. Rows can include `source_url`, `source_urls`, and `checked_at`; the guide keeps supporting provenance separate from verified destination-mapping provenance.
 

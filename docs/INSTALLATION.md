@@ -48,6 +48,7 @@ The installed plugin exposes TaxMate runtime tools for:
 - `review-guardrails`
 - `skills`
 - `taxpack`
+- `workbook`
 - `validate`
 
 The individual-return HTML guide includes the prep-only boundary, action-card context index, labelled fact bullets, next actions, verified myTax/paper destinations or explicit non-entry/review wording, explanations, PAYG and investment rows, private-health/Medicare rows, deduction/super/offset rows, CGT rows, ABN and BAS prep, missing-fact/evidence/accountant-review queues, and row-associated provenance. Output rendering does not create destination logic.

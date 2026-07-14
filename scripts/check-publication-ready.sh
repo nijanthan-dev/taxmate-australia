@@ -45,6 +45,7 @@ fail() {
 [[ -f data/ato_knowledge_base/source_registry.json ]] || fail "missing source_registry.json"
 [[ -f data/ato_knowledge_base/source_coverage.json ]] || fail "missing source_coverage.json"
 [[ -f scripts/taxmate_handoff.py ]] || fail "missing handoff runtime"
+[[ -f scripts/taxmate_workbook.py ]] || fail "missing workbook runtime"
 [[ -f config/handoff-destinations.json ]] || fail "missing handoff destination manifest"
 [[ -f config/public-skills.json ]] || fail "missing public skills manifest"
 [[ -f config/skill-packaging.json ]] || fail "missing skill packaging manifest"

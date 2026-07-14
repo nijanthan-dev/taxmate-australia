@@ -24,6 +24,7 @@ import taxmate_handoff
 import taxmate_refresh
 import taxmate_skills
 import taxmate_taxpack
+import taxmate_workbook
 
 
 EMPTY_CONTENT = skillgen.EmptyContentHashValue
@@ -481,6 +482,7 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("finance_investment_income_classifies_as_income", finance_investment_income_classifies_as_income(), "")
     add("finance_investment_income_outranks_business_tag", finance_investment_income_outranks_business_tag(), "")
     add("taxpack_guide_html_contract", taxpack_guide_html_contract(), "")
+    add("workbook_export_contract", workbook_export_contract(), "")
     add("handoff_destination_contract", handoff_destination_contract(), "")
     add("validate_json_uses_check_field", validate_json_uses_check_field(), "")
     add("recrawl_link_host_filter_strict", recrawl_link_host_filter_strict(), "")
@@ -3146,6 +3148,42 @@ def handoff_destination_contract(root: Optional[str] = None) -> bool:
     except Exception:
         return False
     return handoff_payload_contract(payload, str(repository))
+
+
+def workbook_export_contract() -> bool:
+    try:
+        data = taxmate_taxpack.load_guide_payload(
+            {
+                "items": [
+                    {
+                        "number": 0,
+                        "ato_area": "Investment dividends",
+                        "question": False,
+                        "answer": 0,
+                        "status": "Accountant review required",
+                        "status_kind": "evidence",
+                        "tab_kind": "answer",
+                        "source_urls": [False],
+                        "checked_at": 0,
+                    }
+                ]
+            }
+        )
+        tabs = taxmate_workbook.build_tabs(data)
+        row = tabs["accountant_review"][0]
+        return (
+            set(tabs)
+            == {"readme", "employee", "abn", "bas", "investments", "evidence", "accountant_review", "sources"}
+            and row["number"] == "0"
+            and row["question"] == "false"
+            and row["answer"] == "0"
+            and row["status"] == "Accountant review"
+            and row["checked_at"] == "0"
+            and bool(row["review_note"])
+            and tabs["sources"][0]["source_url"] == "false"
+        )
+    except Exception:
+        return False
 
 
 def taxpack_guide_html_contract() -> bool:
