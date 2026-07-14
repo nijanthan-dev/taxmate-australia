@@ -3193,6 +3193,8 @@ def workbook_export_contract() -> bool:
             and bool(intake_tabs["abn"])
             and bool(intake_tabs["bas"])
             and bool(intake_tabs["investments"])
+            and any(source["source_role"] == "Destination mapping" for source in intake_tabs["sources"])
+            and any(source["source_title"] for source in intake_tabs["sources"])
             and taxmate_workbook.is_guide_payload(extraction_only)
             and not taxmate_workbook.is_guide_payload(taxmate_intake.sample_answers())
             and taxmate_workbook.csv_safe_cell("=1+1") == "'=1+1"

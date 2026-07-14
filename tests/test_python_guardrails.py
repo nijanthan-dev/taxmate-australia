@@ -781,6 +781,7 @@ class ReviewGuardrailTests(unittest.TestCase):
                 "return False",
             )
             text = text.replace("taxmate_intake.answers_to_pack_payload(payload)", "payload")
+            text = text.replace("taxmate_taxpack.build_source_groups(render_rows)", "([], {})")
             text = text.replace("candidate.startswith(CSV_FORMULA_PREFIXES)", "False")
             script.write_text(text, encoding="utf-8")
 
@@ -789,6 +790,7 @@ class ReviewGuardrailTests(unittest.TestCase):
         details = "\n".join(finding.detail for finding in findings)
         self.assertIn('return "extracted_values" in payload', details)
         self.assertIn("taxmate_intake.answers_to_pack_payload(payload)", details)
+        self.assertIn("taxmate_taxpack.build_source_groups(render_rows)", details)
         self.assertIn("candidate.startswith(CSV_FORMULA_PREFIXES)", details)
 
     def test_review_guardrails_require_extended_taxpack_review_tabs(self) -> None:

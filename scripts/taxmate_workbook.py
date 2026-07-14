@@ -122,25 +122,32 @@ def is_investment(row: WorkbookRow) -> bool:
     return any(term in value for term in ("investment", "interest", "dividend", "managed-fund", "trust-distribution"))
 
 
+def source_rows(render_rows: List[taxmate_taxpack.RenderRow]) -> List[Dict[str, str]]:
+    groups, _ = taxmate_taxpack.build_source_groups(render_rows)
+    return [
+        {
+            "number": display_value(row.item.number),
+            "area": display_value(row.item.ato_area),
+            "source_url": group.url,
+            "source_title": "; ".join(group.titles),
+            "source_role": "; ".join(group.roles),
+            "checked_at": "; ".join(group.checked_at),
+        }
+        for group in groups
+        for row in group.rows
+    ]
+
+
 def build_tabs(data: taxmate_taxpack.GuideData) -> Dict[str, List[Dict[str, str]]]:
+    render_rows = taxmate_taxpack.build_render_rows(data)
     section_rows = [
         (render_row.section, workbook_row(render_row.item, display_value(data.income_year)))
-        for render_row in taxmate_taxpack.build_render_rows(data)
+        for render_row in render_rows
     ]
     rows = [row for _, row in section_rows]
     main = [row for section, row in section_rows if section in {"main", "ai"}]
     review = [row for row in rows if row.status == "Accountant review"]
     evidence = [row for row in rows if row.status == "Evidence"]
-    sources = [
-        {
-            "number": display_value(row.number),
-            "area": display_value(row.area),
-            "source_url": display_value(url),
-            "checked_at": display_value(row.checked_at),
-        }
-        for row in rows
-        for url in (row.source_urls if isinstance(row.source_urls, list) else [])
-    ]
     return {
         "readme": [
             {"key": "income_year", "value": display_value(data.income_year)},
@@ -153,7 +160,7 @@ def build_tabs(data: taxmate_taxpack.GuideData) -> Dict[str, List[Dict[str, str]
         "investments": [row.as_dict() for row in main if is_investment(row)],
         "evidence": [row.as_dict() for row in evidence],
         "accountant_review": [row.as_dict() for row in review],
-        "sources": sources,
+        "sources": source_rows(render_rows),
     }
 
 
@@ -171,7 +178,7 @@ def export_workbook(data: taxmate_taxpack.GuideData, output: str) -> None:
     tabs = build_tabs(data)
     fallbacks = {
         "readme": ("key", "value"),
-        "sources": ("number", "area", "source_url", "checked_at"),
+        "sources": ("number", "area", "source_url", "source_title", "source_role", "checked_at"),
     }
     for name, rows in tabs.items():
         write_csv(Path(output) / f"{name}.csv", rows, fallbacks.get(name, ROW_COLUMNS))

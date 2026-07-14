@@ -194,6 +194,23 @@ class WorkbookExportTests(unittest.TestCase):
             exported,
         )
 
+    def test_sources_include_row_and_fact_destination_mapping_provenance(self) -> None:
+        data = taxmate_taxpack.load_guide_payload(
+            taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        )
+        tabs = taxmate_workbook.build_tabs(data)
+        phi_sources = [row for row in tabs["sources"] if row["number"] == "PHI-STMT-1"]
+
+        mapping_sources = [row for row in phi_sources if "Destination mapping" in row["source_role"]]
+        self.assertGreaterEqual(len(mapping_sources), 2)
+        self.assertTrue(all(row["source_url"].startswith("https://www.ato.gov.au/") for row in mapping_sources))
+        self.assertTrue(all(row["source_title"] for row in mapping_sources))
+        self.assertTrue(all(row["checked_at"] for row in mapping_sources))
+        self.assertEqual(
+            len({(row["number"], row["source_url"]) for row in phi_sources}),
+            len(phi_sources),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
