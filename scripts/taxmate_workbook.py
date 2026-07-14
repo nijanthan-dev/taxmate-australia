@@ -123,19 +123,26 @@ def is_investment(row: WorkbookRow) -> bool:
 
 
 def source_rows(render_rows: List[taxmate_taxpack.RenderRow]) -> List[Dict[str, str]]:
-    groups, _ = taxmate_taxpack.build_source_groups(render_rows)
-    return [
-        {
-            "number": display_value(row.item.number),
-            "area": display_value(row.item.ato_area),
-            "source_url": group.url,
-            "source_title": "; ".join(group.titles),
-            "source_role": "; ".join(group.roles),
-            "checked_at": "; ".join(group.checked_at),
-        }
-        for group in groups
-        for row in group.rows
-    ]
+    exported: List[Dict[str, str]] = []
+    for render_row in render_rows:
+        by_url: Dict[str, Dict[str, List[str]]] = {}
+        for url, checked_at, role, title in taxmate_taxpack.row_source_entries(render_row):
+            record = by_url.setdefault(url, {"titles": [], "roles": [], "checked_at": []})
+            for key, value in (("titles", title), ("roles", role), ("checked_at", checked_at)):
+                if value and value not in record[key]:
+                    record[key].append(value)
+        for url, record in by_url.items():
+            exported.append(
+                {
+                    "number": display_value(render_row.item.number),
+                    "area": display_value(render_row.item.ato_area),
+                    "source_url": url,
+                    "source_title": "; ".join(record["titles"]),
+                    "source_role": "; ".join(record["roles"]),
+                    "checked_at": "; ".join(record["checked_at"]),
+                }
+            )
+    return exported
 
 
 def build_tabs(data: taxmate_taxpack.GuideData) -> Dict[str, List[Dict[str, str]]]:

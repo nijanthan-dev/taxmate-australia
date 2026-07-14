@@ -3175,7 +3175,29 @@ def workbook_export_contract() -> bool:
         with tempfile.TemporaryDirectory() as temporary:
             source = Path(temporary) / "answers.json"
             source.write_text(json.dumps(taxmate_intake.sample_answers()), encoding="utf-8")
-            intake_tabs = taxmate_workbook.build_tabs(taxmate_workbook.load_workbook_data(str(source)))
+            intake_data = taxmate_workbook.load_workbook_data(str(source))
+            intake_tabs = taxmate_workbook.build_tabs(intake_data)
+        mapping_url = next(
+            source["source_url"]
+            for source in intake_tabs["sources"]
+            if source["number"] == "PHI-STMT-1" and source["source_role"] == "Destination mapping"
+        )
+        intake_data.items.insert(
+            0,
+            taxmate_taxpack.guide_item(
+                {
+                    "number": "SUPPORT-ONLY",
+                    "ato_area": "Records",
+                    "question": "Supporting source only?",
+                    "answer": 0,
+                    "status": "Evidence",
+                    "source_url": mapping_url,
+                    "checked_at": "2026-01-02",
+                }
+            ),
+        )
+        collision_tabs = taxmate_workbook.build_tabs(intake_data)
+        supporting = next(source for source in collision_tabs["sources"] if source["number"] == "SUPPORT-ONLY")
         extraction_only = {
             "income_year": "2025-26",
             "extracted_values": [{"number": "AI-ONLY", "field": "Reviewed", "value": 0, "status": "Evidence"}],
@@ -3195,6 +3217,9 @@ def workbook_export_contract() -> bool:
             and bool(intake_tabs["investments"])
             and any(source["source_role"] == "Destination mapping" for source in intake_tabs["sources"])
             and any(source["source_title"] for source in intake_tabs["sources"])
+            and supporting["source_role"] == "Supporting source"
+            and supporting["source_title"] == ""
+            and supporting["checked_at"] == "2026-01-02"
             and taxmate_workbook.is_guide_payload(extraction_only)
             and not taxmate_workbook.is_guide_payload(taxmate_intake.sample_answers())
             and taxmate_workbook.csv_safe_cell("=1+1") == "'=1+1"

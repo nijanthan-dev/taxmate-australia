@@ -777,38 +777,39 @@ def supporting_source_entries(item: GuideItem) -> List[tuple[str, str, str]]:
     return entries
 
 
+def row_source_entries(row: RenderRow) -> List[tuple[str, str, str, str]]:
+    records = [
+        (url, checked, role, "")
+        for url, checked, role in supporting_source_entries(row.item)
+    ]
+    destinations = [row.contract["handoff"]["destination"]]
+    destinations.extend(fact["handoff"]["destination"] for fact in row.contract["facts"])
+    for destination in destinations:
+        raw_sources = destination.get("sources")
+        if not isinstance(raw_sources, list):
+            continue
+        for source in raw_sources:
+            if not isinstance(source, dict):
+                continue
+            url = scalar_text(source.get("url")).strip()
+            if url:
+                records.append(
+                    (
+                        url,
+                        scalar_text(source.get("checked_at")).strip(),
+                        "Destination mapping",
+                        scalar_text(source.get("title")).strip(),
+                    )
+                )
+    return records
+
+
 def build_source_groups(rows: List[RenderRow]) -> tuple[List[SourceGroup], Dict[str, List[SourceGroup]]]:
     groups: List[SourceGroup] = []
     by_url: Dict[str, SourceGroup] = {}
     row_groups: Dict[str, List[SourceGroup]] = {row.anchor: [] for row in rows}
     for row in rows:
-        records: List[tuple[str, str, str, str]] = [
-            (url, checked, role, "")
-            for url, checked, role in supporting_source_entries(row.item)
-        ]
-        destinations = [row.contract["handoff"]["destination"]]
-        destinations.extend(
-            fact["handoff"]["destination"]
-            for fact in row.contract["facts"]
-        )
-        for destination in destinations:
-            raw_sources = destination.get("sources")
-            if not isinstance(raw_sources, list):
-                continue
-            for source in raw_sources:
-                if not isinstance(source, dict):
-                    continue
-                url = scalar_text(source.get("url")).strip()
-                if url:
-                    records.append(
-                        (
-                            url,
-                            scalar_text(source.get("checked_at")).strip(),
-                            "Destination mapping",
-                            scalar_text(source.get("title")).strip(),
-                        )
-                    )
-        for url, checked, role, title in records:
+        for url, checked, role, title in row_source_entries(row):
             group = by_url.get(url)
             if group is None:
                 source_number = len(groups) + 1

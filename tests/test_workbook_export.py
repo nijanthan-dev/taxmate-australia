@@ -211,6 +211,38 @@ class WorkbookExportTests(unittest.TestCase):
             len(phi_sources),
         )
 
+    def test_shared_url_metadata_stays_row_specific(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        data = taxmate_taxpack.load_guide_payload(payload)
+        phi_row = next(row for row in taxmate_taxpack.build_render_rows(data) if row.item.number == "PHI-STMT-1")
+        mapping_url = next(
+            url
+            for url, _, role, _ in taxmate_taxpack.row_source_entries(phi_row)
+            if role == "Destination mapping"
+        )
+        data.items.insert(
+            0,
+            taxmate_taxpack.guide_item(
+                {
+                    "number": "SUPPORT-ONLY",
+                    "ato_area": "Records",
+                    "question": "Supporting source only?",
+                    "answer": 0,
+                    "status": "Evidence",
+                    "source_url": mapping_url,
+                    "checked_at": "2026-01-02",
+                }
+            ),
+        )
+
+        sources = taxmate_workbook.build_tabs(data)["sources"]
+        supporting = next(row for row in sources if row["number"] == "SUPPORT-ONLY")
+
+        self.assertEqual(mapping_url, supporting["source_url"])
+        self.assertEqual("Supporting source", supporting["source_role"])
+        self.assertEqual("", supporting["source_title"])
+        self.assertEqual("2026-01-02", supporting["checked_at"])
+
 
 if __name__ == "__main__":
     unittest.main()
