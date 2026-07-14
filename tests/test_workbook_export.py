@@ -152,6 +152,31 @@ class WorkbookExportTests(unittest.TestCase):
 
         self.assertEqual(["GUIDE-1"], [item.number for item in data.items])
 
+    def test_extracted_value_only_guide_is_not_reconverted(self) -> None:
+        payload = {
+            "income_year": "2025-26",
+            "extracted_values": [
+                {
+                    "number": "AI-ONLY-1",
+                    "document": "Reviewed statement",
+                    "field": "Reviewed value",
+                    "value": 0,
+                    "status": "Evidence",
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "guide.json"
+            source.write_text(json.dumps(payload), encoding="utf-8")
+
+            data = taxmate_workbook.load_workbook_data(str(source))
+            tabs = taxmate_workbook.build_tabs(data)
+
+        self.assertEqual(["AI-ONLY-1"], [row["number"] for row in tabs["employee"]])
+        self.assertFalse(tabs["abn"])
+        self.assertFalse(tabs["bas"])
+        self.assertEqual(1, len(tabs["evidence"]))
+
     def test_csv_writer_neutralizes_formula_prefixes_in_every_cell(self) -> None:
         dangerous = ("=1+1", "+cmd", "-2+3", "@SUM(A1:A2)", " \t=hidden")
         with tempfile.TemporaryDirectory() as temporary:

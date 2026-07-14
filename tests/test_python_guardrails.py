@@ -776,6 +776,10 @@ class ReviewGuardrailTests(unittest.TestCase):
             script = root / "scripts" / "taxmate_workbook.py"
             script.parent.mkdir(parents=True)
             text = (ROOT / "scripts" / "taxmate_workbook.py").read_text(encoding="utf-8")
+            text = text.replace(
+                'return "extracted_values" in payload and set(payload).issubset(GUIDE_METADATA_KEYS)',
+                "return False",
+            )
             text = text.replace("taxmate_intake.answers_to_pack_payload(payload)", "payload")
             text = text.replace("candidate.startswith(CSV_FORMULA_PREFIXES)", "False")
             script.write_text(text, encoding="utf-8")
@@ -783,6 +787,7 @@ class ReviewGuardrailTests(unittest.TestCase):
             findings = taxmate_review_guardrails.check_workbook_output_layer(root)
 
         details = "\n".join(finding.detail for finding in findings)
+        self.assertIn('return "extracted_values" in payload', details)
         self.assertIn("taxmate_intake.answers_to_pack_payload(payload)", details)
         self.assertIn("candidate.startswith(CSV_FORMULA_PREFIXES)", details)
 

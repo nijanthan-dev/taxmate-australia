@@ -976,6 +976,8 @@ def check_taxpack_output_layer(root: Path) -> List[Finding]:
 def check_workbook_output_layer(root: Path) -> List[Finding]:
     text = read(root, "scripts/taxmate_workbook.py")
     required = [
+        "def is_guide_payload(",
+        'return "extracted_values" in payload and set(payload).issubset(GUIDE_METADATA_KEYS)',
         "def load_workbook_data(",
         "taxmate_intake.answers_to_pack_payload(payload)",
         "taxmate_taxpack.load_guide_payload(payload)",

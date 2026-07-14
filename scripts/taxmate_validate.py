@@ -3176,6 +3176,10 @@ def workbook_export_contract() -> bool:
             source = Path(temporary) / "answers.json"
             source.write_text(json.dumps(taxmate_intake.sample_answers()), encoding="utf-8")
             intake_tabs = taxmate_workbook.build_tabs(taxmate_workbook.load_workbook_data(str(source)))
+        extraction_only = {
+            "income_year": "2025-26",
+            "extracted_values": [{"number": "AI-ONLY", "field": "Reviewed", "value": 0, "status": "Evidence"}],
+        }
         return (
             set(tabs)
             == {"readme", "employee", "abn", "bas", "investments", "evidence", "accountant_review", "sources"}
@@ -3189,6 +3193,8 @@ def workbook_export_contract() -> bool:
             and bool(intake_tabs["abn"])
             and bool(intake_tabs["bas"])
             and bool(intake_tabs["investments"])
+            and taxmate_workbook.is_guide_payload(extraction_only)
+            and not taxmate_workbook.is_guide_payload(taxmate_intake.sample_answers())
             and taxmate_workbook.csv_safe_cell("=1+1") == "'=1+1"
             and taxmate_workbook.csv_safe_cell(" \t@SUM(A1:A2)") == "' \t@SUM(A1:A2)"
         )

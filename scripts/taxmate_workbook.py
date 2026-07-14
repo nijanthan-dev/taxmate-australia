@@ -29,7 +29,7 @@ ROW_COLUMNS = (
     "source_urls",
     "checked_at",
 )
-GUIDE_PAYLOAD_KEYS = frozenset(
+GUIDE_SECTION_KEYS = frozenset(
     {
         "items",
         "abn_items",
@@ -39,10 +39,9 @@ GUIDE_PAYLOAD_KEYS = frozenset(
         "partnership_items",
         "missing_facts",
         "evidence_items",
-        "generated_date",
-        "summary_note",
     }
 )
+GUIDE_METADATA_KEYS = frozenset({"income_year", "generated_date", "summary_note", "extracted_values"})
 CSV_FORMULA_PREFIXES = ("=", "+", "-", "@")
 
 
@@ -83,9 +82,15 @@ def csv_safe_cell(value: Any) -> str:
     return f"'{text}" if candidate.startswith(CSV_FORMULA_PREFIXES) else text
 
 
+def is_guide_payload(payload: Dict[str, Any]) -> bool:
+    if GUIDE_SECTION_KEYS.intersection(payload):
+        return True
+    return "extracted_values" in payload and set(payload).issubset(GUIDE_METADATA_KEYS)
+
+
 def load_workbook_data(path: str) -> taxmate_taxpack.GuideData:
     payload = taxmate_taxpack.read_json(path)
-    if not GUIDE_PAYLOAD_KEYS.intersection(payload):
+    if not is_guide_payload(payload):
         payload = taxmate_intake.answers_to_pack_payload(payload)
     return taxmate_taxpack.load_guide_payload(payload)
 
