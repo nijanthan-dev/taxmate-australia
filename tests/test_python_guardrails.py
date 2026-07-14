@@ -780,7 +780,7 @@ class ReviewGuardrailTests(unittest.TestCase):
                 "keys.issubset(GUIDE_SECTION_KEYS | GUIDE_METADATA_KEYS)",
                 "False",
             )
-            text = text.replace("all(isinstance(payload[key], list) for key in sections)", "False")
+            text = text.replace('return bool(sections) or "extracted_values" in payload', "return False")
             text = text.replace("taxmate_intake.answers_to_pack_payload(payload)", "payload")
             text = text.replace("taxmate_taxpack.row_source_entries(render_row)", "[]")
             text = text.replace("taxmate_taxpack.row_review_required(render_row)", "False")
@@ -792,7 +792,7 @@ class ReviewGuardrailTests(unittest.TestCase):
 
         details = "\n".join(finding.detail for finding in findings)
         self.assertIn("keys.issubset(GUIDE_SECTION_KEYS | GUIDE_METADATA_KEYS)", details)
-        self.assertIn("all(isinstance(payload[key], list) for key in sections)", details)
+        self.assertIn('return bool(sections) or "extracted_values" in payload', details)
         self.assertIn("taxmate_intake.answers_to_pack_payload(payload)", details)
         self.assertIn("taxmate_taxpack.row_source_entries(render_row)", details)
         self.assertIn("taxmate_taxpack.row_review_required(render_row)", details)

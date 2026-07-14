@@ -979,7 +979,7 @@ def check_workbook_output_layer(root: Path) -> List[Finding]:
     required = [
         "def is_guide_payload(",
         "keys.issubset(GUIDE_SECTION_KEYS | GUIDE_METADATA_KEYS)",
-        "all(isinstance(payload[key], list) for key in sections)",
+        'return bool(sections) or "extracted_values" in payload',
         "def load_workbook_data(",
         "taxmate_intake.answers_to_pack_payload(payload)",
         "taxmate_taxpack.load_guide_payload(payload)",

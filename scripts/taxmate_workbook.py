@@ -90,8 +90,6 @@ def is_guide_payload(payload: Dict[str, Any]) -> bool:
     if not keys.issubset(GUIDE_SECTION_KEYS | GUIDE_METADATA_KEYS):
         return False
     sections = GUIDE_SECTION_KEYS.intersection(keys)
-    if sections and not all(isinstance(payload[key], list) for key in sections):
-        return False
     return bool(sections) or "extracted_values" in payload
 
 

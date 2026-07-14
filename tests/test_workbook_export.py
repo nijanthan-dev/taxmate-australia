@@ -179,6 +179,17 @@ class WorkbookExportTests(unittest.TestCase):
         self.assertTrue(tabs["abn"])
         self.assertTrue(tabs["capital_gains"])
 
+    def test_malformed_guide_section_stays_a_review_row(self) -> None:
+        payload = {"income_year": "2025-26", "items": {"unexpected": "object"}}
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "guide.json"
+            source.write_text(json.dumps(payload), encoding="utf-8")
+
+            data = taxmate_workbook.load_workbook_data(str(source))
+            tabs = taxmate_workbook.build_tabs(data)
+
+        self.assertIn("MALFORMED-items", {row["number"] for row in tabs["accountant_review"]})
+
     def test_extracted_value_only_guide_is_not_reconverted(self) -> None:
         payload = {
             "income_year": "2025-26",
