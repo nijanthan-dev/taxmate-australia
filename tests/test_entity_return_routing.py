@@ -7,6 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import atodata
 import taxmate_intake
 import taxmate_entity_routing
+import taxmate_entity_worksheet
 import taxmate_taxpack
 
 
@@ -62,6 +63,14 @@ class EntityReturnRoutingTests(unittest.TestCase):
                 self.assertTrue(records[url]["content_verified"])
                 self.assertEqual(64, len(records[url]["content_hash"]))
                 self.assertIn(kind.title(), records[url]["title"])
+                self.assertEqual(records[url]["content_hash"], covered[url]["content_hash"])
+                self.assertEqual("metadata_only", covered[url]["status"])
+
+        for url in taxmate_entity_worksheet.DETAILED_SOURCES:
+            with self.subTest(url=url):
+                self.assertIn(url, atodata.SEED_URLS)
+                self.assertTrue(records[url]["content_verified"])
+                self.assertEqual(64, len(records[url]["content_hash"]))
                 self.assertEqual(records[url]["content_hash"], covered[url]["content_hash"])
                 self.assertEqual("metadata_only", covered[url]["status"])
 
@@ -989,6 +998,359 @@ class EntityReturnRoutingTests(unittest.TestCase):
         evidence = [row for row in payload["evidence_items"] if "statement-evidence" in row["row_kind"]]
         self.assertEqual(2, len(evidence))
         self.assertTrue(all(row["status"] == "Evidence" for row in evidence))
+
+
+class EntityWorksheetRoutingTests(unittest.TestCase):
+    def payload(self, answers):
+        return taxmate_intake.answers_to_pack_payload({"income_year": "2025-26", **answers})
+
+    def income_item(self, **overrides):
+        item = {
+            "category": "interest",
+            "description": "Business saver interest",
+            "amount": 0,
+            "evidence": ["interest-statement.pdf"],
+            "gst_bas_interaction": False,
+            "private_use": False,
+            "source_urls": ["https://example.invalid/income"],
+            "checked_at": "2026-07-15T10:00:00Z",
+        }
+        item.update(overrides)
+        return item
+
+    def deduction_item(self, **overrides):
+        item = {
+            "category": "repairs-maintenance",
+            "description": "Equipment servicing",
+            "amount": 125,
+            "evidence": ["invoice.pdf"],
+            "gst_bas_interaction": False,
+            "non_deductible": False,
+        }
+        item.update(overrides)
+        return item
+
+    def test_company_and_partnership_rows_share_contract_and_stay_isolated(self):
+        payload = self.payload({
+            "company_return": {
+                "name": "Worksheet Co",
+                "abn": "11 222 333 444",
+                "income_items": [self.income_item()],
+                "expense_items": [self.deduction_item()],
+                "income_total": 0,
+                "expense_total": 125,
+            },
+            "partnership_return": {
+                "name": "Worksheet Partnership",
+                "abn": "55 666 777 888",
+                "income_categories": [self.income_item(category="business-income")],
+                "deduction_items": [self.deduction_item(category="interest")],
+                "income_total": 0,
+                "deduction_total": 125,
+            },
+        })
+        company = [row for row in payload["company_items"] if "worksheet" in row["ato_area"].lower()]
+        partnership = [row for row in payload["partnership_items"] if "worksheet" in row["ato_area"].lower()]
+        self.assertEqual(4, len(company))
+        self.assertEqual(4, len(partnership))
+        self.assertIn("amount 0", company[0]["answer"])
+        self.assertIn("gst bas interaction false", company[0]["answer"])
+        self.assertTrue(all(row["status"] == "Accountant review" for row in company + partnership))
+        self.assertFalse(any(
+            row["row_kind"].startswith("entity-return-company")
+            or row["row_kind"].startswith("entity-return-partnership")
+            for row in payload["items"]
+        ))
+        self.assertFalse(any("total reconciliation" in row["answer"] for row in payload["evidence_items"]))
+
+    def test_alias_collections_dedupe_and_conflicting_total_fails_closed(self):
+        item = self.income_item(amount="1,000")
+        payload = self.payload({
+            "company_return": {
+                "name": "Alias Co",
+                "income_items": [item],
+                "income_categories": [dict(item)],
+                "income_total": 999,
+            },
+        })
+        rows = [row for row in payload["company_items"] if row["row_kind"] == "entity-return-company-income"]
+        self.assertEqual(2, len(rows))
+        self.assertEqual(1, len([row for row in rows if "Supplied income total" not in row["question"]]))
+        evidence = [row for row in payload["evidence_items"] if row["row_kind"] == "entity-return-company-income-evidence"]
+        self.assertTrue(any("total reconciliation" in row["answer"] for row in evidence))
+
+    def test_alias_collections_merge_complements_and_preserve_conflicts(self):
+        payload = self.payload({
+            "company_return": {
+                "name": "Merged Co",
+                "income_items": [{"category": "interest", "description": "Bank", "amount": 10}],
+                "income_categories": [{
+                    "category": "interest",
+                    "description": "Bank",
+                    "amount": 20,
+                    "evidence": ["statement.pdf"],
+                    "private_use": False,
+                }],
+            },
+        })
+        rows = [row for row in payload["company_items"] if row["row_kind"] == "entity-return-company-income"]
+        self.assertEqual(1, len(rows))
+        self.assertIn("evidence [\"statement.pdf\"]", rows[0]["answer"])
+        self.assertIn("private use false", rows[0]["answer"])
+        evidence = next(
+            row for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-company-income-evidence"
+        )
+        self.assertEqual("Accountant review", evidence["status"])
+        self.assertIn("conflicting item facts", evidence["answer"])
+
+    def test_top_level_accounting_and_gst_context_is_not_dropped(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Context Partnership",
+                "accounting_records": False,
+                "gst_bas_interaction": False,
+            },
+        })
+        row = next(
+            row for row in payload["partnership_items"]
+            if row["question"] == "Partnership accounting and GST/BAS context"
+        )
+        self.assertIn("accounting records false", row["answer"])
+        self.assertIn("gst bas interaction false", row["answer"])
+        evidence = next(
+            row for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-partnership-deduction-evidence"
+        )
+        self.assertEqual("Evidence", evidence["status"])
+        self.assertIn("accounting records", evidence["answer"])
+
+    def test_partnership_category_uses_narrow_detailed_source(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Source Partnership",
+                "income_items": [self.income_item(category="interest")],
+            },
+        })
+        row = next(row for row in payload["partnership_items"] if row["row_kind"] == "entity-return-partnership-income")
+        self.assertIn(taxmate_entity_worksheet.PARTNERSHIP_ITEMS_10_TO_15_SOURCE, row["source_urls"])
+        self.assertNotIn(taxmate_entity_worksheet.PARTNERSHIP_ITEM_5_SOURCE, row["source_urls"])
+
+    def test_blank_declined_and_malformed_collections_have_distinct_behavior(self):
+        declined = self.payload({"company_return": {"name": "No Worksheet Co", "income_items": False}})
+        self.assertFalse(any(row["row_kind"] == "entity-return-company-income" for row in declined["company_items"]))
+        self.assertFalse(any(row["row_kind"] == "entity-return-company-income-evidence" for row in declined["evidence_items"]))
+
+        blank = self.payload({"company_return": {"name": "Blank Co", "income_items": []}})
+        self.assertTrue(any(
+            row["row_kind"] == "entity-return-company-income-evidence"
+            and "income items" in row["answer"]
+            for row in blank["evidence_items"]
+        ))
+
+        blank_item = self.payload({"company_return": {"name": "Blank Item Co", "income_items": [{}]}})
+        self.assertTrue(any(
+            row["row_kind"] == "entity-return-company-income-evidence"
+            and "income items" in row["answer"]
+            for row in blank_item["evidence_items"]
+        ))
+
+        malformed = self.payload({"company_return": {"name": "Malformed Co", "income_items": [False, "bad"]}})
+        rendered = json.dumps(malformed["evidence_items"])
+        self.assertIn("false", rendered.lower())
+        self.assertIn("bad", rendered)
+
+    def test_invalid_amount_evidence_and_provenance_are_preserved(self):
+        for amount in (True, False, float("nan"), float("inf"), "NaN", "bad"):
+            with self.subTest(amount=amount):
+                payload = self.payload({
+                    "company_return": {
+                        "name": "Invalid Co",
+                        "income_items": [self.income_item(
+                            amount=amount,
+                            evidence=False,
+                            source_urls=["bad source", False],
+                            checked_at="bad date",
+                        )],
+                    },
+                })
+                row = next(row for row in payload["company_items"] if row["row_kind"] == "entity-return-company-income")
+                evidence = next(row for row in payload["evidence_items"] if row["row_kind"] == "entity-return-company-income-evidence")
+                self.assertIn(str(amount).lower(), row["answer"].lower())
+                self.assertIn("finite amount", evidence["answer"])
+                self.assertIn("evidence", evidence["answer"])
+                self.assertIn("source provenance", evidence["answer"])
+                self.assertIn("checked-at provenance", evidence["answer"])
+                self.assertNotIn("bad source", row["source_urls"])
+
+        negative = self.payload({
+            "company_return": {
+                "name": "Negative Co",
+                "income_items": [self.income_item(amount=-25)],
+                "income_total": -25,
+            },
+        })
+        negative_row = next(row for row in negative["company_items"] if row["number"] == "COMPANY-INCOME-1")
+        self.assertIn("amount -25", negative_row["answer"])
+        self.assertFalse(any(
+            "finite amount" in row["answer"]
+            for row in negative["evidence_items"]
+            if row["row_kind"] == "entity-return-company-income-evidence"
+        ))
+
+    def test_unknown_and_deferred_company_categories_remain_review(self):
+        payload = self.payload({
+            "company_return": {
+                "name": "Boundary Co",
+                "income_items": [
+                    self.income_item(category="dividends"),
+                    self.income_item(category="mystery income"),
+                ],
+                "deduction_items": [self.deduction_item(category="depreciation")],
+            },
+        })
+        evidence = [
+            row for row in payload["evidence_items"]
+            if row["row_kind"] in {
+                "entity-return-company-income-evidence",
+                "entity-return-company-deduction-evidence",
+            }
+        ]
+        rendered = " ".join(row["answer"] for row in evidence)
+        self.assertIn("out-of-scope company category (#131)", rendered)
+        self.assertIn("out-of-scope company category (#132)", rendered)
+        self.assertIn("supported category", rendered)
+        self.assertTrue(all(row["status"] == "Accountant review" for row in evidence))
+
+        with_total = self.payload({
+            "company_return": {
+                "name": "Unsupported Total Co",
+                "income_items": [self.income_item(category="mystery income", amount=10)],
+                "income_total": 10,
+            },
+        })
+        total = next(row for row in with_total["company_items"] if "TOTAL" in row["number"])
+        self.assertIn("item reconciliation unavailable", total["answer"])
+
+    def test_out_of_scope_entity_worksheet_fields_are_preserved_as_unsupported(self):
+        payload = self.payload({
+            "company_return": {
+                "name": "Capital Co",
+                "capital_allowance_items": [{"asset": "Server", "amount": 10}],
+            },
+            "trust_return": {
+                "name": "No Worksheet Trust",
+                "income_items": [self.income_item()],
+            },
+        })
+        unsupported = [
+            row for row in payload["evidence_items"]
+            if row["row_kind"] in {"entity-return-company-unsupported", "entity-return-trust-unsupported"}
+        ]
+        self.assertEqual(2, len(unsupported))
+        self.assertIn("capital_allowance_items", json.dumps(unsupported))
+        self.assertIn("income_items", json.dumps(unsupported))
+        self.assertFalse(any("worksheet" in row["ato_area"].lower() for row in payload["trust_items"]))
+
+    def test_other_category_requires_description_and_review_signals_win(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Review Partnership",
+                "income_items": [self.income_item(
+                    category="other",
+                    description="",
+                    gst_bas_interaction="unknown",
+                    psi=True,
+                    status="Evidence",
+                    review_status="Accountant review",
+                )],
+            },
+        })
+        evidence = next(row for row in payload["evidence_items"] if row["row_kind"] == "entity-return-partnership-income-evidence")
+        self.assertEqual("Accountant review", evidence["status"])
+        self.assertIn("other category description", evidence["answer"])
+
+    def test_partnership_stock_and_capital_allowance_rows_preserve_falsey_values(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Special Partnership",
+                "trading_stock": {
+                    "opening_stock": 0,
+                    "purchases": 125,
+                    "closing_stock": 0,
+                    "valuation_method": "cost",
+                    "election": False,
+                    "evidence": ["stocktake.pdf"],
+                },
+                "capital_allowance_items": [{
+                    "asset": "Server",
+                    "deduction_amount": 0,
+                    "adjustable_value": 0,
+                    "method": "decline in value supplied",
+                    "balancing_adjustment": False,
+                    "evidence": ["asset-register.csv"],
+                }],
+            },
+        })
+        stock = next(row for row in payload["partnership_items"] if row["row_kind"] == "entity-return-partnership-trading-stock")
+        capital = next(row for row in payload["partnership_items"] if row["row_kind"] == "entity-return-partnership-capital-allowance")
+        self.assertIn("opening stock 0", stock["answer"])
+        self.assertIn("election false", stock["answer"])
+        self.assertIn("deduction amount 0", capital["answer"])
+        self.assertIn("balancing adjustment false", capital["answer"])
+        self.assertFalse(any(
+            row["row_kind"] in {
+                "entity-return-partnership-trading-stock-evidence",
+                "entity-return-partnership-capital-allowance-evidence",
+            }
+            for row in payload["evidence_items"]
+        ))
+
+    def test_multiple_parent_flat_items_require_unique_association(self):
+        payload = self.payload({
+            "company_return": [{"name": "First Co", "abn": "11"}, {"name": "Second Co", "abn": "22"}],
+            "company_return_entity_name": "Second Co",
+            "company_return_income_items": [self.income_item()],
+        })
+        row = next(row for row in payload["company_items"] if row["row_kind"] == "entity-return-company-income")
+        self.assertIn("company name Second Co", row["answer"])
+        self.assertFalse(any(
+            "parent entity" in row["answer"]
+            for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-company-income-evidence"
+        ))
+
+        ambiguous = self.payload({
+            "company_return": [{"name": "First Co"}, {"name": "Second Co"}],
+            "company_return_income_items": [self.income_item()],
+        })
+        evidence = next(row for row in ambiguous["evidence_items"] if row["row_kind"] == "entity-return-company-income-evidence")
+        self.assertIn("parent entity identity", evidence["answer"])
+
+    def test_direct_renderer_keeps_all_new_row_subtypes(self):
+        subtypes = (
+            "entity-return-company-income",
+            "entity-return-company-deduction",
+            "entity-return-partnership-income",
+            "entity-return-partnership-deduction",
+            "entity-return-partnership-trading-stock",
+            "entity-return-partnership-capital-allowance",
+        )
+        for row_kind in subtypes:
+            kind = "company" if "company" in row_kind else "partnership"
+            with self.subTest(row_kind=row_kind):
+                data = taxmate_taxpack.load_guide_payload({
+                    f"{kind}_items": [{
+                        "number": "DIRECT",
+                        "row_kind": row_kind,
+                        "status": "Evidence",
+                        "review_status": "Accountant review",
+                        "facts": [{"key": "amount", "label": "Amount", "value": 0}],
+                    }],
+                })
+                item = getattr(data, f"{kind}_items")[0]
+                self.assertEqual(row_kind, item.row_kind)
+                self.assertEqual("Accountant review", item.status)
 
 
 if __name__ == "__main__":

@@ -77,6 +77,32 @@
       "notes": "Core BAS worksheet exists; WET/LCT/fuel tax/reverse charge/groups/time limits/cancellation stay review-only."
     },
     {
+      "id": "company-income-deduction-worksheet",
+      "title": "Company income and deduction worksheet",
+      "runtime_status": "structured",
+      "source_policy": "registered_metadata",
+      "source_ids": ["ato-b9d545adddf1", "ato-a64fa573ea4d"],
+      "source_concepts": ["company income", "company expenses", "accounting records", "private use", "non-deductible"],
+      "runtime_functions": ["route_entity_worksheets"],
+      "tests": ["EntityWorksheetRoutingTests", "WorkbookExportTests"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/individual-return/SKILL.md"],
+      "issue": "#130",
+      "notes": "ATO-aligned company income and expense categories render in the isolated company section. Franking, dividends, Division 7A, losses, depreciation, capital allowances, and final treatment stay Accountant review or later-slice scope."
+    },
+    {
+      "id": "partnership-income-deduction-worksheet",
+      "title": "Partnership income and deduction worksheet",
+      "runtime_status": "structured",
+      "source_policy": "registered_metadata",
+      "source_ids": ["ato-c0aea01a566d", "ato-6103bf3268d1", "ato-a943ae651c16", "ato-70ff9a6f603a", "ato-464564616822", "ato-3dab86d5e01c"],
+      "source_concepts": ["partnership income", "partnership deductions", "trading stock", "capital allowances", "accounting records"],
+      "runtime_functions": ["route_entity_worksheets"],
+      "tests": ["EntityWorksheetRoutingTests", "WorkbookExportTests"],
+      "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/individual-return/SKILL.md"],
+      "issue": "#139",
+      "notes": "ATO-aligned partnership income, deduction, trading-stock, and capital-allowance facts render in the isolated partnership section. Allocation, detailed GST/BAS, PSI determination, and final treatment stay Accountant review or later-slice scope."
+    },
+    {
       "id": "private-health-medicare-spouse-dependants",
       "title": "Private health, Medicare, spouse, dependants",
       "runtime_status": "structured",

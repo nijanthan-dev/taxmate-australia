@@ -3167,7 +3167,10 @@ def workbook_export_contract() -> bool:
                         "source_urls": [False],
                         "checked_at": 0,
                     }
-                ]
+                ],
+                "company_items": [{"number": "COMPANY-TAB", "status": "Accountant review"}],
+                "trust_items": [{"number": "TRUST-TAB", "status": "Accountant review"}],
+                "partnership_items": [{"number": "PARTNERSHIP-TAB", "status": "Accountant review"}],
             }
         )
         tabs = taxmate_workbook.build_tabs(data)
@@ -3208,9 +3211,15 @@ def workbook_export_contract() -> bool:
         return (
             set(tabs)
             == {
-                "readme", "employee", "abn", "bas", "investments", "super", "private_health", "property",
-                "capital_gains", "other", "evidence", "accountant_review", "sources",
+                "readme", "employee", "abn", "bas", "company", "trust", "partnership", "investments", "super",
+                "private_health", "property", "capital_gains", "other", "evidence", "accountant_review", "sources",
             }
+            and tabs["company"][0]["number"] == "COMPANY-TAB"
+            and tabs["trust"][0]["number"] == "TRUST-TAB"
+            and tabs["partnership"][0]["number"] == "PARTNERSHIP-TAB"
+            and not {"COMPANY-TAB", "TRUST-TAB", "PARTNERSHIP-TAB"}.intersection(
+                row["number"] for tab in ("employee", "abn", "bas", "investments") for row in tabs[tab]
+            )
             and row["number"] == "0"
             and row["question"] == "false"
             and row["answer"] == "0"

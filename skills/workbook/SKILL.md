@@ -58,6 +58,7 @@ Default tabs:
 - `Spouse or Partner - ABN`
 - `Joint / Combined`
 - `GST BAS`
+- `Company`, `Trust`, and `Partnership` entity sections when supplied
 - `ETF / Investments`
 - `Super`
 - `Private Health`

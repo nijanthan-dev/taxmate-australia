@@ -1,7 +1,7 @@
 {
   "fetched_at": "2026-06-23T08:53:57Z",
-  "refreshed_at": "2026-07-13T13:48:52Z",
-  "scope": "ATO official pages relevant to Australian FY2025-26 individual, employment, ABN/sole trader, GST/BAS, PAYG instalments, PAYG withholding, STP, TPAR, FBT, CGT, ETF/investment, crypto, rental-property records, super, and private health tax preparation.",
+  "refreshed_at": "2026-07-15T09:20:46Z",
+  "scope": "ATO official pages relevant to Australian FY2025-26 individual, employment, ABN/sole trader, GST/BAS, PAYG instalments, PAYG withholding, STP, TPAR, FBT, CGT, ETF/investment, crypto, rental-property records, super, private health, and company, trust, and partnership return skeleton, income, deduction, trading-stock, and capital-allowance preparation.",
   "records": [
     {
       "url": "https://www.ato.gov.au/individuals-and-families/your-tax-return",
@@ -3902,6 +3902,102 @@
       "content_hash": "b03d9f97a9557d9b460909b8c3130236e3a630a8a483775ac5d596a40c9d92ae",
       "content_verified": true,
       "last_checked": "2026-07-13T13:48:52Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions/instructions-to-complete-the-company-tax-return-2026/items-6-to-14/6-income",
+      "final_url": "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions/instructions-to-complete-the-company-tax-return-2026/items-6-to-14/6-income",
+      "status": 200,
+      "title": "6 Income",
+      "last_updated": "2026-05-29T22:58:00.000+00:00",
+      "raw_file": "raw/forms-and-instructions__company-tax-return-2026-instructions__instructions-to-complete-the-company-tax-return-2026__items-6-to-14__6-income__3db65ba9.html",
+      "text_file": "text/forms-and-instructions__company-tax-return-2026-instructions__instructions-to-complete-the-company-tax-return-2026__items-6-to-14__6-income__3db65ba9.txt",
+      "content_hash": "c32eebdc2efa7280f739a307edcb9c0a5a43304f85cf6226ff7d94cb703c7a97",
+      "content_verified": true,
+      "last_checked": "2026-07-15T09:20:45Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions/instructions-to-complete-the-company-tax-return-2026/items-6-to-14/6-expenses",
+      "final_url": "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions/instructions-to-complete-the-company-tax-return-2026/items-6-to-14/6-expenses",
+      "status": 200,
+      "title": "6 Expenses",
+      "last_updated": "2026-05-29T22:58:00.000+00:00",
+      "raw_file": "raw/forms-and-instructions__company-tax-return-2026-instructions__instructions-to-complete-the-company-tax-return-2026__items-6-to-14__6-expenses__69b7a604.html",
+      "text_file": "text/forms-and-instructions__company-tax-return-2026-instructions__instructions-to-complete-the-company-tax-return-2026__items-6-to-14__6-expenses__69b7a604.txt",
+      "content_hash": "9fd29fee2dca34e06ad45952c8a0d5acb675f8280373d69a64f560229b49b305",
+      "content_verified": true,
+      "last_checked": "2026-07-15T09:20:45Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-item-5/business-income-and-expenses-item-5",
+      "final_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-item-5/business-income-and-expenses-item-5",
+      "status": 200,
+      "title": "Business income and expenses \u2013 item 5",
+      "last_updated": "2026-05-29T14:00:00.000+00:00",
+      "raw_file": "raw/forms-and-instructions__partnership-tax-return-2026-instructions__instructions-to-complete-the-partnership-tax-return-2026__income-excluding-foreign-income-item__ae99f20f.html",
+      "text_file": "text/forms-and-instructions__partnership-tax-return-2026-instructions__instructions-to-complete-the-partnership-tax-return-2026__income-excluding-foreign-income-item__ae99f20f.txt",
+      "content_hash": "53b22a45ad5049724766eb17c797111285e39bc7197a8df6c8abf6dfc57737eb",
+      "content_verified": true,
+      "last_checked": "2026-07-15T09:20:45Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-items-6-to-9",
+      "final_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-items-6-to-9",
+      "status": 200,
+      "title": "Income excluding foreign income \u2013 items 6 to 9",
+      "last_updated": "2026-05-29T14:00:00.000+00:00",
+      "raw_file": "raw/forms-and-instructions__partnership-tax-return-2026-instructions__instructions-to-complete-the-partnership-tax-return-2026__income-excluding-foreign-income-item__94539d2e.html",
+      "text_file": "text/forms-and-instructions__partnership-tax-return-2026-instructions__instructions-to-complete-the-partnership-tax-return-2026__income-excluding-foreign-income-item__94539d2e.txt",
+      "content_hash": "e0bae5e08f2f37760b524f4190f79b2f49c1f58ed386e1b479c04a3e64c082be",
+      "content_verified": true,
+      "last_checked": "2026-07-15T09:20:45Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-items-10-to-15",
+      "final_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-items-10-to-15",
+      "status": 200,
+      "title": "Income excluding foreign income \u2013 items 10 to 15",
+      "last_updated": "2026-05-29T14:00:00.000+00:00",
+      "raw_file": "raw/forms-and-instructions__partnership-tax-return-2026-instructions__instructions-to-complete-the-partnership-tax-return-2026__income-excluding-foreign-income-item__d5d3a4de.html",
+      "text_file": "text/forms-and-instructions__partnership-tax-return-2026-instructions__instructions-to-complete-the-partnership-tax-return-2026__income-excluding-foreign-income-item__d5d3a4de.txt",
+      "content_hash": "111437f8f39fb1add208a914ffaaf1c4312474c3ec5d705690e3b4f5711f7825",
+      "content_verified": true,
+      "last_checked": "2026-07-15T09:20:45Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/foreign-income-items-22-to-24",
+      "final_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/foreign-income-items-22-to-24",
+      "status": 200,
+      "title": "Foreign income \u2013 items 22 to 24",
+      "last_updated": "2026-05-29T14:00:00.000+00:00",
+      "raw_file": "raw/forms-and-instructions__partnership-tax-return-2026-instructions__instructions-to-complete-the-partnership-tax-return-2026__foreign-income-items-22-to-24__47776da7.html",
+      "text_file": "text/forms-and-instructions__partnership-tax-return-2026-instructions__instructions-to-complete-the-partnership-tax-return-2026__foreign-income-items-22-to-24__47776da7.txt",
+      "content_hash": "180e9ecb866d8c076a3e0eb55931b010b7d565a4de9208f0e048d513783c66d4",
+      "content_verified": true,
+      "last_checked": "2026-07-15T09:20:46Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/deductions-items-16-to-20",
+      "final_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/deductions-items-16-to-20",
+      "status": 200,
+      "title": "Deductions \u2013 items 16 to 20",
+      "last_updated": "2026-05-29T14:00:00.000+00:00",
+      "raw_file": "raw/forms-and-instructions__partnership-tax-return-2026-instructions__instructions-to-complete-the-partnership-tax-return-2026__deductions-items-16-to-20__6eb25075.html",
+      "text_file": "text/forms-and-instructions__partnership-tax-return-2026-instructions__instructions-to-complete-the-partnership-tax-return-2026__deductions-items-16-to-20__6eb25075.txt",
+      "content_hash": "1c048655c8955f9098bc6d02c957cb7b1b79f9f74be929862d8b4eb36976264c",
+      "content_verified": true,
+      "last_checked": "2026-07-15T09:20:46Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/business-and-professional-items-items-37-to-53",
+      "final_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/business-and-professional-items-items-37-to-53",
+      "status": 200,
+      "title": "Business and professional items \u2013 items 37 to 53",
+      "last_updated": "2026-05-30T03:22:00.000+00:00",
+      "raw_file": "raw/forms-and-instructions__partnership-tax-return-2026-instructions__instructions-to-complete-the-partnership-tax-return-2026__business-and-professional-items-item__f08be8c1.html",
+      "text_file": "text/forms-and-instructions__partnership-tax-return-2026-instructions__instructions-to-complete-the-partnership-tax-return-2026__business-and-professional-items-item__f08be8c1.txt",
+      "content_hash": "904c63454ecb240137655284c6303f2340c91c5c4689c51b05072fe5fff7035d",
+      "content_verified": true,
+      "last_checked": "2026-07-15T09:20:46Z"
     }
   ],
   "failures": [

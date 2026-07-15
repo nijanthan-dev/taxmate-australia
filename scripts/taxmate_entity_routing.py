@@ -51,6 +51,16 @@ ROUTING_METADATA = {
     "entity_type", "type", "source_url", "source_urls", "checked_at",
     "status", "review_status",
 }
+SHARED_WORKSHEET_FIELDS = {
+    "income_items", "income_categories", "income", "income_total",
+    "deduction_items", "expense_items", "expense_categories", "expenses",
+    "deduction_total", "expense_total", "accounting_records",
+    "gst_bas_interaction", "entity_name", "entity_abn",
+}
+WORKSHEET_FIELDS_BY_KIND = {
+    "company": SHARED_WORKSHEET_FIELDS,
+    "partnership": SHARED_WORKSHEET_FIELDS | {"trading_stock", "capital_allowance_items"},
+}
 REQUEST_MARKER = "__entity_return_requested__"
 LEGACY_SHARE_FIELDS = {
     "trust": (
@@ -768,6 +778,14 @@ def entity_facts_present(value: Any) -> bool:
     return not _missing(value)
 
 
+def value_missing(value: Any) -> bool:
+    return _missing(value)
+
+
+def value_declined(value: Any) -> bool:
+    return _decline(value)
+
+
 def _unsupported_evidence(kind: str, unsupported: Dict[str, Any], index: int) -> Dict[str, Any]:
     return {
         "number": f"ENTITY-EVID-{index}",
@@ -781,7 +799,7 @@ def _unsupported_evidence(kind: str, unsupported: Dict[str, Any], index: int) ->
     }
 
 
-def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
+def entity_records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
     grouped = {kind: [] for kind in ALIASES}
     malformed: List[Any] = []
     for kind, aliases in ALIASES.items():
@@ -848,7 +866,7 @@ def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
 def route_entity_returns(
     answers: Dict[str, Any],
 ) -> Tuple[Dict[str, List[Dict[str, Any]]], List[Dict[str, Any]]]:
-    grouped, malformed = _records(answers)
+    grouped, malformed = entity_records(answers)
     sections = {f"{kind}_items": [] for kind in grouped}
     evidence: List[Dict[str, Any]] = []
     evidence_index = 1
@@ -877,6 +895,7 @@ def route_entity_returns(
                 if key not in FIELDS[kind]
                 and key not in ROUTING_METADATA
                 and key not in CHILD_COLLECTIONS.get(kind, ())
+                and key not in WORKSHEET_FIELDS_BY_KIND.get(kind, set())
             }
             if not facts:
                 if unsupported:

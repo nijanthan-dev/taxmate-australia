@@ -3275,6 +3275,22 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-3dab86d5e01c",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/business-and-professional-items-items-37-to-53",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/business-and-professional-items-items-37-to-53",
+      "source_title": "Business and professional items \u2013 items 37 to 53",
+      "source_last_updated": "2026-05-30T03:22:00.000+00:00",
+      "checked_at": "2026-07-15T09:20:46Z",
+      "content_hash": "904c63454ecb240137655284c6303f2340c91c5c4689c51b05072fe5fff7035d",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
+    },
+    {
       "source_id": "ato-3e78c12538af",
       "original_url": "https://www.ato.gov.au/tax-rates-and-codes",
       "canonical_url": "https://www.ato.gov.au/tax-rates-and-codes",
@@ -3799,6 +3815,22 @@
       "duplicate_of": "",
       "duplicate_evidence": "",
       "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-464564616822",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/deductions-items-16-to-20",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/deductions-items-16-to-20",
+      "source_title": "Deductions \u2013 items 16 to 20",
+      "source_last_updated": "2026-05-29T14:00:00.000+00:00",
+      "checked_at": "2026-07-15T09:20:46Z",
+      "content_hash": "1c048655c8955f9098bc6d02c957cb7b1b79f9f74be929862d8b4eb36976264c",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
     },
     {
       "source_id": "ato-4666a628bc7c",
@@ -4857,6 +4889,22 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-6103bf3268d1",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-items-6-to-9",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-items-6-to-9",
+      "source_title": "Income excluding foreign income \u2013 items 6 to 9",
+      "source_last_updated": "2026-05-29T14:00:00.000+00:00",
+      "checked_at": "2026-07-15T09:20:45Z",
+      "content_hash": "e0bae5e08f2f37760b524f4190f79b2f49c1f58ed386e1b479c04a3e64c082be",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
+    },
+    {
       "source_id": "ato-61a656e0ec6b",
       "original_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-skills-and-training-boost",
       "canonical_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-skills-and-training-boost",
@@ -5504,6 +5552,22 @@
       "duplicate_of": "",
       "duplicate_evidence": "",
       "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-70ff9a6f603a",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/foreign-income-items-22-to-24",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/foreign-income-items-22-to-24",
+      "source_title": "Foreign income \u2013 items 22 to 24",
+      "source_last_updated": "2026-05-29T14:00:00.000+00:00",
+      "checked_at": "2026-07-15T09:20:46Z",
+      "content_hash": "180e9ecb866d8c076a3e0eb55931b010b7d565a4de9208f0e048d513783c66d4",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
     },
     {
       "source_id": "ato-7169c68d6d41",
@@ -7780,6 +7844,22 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-a64fa573ea4d",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions/instructions-to-complete-the-company-tax-return-2026/items-6-to-14/6-expenses",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions/instructions-to-complete-the-company-tax-return-2026/items-6-to-14/6-expenses",
+      "source_title": "6 Expenses",
+      "source_last_updated": "2026-05-29T22:58:00.000+00:00",
+      "checked_at": "2026-07-15T09:20:45Z",
+      "content_hash": "9fd29fee2dca34e06ad45952c8a0d5acb675f8280373d69a64f560229b49b305",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
+    },
+    {
       "source_id": "ato-a656f37f40f7",
       "original_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-technology-investment-boost",
       "canonical_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-technology-investment-boost",
@@ -7849,6 +7929,22 @@
       "duplicate_of": "",
       "duplicate_evidence": "",
       "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-a943ae651c16",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-items-10-to-15",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-items-10-to-15",
+      "source_title": "Income excluding foreign income \u2013 items 10 to 15",
+      "source_last_updated": "2026-05-29T14:00:00.000+00:00",
+      "checked_at": "2026-07-15T09:20:45Z",
+      "content_hash": "111437f8f39fb1add208a914ffaaf1c4312474c3ec5d705690e3b4f5711f7825",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
     },
     {
       "source_id": "ato-aa24577ab271",
@@ -8208,7 +8304,7 @@
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/claiming-deductions",
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
-      "checked_at": "2026-07-13T13:48:52Z",
+      "checked_at": "2026-07-15T09:20:46Z",
       "content_hash": "",
       "status": "duplicate",
       "skills": [],
@@ -8423,6 +8519,22 @@
       "duplicate_of": "",
       "duplicate_evidence": "",
       "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-b9d545adddf1",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions/instructions-to-complete-the-company-tax-return-2026/items-6-to-14/6-income",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions/instructions-to-complete-the-company-tax-return-2026/items-6-to-14/6-income",
+      "source_title": "6 Income",
+      "source_last_updated": "2026-05-29T22:58:00.000+00:00",
+      "checked_at": "2026-07-15T09:20:45Z",
+      "content_hash": "c32eebdc2efa7280f739a307edcb9c0a5a43304f85cf6226ff7d94cb703c7a97",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
     },
     {
       "source_id": "ato-bace86bc17c9",
@@ -8671,6 +8783,22 @@
       "duplicate_of": "",
       "duplicate_evidence": "",
       "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-c0aea01a566d",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-item-5/business-income-and-expenses-item-5",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-item-5/business-income-and-expenses-item-5",
+      "source_title": "Business income and expenses \u2013 item 5",
+      "source_last_updated": "2026-05-29T14:00:00.000+00:00",
+      "checked_at": "2026-07-15T09:20:45Z",
+      "content_hash": "53b22a45ad5049724766eb17c797111285e39bc7197a8df6c8abf6dfc57737eb",
+      "status": "metadata_only",
+      "skills": [],
+      "references": [],
+      "covered_concepts": [],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "source topic not assigned from metadata"
     },
     {
       "source_id": "ato-c16eeaf0fff7",

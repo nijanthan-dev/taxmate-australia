@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Set
 import taxmate_taxpack
 import taxmate_handoff
 import taxmate_entity_routing
+import taxmate_entity_worksheet
 
 
 DEFAULT_INCOME_YEAR = "2025-26"
@@ -2169,7 +2170,11 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     missing_items = missing_fact_rows(answers)
     evidence_items = evidence_rows(answers, private_health_medicare)
     entity_sections, entity_evidence = taxmate_entity_routing.route_entity_returns(answers)
+    worksheet_sections, worksheet_evidence = taxmate_entity_worksheet.route_entity_worksheets(answers)
+    for key, rows in worksheet_sections.items():
+        entity_sections[key].extend(rows)
     evidence_items.extend(entity_evidence)
+    evidence_items.extend(worksheet_evidence)
     items.extend(private_health_medicare_rows(private_health_medicare))
     items.extend(deduction_rows(deductions, answers))
     items.extend(personal_super_contribution_rows(personal_super_contributions))
