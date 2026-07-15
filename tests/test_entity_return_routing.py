@@ -1668,6 +1668,22 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         )
         self.assertNotIn("partner share percentages", partnership_gaps)
 
+    def test_share_percentage_list_joins_real_allocation_context(self):
+        payload = self.payload({
+            "partnership_return": {"name": "Share List Partners"},
+            "partnership_return_share_percentages": [60, 40],
+            "partnership_return_loss_allocation_records": ["agreement.pdf"],
+        })
+        allocation = next(
+            row for row in payload["partnership_items"]
+            if row["row_kind"] == "entity-return-partnership-loss-allocation"
+        )
+        self.assertIn("share percentages [60, 40]", allocation["answer"])
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+            for row in payload["evidence_items"]
+        ))
+
     def test_nested_overlapping_review_aliases_preserve_objects(self):
         payload = self.payload({
             "partnership_return": {

@@ -887,7 +887,7 @@ def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
             ):
                 continue
             if field == "share_percentages" and (
-                not isinstance(grouped[field], dict) or not allocation_context
+                not isinstance(grouped[field], (dict, list)) or not allocation_context
             ):
                 continue
             review[field] = grouped[field]
