@@ -1563,6 +1563,10 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         self.assertIn("bas overlap false", rendered)
         self.assertIn("personal services income false", rendered)
         self.assertIn("business structure partnership", rendered)
+        self.assertEqual(1, sum(
+            row["row_kind"] == "entity-return-partnership-gst-bas"
+            for row in payload["partnership_items"]
+        ))
 
     def test_documented_flat_partnership_review_fields_are_grouped(self):
         payload = self.payload({
@@ -1582,6 +1586,10 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         })
         rows = {row["row_kind"]: row for row in payload["partnership_items"]}
         gst = rows["entity-return-partnership-gst-bas"]
+        self.assertEqual(1, sum(
+            row["row_kind"] == "entity-return-partnership-gst-bas"
+            for row in payload["partnership_items"]
+        ))
         self.assertIn("gst registered false", gst["answer"])
         self.assertIn("bas period quarterly", gst["answer"])
         self.assertIn("bas overlap true", gst["answer"])
@@ -1599,6 +1607,25 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         )
         for field in ("gst_registered", "bas_period", "bas_overlap", "psi", "business_structure"):
             self.assertNotIn(field, unsupported)
+
+    def test_flat_gst_bas_interaction_has_one_context_and_one_review_row(self):
+        payload = self.payload({
+            "partnership_return": {"name": "GST Context Partners"},
+            "partnership_return_gst_bas_interaction": False,
+            "partnership_return_gst_bas_records": ["bas.pdf"],
+        })
+        partnership = payload["partnership_items"]
+        self.assertEqual(1, sum(
+            row["question"] == "Partnership accounting and GST/BAS context"
+            for row in partnership
+        ))
+        self.assertEqual(1, sum(
+            row["row_kind"] == "entity-return-partnership-gst-bas" for row in partnership
+        ))
+        self.assertEqual(1, sum(
+            row["row_kind"] == "entity-return-partnership-gst-bas-evidence"
+            for row in payload["evidence_items"]
+        ))
 
     def test_generic_loss_allocation_maps_and_rows_require_reconciliation(self):
         for allocation in (

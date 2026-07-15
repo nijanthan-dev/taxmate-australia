@@ -180,7 +180,7 @@ COMPANY_REVIEW_SCALAR_FIELDS = {
 PARTNERSHIP_REVIEW_COLLECTIONS = {
     "loss": ("loss_items", "losses", "tax_losses", "partnership_losses"),
     "loss-allocation": ("loss_allocations", "loss_allocation", "partner_loss_allocations"),
-    "gst-bas": ("gst_bas_review", "gst_bas_details", "gst_bas_interaction"),
+    "gst-bas": ("gst_bas_review", "gst_bas_details"),
     "psi": ("psi_review", "psi_details", "personal_services_income"),
     "business-structure": (
         "business_structure_review", "business_structure", "structure_indicators",
