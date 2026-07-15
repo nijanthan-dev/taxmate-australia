@@ -146,10 +146,16 @@ CHILD_AMOUNT_FIELDS = {
     ),
 }
 CHILD_ROW_PREFIX = {"trust": "TRUST-BEN", "partnership": "PARTNER-DIST"}
+CHILD_LABEL = {"trust": "Trust beneficiary", "partnership": "Partnership partner"}
 CHILD_ROW_KIND = {
     "trust": "entity-return-trust-beneficiary-statement",
     "partnership": "entity-return-partnership-partner-statement",
 }
+CHILD_REVIEW_FIELDS = {
+    "trust": ("present_entitlement", "beneficiary_status", "status", "review_status", "accountant_review"),
+    "partnership": ("share_percentage", "income_share", "loss_share", "status", "review_status", "accountant_review"),
+}
+COMPONENT_METADATA_FIELDS = {"code", "description", "label", "name", "type"}
 
 
 def _missing(value: Any) -> bool:
@@ -164,6 +170,18 @@ def _missing(value: Any) -> bool:
     return not normalized or normalized in {
         "unknown", "unclear", "missing", "n/a", "not applicable",
     }
+
+
+def _blank(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return not value.strip()
+    if isinstance(value, dict):
+        return not value or all(_blank(item) for item in value.values())
+    if isinstance(value, list):
+        return not value or all(_blank(item) for item in value)
+    return False
 
 
 def _display(value: Any) -> str:
@@ -369,12 +387,19 @@ def _child_records(kind: str, records: List[Dict[str, Any]]) -> List[Tuple[Dict[
                 continue
             collection_supplied = True
             value = record[collection_key]
-            if _missing(value):
+            if _blank(value):
                 empty_marker = value
                 continue
             supplied_items.extend(_values(value))
         if not supplied_items and collection_supplied:
             supplied_items = [{REQUEST_MARKER: empty_marker}]
+        elif supplied_items:
+            populated_items = [
+                item
+                for item in supplied_items
+                if not isinstance(item, dict) or not _blank(item)
+            ]
+            supplied_items = populated_items or [{REQUEST_MARKER: supplied_items}]
         for raw in supplied_items:
             if not isinstance(raw, dict):
                 candidates.append(({"_malformed": raw}, None, "statement item shape"))
@@ -429,21 +454,28 @@ def _child_records(kind: str, records: List[Dict[str, Any]]) -> List[Tuple[Dict[
     return merged
 
 
-def _numeric_or_container(value: Any) -> bool:
+def _valid_amount_value(value: Any, field_name: str = "") -> bool:
     if _missing(value):
         return False
     if isinstance(value, bool):
         return True
     if isinstance(value, (int, float, Decimal)):
         return Decimal(str(value)).is_finite()
-    if isinstance(value, (dict, list)):
-        return not _missing(value)
-    if not isinstance(value, str):
-        return False
-    try:
-        return Decimal(value.strip().replace(",", "")).is_finite()
-    except InvalidOperation:
-        return False
+    if isinstance(value, dict):
+        return bool(value) and all(
+            _valid_amount_value(item, str(key))
+            for key, item in value.items()
+        )
+    if isinstance(value, list):
+        return bool(value) and all(_valid_amount_value(item) for item in value)
+    if isinstance(value, str):
+        if field_name.strip().lower() in COMPONENT_METADATA_FIELDS:
+            return bool(value.strip())
+        try:
+            return Decimal(value.strip().replace(",", "")).is_finite()
+        except InvalidOperation:
+            return False
+    return False
 
 
 def _valid_percentage(value: Any) -> bool:
@@ -484,6 +516,156 @@ def _review_signal(value: Any) -> bool:
     return False
 
 
+def _child_fact_pairs(
+    kind: str,
+    child: Dict[str, Any],
+    parent: Dict[str, Any],
+    parent_attached: bool,
+) -> List[Tuple[str, Any]]:
+    facts: List[Tuple[str, Any]] = []
+    for field in ("name", "abn"):
+        value = parent.get(field)
+        if not _missing(value):
+            facts.append((f"{kind}_{field}", value))
+    if not parent_attached:
+        for field in ("name", "abn"):
+            value = child.get(f"_parent_{field}")
+            if not _missing(value):
+                facts.append((f"{kind}_{field}", value))
+    for field in CHILD_FIELDS[kind]:
+        if field in child and field not in {"status", "review_status", "accountant_review"}:
+            facts.append((field, child[field]))
+    if "evidence" in child:
+        facts.append(("evidence", child["evidence"]))
+    return facts
+
+
+def _child_gaps(
+    kind: str,
+    child: Dict[str, Any],
+    parent_issue: Optional[str],
+) -> Tuple[List[str], List[Any], Dict[str, Any], Dict[str, Any]]:
+    gaps: List[str] = []
+    if not any(not _missing(child.get(field)) for field in ("name", "tfn", "abn")):
+        gaps.append(f"{CHILD_LABEL[kind].lower()} identity")
+    if parent_issue:
+        gaps.append(parent_issue)
+    for field in CHILD_REQUIRED[kind]:
+        if field == "evidence":
+            missing_field = field not in child or not _evidence_available(child.get(field))
+        else:
+            missing_field = field not in child or _missing(child.get(field))
+        if missing_field:
+            gaps.append(field.replace("_", " "))
+    if "statement_status" in child and not _statement_received(child["statement_status"]):
+        gaps.append("received statement")
+    for field in CHILD_AMOUNT_FIELDS[kind]:
+        if field in child and not _valid_amount_value(child[field]):
+            gaps.append(f"valid {field.replace('_', ' ')}")
+    if kind == "partnership" and "share_percentage" in child and not _valid_percentage(child["share_percentage"]):
+        gaps.append("partner share percentage between 0 and 100")
+
+    invalid_sources = child.get("_invalid_sources", [])
+    if invalid_sources:
+        gaps.append("source provenance")
+    checked_at = child.get("checked_at")
+    if "checked_at" in child and not _missing(checked_at) and not valid_checked_at(checked_at):
+        gaps.append(f"checked-at provenance ({_display(checked_at)})")
+    conflicts = child.get("_conflicts", {})
+    if conflicts:
+        gaps.append("conflicting statement facts")
+    unsupported = child.get("_unsupported", {})
+    if unsupported:
+        gaps.append("unsupported statement facts")
+    return list(dict.fromkeys(gaps)), invalid_sources, conflicts, unsupported
+
+
+def _child_row(
+    kind: str,
+    index: int,
+    child: Dict[str, Any],
+    facts: List[Tuple[str, Any]],
+) -> Dict[str, Any]:
+    label = CHILD_LABEL[kind]
+    checked_at = child.get("checked_at")
+    valid_sources = child.get("source_urls", [])
+    return {
+        "number": f"{CHILD_ROW_PREFIX[kind]}-{index}",
+        "ato_area": f"{label} statement preparation",
+        "question": f"{label} distribution statement",
+        "answer": "; ".join(f"{field.replace('_', ' ')} {_display(value)}" for field, value in facts),
+        "why_included": "Separate prep-only entity-return statement routing; no allocation, entitlement decision, tax treatment, or lodgment.",
+        "status": "Accountant review",
+        "source_urls": list(dict.fromkeys([SOURCES[kind], *valid_sources])),
+        "checked_at": checked_at if valid_checked_at(checked_at) else CHECKED_AT,
+        "row_kind": CHILD_ROW_KIND[kind],
+        "facts": [
+            {"key": field.replace("_", "-"), "label": field.replace("_", " ").title(), "value": value}
+            for field, value in facts
+        ],
+        "tab_text": f"{label} statement facts require accountant review in the separate {kind} return workflow.",
+    }
+
+
+def _child_followup_row(
+    kind: str,
+    child: Dict[str, Any],
+    gaps: List[str],
+    invalid_sources: List[Any],
+    conflicts: Dict[str, Any],
+    unsupported: Dict[str, Any],
+    evidence_index: int,
+) -> Dict[str, Any]:
+    gap_facts: List[Dict[str, Any]] = [{
+        "key": "missing",
+        "label": "Missing or ambiguous facts",
+        "value": gaps,
+    }]
+    if conflicts:
+        gap_facts.append({"key": "conflicts", "label": "Conflicting facts", "value": conflicts})
+    if unsupported:
+        gap_facts.append({"key": "unsupported", "label": "Unsupported facts", "value": unsupported})
+    if invalid_sources:
+        gap_facts.append({
+            "key": "unresolved-source-provenance",
+            "label": "Unresolved source provenance",
+            "value": invalid_sources,
+        })
+    review_required = bool(conflicts) or any(
+        _review_signal(child.get(field))
+        for field in CHILD_REVIEW_FIELDS[kind]
+    )
+    checked_at = child.get("checked_at")
+    valid_sources = child.get("source_urls", [])
+    label = CHILD_LABEL[kind]
+    return {
+        "number": f"ENTITY-EVID-{evidence_index}",
+        "ato_area": f"{label} statement evidence",
+        "question": f"{label} statement requires follow-up",
+        "answer": f"Confirm {', '.join(gaps)}",
+        "why_included": "Incomplete, conflicting, or unsupported statement facts fail closed before handoff.",
+        "status": "Accountant review" if review_required else "Evidence",
+        "source_urls": list(dict.fromkeys([SOURCES[kind], *valid_sources])),
+        "checked_at": checked_at if valid_checked_at(checked_at) else CHECKED_AT,
+        "row_kind": f"{CHILD_ROW_KIND[kind]}-evidence",
+        "facts": gap_facts,
+    }
+
+
+def _unresolved_child_row(kind: str, raw: Any, evidence_index: int) -> Dict[str, Any]:
+    label = CHILD_LABEL[kind]
+    return {
+        "number": f"ENTITY-EVID-{evidence_index}",
+        "ato_area": f"{label} statement evidence",
+        "question": f"{label} statement facts required",
+        "answer": f"Preserved unresolved statement input: {_display(raw)}",
+        "why_included": "Missing or malformed statement input fails closed instead of being treated as no distribution.",
+        "status": "Evidence", "source_urls": [SOURCES[kind]], "checked_at": CHECKED_AT,
+        "row_kind": f"{CHILD_ROW_KIND[kind]}-evidence",
+        "facts": [{"key": "raw", "label": "Raw statement input", "value": raw}],
+    }
+
+
 def _child_rows(
     kind: str,
     records: List[Dict[str, Any]],
@@ -491,126 +673,27 @@ def _child_rows(
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], int]:
     rows: List[Dict[str, Any]] = []
     evidence_rows: List[Dict[str, Any]] = []
-    label = "Trust beneficiary" if kind == "trust" else "Partnership partner"
     for index, (child, parent_index, parent_issue) in enumerate(_child_records(kind, records), start=1):
         if "_malformed" in child or "_request_marker" in child:
             raw = child.get("_malformed", child.get("_request_marker"))
-            evidence_rows.append({
-                "number": f"ENTITY-EVID-{evidence_index}",
-                "ato_area": f"{label} statement evidence",
-                "question": f"{label} statement facts required",
-                "answer": f"Preserved unresolved statement input: {_display(raw)}",
-                "why_included": "Missing or malformed statement input fails closed instead of being treated as no distribution.",
-                "status": "Evidence", "source_urls": [SOURCES[kind]], "checked_at": CHECKED_AT,
-                "row_kind": f"{CHILD_ROW_KIND[kind]}-evidence",
-                "facts": [{"key": "raw", "label": "Raw statement input", "value": raw}],
-            })
+            evidence_rows.append(_unresolved_child_row(kind, raw, evidence_index))
             evidence_index += 1
             continue
 
         parent = records[parent_index] if parent_index is not None else {}
-        facts: List[Tuple[str, Any]] = []
-        if not _missing(parent.get("name")):
-            facts.append((f"{kind}_name", parent["name"]))
-        if not _missing(parent.get("abn")):
-            facts.append((f"{kind}_abn", parent["abn"]))
-        if parent_index is None:
-            for field in ("name", "abn"):
-                value = child.get(f"_parent_{field}")
-                if not _missing(value):
-                    facts.append((f"{kind}_{field}", value))
-        for field in CHILD_FIELDS[kind]:
-            if field in child and field not in {"status", "review_status", "accountant_review"}:
-                facts.append((field, child[field]))
-        if "evidence" in child:
-            facts.append(("evidence", child["evidence"]))
-
-        gaps: List[str] = []
-        if not any(not _missing(child.get(field)) for field in ("name", "tfn", "abn")):
-            gaps.append(f"{label.lower()} identity")
-        if parent_issue:
-            gaps.append(parent_issue)
-        for field in CHILD_REQUIRED[kind]:
-            if field == "evidence":
-                missing_field = field not in child or not _evidence_available(child.get(field))
-            else:
-                missing_field = field not in child or _missing(child.get(field))
-            if missing_field:
-                gaps.append(field.replace("_", " "))
-        if "statement_status" in child and not _statement_received(child["statement_status"]):
-            gaps.append("received statement")
-        for field in CHILD_AMOUNT_FIELDS[kind]:
-            if field in child and not _numeric_or_container(child[field]):
-                gaps.append(f"valid {field.replace('_', ' ')}")
-        if kind == "partnership" and "share_percentage" in child and not _valid_percentage(child["share_percentage"]):
-            gaps.append("partner share percentage between 0 and 100")
-
-        invalid_sources = child.get("_invalid_sources", [])
-        if invalid_sources:
-            gaps.append("source provenance")
-        checked_at = child.get("checked_at")
-        if "checked_at" in child and not _missing(checked_at) and not valid_checked_at(checked_at):
-            gaps.append(f"checked-at provenance ({_display(checked_at)})")
-        conflicts = child.get("_conflicts", {})
-        if conflicts:
-            gaps.append("conflicting statement facts")
-        unsupported = child.get("_unsupported", {})
-        if unsupported:
-            gaps.append("unsupported statement facts")
-
-        review_fields = (
-            ("present_entitlement", "beneficiary_status", "status", "review_status", "accountant_review")
-            if kind == "trust"
-            else ("share_percentage", "income_share", "loss_share", "status", "review_status", "accountant_review")
-        )
-        review_required = bool(conflicts) or any(_review_signal(child.get(field)) for field in review_fields)
-        valid_sources = child.get("source_urls", [])
-        answer = "; ".join(f"{field.replace('_', ' ')} {_display(value)}" for field, value in facts)
-        row = {
-            "number": f"{CHILD_ROW_PREFIX[kind]}-{index}",
-            "ato_area": f"{label} statement preparation",
-            "question": f"{label} distribution statement",
-            "answer": answer,
-            "why_included": "Separate prep-only entity-return statement routing; no allocation, entitlement decision, tax treatment, or lodgment.",
-            "status": "Accountant review",
-            "source_urls": list(dict.fromkeys([SOURCES[kind], *valid_sources])),
-            "checked_at": checked_at if valid_checked_at(checked_at) else CHECKED_AT,
-            "row_kind": CHILD_ROW_KIND[kind],
-            "facts": [
-                {"key": field.replace("_", "-"), "label": field.replace("_", " ").title(), "value": value}
-                for field, value in facts
-            ],
-            "tab_text": f"{label} statement facts require accountant review in the separate {kind} return workflow.",
-        }
-        rows.append(row)
+        facts = _child_fact_pairs(kind, child, parent, parent_index is not None)
+        rows.append(_child_row(kind, index, child, facts))
+        gaps, invalid_sources, conflicts, unsupported = _child_gaps(kind, child, parent_issue)
         if gaps:
-            gap_facts: List[Dict[str, Any]] = [{
-                "key": "missing",
-                "label": "Missing or ambiguous facts",
-                "value": list(dict.fromkeys(gaps)),
-            }]
-            if conflicts:
-                gap_facts.append({"key": "conflicts", "label": "Conflicting facts", "value": conflicts})
-            if unsupported:
-                gap_facts.append({"key": "unsupported", "label": "Unsupported facts", "value": unsupported})
-            if invalid_sources:
-                gap_facts.append({
-                    "key": "unresolved-source-provenance",
-                    "label": "Unresolved source provenance",
-                    "value": invalid_sources,
-                })
-            evidence_rows.append({
-                "number": f"ENTITY-EVID-{evidence_index}",
-                "ato_area": f"{label} statement evidence",
-                "question": f"{label} statement requires follow-up",
-                "answer": f"Confirm {', '.join(dict.fromkeys(gaps))}",
-                "why_included": "Incomplete, conflicting, or unsupported statement facts fail closed before handoff.",
-                "status": "Accountant review" if review_required else "Evidence",
-                "source_urls": list(dict.fromkeys([SOURCES[kind], *valid_sources])),
-                "checked_at": checked_at if valid_checked_at(checked_at) else CHECKED_AT,
-                "row_kind": f"{CHILD_ROW_KIND[kind]}-evidence",
-                "facts": gap_facts,
-            })
+            evidence_rows.append(_child_followup_row(
+                kind,
+                child,
+                gaps,
+                invalid_sources,
+                conflicts,
+                unsupported,
+                evidence_index,
+            ))
             evidence_index += 1
     return rows, evidence_rows, evidence_index
 

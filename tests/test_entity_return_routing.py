@@ -656,6 +656,28 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertIn("merged note", partner[0]["answer"])
         self.assertFalse(any("statement facts required" in row["question"] for row in payload["evidence_items"]))
 
+    def test_blank_repeater_objects_do_not_create_factless_rows(self):
+        payload = self.payload({
+            "trust_return_beneficiary_statements": [{}, {"notes": ""}, self.trust_statement()],
+            "partnership_return_partner_statement_items": [{}, self.partner_statement()],
+        })
+        trust = [row for row in payload["trust_items"] if row["number"].startswith("TRUST-BEN-")]
+        partner = [row for row in payload["partnership_items"] if row["number"].startswith("PARTNER-DIST-")]
+        self.assertEqual(1, len(trust))
+        self.assertEqual(1, len(partner))
+        self.assertTrue(trust[0]["facts"])
+        self.assertTrue(partner[0]["facts"])
+
+        unknown = self.payload({
+            "trust_return_beneficiary_statements": [{}, {"statement_status": "unknown"}],
+        })
+        self.assertEqual(1, len([row for row in unknown["trust_items"] if row["number"].startswith("TRUST-BEN-")]))
+        self.assertTrue(any("received statement" in row["answer"] for row in unknown["evidence_items"]))
+
+        blank_only = self.payload({"partnership_return_partner_statements": [{}, {"notes": ""}]})
+        self.assertFalse(any(row["number"].startswith("PARTNER-DIST-") for row in blank_only["partnership_items"]))
+        self.assertTrue(any("statement facts required" in row["question"] for row in blank_only["evidence_items"]))
+
     def test_flat_prefixed_collections_attach_to_single_entity(self):
         payload = self.payload({
             "trust_return": {"name": "Flat Trust"},
@@ -792,6 +814,44 @@ class EntityReturnRoutingTests(unittest.TestCase):
                 evidence = " ".join(row["answer"] for row in payload["evidence_items"] if "statement-evidence" in row["row_kind"])
                 self.assertIn("valid income share", evidence)
                 self.assertIn("partner share percentage between 0 and 100", evidence)
+
+    def test_nested_component_amounts_validate_every_leaf(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Nested Amount Trust",
+                "beneficiary_statements": [self.trust_statement(
+                    income_components={"primary": "bad"},
+                    credits=[{"franking": "bad"}],
+                    tax_withheld={"amount": "bad"},
+                )],
+            },
+            "partnership_return": {
+                "name": "Nested Amount Partnership",
+                "partner_statements": [self.partner_statement(
+                    income_share={"primary": "bad"},
+                    loss_share=[{"amount": "bad"}],
+                    credits={"franking": "bad"},
+                    withholding={"amount": "bad"},
+                    drawings=["bad"],
+                    distributions={"cash": "bad"},
+                )],
+            },
+        })
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"] if "statement-evidence" in row["row_kind"])
+        for field in (
+            "income components", "credits", "tax withheld", "income share", "loss share",
+            "drawings", "distributions",
+        ):
+            self.assertIn(f"valid {field}", evidence)
+
+        valid = self.payload({
+            "trust_return_beneficiary_statements": [self.trust_statement(
+                income_components=[{"type": "primary", "amount": 0}],
+                credits={"franking": {"label": "franking credit", "amount": 0}},
+            )],
+        })
+        child_evidence = [row for row in valid["evidence_items"] if "statement-evidence" in row["row_kind"]]
+        self.assertFalse(any("valid income components" in row["answer"] or "valid credits" in row["answer"] for row in child_evidence))
 
     def test_explicit_evidence_denial_is_preserved_and_requires_evidence(self):
         payload = self.payload({
