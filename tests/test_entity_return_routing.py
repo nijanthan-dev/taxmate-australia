@@ -1651,6 +1651,44 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
                         for row in payload["evidence_items"]
                     ))
 
+    def test_core_share_map_does_not_create_loss_allocation_review(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Ordinary Partners",
+                "share_percentages": {"Partner A": 60, "Partner B": 40},
+            },
+        })
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-partnership-loss-allocation"
+            for row in payload["partnership_items"]
+        ))
+        partnership_gaps = " ".join(
+            row["answer"] for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-partnership-evidence"
+        )
+        self.assertNotIn("partner share percentages", partnership_gaps)
+
+    def test_bare_loss_allocation_alias_maps_reconcile_as_amounts(self):
+        for alias in ("loss_allocations", "partner_loss_allocations"):
+            with self.subTest(alias=alias):
+                payload = self.payload({
+                    "partnership_return": {
+                        "name": "Bare Map Partners",
+                        alias: {"Partner A": 600, "Partner B": 400},
+                    },
+                    "partnership_return_current_year_loss": 1000,
+                    "partnership_return_loss_allocation_records": ["agreement.pdf"],
+                })
+                allocation = next(
+                    row for row in payload["partnership_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation"
+                )
+                self.assertIn("allocation", allocation["answer"])
+                self.assertFalse(any(
+                    row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                    for row in payload["evidence_items"]
+                ))
+
     def test_percentage_strings_reconcile_in_rows_and_generic_maps(self):
         for allocation in (
             [

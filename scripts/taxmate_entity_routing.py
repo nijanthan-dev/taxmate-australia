@@ -119,6 +119,11 @@ PARTNERSHIP_REVIEW_SCALAR_FIELDS = {
     "business_structure_review": "business_structure",
 }
 PARTNERSHIP_REVIEW_PRESERVED_FLAT_FIELDS = {"gst_bas_interaction", "share_percentages"}
+PARTNERSHIP_ALLOCATION_ITEM_FIELDS = {
+    *PARTNERSHIP_REVIEW_FLAT_GROUPS["loss_allocation"],
+    "partner", "partner_name", "records", "evidence", "documents",
+    "source_url", "source_urls", "checked_at", "status", "review_status",
+}
 REQUEST_MARKER = "__entity_return_requested__"
 LEGACY_SHARE_FIELDS = {
     "trust": (
@@ -865,10 +870,20 @@ def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
     }
     for collection, fields in PARTNERSHIP_REVIEW_FLAT_GROUPS.items():
         review: Dict[str, Any] = {}
+        allocation_context = collection == "loss_allocation" and any(
+            field in grouped
+            for field in (
+                *PARTNERSHIP_REVIEW_COLLECTION_ALIASES[collection],
+                *PARTNERSHIP_REVIEW_EVIDENCE_FIELDS[collection],
+                *(field for field in fields if field != "share_percentages"),
+            )
+        )
         for field in fields:
             if field not in grouped:
                 continue
-            if field == "share_percentages" and not isinstance(grouped[field], dict):
+            if field == "share_percentages" and (
+                not isinstance(grouped[field], dict) or not allocation_context
+            ):
                 continue
             review[field] = grouped[field]
             if field not in PARTNERSHIP_REVIEW_PRESERVED_FLAT_FIELDS:
@@ -899,10 +914,17 @@ def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
                     continue
                 merged_items: List[Dict[str, Any]] = []
                 for item in items:
-                    merged = (
-                        dict(item) if isinstance(item, dict)
-                        else {PARTNERSHIP_REVIEW_SCALAR_FIELDS[collection]: item}
-                    )
+                    if (
+                        collection == "loss_allocation"
+                        and isinstance(item, dict)
+                        and not PARTNERSHIP_ALLOCATION_ITEM_FIELDS.intersection(item)
+                    ):
+                        merged = {"allocation": dict(item), "allocation_basis": "amount"}
+                    else:
+                        merged = (
+                            dict(item) if isinstance(item, dict)
+                            else {PARTNERSHIP_REVIEW_SCALAR_FIELDS[collection]: item}
+                        )
                     for key, value in review.items():
                         if key not in merged or _missing(merged[key]):
                             merged[key] = value
@@ -1066,14 +1088,15 @@ def route_entity_returns(
             ]
             if kind == "partnership" and "share_percentages" in raw:
                 values = raw["share_percentages"]
+                shares = list(values.values()) if isinstance(values, dict) else values
                 valid_values = (
-                    isinstance(values, list)
-                    and bool(values)
+                    isinstance(shares, list)
+                    and bool(shares)
                     and all(
                         isinstance(value, (int, float)) and not isinstance(value, bool)
-                        for value in values
+                        for value in shares
                     )
-                    and sum(values) == 100
+                    and sum(shares) == 100
                 )
                 if not valid_values:
                     gaps.append("partner share percentages")
