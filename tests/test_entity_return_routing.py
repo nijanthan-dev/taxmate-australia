@@ -477,6 +477,22 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertEqual(1, len(payload["company_items"]))
         self.assertIn("https://example.invalid/alias-company", payload["company_items"][0]["source_urls"])
 
+    def test_nested_and_flat_entity_sources_merge_without_missing_sentinel(self):
+        nested_source = "https://example.invalid/nested-company"
+        flat_source = "https://example.invalid/flat-company"
+        payload = self.payload({
+            "company_return": {"name": "Source Co", "source_url": nested_source},
+            "company_return_source_url": flat_source,
+        })
+        sources = payload["company_items"][0]["source_urls"]
+        self.assertIn(nested_source, sources)
+        self.assertIn(flat_source, sources)
+        self.assertNotIn(None, sources)
+        self.assertFalse(any(
+            "source provenance" in row["answer"]
+            for row in payload["evidence_items"]
+        ))
+
     def test_direct_entity_sections_force_fail_closed_status_and_kind(self):
         payload = {
             "company_items": [{"number": "DIRECT-C", "status": "Used", "facts": [], "answer": "empty"}],
@@ -1649,6 +1665,11 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         )
         self.assertIn(nested_source, loss["source_urls"])
         self.assertIn(flat_source, loss["source_urls"])
+        source_gaps = [
+            row for row in payload["evidence_items"]
+            if "source provenance" in row["answer"]
+        ]
+        self.assertEqual([], source_gaps)
 
     def test_flat_gst_bas_interaction_has_one_context_and_one_review_row(self):
         payload = self.payload({

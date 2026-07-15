@@ -346,6 +346,16 @@ def _dedupe(values: List[Any]) -> List[Any]:
     return unique
 
 
+def _merge_source_values(*values: Any) -> List[Any]:
+    supplied = [
+        item
+        for value in values
+        for item in _values(value)
+        if not _missing(item)
+    ]
+    return _dedupe(supplied)
+
+
 def _child_collection_value(left: Any, right: Any) -> List[Any]:
     values = [*_values(left), *_values(right)]
     populated = [value for value in values if not _blank(value)]
@@ -890,10 +900,9 @@ def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
                         if key not in merged or _missing(merged[key]):
                             merged[key] = value
                         elif key in {"source_url", "source_urls"}:
-                            sources = _values(merged.get("source_urls"))
-                            sources.extend(_values(merged.get("source_url")))
-                            sources.extend(_values(value))
-                            merged["source_urls"] = _dedupe(sources)
+                            merged["source_urls"] = _merge_source_values(
+                                merged.get("source_urls"), merged.get("source_url"), value,
+                            )
                         elif not worksheet_values_equivalent(key, merged[key], value):
                             merged.setdefault("_alias_conflicts", {})[key] = [merged[key], value]
                     merged_items.append(merged)
@@ -956,10 +965,9 @@ def entity_records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[
                     if key not in nested:
                         nested[key] = value
                     elif key in {"source_url", "source_urls"}:
-                        sources = _values(nested.get("source_urls"))
-                        sources.extend(_values(nested.get("source_url")))
-                        sources.extend(_values(value))
-                        nested["source_urls"] = _dedupe(sources)
+                        nested["source_urls"] = _merge_source_values(
+                            nested.get("source_urls"), nested.get("source_url"), value,
+                        )
                     elif key in CHILD_COLLECTIONS.get(kind, ()) and nested[key] != value:
                         nested[key] = _child_collection_value(nested[key], value)
                     elif not worksheet_values_equivalent(key, nested[key], value):
