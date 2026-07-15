@@ -16,7 +16,22 @@
     "income_year": "2025-26",
     "residency": "Australian",
     "deed_evidence": false,
-    "beneficiaries": 0
+    "beneficiaries": 1,
+    "beneficiary_statements": [
+      {
+        "beneficiary_name": "Synthetic Beneficiary",
+        "beneficiary_tfn": "111222333",
+        "beneficiary_type": "individual",
+        "residency_status": "Australian resident",
+        "beneficiary_status": "presently entitled beneficiary",
+        "present_entitlement": false,
+        "statement_status": "received",
+        "income_components": {"primary": 0, "non_primary": 125},
+        "credits": {"franking": 0},
+        "tax_withheld": 0,
+        "statement_files": ["synthetic-trust-statement.pdf"]
+      }
+    ]
   },
   "partnership_return": {
     "name": "Synthetic Partnership",
@@ -26,6 +41,23 @@
     "share_percentages": [50, 50],
     "business_activity": "Consulting",
     "accounting_basis": "cash",
-    "agreement_evidence": true
+    "agreement_evidence": true,
+    "partner_statements": [
+      {
+        "partner_name": "Synthetic Partner Pty Ltd",
+        "partner_abn": "11 222 333 444",
+        "partner_type": "company",
+        "partner_residency": "Australian resident",
+        "ownership_percentage": 50,
+        "statement_received": true,
+        "income_share": 0,
+        "loss_share": -25,
+        "credits": {"franking": 0},
+        "withholding": 0,
+        "drawings": 0,
+        "distributions": false,
+        "documents": ["synthetic-partner-statement.pdf"]
+      }
+    ]
   }
 }

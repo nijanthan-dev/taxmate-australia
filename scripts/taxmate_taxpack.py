@@ -297,7 +297,13 @@ def entity_section_items(
         )
         normalized["status_kind"] = normalized["status"]
         normalized["tab_kind"] = normalized["status"]
-        normalized["row_kind"] = f"entity-return-{kind}"
+        base_row_kind = f"entity-return-{kind}"
+        supplied_row_kind = str(normalized.get("row_kind", "")).strip()
+        normalized["row_kind"] = (
+            supplied_row_kind
+            if re.fullmatch(rf"{re.escape(base_row_kind)}(?:-[a-z0-9]+)*", supplied_row_kind)
+            else base_row_kind
+        )
         items.append(
             guide_item(
                 normalized,

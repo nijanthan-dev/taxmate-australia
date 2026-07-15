@@ -14,6 +14,42 @@ class EntityReturnRoutingTests(unittest.TestCase):
     def payload(self, answers):
         return taxmate_intake.answers_to_pack_payload({"income_year": "2025-26", **answers})
 
+    def trust_statement(self, **overrides):
+        row = {
+            "beneficiary_name": "Synthetic Beneficiary",
+            "beneficiary_tfn": "111222333",
+            "beneficiary_type": "individual",
+            "residency_status": "Australian resident",
+            "beneficiary_status": "presently entitled beneficiary",
+            "present_entitlement": False,
+            "statement_status": "received",
+            "income_components": {"primary": 0, "non_primary": 125},
+            "credits": {"franking": 0},
+            "tax_withheld": 0,
+            "statement_files": ["synthetic-trust-statement.pdf"],
+        }
+        row.update(overrides)
+        return row
+
+    def partner_statement(self, **overrides):
+        row = {
+            "partner_name": "Synthetic Partner",
+            "partner_abn": "11 222 333 444",
+            "partner_type": "company",
+            "partner_residency": "Australian resident",
+            "ownership_percentage": 0,
+            "statement_received": True,
+            "income_share": 0,
+            "loss_share": -25,
+            "credits": {"franking": 0},
+            "withholding": 0,
+            "drawings": 0,
+            "distributions": False,
+            "documents": ["synthetic-partner-statement.pdf"],
+        }
+        row.update(overrides)
+        return row
+
     def test_entity_sources_are_registered_with_hashes_and_coverage(self):
         root = Path(__file__).resolve().parents[1]
         registry = json.loads((root / "data/ato_knowledge_base/source_registry.json").read_text())
@@ -571,6 +607,388 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertEqual(1, len(payload["company_items"]))
         self.assertEqual(1, len(payload["trust_items"]))
         self.assertEqual(1, len(payload["partnership_items"]))
+
+    def test_nested_distribution_statements_route_to_entity_subtypes(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Synthetic Trust",
+                "beneficiary_statements": [self.trust_statement()],
+            },
+            "partnership_return": {
+                "name": "Synthetic Partnership",
+                "partner_statements": [self.partner_statement()],
+            },
+        })
+        trust = next(row for row in payload["trust_items"] if row["number"].startswith("TRUST-BEN-"))
+        partner = next(row for row in payload["partnership_items"] if row["number"].startswith("PARTNER-DIST-"))
+        self.assertEqual("entity-return-trust-beneficiary-statement", trust["row_kind"])
+        self.assertEqual("entity-return-partnership-partner-statement", partner["row_kind"])
+        self.assertIn("present entitlement false", trust["answer"])
+        self.assertIn("tax withheld 0", trust["answer"])
+        self.assertIn("share percentage 0", partner["answer"])
+        self.assertIn("loss share -25", partner["answer"])
+        self.assertIn("distributions false", partner["answer"])
+        child_evidence = [row for row in payload["evidence_items"] if "statement-evidence" in row["row_kind"]]
+        self.assertEqual([], child_evidence)
+
+    def test_collection_aliases_merge_and_empty_alias_does_not_mask_populated_alias(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Alias Trust",
+                "beneficiary_statements": [],
+                "beneficiary_statement_items": [self.trust_statement()],
+                "beneficiary_distribution_statements": [
+                    self.trust_statement(credits={"franking": 0}, notes="merged note"),
+                ],
+            },
+            "partnership_return": {
+                "name": "Alias Partnership",
+                "partner_statements": {},
+                "partner_statement_items": [self.partner_statement()],
+                "partner_distribution_statements": [self.partner_statement(notes="merged note")],
+            },
+        })
+        trust = [row for row in payload["trust_items"] if row["number"].startswith("TRUST-BEN-")]
+        partner = [row for row in payload["partnership_items"] if row["number"].startswith("PARTNER-DIST-")]
+        self.assertEqual(1, len(trust))
+        self.assertEqual(1, len(partner))
+        self.assertIn("merged note", trust[0]["answer"])
+        self.assertIn("merged note", partner[0]["answer"])
+        self.assertFalse(any("statement facts required" in row["question"] for row in payload["evidence_items"]))
+
+    def test_blank_repeater_objects_do_not_create_factless_rows(self):
+        payload = self.payload({
+            "trust_return_beneficiary_statements": [{}, {"notes": ""}, self.trust_statement()],
+            "partnership_return_partner_statement_items": [{}, self.partner_statement()],
+        })
+        trust = [row for row in payload["trust_items"] if row["number"].startswith("TRUST-BEN-")]
+        partner = [row for row in payload["partnership_items"] if row["number"].startswith("PARTNER-DIST-")]
+        self.assertEqual(1, len(trust))
+        self.assertEqual(1, len(partner))
+        self.assertTrue(trust[0]["facts"])
+        self.assertTrue(partner[0]["facts"])
+
+        unknown = self.payload({
+            "trust_return_beneficiary_statements": [{}, {"statement_status": "unknown"}],
+        })
+        self.assertEqual(1, len([row for row in unknown["trust_items"] if row["number"].startswith("TRUST-BEN-")]))
+        self.assertTrue(any("received statement" in row["answer"] for row in unknown["evidence_items"]))
+
+        blank_only = self.payload({"partnership_return_partner_statements": [{}, {"notes": ""}]})
+        self.assertFalse(any(row["number"].startswith("PARTNER-DIST-") for row in blank_only["partnership_items"]))
+        self.assertTrue(any("statement facts required" in row["question"] for row in blank_only["evidence_items"]))
+
+    def test_blank_nested_collection_does_not_mask_flat_statements(self):
+        payload = self.payload({
+            "trust_return": {"name": "Merged Trust", "beneficiary_statements": None},
+            "trust_return_beneficiary_statements": [self.trust_statement()],
+            "partnership_return": {"name": "Merged Partnership", "partner_statements": ""},
+            "partnership_return_partner_statements": [self.partner_statement()],
+        })
+        trust = [row for row in payload["trust_items"] if row["number"].startswith("TRUST-BEN-")]
+        partner = [row for row in payload["partnership_items"] if row["number"].startswith("PARTNER-DIST-")]
+        self.assertEqual(["TRUST-BEN-1"], [row["number"] for row in trust])
+        self.assertEqual(["PARTNER-DIST-1"], [row["number"] for row in partner])
+        child_evidence = [row for row in payload["evidence_items"] if "statement" in row["row_kind"]]
+        self.assertEqual([], child_evidence)
+
+    def test_flat_prefixed_collections_attach_to_single_entity(self):
+        payload = self.payload({
+            "trust_return": {"name": "Flat Trust"},
+            "trust_return_beneficiary_statements": [self.trust_statement()],
+            "partnership_return": {"name": "Flat Partnership"},
+            "partnership_return_partner_statements": [self.partner_statement()],
+        })
+        trust = next(row for row in payload["trust_items"] if row["number"].startswith("TRUST-BEN-"))
+        partner = next(row for row in payload["partnership_items"] if row["number"].startswith("PARTNER-DIST-"))
+        self.assertIn("trust name Flat Trust", trust["answer"])
+        self.assertIn("partnership name Flat Partnership", partner["answer"])
+
+    def test_multiple_parent_flat_statements_require_unique_matching(self):
+        payload = self.payload({
+            "trust_return": [{"name": "First Trust", "abn": "11"}, {"name": "Second Trust", "abn": "22"}],
+            "trust_return_beneficiary_statements": [
+                self.trust_statement(trust_abn="22"),
+                self.trust_statement(beneficiary_name="Unmatched", beneficiary_tfn="999", trust_abn="99"),
+            ],
+            "partnership_return": [{"name": "First Partnership"}, {"name": "Second Partnership"}],
+            "partnership_return_partner_statements": [
+                self.partner_statement(partnership_name="Second Partnership"),
+                self.partner_statement(partner_name="Ambiguous", partner_abn="99"),
+            ],
+        })
+        trust_rows = [row for row in payload["trust_items"] if row["number"].startswith("TRUST-BEN-")]
+        partner_rows = [row for row in payload["partnership_items"] if row["number"].startswith("PARTNER-DIST-")]
+        self.assertIn("trust name Second Trust", trust_rows[0]["answer"])
+        self.assertIn("partnership name Second Partnership", partner_rows[0]["answer"])
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+        self.assertIn("unmatched parent entity association", evidence)
+        self.assertIn("parent entity identity", evidence)
+
+    def test_nested_statement_parent_reference_conflict_fails_closed(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Parent Trust",
+                "abn": "11",
+                "beneficiary_statements": [self.trust_statement(trust_abn="22")],
+            },
+            "partnership_return": {
+                "name": "Parent Partnership",
+                "partner_statements": [self.partner_statement(partnership_name="Other Partnership")],
+            },
+        })
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"] if "statement-evidence" in row["row_kind"])
+        self.assertEqual(2, evidence.count("conflicting parent entity association"))
+
+    def test_missing_malformed_and_unsupported_statement_facts_fail_closed(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Incomplete Trust",
+                "beneficiary_statements": [
+                    {"beneficiary_name": "Incomplete", "statement_status": "missing", "mystery": 0},
+                    "bad trust row",
+                ],
+            },
+            "partnership_return": {
+                "name": "Incomplete Partnership",
+                "partner_statements": [
+                    self.partner_statement(ownership_percentage=101, income_share="bad", mystery=False),
+                    False,
+                ],
+            },
+        })
+        evidence = [row for row in payload["evidence_items"] if "statement" in row["row_kind"]]
+        rendered = " ".join(row["answer"] + json.dumps(row["facts"]) for row in evidence)
+        self.assertIn("received statement", rendered)
+        self.assertIn("partner share percentage between 0 and 100", rendered)
+        self.assertIn("valid income share", rendered)
+        self.assertIn("bad trust row", rendered)
+        self.assertIn("false", rendered.lower())
+        self.assertIn("mystery", rendered)
+
+    def test_review_status_wins_for_ambiguous_or_conflicting_statement_facts(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Review Trust",
+                "beneficiary_statements": [
+                    self.trust_statement(present_entitlement="unclear", accountant_review=True),
+                ],
+            },
+            "partnership_return": {
+                "name": "Review Partnership",
+                "partner_statements": [
+                    self.partner_statement(share_percentage=25, ownership_percentage=50),
+                ],
+            },
+        })
+        evidence = [row for row in payload["evidence_items"] if "statement-evidence" in row["row_kind"]]
+        self.assertTrue(evidence)
+        self.assertTrue(all(row["status"] == "Accountant review" for row in evidence))
+        rendered = " ".join(row["answer"] + json.dumps(row["facts"]) for row in evidence)
+        self.assertIn("present entitlement", rendered)
+        self.assertIn("conflicting statement facts", rendered)
+
+    def test_complementary_identity_aliases_merge_and_identity_conflicts_are_retained(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Merge Trust",
+                "beneficiary_statements": [self.trust_statement(beneficiary_tfn="111")],
+                "beneficiary_statement_items": [
+                    self.trust_statement(beneficiary_tfn="222", notes="same name different TFN"),
+                ],
+            },
+            "partnership_return": {
+                "name": "Merge Partnership",
+                "partner_statements": [self.partner_statement(partner_abn="111")],
+                "partner_statement_items": [
+                    self.partner_statement(partner_abn="222", notes="same name different ABN"),
+                ],
+            },
+        })
+        self.assertEqual(1, len([row for row in payload["trust_items"] if row["number"].startswith("TRUST-BEN-")]))
+        self.assertEqual(1, len([row for row in payload["partnership_items"] if row["number"].startswith("PARTNER-DIST-")]))
+        evidence = [row for row in payload["evidence_items"] if "statement-evidence" in row["row_kind"]]
+        self.assertTrue(all(row["status"] == "Accountant review" for row in evidence))
+        rendered = json.dumps(evidence)
+        self.assertIn("111", rendered)
+        self.assertIn("222", rendered)
+
+    def test_nonfinite_amounts_and_percentages_fail_closed(self):
+        for value in (float("nan"), float("inf"), "NaN", "Infinity"):
+            with self.subTest(value=value):
+                payload = self.payload({
+                    "partnership_return": {
+                        "name": "Finite Partnership",
+                        "partner_statements": [self.partner_statement(
+                            ownership_percentage=value,
+                            income_share=value,
+                        )],
+                    },
+                })
+                evidence = " ".join(row["answer"] for row in payload["evidence_items"] if "statement-evidence" in row["row_kind"])
+                self.assertIn("valid income share", evidence)
+                self.assertIn("partner share percentage between 0 and 100", evidence)
+
+    def test_nested_component_amounts_validate_every_leaf(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Nested Amount Trust",
+                "beneficiary_statements": [self.trust_statement(
+                    income_components={"primary": "bad"},
+                    credits=[{"franking": "bad"}],
+                    tax_withheld={"amount": "bad"},
+                )],
+            },
+            "partnership_return": {
+                "name": "Nested Amount Partnership",
+                "partner_statements": [self.partner_statement(
+                    income_share={"primary": "bad"},
+                    loss_share=[{"amount": "bad"}],
+                    credits={"franking": "bad"},
+                    withholding={"amount": "bad"},
+                    drawings=["bad"],
+                    distributions={"cash": "bad"},
+                )],
+            },
+        })
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"] if "statement-evidence" in row["row_kind"])
+        for field in (
+            "income components", "credits", "tax withheld", "income share", "loss share",
+            "drawings", "distributions",
+        ):
+            self.assertIn(f"valid {field}", evidence)
+
+        valid = self.payload({
+            "trust_return_beneficiary_statements": [self.trust_statement(
+                income_components=[{"type": "primary", "amount": 0}],
+                credits={"franking": {"label": "franking credit", "amount": 0}},
+            )],
+        })
+        child_evidence = [row for row in valid["evidence_items"] if "statement-evidence" in row["row_kind"]]
+        self.assertFalse(any("valid income components" in row["answer"] or "valid credits" in row["answer"] for row in child_evidence))
+
+    def test_statement_amounts_reject_booleans_and_metadata_only_components(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Boolean Amount Trust",
+                "beneficiary_statements": [self.trust_statement(
+                    income_components=[{"type": "primary"}],
+                    credits={"franking": True},
+                    tax_withheld=False,
+                )],
+            },
+            "partnership_return": {
+                "name": "Boolean Amount Partnership",
+                "partner_statements": [self.partner_statement(
+                    income_share=True,
+                    loss_share=False,
+                    credits=[{"label": "franking credit"}],
+                    withholding={"amount": True},
+                    drawings=[False],
+                    distributions={"cash": True},
+                )],
+            },
+        })
+        evidence = " ".join(
+            row["answer"]
+            for row in payload["evidence_items"]
+            if "statement-evidence" in row["row_kind"]
+        )
+        for field in (
+            "income components", "credits", "tax withheld", "income share", "loss share",
+            "drawings", "distributions",
+        ):
+            self.assertIn(f"valid {field}", evidence)
+
+    def test_explicit_evidence_denial_is_preserved_and_requires_evidence(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Evidence Trust",
+                "beneficiary_statements": [self.trust_statement(statement_files=False)],
+            },
+            "partnership_return": {
+                "name": "Evidence Partnership",
+                "partner_statements": [self.partner_statement(documents=False)],
+            },
+        })
+        rows = [
+            row
+            for key in ("trust_items", "partnership_items")
+            for row in payload[key]
+            if row["number"].startswith(("TRUST-BEN-", "PARTNER-DIST-"))
+        ]
+        self.assertTrue(all("evidence [false]" in row["answer"].lower() for row in rows))
+        evidence = [row for row in payload["evidence_items"] if "statement-evidence" in row["row_kind"]]
+        self.assertEqual(2, len(evidence))
+        self.assertTrue(all("evidence" in row["answer"] for row in evidence))
+
+    def test_invalid_statement_provenance_is_retained_without_links(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Source Trust",
+                "beneficiary_statements": [self.trust_statement(
+                    source_urls=["https://example.invalid/trust", "bad source"],
+                    checked_at="not-a-date",
+                )],
+            },
+        })
+        trust = next(row for row in payload["trust_items"] if row["number"].startswith("TRUST-BEN-"))
+        self.assertIn("https://example.invalid/trust", trust["source_urls"])
+        self.assertNotIn("bad source", trust["source_urls"])
+        evidence = next(row for row in payload["evidence_items"] if "statement-evidence" in row["row_kind"])
+        self.assertIn("source provenance", evidence["answer"])
+        self.assertIn("checked-at provenance", evidence["answer"])
+
+    def test_entity_statements_never_duplicate_individual_share_rows(self):
+        payload = self.payload({
+            "trust_return": {"name": "Entity Trust", "beneficiary_statements": [self.trust_statement()]},
+            "partnership_return": {"name": "Entity Partnership", "partner_statements": [self.partner_statement()]},
+            "trust_beneficiary_statement_items": [{"entity_name": "Individual Trust", "statement": "held", "income": 1}],
+            "partnership_share_items": [{"entity_name": "Individual Partnership", "statement": "held", "income": 2}],
+        })
+        individual = [row for row in payload["items"] if row["number"].startswith(("TRUST-SHARE-", "PART-SHARE-"))]
+        self.assertEqual(2, len(individual))
+        rendered = " ".join(row["answer"] for row in individual)
+        self.assertIn("Individual Trust", rendered)
+        self.assertIn("Individual Partnership", rendered)
+        self.assertNotIn("Entity Trust", rendered)
+        self.assertNotIn("Entity Partnership", rendered)
+
+    def test_direct_renderer_preserves_valid_statement_subtypes(self):
+        data = taxmate_taxpack.load_guide_payload({
+            "trust_items": [{
+                "number": "DIRECT-T",
+                "row_kind": "entity-return-trust-beneficiary-statement",
+                "facts": [{"key": "present-entitlement", "value": False}],
+            }],
+            "partnership_items": [{
+                "number": "DIRECT-P",
+                "row_kind": "entity-return-partnership-partner-statement",
+                "facts": [{"key": "share-percentage", "value": 0}],
+            }],
+        })
+        self.assertEqual("entity-return-trust-beneficiary-statement", data.trust_items[0].row_kind)
+        self.assertEqual("entity-return-partnership-partner-statement", data.partnership_items[0].row_kind)
+        self.assertIn(taxmate_entity_routing.SOURCES["trust"], data.trust_items[0].source_urls)
+        self.assertIn(taxmate_entity_routing.SOURCES["partnership"], data.partnership_items[0].source_urls)
+
+        invalid = taxmate_taxpack.load_guide_payload({
+            "trust_items": [{
+                "number": "DIRECT-INVALID",
+                "row_kind": "entity-return-partnership-partner-statement",
+                "facts": [{"key": "name", "value": "Wrong namespace"}],
+            }],
+        })
+        self.assertEqual("entity-return-trust", invalid.trust_items[0].row_kind)
+
+    def test_empty_statement_collections_fail_closed(self):
+        payload = self.payload({
+            "trust_return": {"name": "Empty Trust", "beneficiary_statements": []},
+            "partnership_return": {"name": "Empty Partnership", "partner_statements": None},
+        })
+        evidence = [row for row in payload["evidence_items"] if "statement-evidence" in row["row_kind"]]
+        self.assertEqual(2, len(evidence))
+        self.assertTrue(all(row["status"] == "Evidence" for row in evidence))
 
 
 if __name__ == "__main__":
