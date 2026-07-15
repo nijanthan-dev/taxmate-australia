@@ -22,7 +22,7 @@
   "repository": "https://github.com/nijanthan-dev/taxmate-australia",
   "homepage": "https://github.com/nijanthan-dev/taxmate-australia",
   "license": "Apache-2.0",
-  "version": "0.26.0",
+  "version": "0.27.0",
   "platforms": [
     "Codex",
     "Claude Code",
