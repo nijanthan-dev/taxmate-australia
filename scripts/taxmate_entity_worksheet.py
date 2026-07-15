@@ -1117,13 +1117,13 @@ def _partnership_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
         elif any(_review_signal(raw.get(field)) for field in ("bas_overlap", "gst_bas_interaction", "overlap")):
             gaps.append("BAS overlap review")
     elif section == "psi":
-        psi_fields = ("psi", "psi_indicator", "personal_services_income", "income_amount")
-        supplied_psi = [raw[field] for field in psi_fields if field in raw]
-        if not supplied_psi:
+        psi_signal_fields = ("psi", "psi_indicator", "personal_services_income")
+        supplied_signals = [raw[field] for field in psi_signal_fields if field in raw]
+        if not supplied_signals:
             gaps.append("PSI indicator")
-        elif all(_missing(value) for value in supplied_psi) or any(
+        elif all(_missing(value) for value in supplied_signals) or any(
             _review_signal(raw.get(field))
-            for field in ("psi", "psi_indicator", "personal_services_income")
+            for field in psi_signal_fields
         ):
             gaps.append("PSI uncertainty")
     elif all(_missing(raw.get(field)) for field in (

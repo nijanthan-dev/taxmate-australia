@@ -1627,6 +1627,27 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
             for row in payload["evidence_items"]
         ))
 
+    def test_psi_amount_and_records_do_not_replace_psi_indicator(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Amount Only PSI Partners",
+                "psi_review": {
+                    "income_amount": 0,
+                    "records": ["contracts.pdf"],
+                },
+            },
+        })
+        evidence = next(
+            row for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-partnership-psi-evidence"
+        )
+        self.assertIn("PSI indicator", evidence["answer"])
+        psi = next(
+            row for row in payload["partnership_items"]
+            if row["row_kind"] == "entity-return-partnership-psi"
+        )
+        self.assertIn("income amount 0", psi["answer"])
+
     def test_generic_loss_allocation_maps_and_rows_require_reconciliation(self):
         for allocation in (
             {"allocation": {"Partner A": 60, "Partner B": 50}, "evidence": ["agreement.pdf"]},
