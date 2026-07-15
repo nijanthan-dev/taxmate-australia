@@ -907,7 +907,10 @@ def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
             and (review or existing_aliases)
         ):
             review.setdefault("current_year_loss", shared_current_year_loss)
-        if not review and not (existing_aliases and metadata):
+        populated_existing_alias = any(
+            not _missing(grouped[alias]) for alias in existing_aliases
+        )
+        if not review and not populated_existing_alias:
             continue
         review.update({key: value for key, value in metadata.items() if key not in review})
         if existing_aliases:

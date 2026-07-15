@@ -1733,6 +1733,28 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
                     for row in payload["evidence_items"]
                 ))
 
+    def test_bare_loss_allocation_map_without_metadata_is_normalized(self):
+        for alias in ("loss_allocations", "partner_loss_allocations"):
+            with self.subTest(alias=alias):
+                payload = self.payload({
+                    "partnership_return": {
+                        "name": "Bare Only Partners",
+                        alias: {"Partner A": 600, "Partner B": 400},
+                    },
+                })
+                allocation = next(
+                    row for row in payload["partnership_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation"
+                )
+                self.assertIn('allocation {"Partner A": 600, "Partner B": 400}', allocation["answer"])
+                evidence = " ".join(
+                    row["answer"] for row in payload["evidence_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                )
+                self.assertNotIn("Confirm loss allocation;", evidence)
+                self.assertIn("loss amount for allocation reconciliation", evidence)
+                self.assertIn("evidence", evidence)
+
     def test_partner_identity_does_not_replace_allocation_value(self):
         payload = self.payload({
             "partnership_return": {
