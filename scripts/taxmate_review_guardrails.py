@@ -1128,6 +1128,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "PARTNERSHIP_ALLOCATION_ITEM_FIELDS = {",
                 '"allocation_percentages", "partner_percentages",',
                 'not isinstance(grouped[field], dict) or not allocation_context',
+                "field in PARTNERSHIP_REVIEW_COLLECTION_ALIASES[collection]",
                 'elif key in {"source_url", "source_urls"}:',
                 "def _merge_source_values(",
                 'shared_current_year_loss = grouped.get("current_year_loss")',

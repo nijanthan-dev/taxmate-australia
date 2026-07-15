@@ -881,6 +881,11 @@ def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
         for field in fields:
             if field not in grouped:
                 continue
+            if (
+                field in PARTNERSHIP_REVIEW_COLLECTION_ALIASES[collection]
+                and isinstance(grouped[field], (dict, list))
+            ):
+                continue
             if field == "share_percentages" and (
                 not isinstance(grouped[field], dict) or not allocation_context
             ):

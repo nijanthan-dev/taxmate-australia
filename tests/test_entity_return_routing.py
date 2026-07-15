@@ -1668,6 +1668,34 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         )
         self.assertNotIn("partner share percentages", partnership_gaps)
 
+    def test_nested_overlapping_review_aliases_preserve_objects(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Nested Alias Partners",
+                "personal_services_income": {
+                    "psi": False,
+                    "evidence": ["contracts.pdf"],
+                },
+                "business_structure": {
+                    "structure": "partnership",
+                    "evidence": ["agreement.pdf"],
+                },
+            },
+        })
+        rows = {row["row_kind"]: row for row in payload["partnership_items"]}
+        self.assertIn("psi false", rows["entity-return-partnership-psi"]["answer"])
+        self.assertIn(
+            "structure partnership",
+            rows["entity-return-partnership-business-structure"]["answer"],
+        )
+        self.assertFalse(any(
+            row["row_kind"] in {
+                "entity-return-partnership-psi-evidence",
+                "entity-return-partnership-business-structure-evidence",
+            }
+            for row in payload["evidence_items"]
+        ))
+
     def test_bare_loss_allocation_alias_maps_reconcile_as_amounts(self):
         for alias in ("loss_allocations", "partner_loss_allocations"):
             with self.subTest(alias=alias):
