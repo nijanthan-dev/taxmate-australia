@@ -1561,8 +1561,44 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         rendered = json.dumps(payload["partnership_items"])
         self.assertIn("amount 0", rendered)
         self.assertIn("bas overlap false", rendered)
-        self.assertIn("psi false", rendered)
+        self.assertIn("personal services income false", rendered)
         self.assertIn("business structure partnership", rendered)
+
+    def test_documented_flat_partnership_review_fields_are_grouped(self):
+        payload = self.payload({
+            "partnership_return": {"name": "Flat Review Partners"},
+            "partnership_return_current_year_loss": 0,
+            "partnership_return_loss_records": ["accounts.pdf"],
+            "partnership_return_gst_registered": False,
+            "partnership_return_bas_period": "quarterly",
+            "partnership_return_bas_overlap": True,
+            "partnership_return_gst_bas_records": ["bas.pdf"],
+            "partnership_return_psi": False,
+            "partnership_return_psi_evidence": ["contracts.pdf"],
+            "partnership_return_business_structure": "partnership",
+            "partnership_return_business_structure_records": ["agreement.pdf"],
+            "partnership_return_source_url": "https://www.ato.gov.au/example-review",
+            "partnership_return_checked_at": "2026-07-15T10:00:00Z",
+        })
+        rows = {row["row_kind"]: row for row in payload["partnership_items"]}
+        gst = rows["entity-return-partnership-gst-bas"]
+        self.assertIn("gst registered false", gst["answer"])
+        self.assertIn("bas period quarterly", gst["answer"])
+        self.assertIn("bas overlap true", gst["answer"])
+        self.assertIn("https://www.ato.gov.au/example-review", gst["source_urls"])
+        self.assertEqual("2026-07-15T10:00:00Z", gst["checked_at"])
+        self.assertIn("psi false", rows["entity-return-partnership-psi"]["answer"])
+        self.assertIn(
+            "business structure partnership",
+            rows["entity-return-partnership-business-structure"]["answer"],
+        )
+        self.assertIn("current year loss 0", rows["entity-return-partnership-loss"]["answer"])
+        unsupported = " ".join(
+            row["answer"] for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-partnership-unsupported"
+        )
+        for field in ("gst_registered", "bas_period", "bas_overlap", "psi", "business_structure"):
+            self.assertNotIn(field, unsupported)
 
     def test_generic_loss_allocation_maps_and_rows_require_reconciliation(self):
         for allocation in (

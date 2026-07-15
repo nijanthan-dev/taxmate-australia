@@ -78,6 +78,29 @@ WORKSHEET_FIELDS_BY_KIND = {
     for kind, fields in WORKSHEET_CONTENT_FIELDS_BY_KIND.items()
 }
 WORKSHEET_TOTAL_FIELDS = {"income_total", "deduction_total", "expense_total"}
+PARTNERSHIP_REVIEW_FLAT_GROUPS = {
+    "loss_items": ("current_year_loss", "prior_year_loss", "carried_forward_loss"),
+    "loss_allocation": (
+        "allocation", "allocations", "allocation_percentage", "share_percentage",
+        "percentage", "allocation_basis", "allocation_type", "allocated_loss",
+        "loss_amount", "total_loss",
+    ),
+    "gst_bas_review": (
+        "gst_registered", "gst_registration_status", "registration_date", "bas_period",
+        "reporting_period", "period", "bas_overlap", "gst_bas_interaction", "overlap",
+    ),
+    "psi_review": ("psi", "psi_indicator", "personal_services_income", "income_amount"),
+    "business_structure_review": (
+        "business_structure", "structure", "entity_structure", "structure_indicator",
+    ),
+}
+PARTNERSHIP_REVIEW_EVIDENCE_FIELDS = {
+    "loss_items": ("loss_records", "loss_evidence"),
+    "loss_allocation": ("loss_allocation_records", "loss_allocation_evidence"),
+    "gst_bas_review": ("gst_bas_records", "gst_bas_evidence"),
+    "psi_review": ("psi_records", "psi_evidence"),
+    "business_structure_review": ("business_structure_records", "business_structure_evidence"),
+}
 REQUEST_MARKER = "__entity_return_requested__"
 LEGACY_SHARE_FIELDS = {
     "trust": (
@@ -804,6 +827,44 @@ def _entity_request_present(answers: Dict[str, Any], kind: str) -> bool:
     )
 
 
+def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
+    grouped = dict(record)
+    metadata = {
+        key: grouped[key]
+        for key in ("source_url", "source_urls", "checked_at", "status", "review_status")
+        if key in grouped
+    }
+    for collection, fields in PARTNERSHIP_REVIEW_FLAT_GROUPS.items():
+        review: Dict[str, Any] = {}
+        for field in fields:
+            if field not in grouped:
+                continue
+            review[field] = grouped[field]
+            if field != "gst_bas_interaction":
+                grouped.pop(field)
+        for field in PARTNERSHIP_REVIEW_EVIDENCE_FIELDS[collection]:
+            if field in grouped:
+                canonical = "records" if field.endswith("_records") else "evidence"
+                review[canonical] = grouped.pop(field)
+        if not review:
+            continue
+        review.update({key: value for key, value in metadata.items() if key not in review})
+        existing = grouped.get(collection)
+        if isinstance(existing, dict):
+            merged = dict(existing)
+            for key, value in review.items():
+                if key not in merged or _missing(merged[key]):
+                    merged[key] = value
+                elif not worksheet_values_equivalent(key, merged[key], value):
+                    merged.setdefault("_alias_conflicts", {})[key] = [merged[key], value]
+            grouped[collection] = merged
+        elif existing is None:
+            grouped[collection] = review
+        else:
+            grouped[collection] = [*_values(existing), review]
+    return grouped
+
+
 def entity_facts_present(value: Any) -> bool:
     return not _missing(value)
 
@@ -884,6 +945,8 @@ def entity_records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[
         unique: List[Any] = []
         seen: set[str] = set()
         for value in values:
+            if kind == "partnership" and isinstance(value, dict):
+                value = _group_partnership_review_fields(value)
             marker = json.dumps(value, sort_keys=True, ensure_ascii=False, default=str)
             if marker in seen:
                 continue

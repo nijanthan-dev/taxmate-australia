@@ -1123,6 +1123,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 'f"entity-return-company-{section}"',
                 'section == "loss-continuity"',
                 "PARTNERSHIP_REVIEW_COLLECTIONS = {",
+                "PARTNERSHIP_REVIEW_FLAT_GROUPS = {",
+                "def _group_partnership_review_fields(",
                 "PARTNERSHIP_LOSSES_SOURCE = (",
                 "PARTNERSHIP_GST_SOURCE = (",
                 "PARTNERSHIP_BAS_SOURCE = (",
