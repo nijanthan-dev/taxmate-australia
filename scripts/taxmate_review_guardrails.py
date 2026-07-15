@@ -1129,7 +1129,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "PARTNERSHIP_PSI_SOURCE = (",
                 "def _partnership_review_gaps(",
                 "def _partnership_review_rows(",
-                "def _allocation_collection_conflict(",
+                "def _allocation_collection_gaps(",
                 'worksheet in PARTNERSHIP_REVIEW_COLLECTIONS',
                 'f"entity-return-partnership-{section}"',
                 "def _field_values_equal(",

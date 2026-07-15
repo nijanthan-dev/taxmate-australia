@@ -1564,6 +1564,44 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         self.assertIn("psi false", rendered)
         self.assertIn("business structure partnership", rendered)
 
+    def test_generic_loss_allocation_maps_and_rows_require_reconciliation(self):
+        for allocation in (
+            {"allocation": {"Partner A": 60, "Partner B": 50}, "evidence": ["agreement.pdf"]},
+            [
+                {"partner": "Partner A", "allocation": 60, "evidence": ["agreement.pdf"]},
+                {"partner": "Partner B", "allocation": 50, "evidence": ["agreement.pdf"]},
+            ],
+        ):
+            with self.subTest(allocation=allocation):
+                payload = self.payload({
+                    "partnership_return": {
+                        "name": "Allocation Partners",
+                        "loss_allocation": allocation,
+                    },
+                })
+                evidence = " ".join(
+                    row["answer"] for row in payload["evidence_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                )
+                self.assertIn("conflicting loss allocation", evidence)
+                self.assertIn("loss allocation basis", evidence)
+
+        reconciled = self.payload({
+            "partnership_return": {
+                "name": "Amount Allocation Partners",
+                "loss_allocation": {
+                    "allocation": {"Partner A": 600, "Partner B": 400},
+                    "allocation_basis": "amount",
+                    "loss_amount": 1000,
+                    "evidence": ["agreement.pdf"],
+                },
+            },
+        })
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+            for row in reconciled["evidence_items"]
+        ))
+
     def test_other_category_requires_description_and_review_signals_win(self):
         payload = self.payload({
             "partnership_return": {
