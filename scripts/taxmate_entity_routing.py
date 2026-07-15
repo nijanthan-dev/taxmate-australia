@@ -454,28 +454,34 @@ def _child_records(kind: str, records: List[Dict[str, Any]]) -> List[Tuple[Dict[
     return merged
 
 
-def _valid_amount_value(value: Any, field_name: str = "") -> bool:
+def _amount_value_state(value: Any, field_name: str = "") -> Tuple[bool, bool]:
     if _missing(value):
-        return False
+        return False, False
     if isinstance(value, bool):
-        return True
+        return False, False
     if isinstance(value, (int, float, Decimal)):
-        return Decimal(str(value)).is_finite()
+        valid = Decimal(str(value)).is_finite()
+        return valid, valid
     if isinstance(value, dict):
-        return bool(value) and all(
-            _valid_amount_value(item, str(key))
-            for key, item in value.items()
-        )
+        states = [_amount_value_state(item, str(key)) for key, item in value.items()]
+        return bool(states) and all(valid for valid, _ in states), any(amount for _, amount in states)
     if isinstance(value, list):
-        return bool(value) and all(_valid_amount_value(item) for item in value)
+        states = [_amount_value_state(item) for item in value]
+        return bool(states) and all(valid for valid, _ in states), any(amount for _, amount in states)
     if isinstance(value, str):
         if field_name.strip().lower() in COMPONENT_METADATA_FIELDS:
-            return bool(value.strip())
+            return bool(value.strip()), False
         try:
-            return Decimal(value.strip().replace(",", "")).is_finite()
+            valid = Decimal(value.strip().replace(",", "")).is_finite()
+            return valid, valid
         except InvalidOperation:
-            return False
-    return False
+            return False, False
+    return False, False
+
+
+def _valid_amount_value(value: Any, field_name: str = "") -> bool:
+    valid, has_amount = _amount_value_state(value, field_name)
+    return valid and has_amount
 
 
 def _valid_percentage(value: Any) -> bool:
@@ -560,6 +566,8 @@ def _child_gaps(
     if "statement_status" in child and not _statement_received(child["statement_status"]):
         gaps.append("received statement")
     for field in CHILD_AMOUNT_FIELDS[kind]:
+        if field == "distributions" and isinstance(child.get(field), bool):
+            continue
         if field in child and not _valid_amount_value(child[field]):
             gaps.append(f"valid {field.replace('_', ' ')}")
     if kind == "partnership" and "share_percentage" in child and not _valid_percentage(child["share_percentage"]):

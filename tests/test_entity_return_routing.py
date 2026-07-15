@@ -853,6 +853,39 @@ class EntityReturnRoutingTests(unittest.TestCase):
         child_evidence = [row for row in valid["evidence_items"] if "statement-evidence" in row["row_kind"]]
         self.assertFalse(any("valid income components" in row["answer"] or "valid credits" in row["answer"] for row in child_evidence))
 
+    def test_statement_amounts_reject_booleans_and_metadata_only_components(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Boolean Amount Trust",
+                "beneficiary_statements": [self.trust_statement(
+                    income_components=[{"type": "primary"}],
+                    credits={"franking": True},
+                    tax_withheld=False,
+                )],
+            },
+            "partnership_return": {
+                "name": "Boolean Amount Partnership",
+                "partner_statements": [self.partner_statement(
+                    income_share=True,
+                    loss_share=False,
+                    credits=[{"label": "franking credit"}],
+                    withholding={"amount": True},
+                    drawings=[False],
+                    distributions={"cash": True},
+                )],
+            },
+        })
+        evidence = " ".join(
+            row["answer"]
+            for row in payload["evidence_items"]
+            if "statement-evidence" in row["row_kind"]
+        )
+        for field in (
+            "income components", "credits", "tax withheld", "income share", "loss share",
+            "drawings", "distributions",
+        ):
+            self.assertIn(f"valid {field}", evidence)
+
     def test_explicit_evidence_denial_is_preserved_and_requires_evidence(self):
         payload = self.payload({
             "trust_return": {
