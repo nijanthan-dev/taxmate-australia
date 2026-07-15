@@ -65,7 +65,13 @@ WORKSHEET_CONTENT_FIELDS_BY_KIND = {
         "depreciating_assets", "asset_pools", "depreciation_items",
         "capital_allowance_items",
     },
-    "partnership": SHARED_WORKSHEET_CONTENT_FIELDS | {"trading_stock", "capital_allowance_items"},
+    "partnership": SHARED_WORKSHEET_CONTENT_FIELDS | {
+        "trading_stock", "capital_allowance_items", "loss_items", "losses",
+        "tax_losses", "partnership_losses", "loss_allocations", "loss_allocation",
+        "partner_loss_allocations", "gst_bas_review", "gst_bas_details",
+        "psi_review", "psi_details", "personal_services_income",
+        "business_structure_review", "business_structure", "structure_indicators",
+    },
 }
 WORKSHEET_FIELDS_BY_KIND = {
     kind: fields | WORKSHEET_ASSOCIATION_FIELDS

@@ -74,7 +74,10 @@ class EntityReturnRoutingTests(unittest.TestCase):
                 self.assertEqual(records[url]["content_hash"], covered[url]["content_hash"])
                 expected_status = (
                     "verified"
-                    if url in taxmate_entity_worksheet.COMPANY_REVIEW_SOURCES
+                    if url in (
+                        *taxmate_entity_worksheet.COMPANY_REVIEW_SOURCES,
+                        *taxmate_entity_worksheet.PARTNERSHIP_REVIEW_SOURCES,
+                    )
                     else "metadata_only"
                 )
                 self.assertEqual(expected_status, covered[url]["status"])
@@ -270,7 +273,7 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertTrue(all(row["status"] in {"Evidence", "Accountant review"} for row in evidence))
         self.assertFalse(any("franking" in row["answer"].lower() for row in payload["company_items"]))
 
-    def test_nested_alias_lists_and_flat_unsupported_facts_are_evidence_only(self):
+    def test_nested_alias_lists_keep_unsupported_and_route_partnership_losses(self):
         payload = self.payload({
             "company_intake": [{"name": "Alias Co", "dividends": False}],
             "trust_entity": {"name": "Alias Trust", "distributions": 0},
@@ -279,8 +282,12 @@ class EntityReturnRoutingTests(unittest.TestCase):
         rendered = " ".join(row["answer"] for row in payload["evidence_items"])
         self.assertIn('"dividends": false', rendered)
         self.assertIn('"distributions": 0', rendered)
-        self.assertIn('"losses": {"carried_forward": 0}', rendered)
-        self.assertEqual([], payload["partnership_items"])
+        loss = next(
+            row for row in payload["partnership_items"]
+            if row["row_kind"] == "entity-return-partnership-loss"
+        )
+        self.assertIn("carried forward 0", loss["answer"])
+        self.assertIn("finite partnership loss amount", rendered)
 
     def test_flat_aliases_and_renderer_sections_sources_and_anchors(self):
         payload = self.payload({
@@ -1451,6 +1458,111 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         evidence = json.dumps(payload["evidence_items"])
         self.assertIn("entity-return-company-loss-evidence", evidence)
         self.assertIn("entity-return-company-loss-continuity-evidence", evidence)
+
+    def test_partnership_loss_gst_bas_psi_structure_rows_are_isolated(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Review Partners",
+                "loss_items": [{
+                    "current_year_loss": 0,
+                    "records": ["accounts.pdf"],
+                }],
+                "loss_allocations": [{
+                    "allocation_percentages": {"Partner A": 60, "Partner B": 40},
+                    "evidence": ["agreement.pdf"],
+                }],
+                "gst_bas_review": {
+                    "gst_registered": False,
+                    "bas_period": "quarterly",
+                    "bas_overlap": False,
+                    "records": ["bas-workpaper.pdf"],
+                },
+                "psi_review": {
+                    "psi": False,
+                    "income_amount": 0,
+                    "evidence": ["contracts.pdf"],
+                },
+                "business_structure_review": {
+                    "business_structure": "partnership",
+                    "structure_indicator": False,
+                    "evidence": ["agreement.pdf"],
+                },
+            },
+        })
+        rows = {
+            row["row_kind"]: row for row in payload["partnership_items"]
+            if row["row_kind"].startswith("entity-return-partnership-")
+        }
+        expected = {
+            "entity-return-partnership-loss",
+            "entity-return-partnership-loss-allocation",
+            "entity-return-partnership-gst-bas",
+            "entity-return-partnership-psi",
+            "entity-return-partnership-business-structure",
+        }
+        self.assertTrue(expected.issubset(rows))
+        rendered = json.dumps(list(rows.values()))
+        self.assertIn("current year loss 0", rendered)
+        self.assertIn("gst registered false", rendered)
+        self.assertIn("psi false", rendered)
+        self.assertIn("structure indicator false", rendered)
+        self.assertTrue(all(rows[kind]["status"] == "Accountant review" for kind in expected))
+        self.assertFalse(any(
+            row["row_kind"] in expected for row in payload["items"] + payload["company_items"]
+        ))
+
+    def test_partnership_review_gaps_fail_closed_with_narrow_sources(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Incomplete Partners",
+                "losses": {"amount": "unknown", "records": False},
+                "loss_allocation": [
+                    {"partner": "Partner A", "allocation_percentage": 60, "evidence": False},
+                    {"partner": "Partner B", "allocation_percentage": 50, "evidence": False},
+                ],
+                "gst_bas_details": {"gst_registered": "unknown", "bas_overlap": True},
+                "psi_details": {"psi": "unknown", "source_urls": ["bad source"]},
+                "structure_indicators": {},
+            },
+        })
+        evidence = [
+            row for row in payload["evidence_items"]
+            if row["row_kind"].startswith("entity-return-partnership-")
+        ]
+        rendered = " ".join(row["answer"] for row in evidence)
+        for expected in (
+            "finite partnership loss amount", "conflicting loss allocation", "evidence",
+            "BAS reporting period", "BAS overlap review", "PSI uncertainty",
+            "source provenance", "business structure facts",
+        ):
+            self.assertIn(expected, rendered)
+        sources = {row["row_kind"]: row["source_urls"] for row in evidence}
+        self.assertIn(
+            taxmate_entity_worksheet.PARTNERSHIP_LOSSES_SOURCE,
+            sources["entity-return-partnership-loss-evidence"],
+        )
+        self.assertIn(
+            taxmate_entity_worksheet.PARTNERSHIP_BAS_SOURCE,
+            sources["entity-return-partnership-gst-bas-evidence"],
+        )
+        self.assertIn(
+            taxmate_entity_worksheet.PARTNERSHIP_PSI_SOURCE,
+            sources["entity-return-partnership-psi-evidence"],
+        )
+
+    def test_flat_scalar_partnership_review_aliases_preserve_falsey_facts(self):
+        payload = self.payload({
+            "partnership_return": {"name": "Scalar Partners"},
+            "partnership_return_losses": 0,
+            "partnership_return_gst_bas_review": False,
+            "partnership_return_personal_services_income": False,
+            "partnership_return_business_structure": "partnership",
+        })
+        rendered = json.dumps(payload["partnership_items"])
+        self.assertIn("amount 0", rendered)
+        self.assertIn("bas overlap false", rendered)
+        self.assertIn("psi false", rendered)
+        self.assertIn("business structure partnership", rendered)
 
     def test_other_category_requires_description_and_review_signals_win(self):
         payload = self.payload({

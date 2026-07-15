@@ -67,6 +67,26 @@ PARTNERSHIP_BUSINESS_SOURCE = (
     "instructions-to-complete-the-partnership-tax-return-2026/"
     "business-and-professional-items-items-37-to-53"
 )
+PARTNERSHIP_LOSSES_SOURCE = (
+    "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/"
+    "income-and-deductions-for-business/business-losses"
+)
+PARTNERSHIP_GST_SOURCE = (
+    "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/"
+    "gst/registering-for-gst"
+)
+PARTNERSHIP_BAS_SOURCE = (
+    "https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/"
+    "business-activity-statements-bas"
+)
+PARTNERSHIP_PSI_SOURCE = (
+    "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/"
+    "personal-services-income"
+)
+PARTNERSHIP_REVIEW_SOURCES = (
+    PARTNERSHIP_LOSSES_SOURCE, PARTNERSHIP_GST_SOURCE,
+    PARTNERSHIP_BAS_SOURCE, PARTNERSHIP_PSI_SOURCE,
+)
 DETAILED_SOURCES = tuple(dict.fromkeys((
     COMPANY_INCOME_SOURCE,
     COMPANY_DEDUCTION_SOURCE,
@@ -74,6 +94,7 @@ DETAILED_SOURCES = tuple(dict.fromkeys((
     *PARTNERSHIP_INCOME_SOURCES,
     *PARTNERSHIP_DEDUCTION_SOURCES,
     PARTNERSHIP_BUSINESS_SOURCE,
+    *PARTNERSHIP_REVIEW_SOURCES,
 )))
 
 COLLECTION_ALIASES = {
@@ -155,6 +176,29 @@ COMPANY_REVIEW_SCALAR_FIELDS = {
     "asset-pool": "pool_type",
     "depreciation": "amount",
     "capital-allowance": "amount",
+}
+PARTNERSHIP_REVIEW_COLLECTIONS = {
+    "loss": ("loss_items", "losses", "tax_losses", "partnership_losses"),
+    "loss-allocation": ("loss_allocations", "loss_allocation", "partner_loss_allocations"),
+    "gst-bas": ("gst_bas_review", "gst_bas_details", "gst_bas_interaction"),
+    "psi": ("psi_review", "psi_details", "personal_services_income"),
+    "business-structure": (
+        "business_structure_review", "business_structure", "structure_indicators",
+    ),
+}
+PARTNERSHIP_REVIEW_SCALAR_FIELDS = {
+    "loss": "amount",
+    "loss-allocation": "allocation",
+    "gst-bas": "bas_overlap",
+    "psi": "psi",
+    "business-structure": "business_structure",
+}
+PARTNERSHIP_REVIEW_SOURCE_MAP = {
+    "loss": (PARTNERSHIP_LOSSES_SOURCE,),
+    "loss-allocation": (PARTNERSHIP_LOSSES_SOURCE, PARTNERSHIP_BUSINESS_SOURCE),
+    "gst-bas": (PARTNERSHIP_GST_SOURCE, PARTNERSHIP_BAS_SOURCE),
+    "psi": (PARTNERSHIP_PSI_SOURCE,),
+    "business-structure": (PARTNERSHIP_PSI_SOURCE, PARTNERSHIP_BUSINESS_SOURCE),
 }
 CATEGORY_ALIASES = {
     "gross-payments-where-abn-not-quoted": "no-abn-withholding",
@@ -478,6 +522,8 @@ def _facts(pairs: Iterable[Tuple[str, Any]]) -> List[Dict[str, Any]]:
 def _followup_sources(kind: str, worksheet: str, item: Dict[str, Any]) -> List[str]:
     if kind == "company" and worksheet in COMPANY_REVIEW_COLLECTIONS:
         return _company_sources(worksheet, item)
+    if kind == "partnership" and worksheet in PARTNERSHIP_REVIEW_COLLECTIONS:
+        return _partnership_review_sources(worksheet, item)
     return _sources(kind, worksheet, item)
 
 
@@ -959,6 +1005,171 @@ def _company_review_rows(
     return rows, followups, counter, evidence_index
 
 
+def _partnership_review_sources(section: str, raw: Dict[str, Any]) -> List[str]:
+    valid_sources, _ = taxmate_entity_routing.source_provenance(raw)
+    return list(dict.fromkeys([
+        taxmate_entity_routing.SOURCES["partnership"],
+        *PARTNERSHIP_REVIEW_SOURCE_MAP[section],
+        *valid_sources,
+    ]))
+
+
+def _percentage_total(value: Any) -> Optional[Decimal]:
+    values = value.values() if isinstance(value, dict) else value if isinstance(value, list) else []
+    parsed = [_amount(item) for item in values]
+    return sum(parsed, Decimal("0")) if parsed and all(item is not None for item in parsed) else None
+
+
+def _allocation_collection_conflict(raw_items: List[Any]) -> bool:
+    percentages: List[Any] = []
+    for raw in raw_items:
+        if not isinstance(raw, dict):
+            continue
+        for field in ("allocation_percentage", "share_percentage", "percentage"):
+            if field in raw:
+                percentages.append(raw[field])
+                break
+    if not percentages:
+        return False
+    total = _percentage_total(percentages)
+    return total is None or total != Decimal("100")
+
+
+def _partnership_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
+    gaps: List[str] = []
+    if section == "loss":
+        money = [
+            raw[field] for field in (
+                "amount", "current_year_loss", "prior_year_loss", "carried_forward_loss",
+            ) if field in raw
+        ]
+        if not money or any(_amount(value) is None for value in money):
+            gaps.append("finite partnership loss amount")
+    elif section == "loss-allocation":
+        if all(_missing(raw.get(field)) for field in (
+            "allocation", "allocations", "allocation_percentages", "partner_percentages",
+            "share_percentages", "partner", "partner_name",
+        )):
+            gaps.append("loss allocation")
+        for field in ("allocation_percentages", "partner_percentages", "share_percentages"):
+            if field in raw:
+                total = _percentage_total(raw[field])
+                if total is None or total != Decimal("100"):
+                    gaps.append("conflicting loss allocation")
+        allocated = _amount(raw.get("allocated_loss"))
+        loss = _amount(raw.get("loss_amount"))
+        if allocated is not None and loss is not None and allocated != loss:
+            gaps.append("conflicting loss allocation")
+        if raw.get("conflicts") or raw.get("_alias_conflicts"):
+            gaps.append("conflicting loss allocation")
+    elif section == "gst-bas":
+        if all(_missing(raw.get(field)) for field in (
+            "gst_registered", "gst_registration_status", "registration_date",
+        )):
+            gaps.append("GST registration signal")
+        if all(_missing(raw.get(field)) for field in ("bas_period", "reporting_period", "period")):
+            gaps.append("BAS reporting period")
+        if all(_missing(raw.get(field)) for field in ("bas_overlap", "gst_bas_interaction", "overlap")):
+            gaps.append("BAS overlap signal")
+        elif any(_review_signal(raw.get(field)) for field in ("bas_overlap", "gst_bas_interaction", "overlap")):
+            gaps.append("BAS overlap review")
+    elif section == "psi":
+        psi_fields = ("psi", "psi_indicator", "personal_services_income", "income_amount")
+        supplied_psi = [raw[field] for field in psi_fields if field in raw]
+        if not supplied_psi:
+            gaps.append("PSI indicator")
+        elif all(_missing(value) for value in supplied_psi) or any(
+            _review_signal(raw.get(field))
+            for field in ("psi", "psi_indicator", "personal_services_income")
+        ):
+            gaps.append("PSI uncertainty")
+    elif all(_missing(raw.get(field)) for field in (
+        "business_structure", "structure", "entity_structure", "structure_indicator",
+    )):
+        gaps.append("business structure indicator")
+    elif any(_status_review_signal(raw.get(field)) for field in (
+        "business_structure", "structure", "entity_structure", "structure_indicator",
+    )):
+        gaps.append("business structure uncertainty")
+    evidence_value = raw.get("evidence", raw.get("records", raw.get("documents")))
+    if not _evidence_available(evidence_value):
+        gaps.append("evidence")
+    _, invalid_sources = taxmate_entity_routing.source_provenance(raw)
+    if invalid_sources:
+        gaps.append("source provenance")
+    checked_at = raw.get("checked_at")
+    if "checked_at" in raw and not _missing(checked_at) and not taxmate_entity_routing.valid_checked_at(checked_at):
+        gaps.append("checked-at provenance")
+    return list(dict.fromkeys(gaps))
+
+
+def _partnership_review_rows(
+    record: Dict[str, Any],
+    parent: Dict[str, Any],
+    association_gap: Optional[str],
+    section: str,
+    aliases: Tuple[str, ...],
+    counter: int,
+    evidence_index: int,
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], int, int]:
+    raw_items, blank_requested = _collection(record, aliases, preserve_falsey_scalars=True)
+    allocation_conflict = section == "loss-allocation" and _allocation_collection_conflict(raw_items)
+    rows: List[Dict[str, Any]] = []
+    followups: List[Dict[str, Any]] = []
+    if blank_requested:
+        followups.append(_line_followup(
+            "partnership", section, {}, [f"{section.replace('-', ' ')} facts"], True,
+            evidence_index,
+        ))
+        evidence_index += 1
+    for raw in raw_items:
+        counter += 1
+        if not isinstance(raw, dict):
+            raw = {PARTNERSHIP_REVIEW_SCALAR_FIELDS[section]: raw}
+        metadata = {"source_url", "source_urls", "checked_at", "status", "review_status"}
+        pairs = _identity_facts("partnership", parent, record) + [
+            (key, value) for key, value in raw.items() if key not in metadata
+        ]
+        checked_at = raw.get("checked_at")
+        rows.append({
+            "number": f"PARTNERSHIP-{section.upper()}-{counter}",
+            "ato_area": f"Partnership {section.replace('-', ' ')} review",
+            "question": f"Partnership {section.replace('-', ' ')} facts",
+            "answer": "; ".join(
+                f"{key.replace('_', ' ')} {_display(value)}" for key, value in pairs
+            ),
+            "why_included": (
+                "Prep-only partnership fact; loss allocation, GST/BAS, PSI, structure, "
+                "and final treatment remain accountant decisions."
+            ),
+            "status": "Accountant review",
+            "source_urls": _partnership_review_sources(section, raw),
+            "checked_at": (
+                checked_at if taxmate_entity_routing.valid_checked_at(checked_at)
+                else taxmate_entity_routing.CHECKED_AT
+            ),
+            "row_kind": f"entity-return-partnership-{section}",
+            "facts": _facts(pairs),
+            "tab_text": f"Partnership {section.replace('-', ' ')} facts require accountant review.",
+        })
+        gaps = ([association_gap] if association_gap else []) + _partnership_review_gaps(section, raw)
+        if allocation_conflict:
+            gaps.append("conflicting loss allocation")
+        if gaps:
+            valid_sources, invalid_sources = taxmate_entity_routing.source_provenance(raw)
+            source_item = {
+                "source_urls": valid_sources,
+                "invalid_sources": invalid_sources,
+                "checked_at": checked_at,
+            }
+            followups.append(_line_followup(
+                "partnership", section, source_item, list(dict.fromkeys(gaps)), True,
+                evidence_index,
+            ))
+            evidence_index += 1
+    return rows, followups, counter, evidence_index
+
+
 def route_entity_worksheets(
     answers: Dict[str, Any],
 ) -> Tuple[Dict[str, List[Dict[str, Any]]], List[Dict[str, Any]]]:
@@ -970,6 +1181,7 @@ def route_entity_worksheets(
         "partnership-income": 0, "partnership-deduction": 0,
         "partnership-trading_stock": 0, "partnership-capital_allowance_items": 0,
         **{f"company-{section}": 0 for section in COMPANY_REVIEW_COLLECTIONS},
+        **{f"partnership-{section}": 0 for section in PARTNERSHIP_REVIEW_COLLECTIONS},
     }
     evidence_index = 1
     for kind in ("company", "partnership"):
@@ -1009,6 +1221,14 @@ def route_entity_worksheets(
                     rows, followups, counters[f"partnership-{field}"], evidence_index = _special_rows(
                         record, parent, association_gap, field,
                         counters[f"partnership-{field}"], evidence_index,
+                    )
+                    sections["partnership_items"].extend(rows)
+                    evidence.extend(followups)
+                for section, aliases in PARTNERSHIP_REVIEW_COLLECTIONS.items():
+                    key = f"partnership-{section}"
+                    rows, followups, counters[key], evidence_index = _partnership_review_rows(
+                        record, parent, association_gap, section, aliases,
+                        counters[key], evidence_index,
                     )
                     sections["partnership_items"].extend(rows)
                     evidence.extend(followups)

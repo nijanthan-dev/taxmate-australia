@@ -17548,6 +17548,10 @@ class RuntimeCoverageTests(unittest.TestCase):
         self.assertEqual(2, by_id["company-losses-assets"]["source_count"])
         self.assertEqual("structured", by_id["partnership-income-deduction-worksheet"]["runtime_status"])
         self.assertGreater(by_id["partnership-income-deduction-worksheet"]["source_count"], 0)
+        self.assertEqual("structured", by_id["partnership-loss-gst-bas-psi"]["runtime_status"])
+        self.assertEqual("verified", by_id["partnership-loss-gst-bas-psi"]["source_policy"])
+        self.assertEqual("#140", by_id["partnership-loss-gst-bas-psi"]["issue"])
+        self.assertEqual(4, by_id["partnership-loss-gst-bas-psi"]["source_count"])
 
     def test_runtime_coverage_manifest_validates(self) -> None:
         ok, errors = taxmate_coverage.validate_manifest(ROOT)

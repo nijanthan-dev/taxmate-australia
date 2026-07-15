@@ -116,6 +116,19 @@
       "notes": "ATO-aligned partnership income, deduction, trading-stock, and capital-allowance facts render in the isolated partnership section. Allocation, detailed GST/BAS, PSI determination, and final treatment stay Accountant review or later-slice scope."
     },
     {
+      "id": "partnership-loss-gst-bas-psi",
+      "title": "Partnership losses, GST/BAS, PSI, and structure review",
+      "runtime_status": "structured",
+      "source_policy": "verified",
+      "source_ids": ["ato-2f746e834538", "ato-2f6d3ca4047b", "ato-c16eeaf0fff7", "ato-628feb0880a4"],
+      "source_concepts": ["partnership losses", "loss allocation", "GST registration", "BAS period", "BAS overlap", "personal services income", "business structure"],
+      "runtime_functions": ["_partnership_review_rows", "_partnership_review_gaps", "route_entity_worksheets"],
+      "tests": ["EntityWorksheetRoutingTests", "WorkbookExportTests"],
+      "docs": ["README.md", "docs/INDIVIDUAL_RETURN_PREP.md"],
+      "issue": "#140",
+      "notes": "Prep-only partnership loss, allocation, GST/BAS, PSI, and structure facts render in isolated partnership rows. Missing records and unknown amounts stay Evidence or Accountant review; allocation conflicts, BAS overlap, PSI, and structure uncertainty stay Accountant review. No final deductibility, BAS lodgment, PSI, agreement, or allocation decision."
+    },
+    {
       "id": "private-health-medicare-spouse-dependants",
       "title": "Private health, Medicare, spouse, dependants",
       "runtime_status": "structured",
