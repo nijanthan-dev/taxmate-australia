@@ -1712,6 +1712,49 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
             for row in payload["evidence_items"]
         ))
 
+    def test_review_alias_conflicts_queue_every_partnership_section(self):
+        cases = (
+            (
+                "loss_items", {"current_year_loss": 0, "records": ["accounts.pdf"]},
+                "current_year_loss", 100,
+                "entity-return-partnership-loss-evidence",
+            ),
+            (
+                "gst_bas_review", {
+                    "gst_registered": False, "bas_period": "quarterly",
+                    "bas_overlap": False, "records": ["bas.pdf"],
+                },
+                "gst_registered", True,
+                "entity-return-partnership-gst-bas-evidence",
+            ),
+            (
+                "psi_review", {"psi": False, "evidence": ["contracts.pdf"]},
+                "psi", True,
+                "entity-return-partnership-psi-evidence",
+            ),
+            (
+                "business_structure_review", {
+                    "business_structure": "partnership", "evidence": ["agreement.pdf"],
+                },
+                "business_structure", "company",
+                "entity-return-partnership-business-structure-evidence",
+            ),
+        )
+        for collection, nested, flat_field, flat_value, row_kind in cases:
+            with self.subTest(collection=collection):
+                payload = self.payload({
+                    "partnership_return": {
+                        "name": "Conflicting Alias Partners",
+                        collection: nested,
+                    },
+                    f"partnership_return_{flat_field}": flat_value,
+                })
+                evidence = next(
+                    row for row in payload["evidence_items"]
+                    if row["row_kind"] == row_kind
+                )
+                self.assertIn("conflicting review aliases", evidence["answer"])
+
     def test_bare_loss_allocation_alias_maps_reconcile_as_amounts(self):
         for alias in ("loss_allocations", "partner_loss_allocations"):
             with self.subTest(alias=alias):

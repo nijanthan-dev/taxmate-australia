@@ -1136,6 +1136,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def _numeric_total(value: Any, *, percentages: bool = False)",
                 '"share_percentages", "allocated_loss", "allocation_percentage",',
                 "gaps.append(\"allocation partner\")",
+                'gaps.append("conflicting review aliases")',
                 "def _group_partnership_review_fields(",
                 "PARTNERSHIP_LOSSES_SOURCE = (",
                 "PARTNERSHIP_GST_SOURCE = (",

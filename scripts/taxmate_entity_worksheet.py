@@ -1155,6 +1155,8 @@ def _partnership_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
         "business_structure", "structure", "entity_structure", "structure_indicator",
     )):
         gaps.append("business structure uncertainty")
+    if raw.get("_alias_conflicts") and section != "loss-allocation":
+        gaps.append("conflicting review aliases")
     evidence_value = raw.get("evidence", raw.get("records", raw.get("documents")))
     if not _evidence_available(evidence_value):
         gaps.append("evidence")
