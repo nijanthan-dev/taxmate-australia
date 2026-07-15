@@ -101,6 +101,22 @@ PARTNERSHIP_REVIEW_EVIDENCE_FIELDS = {
     "psi_review": ("psi_records", "psi_evidence"),
     "business_structure_review": ("business_structure_records", "business_structure_evidence"),
 }
+PARTNERSHIP_REVIEW_COLLECTION_ALIASES = {
+    "loss_items": ("loss_items", "losses", "tax_losses", "partnership_losses"),
+    "loss_allocation": ("loss_allocation", "loss_allocations", "partner_loss_allocations"),
+    "gst_bas_review": ("gst_bas_review", "gst_bas_details"),
+    "psi_review": ("psi_review", "psi_details", "personal_services_income"),
+    "business_structure_review": (
+        "business_structure_review", "business_structure", "structure_indicators",
+    ),
+}
+PARTNERSHIP_REVIEW_SCALAR_FIELDS = {
+    "loss_items": "amount",
+    "loss_allocation": "allocation",
+    "gst_bas_review": "bas_overlap",
+    "psi_review": "psi",
+    "business_structure_review": "business_structure",
+}
 REQUEST_MARKER = "__entity_return_requested__"
 LEGACY_SHARE_FIELDS = {
     "trust": (
@@ -849,19 +865,32 @@ def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
         if not review:
             continue
         review.update({key: value for key, value in metadata.items() if key not in review})
-        existing = grouped.get(collection)
-        if isinstance(existing, dict):
-            merged = dict(existing)
-            for key, value in review.items():
-                if key not in merged or _missing(merged[key]):
-                    merged[key] = value
-                elif not worksheet_values_equivalent(key, merged[key], value):
-                    merged.setdefault("_alias_conflicts", {})[key] = [merged[key], value]
-            grouped[collection] = merged
-        elif existing is None:
-            grouped[collection] = review
+        existing_aliases = [
+            alias for alias in PARTNERSHIP_REVIEW_COLLECTION_ALIASES[collection]
+            if alias in grouped
+        ]
+        if existing_aliases:
+            for alias in existing_aliases:
+                existing = grouped[alias]
+                items = _values(existing)
+                if not items:
+                    grouped[alias] = [review] if isinstance(existing, list) else review
+                    continue
+                merged_items: List[Dict[str, Any]] = []
+                for item in items:
+                    merged = (
+                        dict(item) if isinstance(item, dict)
+                        else {PARTNERSHIP_REVIEW_SCALAR_FIELDS[collection]: item}
+                    )
+                    for key, value in review.items():
+                        if key not in merged or _missing(merged[key]):
+                            merged[key] = value
+                        elif not worksheet_values_equivalent(key, merged[key], value):
+                            merged.setdefault("_alias_conflicts", {})[key] = [merged[key], value]
+                    merged_items.append(merged)
+                grouped[alias] = merged_items if isinstance(existing, list) else merged_items[0]
         else:
-            grouped[collection] = [*_values(existing), review]
+            grouped[collection] = review
     return grouped
 
 

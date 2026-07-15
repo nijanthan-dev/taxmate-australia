@@ -1124,6 +1124,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 'section == "loss-continuity"',
                 "PARTNERSHIP_REVIEW_COLLECTIONS = {",
                 "PARTNERSHIP_REVIEW_FLAT_GROUPS = {",
+                "PARTNERSHIP_REVIEW_COLLECTION_ALIASES = {",
                 "def _group_partnership_review_fields(",
                 "PARTNERSHIP_LOSSES_SOURCE = (",
                 "PARTNERSHIP_GST_SOURCE = (",

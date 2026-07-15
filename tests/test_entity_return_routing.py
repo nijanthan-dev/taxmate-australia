@@ -1648,6 +1648,51 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         )
         self.assertIn("income amount 0", psi["answer"])
 
+    def test_flat_scalar_review_aliases_merge_group_specific_evidence(self):
+        payload = self.payload({
+            "partnership_return": {"name": "Evidence Merge Partners"},
+            "partnership_return_losses": 0,
+            "partnership_return_loss_records": ["accounts.pdf"],
+            "partnership_return_personal_services_income": False,
+            "partnership_return_psi_evidence": ["contracts.pdf"],
+            "partnership_return_business_structure": "partnership",
+            "partnership_return_business_structure_records": ["agreement.pdf"],
+        })
+        rows = {row["row_kind"]: row for row in payload["partnership_items"]}
+        self.assertIn("amount 0", rows["entity-return-partnership-loss"]["answer"])
+        self.assertIn("records", rows["entity-return-partnership-loss"]["answer"])
+        self.assertIn(
+            "personal services income false",
+            rows["entity-return-partnership-psi"]["answer"],
+        )
+        self.assertIn("evidence", rows["entity-return-partnership-psi"]["answer"])
+        self.assertFalse(any(
+            row["row_kind"] in {
+                "entity-return-partnership-loss-evidence",
+                "entity-return-partnership-psi-evidence",
+                "entity-return-partnership-business-structure-evidence",
+            }
+            for row in payload["evidence_items"]
+        ))
+
+    def test_empty_review_alias_preserves_group_specific_evidence(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Empty Alias Partners",
+                "losses": [],
+            },
+            "partnership_return_loss_records": ["accounts.pdf"],
+        })
+        loss = next(
+            row for row in payload["partnership_items"]
+            if row["row_kind"] == "entity-return-partnership-loss"
+        )
+        self.assertIn("records", loss["answer"])
+        self.assertTrue(any(
+            row["row_kind"] == "entity-return-partnership-loss-evidence"
+            for row in payload["evidence_items"]
+        ))
+
     def test_generic_loss_allocation_maps_and_rows_require_reconciliation(self):
         for allocation in (
             {"allocation": {"Partner A": 60, "Partner B": 50}, "evidence": ["agreement.pdf"]},
