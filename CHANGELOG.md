@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.25.0...v0.26.0) (2026-07-15)
+
+
+### Features
+
+* add entity income worksheets ([#156](https://github.com/nijanthan-dev/taxmate-australia/issues/156)) ([b16da55](https://github.com/nijanthan-dev/taxmate-australia/commit/b16da55729b37e6800b64a9778a70736386035fa))
+
 ## [0.25.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.24.0...v0.25.0) (2026-07-15)
 
 
