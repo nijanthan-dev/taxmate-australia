@@ -1128,6 +1128,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 '"allocation_percentages", "partner_percentages",',
                 'elif key in {"source_url", "source_urls"}:',
                 "def _merge_source_values(",
+                'shared_current_year_loss = grouped.get("current_year_loss")',
                 "def _group_partnership_review_fields(",
                 "PARTNERSHIP_LOSSES_SOURCE = (",
                 "PARTNERSHIP_GST_SOURCE = (",

@@ -857,6 +857,7 @@ def _entity_request_present(answers: Dict[str, Any], kind: str) -> bool:
 
 def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
     grouped = dict(record)
+    shared_current_year_loss = grouped.get("current_year_loss")
     metadata = {
         key: grouped[key]
         for key in ("source_url", "source_urls", "checked_at", "status", "review_status")
@@ -880,6 +881,12 @@ def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
             alias for alias in PARTNERSHIP_REVIEW_COLLECTION_ALIASES[collection]
             if alias in grouped
         ]
+        if (
+            collection == "loss_allocation"
+            and not _missing(shared_current_year_loss)
+            and (review or existing_aliases)
+        ):
+            review.setdefault("current_year_loss", shared_current_year_loss)
         if not review and not (existing_aliases and metadata):
             continue
         review.update({key: value for key, value in metadata.items() if key not in review})

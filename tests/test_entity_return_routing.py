@@ -1817,6 +1817,31 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
                 )
                 self.assertEqual(conflict_expected, "conflicting loss allocation" in evidence)
 
+        for second_amount, conflict_expected in ((400, False), (500, True)):
+            with self.subTest(flat_current_year_loss=second_amount):
+                rows = self.payload({
+                    "partnership_return": {
+                        "name": "Flat Loss Allocation Partners",
+                        "loss_allocations": [
+                            {
+                                "partner": "Partner A", "allocated_loss": 600,
+                                "evidence": ["agreement.pdf"],
+                            },
+                            {
+                                "partner": "Partner B", "allocated_loss": second_amount,
+                                "evidence": ["agreement.pdf"],
+                            },
+                        ],
+                    },
+                    "partnership_return_current_year_loss": 1000,
+                })
+                evidence = " ".join(
+                    row["answer"] for row in rows["evidence_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                )
+                self.assertEqual(conflict_expected, "conflicting loss allocation" in evidence)
+                self.assertNotIn("loss amount for allocation reconciliation", evidence)
+
     def test_other_category_requires_description_and_review_signals_win(self):
         payload = self.payload({
             "partnership_return": {
