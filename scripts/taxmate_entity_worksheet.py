@@ -1014,7 +1014,7 @@ def _partnership_review_sources(section: str, raw: Dict[str, Any]) -> List[str]:
     ]))
 
 
-def _percentage_total(value: Any) -> Optional[Decimal]:
+def _numeric_total(value: Any) -> Optional[Decimal]:
     values = value.values() if isinstance(value, dict) else value if isinstance(value, list) else []
     parsed = [_amount(item) for item in values]
     return sum(parsed, Decimal("0")) if parsed and all(item is not None for item in parsed) else None
@@ -1023,6 +1023,7 @@ def _percentage_total(value: Any) -> Optional[Decimal]:
 def _allocation_collection_gaps(raw_items: List[Any]) -> List[str]:
     percentages: List[Any] = []
     generic: List[Any] = []
+    allocated_amounts: List[Any] = []
     bases: set[str] = set()
     loss_amounts: List[Decimal] = []
     for raw in raw_items:
@@ -1035,6 +1036,8 @@ def _allocation_collection_gaps(raw_items: List[Any]) -> List[str]:
             parsed_loss = _amount(raw.get(field))
             if parsed_loss is not None:
                 loss_amounts.append(parsed_loss)
+        if "allocated_loss" in raw:
+            allocated_amounts.append(raw["allocated_loss"])
         for field in ("allocation_percentage", "share_percentage", "percentage"):
             if field in raw:
                 percentages.append(raw[field])
@@ -1046,10 +1049,10 @@ def _allocation_collection_gaps(raw_items: List[Any]) -> List[str]:
             generic.extend(value.values() if isinstance(value, dict) else value if isinstance(value, list) else [value])
             break
     gaps: List[str] = []
-    if percentages and _percentage_total(percentages) != Decimal("100"):
+    if percentages and _numeric_total(percentages) != Decimal("100"):
         gaps.append("conflicting loss allocation")
     if generic:
-        total = _percentage_total(generic)
+        total = _numeric_total(generic)
         if not bases:
             if total != Decimal("100"):
                 gaps.append("conflicting loss allocation")
@@ -1066,6 +1069,16 @@ def _allocation_collection_gaps(raw_items: List[Any]) -> List[str]:
                 gaps.append("conflicting loss allocation")
         else:
             gaps.append("loss allocation basis")
+    if allocated_amounts:
+        allocated_total = _numeric_total(allocated_amounts)
+        if not loss_amounts:
+            gaps.append("loss amount for allocation reconciliation")
+        elif (
+            allocated_total is None
+            or len(set(loss_amounts)) != 1
+            or allocated_total != loss_amounts[0]
+        ):
+            gaps.append("conflicting loss allocation")
     return gaps
 
 
@@ -1087,13 +1100,9 @@ def _partnership_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
             gaps.append("loss allocation")
         for field in ("allocation_percentages", "partner_percentages", "share_percentages"):
             if field in raw:
-                total = _percentage_total(raw[field])
+                total = _numeric_total(raw[field])
                 if total is None or total != Decimal("100"):
                     gaps.append("conflicting loss allocation")
-        allocated = _amount(raw.get("allocated_loss"))
-        loss = _amount(raw.get("loss_amount"))
-        if allocated is not None and loss is not None and allocated != loss:
-            gaps.append("conflicting loss allocation")
         if raw.get("conflicts") or raw.get("_alias_conflicts"):
             gaps.append("conflicting loss allocation")
     elif section == "gst-bas":
