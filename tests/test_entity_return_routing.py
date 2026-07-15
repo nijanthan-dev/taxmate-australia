@@ -72,7 +72,12 @@ class EntityReturnRoutingTests(unittest.TestCase):
                 self.assertTrue(records[url]["content_verified"])
                 self.assertEqual(64, len(records[url]["content_hash"]))
                 self.assertEqual(records[url]["content_hash"], covered[url]["content_hash"])
-                self.assertEqual("metadata_only", covered[url]["status"])
+                expected_status = (
+                    "verified"
+                    if url in taxmate_entity_worksheet.COMPANY_REVIEW_SOURCES
+                    else "metadata_only"
+                )
+                self.assertEqual(expected_status, covered[url]["status"])
 
     def test_no_entity_has_no_entity_sections(self):
         payload = self.payload({
@@ -1264,7 +1269,7 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         ]
         rendered = " ".join(row["answer"] for row in evidence)
         self.assertIn("out-of-scope company category (#131)", rendered)
-        self.assertIn("out-of-scope company category (#132)", rendered)
+        self.assertNotIn("out-of-scope company category (#132)", rendered)
         self.assertIn("supported category", rendered)
         self.assertTrue(all(row["status"] == "Accountant review" for row in evidence))
 
@@ -1293,10 +1298,159 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
             row for row in payload["evidence_items"]
             if row["row_kind"] in {"entity-return-company-unsupported", "entity-return-trust-unsupported"}
         ]
-        self.assertEqual(2, len(unsupported))
-        self.assertIn("capital_allowance_items", json.dumps(unsupported))
+        self.assertEqual(1, len(unsupported))
         self.assertIn("income_items", json.dumps(unsupported))
+        self.assertTrue(any(
+            row["row_kind"] == "entity-return-company-capital-allowance"
+            for row in payload["company_items"]
+        ))
         self.assertFalse(any("worksheet" in row["ato_area"].lower() for row in payload["trust_items"]))
+
+    def test_company_losses_assets_and_allowances_are_isolated_review_rows(self):
+        payload = self.payload({
+            "company_return": {
+                "name": "Review Assets Co",
+                "loss_items": [{
+                    "income_year": "2024-25",
+                    "prior_year_loss": 0,
+                    "carried_forward_loss": 1250,
+                    "records": ["loss-schedule.pdf"],
+                }],
+                "loss_continuity": {
+                    "continuity_of_ownership": False,
+                    "business_continuity": "unclear",
+                    "control_change": False,
+                    "evidence": ["share-register.pdf"],
+                },
+                "asset_items": [{
+                    "asset": "Server",
+                    "cost": 0,
+                    "mixed_use": False,
+                    "instant_asset_write_off": False,
+                    "evidence": ["invoice.pdf"],
+                }],
+                "asset_pools": [{
+                    "pool_type": "general small business pool",
+                    "opening_value": 0,
+                    "additions": 500,
+                    "closing_value": 500,
+                    "records": ["pool-register.csv"],
+                }],
+                "depreciation_items": [{
+                    "asset": "Server",
+                    "deduction_amount": 0,
+                    "method": "decline in value supplied",
+                    "evidence": ["asset-register.csv"],
+                }],
+                "capital_allowance_items": [{
+                    "category": "software pool",
+                    "adjustable_value": 0,
+                    "method": "supplied method",
+                    "evidence": ["capital-allowances.csv"],
+                }],
+            },
+        })
+        kinds = {
+            row["row_kind"] for row in payload["company_items"]
+            if row["row_kind"].startswith("entity-return-company-")
+        }
+        self.assertTrue({
+            "entity-return-company-loss",
+            "entity-return-company-loss-continuity",
+            "entity-return-company-asset",
+            "entity-return-company-asset-pool",
+            "entity-return-company-depreciation",
+            "entity-return-company-capital-allowance",
+        }.issubset(kinds))
+        rendered = json.dumps(payload["company_items"])
+        self.assertIn("prior year loss 0", rendered)
+        self.assertIn("continuity of ownership false", rendered)
+        self.assertIn("instant asset write off false", rendered)
+        self.assertTrue(all(row["status"] == "Accountant review" for row in payload["company_items"]))
+        self.assertFalse(any(
+            row["row_kind"].startswith("entity-return-company-")
+            for row in payload["items"] + payload["partnership_items"]
+        ))
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-company-unsupported"
+            and "capital_allowance_items" in row["answer"]
+            for row in payload["evidence_items"]
+        ))
+
+    def test_company_review_rows_fail_closed_without_amount_method_records_or_provenance(self):
+        payload = self.payload({
+            "company_return": {
+                "name": "Incomplete Assets Co",
+                "losses": [{"prior_year_loss": "unknown", "records": False}],
+                "ownership_continuity": {"notes": "unknown", "evidence": False},
+                "depreciation_items": [{
+                    "asset": "Vehicle",
+                    "deduction_amount": "NaN",
+                    "method": "unknown",
+                    "mixed_use": "unknown",
+                    "source_urls": ["bad source"],
+                    "checked_at": "bad date",
+                }],
+                "capital_allowance_items": [],
+            },
+        })
+        evidence = [
+            row for row in payload["evidence_items"]
+            if row["row_kind"].startswith("entity-return-company-")
+        ]
+        rendered = " ".join(row["answer"] for row in evidence)
+        for expected in (
+            "finite monetary fact", "evidence", "ownership or business continuity signal",
+            "method", "source provenance", "checked-at provenance", "capital allowance facts",
+        ):
+            self.assertIn(expected, rendered)
+        self.assertTrue(any(row["status"] == "Accountant review" for row in evidence))
+        expected_sources = {
+            "entity-return-company-loss-evidence": taxmate_entity_worksheet.COMPANY_LOSSES_SOURCE,
+            "entity-return-company-loss-continuity-evidence": taxmate_entity_worksheet.COMPANY_LOSSES_SOURCE,
+            "entity-return-company-depreciation-evidence": taxmate_entity_worksheet.COMPANY_CAPITAL_ALLOWANCES_SOURCE,
+            "entity-return-company-capital-allowance-evidence": taxmate_entity_worksheet.COMPANY_CAPITAL_ALLOWANCES_SOURCE,
+        }
+        for row_kind, source in expected_sources.items():
+            with self.subTest(row_kind=row_kind):
+                row = next(item for item in evidence if item["row_kind"] == row_kind)
+                self.assertIn(source, row["source_urls"])
+                self.assertNotIn(taxmate_entity_worksheet.COMPANY_DEDUCTION_SOURCE, row["source_urls"])
+
+    def test_flat_company_review_aliases_keep_parent_association(self):
+        payload = self.payload({
+            "company_return": [{"name": "First Co"}, {"name": "Loss Co", "abn": "22"}],
+            "company_return_entity_name": "Loss Co",
+            "company_return_loss_items": [{
+                "current_year_loss": 0,
+                "evidence": ["accounts.pdf"],
+            }],
+        })
+        row = next(row for row in payload["company_items"] if row["row_kind"] == "entity-return-company-loss")
+        self.assertIn("company name Loss Co", row["answer"])
+        self.assertFalse(any(
+            "parent entity" in item["answer"]
+            for item in payload["evidence_items"]
+            if item["row_kind"] == "entity-return-company-loss-evidence"
+        ))
+
+    def test_scalar_company_review_aliases_preserve_numeric_and_false_facts(self):
+        payload = self.payload({
+            "company_return": {"name": "Scalar Facts Co"},
+            "company_return_losses": 1250,
+            "company_return_ownership_continuity": False,
+            "company_return_depreciating_assets": "Server",
+        })
+        rows = {row["row_kind"]: row for row in payload["company_items"]}
+        self.assertIn("amount 1250", rows["entity-return-company-loss"]["answer"])
+        self.assertIn(
+            "continuity of ownership false",
+            rows["entity-return-company-loss-continuity"]["answer"],
+        )
+        self.assertIn("asset Server", rows["entity-return-company-asset"]["answer"])
+        evidence = json.dumps(payload["evidence_items"])
+        self.assertIn("entity-return-company-loss-evidence", evidence)
+        self.assertIn("entity-return-company-loss-continuity-evidence", evidence)
 
     def test_other_category_requires_description_and_review_signals_win(self):
         payload = self.payload({
@@ -1381,6 +1535,12 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
             "entity-return-partnership-deduction",
             "entity-return-partnership-trading-stock",
             "entity-return-partnership-capital-allowance",
+            "entity-return-company-loss",
+            "entity-return-company-loss-continuity",
+            "entity-return-company-asset",
+            "entity-return-company-asset-pool",
+            "entity-return-company-depreciation",
+            "entity-return-company-capital-allowance",
         )
         for row_kind in subtypes:
             kind = "company" if "company" in row_kind else "partnership"

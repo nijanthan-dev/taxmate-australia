@@ -179,6 +179,38 @@ class WorkbookExportTests(unittest.TestCase):
         ))
         self.assertEqual("COMPANY-INCOME-1", exported["number"])
 
+    def test_company_loss_asset_rows_keep_review_and_provenance_in_workbook(self) -> None:
+        answers = {
+            "income_year": "2025-26",
+            "company_return": {
+                "name": "Workbook Assets Co",
+                "loss_items": [{
+                    "carried_forward_loss": 0,
+                    "records": ["loss-schedule.pdf"],
+                    "source_url": "https://www.ato.gov.au/example-loss",
+                    "checked_at": "2026-07-15T10:00:00Z",
+                }],
+                "capital_allowance_items": [{
+                    "asset": "Server",
+                    "deduction_amount": 0,
+                    "method": "unknown",
+                    "evidence": ["asset-register.csv"],
+                }],
+            },
+        }
+        data = taxmate_taxpack.load_guide_payload(taxmate_intake.answers_to_pack_payload(answers))
+        tabs = taxmate_workbook.build_tabs(data)
+        company_numbers = {row["number"] for row in tabs["company"]}
+        review_numbers = {row["number"] for row in tabs["accountant_review"]}
+
+        self.assertIn("COMPANY-LOSS-1", company_numbers)
+        self.assertIn("COMPANY-CAPITAL-ALLOWANCE-1", company_numbers)
+        self.assertIn("COMPANY-LOSS-1", review_numbers)
+        loss = next(row for row in tabs["company"] if row["number"] == "COMPANY-LOSS-1")
+        self.assertIn("carried forward loss 0", loss["answer"])
+        self.assertIn("https://www.ato.gov.au/example-loss", loss["source_urls"])
+        self.assertEqual("2026-07-15T10:00:00Z", loss["checked_at"])
+
     def test_raw_intake_file_uses_canonical_pack_conversion(self) -> None:
         answers = taxmate_intake.sample_answers()
         with tempfile.TemporaryDirectory() as temporary:
