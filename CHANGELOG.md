@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.27.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.26.0...v0.27.0) (2026-07-15)
+
+
+### Features
+
+* add company loss asset review ([#158](https://github.com/nijanthan-dev/taxmate-australia/issues/158)) ([600deb0](https://github.com/nijanthan-dev/taxmate-australia/commit/600deb0def4f8bce00ae04f4380dde56bf3ac1c6))
+
 ## [0.26.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.25.0...v0.26.0) (2026-07-15)
 
 
