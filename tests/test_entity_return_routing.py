@@ -1079,6 +1079,30 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         evidence = [row for row in payload["evidence_items"] if row["row_kind"] == "entity-return-company-income-evidence"]
         self.assertTrue(any("total reconciliation" in row["answer"] for row in evidence))
 
+    def test_equivalent_monetary_aliases_do_not_create_conflicts(self):
+        payload = self.payload({
+            "company_return": {
+                "name": "Equivalent Co",
+                "deduction_items": [{
+                    "category": "repairs-maintenance",
+                    "description": "Service",
+                    "amount": "1,000",
+                    "value": 1000,
+                    "evidence": ["invoice.pdf"],
+                }],
+                "deduction_total": "1,000",
+                "expense_total": 1000,
+            },
+            "company_return_deduction_total": 1000,
+        })
+        rows = [row for row in payload["company_items"] if row["row_kind"] == "entity-return-company-deduction"]
+        self.assertEqual(2, len(rows))
+        self.assertFalse(any("conflicts" in row["answer"] for row in rows))
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-company-deduction-evidence"
+            for row in payload["evidence_items"]
+        ))
+
     def test_alias_collections_merge_complements_and_preserve_conflicts(self):
         payload = self.payload({
             "company_return": {
@@ -1159,6 +1183,28 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         rendered = json.dumps(malformed["evidence_items"])
         self.assertIn("false", rendered.lower())
         self.assertIn("bad", rendered)
+
+    def test_flat_worksheet_only_records_are_not_malformed_entities(self):
+        cases = (
+            ("company", "company_return_income_items", [self.income_item()]),
+            ("partnership", "partnership_return_expense_items", [self.deduction_item(category="interest")]),
+        )
+        for kind, key, value in cases:
+            with self.subTest(kind=kind):
+                payload = self.payload({key: value})
+                self.assertTrue(any(
+                    row["row_kind"] == f"entity-return-{kind}-{'income' if kind == 'company' else 'deduction'}"
+                    for row in payload[f"{kind}_items"]
+                ))
+                self.assertTrue(any(
+                    f"{kind} identity" in row["answer"]
+                    for row in payload["evidence_items"]
+                    if row["row_kind"].startswith(f"entity-return-{kind}-")
+                ))
+                self.assertFalse(any(
+                    row["row_kind"] == "entity-return-malformed"
+                    for row in payload["evidence_items"]
+                ))
 
     def test_invalid_amount_evidence_and_provenance_are_preserved(self):
         for amount in (True, False, float("nan"), float("inf"), "NaN", "bad"):

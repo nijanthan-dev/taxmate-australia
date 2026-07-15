@@ -51,16 +51,22 @@ ROUTING_METADATA = {
     "entity_type", "type", "source_url", "source_urls", "checked_at",
     "status", "review_status",
 }
-SHARED_WORKSHEET_FIELDS = {
+WORKSHEET_ASSOCIATION_FIELDS = {"entity_name", "entity_abn"}
+SHARED_WORKSHEET_CONTENT_FIELDS = {
     "income_items", "income_categories", "income", "income_total",
     "deduction_items", "expense_items", "expense_categories", "expenses",
     "deduction_total", "expense_total", "accounting_records",
-    "gst_bas_interaction", "entity_name", "entity_abn",
+    "gst_bas_interaction",
+}
+WORKSHEET_CONTENT_FIELDS_BY_KIND = {
+    "company": SHARED_WORKSHEET_CONTENT_FIELDS,
+    "partnership": SHARED_WORKSHEET_CONTENT_FIELDS | {"trading_stock", "capital_allowance_items"},
 }
 WORKSHEET_FIELDS_BY_KIND = {
-    "company": SHARED_WORKSHEET_FIELDS,
-    "partnership": SHARED_WORKSHEET_FIELDS | {"trading_stock", "capital_allowance_items"},
+    kind: fields | WORKSHEET_ASSOCIATION_FIELDS
+    for kind, fields in WORKSHEET_CONTENT_FIELDS_BY_KIND.items()
 }
+WORKSHEET_TOTAL_FIELDS = {"income_total", "deduction_total", "expense_total"}
 REQUEST_MARKER = "__entity_return_requested__"
 LEGACY_SHARE_FIELDS = {
     "trust": (
@@ -240,6 +246,19 @@ def _decline(value: Any) -> bool:
     return isinstance(value, str) and value.strip().lower() in {
         "no", "false", "none", "not applicable", "0", "off", "unchecked",
     }
+
+
+def worksheet_values_equivalent(field: str, left: Any, right: Any) -> bool:
+    if left == right:
+        return True
+    if field not in WORKSHEET_TOTAL_FIELDS or isinstance(left, bool) or isinstance(right, bool):
+        return False
+    try:
+        left_amount = Decimal(str(left).strip().replace(",", "").replace("$", ""))
+        right_amount = Decimal(str(right).strip().replace(",", "").replace("$", ""))
+    except (InvalidOperation, ValueError):
+        return False
+    return left_amount.is_finite() and right_amount.is_finite() and left_amount == right_amount
 
 
 def _entity_marker(value: Any) -> bool:
@@ -828,7 +847,7 @@ def entity_records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[
                         nested[key] = value
                     elif key in CHILD_COLLECTIONS.get(kind, ()) and nested[key] != value:
                         nested[key] = _child_collection_value(nested[key], value)
-                    elif nested[key] != value:
+                    elif not worksheet_values_equivalent(key, nested[key], value):
                         conflicts[key] = {"nested": nested[key], "flat": value}
                 if conflicts:
                     nested["conflicting_flat_facts"] = conflicts
@@ -902,6 +921,8 @@ def route_entity_returns(
                     evidence.append(_unsupported_evidence(kind, unsupported, evidence_index))
                     evidence_index += 1
                 elif _child_collection_present(raw, kind):
+                    pass
+                elif any(key in raw for key in WORKSHEET_CONTENT_FIELDS_BY_KIND.get(kind, set())):
                     pass
                 else:
                     malformed.append(raw)

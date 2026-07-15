@@ -235,11 +235,23 @@ def _evidence_available(value: Any) -> bool:
     return any(not _missing(item) and not _declined(item) for item in values)
 
 
+def _field_values_equal(field: str, left: Any, right: Any) -> bool:
+    if left == right:
+        return True
+    if field == "category":
+        return _slug(left) == _slug(right)
+    if field == "amount":
+        left_amount = _amount(left)
+        right_amount = _amount(right)
+        return left_amount is not None and right_amount is not None and left_amount == right_amount
+    return False
+
+
 def _field(raw: Dict[str, Any], field: str) -> Tuple[Any, List[Any], bool]:
     present = [(alias, raw[alias]) for alias in LINE_FIELD_ALIASES[field] if alias in raw]
     meaningful = [value for _, value in present if not _missing(value)]
     value = meaningful[0] if meaningful else (present[0][1] if present else None)
-    conflicts = [candidate for candidate in meaningful[1:] if candidate != value]
+    conflicts = [candidate for candidate in meaningful[1:] if not _field_values_equal(field, value, candidate)]
     return value, _unique(conflicts), bool(present)
 
 
@@ -289,15 +301,11 @@ def _merge_alias_item(existing: Dict[str, Any], candidate: Dict[str, Any]) -> Di
         if key not in merged or _missing(merged[key]):
             merged[key] = copy.deepcopy(value)
             continue
-        if _missing(value) or merged[key] == value:
+        if _missing(value):
             continue
         canonical = canonical_by_alias.get(key)
-        if canonical == "category" and _slug(merged[key]) == _slug(value):
+        if _field_values_equal(canonical or "", merged[key], value):
             continue
-        if canonical == "amount":
-            existing_amount = _amount(merged[key])
-            if existing_amount is not None and existing_amount == _amount(value):
-                continue
         if key in PROVENANCE_FIELDS or canonical_by_alias.get(key) == "evidence":
             left = merged[key] if isinstance(merged[key], list) else [merged[key]]
             right = value if isinstance(value, list) else [value]
@@ -350,7 +358,7 @@ def _collection(record: Dict[str, Any], aliases: Tuple[str, ...]) -> Tuple[List[
 
 
 def _record_has_worksheet(kind: str, record: Dict[str, Any]) -> bool:
-    return any(field in record for field in taxmate_entity_routing.WORKSHEET_FIELDS_BY_KIND[kind])
+    return any(field in record for field in taxmate_entity_routing.WORKSHEET_CONTENT_FIELDS_BY_KIND[kind])
 
 
 def _identifier(value: Any) -> str:
@@ -578,7 +586,11 @@ def _total_value(record: Dict[str, Any], worksheet: str) -> Tuple[Any, Dict[str,
     if not meaningful:
         return None, {}
     value = meaningful[0][1]
-    conflicts = {alias: candidate for alias, candidate in meaningful[1:] if candidate != value}
+    conflicts = {
+        alias: candidate
+        for alias, candidate in meaningful[1:]
+        if not _field_values_equal("amount", value, candidate)
+    }
     return value, conflicts
 
 
