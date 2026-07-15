@@ -1717,6 +1717,37 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
                     for row in payload["evidence_items"]
                 ))
 
+    def test_partner_identity_does_not_replace_allocation_value(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Partner Only Allocation",
+                "loss_allocation": {
+                    "partner": "Partner A",
+                    "evidence": ["agreement.pdf"],
+                },
+            },
+        })
+        evidence = next(
+            row for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+        )
+        self.assertIn("loss allocation", evidence["answer"])
+
+        valued = self.payload({
+            "partnership_return": {
+                "name": "Valued Partner Allocation",
+                "loss_allocation": {
+                    "partner": "Partner A",
+                    "allocation_percentage": "100%",
+                    "evidence": ["agreement.pdf"],
+                },
+            },
+        })
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+            for row in valued["evidence_items"]
+        ))
+
     def test_percentage_strings_reconcile_in_rows_and_generic_maps(self):
         for allocation in (
             [

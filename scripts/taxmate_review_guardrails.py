@@ -1133,6 +1133,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def _merge_source_values(",
                 'shared_current_year_loss = grouped.get("current_year_loss")',
                 "def _numeric_total(value: Any, *, percentages: bool = False)",
+                '"share_percentages", "allocated_loss", "allocation_percentage",',
                 "def _group_partnership_review_fields(",
                 "PARTNERSHIP_LOSSES_SOURCE = (",
                 "PARTNERSHIP_GST_SOURCE = (",

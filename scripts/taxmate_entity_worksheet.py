@@ -1102,7 +1102,8 @@ def _partnership_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
     elif section == "loss-allocation":
         if all(_missing(raw.get(field)) for field in (
             "allocation", "allocations", "allocation_percentages", "partner_percentages",
-            "share_percentages", "partner", "partner_name",
+            "share_percentages", "allocated_loss", "allocation_percentage",
+            "share_percentage", "percentage",
         )):
             gaps.append("loss allocation")
         for field in ("allocation_percentages", "partner_percentages", "share_percentages"):
