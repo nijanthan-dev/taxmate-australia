@@ -461,6 +461,12 @@ def _facts(pairs: Iterable[Tuple[str, Any]]) -> List[Dict[str, Any]]:
     ]
 
 
+def _followup_sources(kind: str, worksheet: str, item: Dict[str, Any]) -> List[str]:
+    if kind == "company" and worksheet in COMPANY_REVIEW_COLLECTIONS:
+        return _company_sources(worksheet, item)
+    return _sources(kind, worksheet, item)
+
+
 def _line_followup(
     kind: str,
     worksheet: str,
@@ -480,7 +486,7 @@ def _line_followup(
         "answer": f"Confirm {', '.join(gaps)}",
         "why_included": "Incomplete, conflicting, unsupported, or review-like worksheet facts fail closed.",
         "status": "Accountant review" if review_required else "Evidence",
-        "source_urls": _sources(kind, worksheet, item),
+        "source_urls": _followup_sources(kind, worksheet, item),
         "checked_at": item.get("checked_at") if taxmate_entity_routing.valid_checked_at(item.get("checked_at")) else taxmate_entity_routing.CHECKED_AT,
         "row_kind": f"entity-return-{kind}-{worksheet}-evidence",
         "facts": _facts(details),

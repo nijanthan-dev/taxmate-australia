@@ -1405,6 +1405,17 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         ):
             self.assertIn(expected, rendered)
         self.assertTrue(any(row["status"] == "Accountant review" for row in evidence))
+        expected_sources = {
+            "entity-return-company-loss-evidence": taxmate_entity_worksheet.COMPANY_LOSSES_SOURCE,
+            "entity-return-company-loss-continuity-evidence": taxmate_entity_worksheet.COMPANY_LOSSES_SOURCE,
+            "entity-return-company-depreciation-evidence": taxmate_entity_worksheet.COMPANY_CAPITAL_ALLOWANCES_SOURCE,
+            "entity-return-company-capital-allowance-evidence": taxmate_entity_worksheet.COMPANY_CAPITAL_ALLOWANCES_SOURCE,
+        }
+        for row_kind, source in expected_sources.items():
+            with self.subTest(row_kind=row_kind):
+                row = next(item for item in evidence if item["row_kind"] == row_kind)
+                self.assertIn(source, row["source_urls"])
+                self.assertNotIn(taxmate_entity_worksheet.COMPANY_DEDUCTION_SOURCE, row["source_urls"])
 
     def test_flat_company_review_aliases_keep_parent_association(self):
         payload = self.payload({
