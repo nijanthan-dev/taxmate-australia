@@ -19,6 +19,7 @@
 - Workbook display fields must preserve valid falsey values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.
 - Convert raw intake answers through the canonical intake-to-pack contract before export. Prefix formula-like CSV cells so spreadsheet applications display supplied text instead of evaluating it.
 - Separate taxpayer, spouse/partner, joint, entity, employee, ABN/business, GST/BAS, investment, super, private health, and property records.
+- Export company, trust, and partnership return rows to dedicated entity tabs as well as shared evidence, review, and source tabs.
 - Keep source rows visible. Use formulas only for transparent totals.
 - Do not mark BAS nil when GST credits or GST collected are present.
 

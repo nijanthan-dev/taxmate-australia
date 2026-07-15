@@ -51,6 +51,22 @@ ROUTING_METADATA = {
     "entity_type", "type", "source_url", "source_urls", "checked_at",
     "status", "review_status",
 }
+WORKSHEET_ASSOCIATION_FIELDS = {"entity_name", "entity_abn"}
+SHARED_WORKSHEET_CONTENT_FIELDS = {
+    "income_items", "income_categories", "income", "income_total",
+    "deduction_items", "expense_items", "expense_categories", "expenses",
+    "deduction_total", "expense_total", "accounting_records",
+    "gst_bas_interaction",
+}
+WORKSHEET_CONTENT_FIELDS_BY_KIND = {
+    "company": SHARED_WORKSHEET_CONTENT_FIELDS,
+    "partnership": SHARED_WORKSHEET_CONTENT_FIELDS | {"trading_stock", "capital_allowance_items"},
+}
+WORKSHEET_FIELDS_BY_KIND = {
+    kind: fields | WORKSHEET_ASSOCIATION_FIELDS
+    for kind, fields in WORKSHEET_CONTENT_FIELDS_BY_KIND.items()
+}
+WORKSHEET_TOTAL_FIELDS = {"income_total", "deduction_total", "expense_total"}
 REQUEST_MARKER = "__entity_return_requested__"
 LEGACY_SHARE_FIELDS = {
     "trust": (
@@ -230,6 +246,19 @@ def _decline(value: Any) -> bool:
     return isinstance(value, str) and value.strip().lower() in {
         "no", "false", "none", "not applicable", "0", "off", "unchecked",
     }
+
+
+def worksheet_values_equivalent(field: str, left: Any, right: Any) -> bool:
+    if left == right:
+        return True
+    if field not in WORKSHEET_TOTAL_FIELDS or isinstance(left, bool) or isinstance(right, bool):
+        return False
+    try:
+        left_amount = Decimal(str(left).strip().replace(",", "").replace("$", ""))
+        right_amount = Decimal(str(right).strip().replace(",", "").replace("$", ""))
+    except (InvalidOperation, ValueError):
+        return False
+    return left_amount.is_finite() and right_amount.is_finite() and left_amount == right_amount
 
 
 def _entity_marker(value: Any) -> bool:
@@ -768,6 +797,14 @@ def entity_facts_present(value: Any) -> bool:
     return not _missing(value)
 
 
+def value_missing(value: Any) -> bool:
+    return _missing(value)
+
+
+def value_declined(value: Any) -> bool:
+    return _decline(value)
+
+
 def _unsupported_evidence(kind: str, unsupported: Dict[str, Any], index: int) -> Dict[str, Any]:
     return {
         "number": f"ENTITY-EVID-{index}",
@@ -781,7 +818,7 @@ def _unsupported_evidence(kind: str, unsupported: Dict[str, Any], index: int) ->
     }
 
 
-def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
+def entity_records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
     grouped = {kind: [] for kind in ALIASES}
     malformed: List[Any] = []
     for kind, aliases in ALIASES.items():
@@ -810,7 +847,7 @@ def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
                         nested[key] = value
                     elif key in CHILD_COLLECTIONS.get(kind, ()) and nested[key] != value:
                         nested[key] = _child_collection_value(nested[key], value)
-                    elif nested[key] != value:
+                    elif not worksheet_values_equivalent(key, nested[key], value):
                         conflicts[key] = {"nested": nested[key], "flat": value}
                 if conflicts:
                     nested["conflicting_flat_facts"] = conflicts
@@ -848,7 +885,7 @@ def _records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[Any]]:
 def route_entity_returns(
     answers: Dict[str, Any],
 ) -> Tuple[Dict[str, List[Dict[str, Any]]], List[Dict[str, Any]]]:
-    grouped, malformed = _records(answers)
+    grouped, malformed = entity_records(answers)
     sections = {f"{kind}_items": [] for kind in grouped}
     evidence: List[Dict[str, Any]] = []
     evidence_index = 1
@@ -877,12 +914,15 @@ def route_entity_returns(
                 if key not in FIELDS[kind]
                 and key not in ROUTING_METADATA
                 and key not in CHILD_COLLECTIONS.get(kind, ())
+                and key not in WORKSHEET_FIELDS_BY_KIND.get(kind, set())
             }
             if not facts:
                 if unsupported:
                     evidence.append(_unsupported_evidence(kind, unsupported, evidence_index))
                     evidence_index += 1
                 elif _child_collection_present(raw, kind):
+                    pass
+                elif any(key in raw for key in WORKSHEET_CONTENT_FIELDS_BY_KIND.get(kind, set())):
                     pass
                 else:
                     malformed.append(raw)

@@ -12,6 +12,7 @@ from typing import Any, Dict, Iterable, List, Tuple
 
 
 VALID_STATUSES = {"structured", "triage_only", "review_only", "source_only", "out_of_scope"}
+VALID_SOURCE_POLICIES = {"verified", "registered_metadata"}
 GENERIC_SOURCE_CONCEPTS = {
     "abn",
     "allowance",
@@ -99,42 +100,52 @@ def source_matches(entry: Dict[str, Any], concept: Dict[str, Any]) -> bool:
     )
 
 
-def verified_source_count(sources: Iterable[Dict[str, Any]], concept: Dict[str, Any]) -> int:
-    return sum(1 for entry in sources if entry.get("status") == "verified" and source_matches(entry, concept))
+def source_eligible(entry: Dict[str, Any], concept: Dict[str, Any]) -> bool:
+    policy = concept.get("source_policy", "verified")
+    if policy == "registered_metadata":
+        return entry.get("status") in {"verified", "metadata_only"} and bool(entry.get("content_hash"))
+    return entry.get("status") == "verified"
+
+
+def matched_source_count(sources: Iterable[Dict[str, Any]], concept: Dict[str, Any]) -> int:
+    return sum(1 for entry in sources if source_eligible(entry, concept) and source_matches(entry, concept))
 
 
 def source_pin_errors(sources: Iterable[Dict[str, Any]], concept: Dict[str, Any]) -> List[str]:
     concept_id = str(concept.get("id", ""))
-    verified_by_id: Dict[str, Dict[str, Any]] = {}
-    verified_by_url: Dict[str, List[Dict[str, Any]]] = {}
+    source_policy = concept.get("source_policy", "verified")
+    eligible_by_id: Dict[str, Dict[str, Any]] = {}
+    eligible_by_url: Dict[str, List[Dict[str, Any]]] = {}
     for entry in sources:
-        if entry.get("status") != "verified":
+        if not source_eligible(entry, concept):
             continue
         source_id = str(entry.get("source_id", ""))
-        verified_by_id[source_id] = entry
+        eligible_by_id[source_id] = entry
         for key in ("canonical_url", "original_url"):
             source_url = str(entry.get(key, ""))
             if not source_url:
                 continue
-            verified_by_url.setdefault(source_url, []).append(entry)
+            eligible_by_url.setdefault(source_url, []).append(entry)
     errors: List[str] = []
     expected_skills = {str(value) for value in concept.get("source_skills", [])}
     for source_id in concept.get("source_ids", []):
         source_id = str(source_id)
-        if source_id not in verified_by_id:
-            errors.append(f"{concept_id} source_id not verified: {source_id}")
+        if source_id not in eligible_by_id:
+            requirement = "registered metadata" if source_policy == "registered_metadata" else "verified"
+            errors.append(f"{concept_id} source_id not {requirement}: {source_id}")
             continue
-        assigned_skills = {str(value) for value in verified_by_id[source_id].get("skills", [])}
-        if expected_skills and not expected_skills.intersection(assigned_skills):
+        assigned_skills = {str(value) for value in eligible_by_id[source_id].get("skills", [])}
+        if source_policy == "verified" and expected_skills and not expected_skills.intersection(assigned_skills):
             errors.append(f"{concept_id} source_id not assigned to source_skills: {source_id}")
     for source_url in concept.get("source_urls", []):
         source_url = str(source_url)
-        if source_url not in verified_by_url:
-            errors.append(f"{concept_id} source_url not verified: {source_url}")
+        if source_url not in eligible_by_url:
+            requirement = "registered metadata" if source_policy == "registered_metadata" else "verified"
+            errors.append(f"{concept_id} source_url not {requirement}: {source_url}")
             continue
-        if expected_skills and not any(
+        if source_policy == "verified" and expected_skills and not any(
             expected_skills.intersection(str(value) for value in entry.get("skills", []))
-            for entry in verified_by_url[source_url]
+            for entry in eligible_by_url[source_url]
         ):
             errors.append(f"{concept_id} source_url not assigned to source_skills: {source_url}")
     return errors
@@ -150,7 +161,7 @@ def audit_payload(root: Path | str | None = None) -> Dict[str, Any]:
     rows: List[Dict[str, Any]] = []
     for concept in manifest["concepts"]:
         row = dict(concept)
-        row["source_count"] = verified_source_count(sources, concept)
+        row["source_count"] = matched_source_count(sources, concept)
         rows.append(row)
     return {
         "manifest": str(manifest_path(root)),
@@ -187,6 +198,8 @@ def validate_manifest(root: Path | str | None = None) -> Tuple[bool, List[str]]:
         seen.add(concept_id)
         if status not in VALID_STATUSES:
             errors.append(f"{concept_id} invalid runtime_status {status}")
+        if row.get("source_policy", "verified") not in VALID_SOURCE_POLICIES:
+            errors.append(f"{concept_id} invalid source_policy {row.get('source_policy')}")
         if status == "structured" and (not row.get("runtime_functions") or not row.get("tests")):
             errors.append(f"{concept_id} structured concepts need runtime_functions and tests")
         if status in {"triage_only", "review_only", "source_only"} and not row.get("issue"):

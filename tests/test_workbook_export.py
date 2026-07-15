@@ -72,6 +72,9 @@ class WorkbookExportTests(unittest.TestCase):
             ],
             "abn_items": [row("ABN-1", "Review", ato_area="ABN business")],
             "bas_items": [row("BAS-1", "Evidence", ato_area="BAS")],
+            "company_items": [row("COMPANY-1", "Review", row_kind="entity-return-company")],
+            "trust_items": [row("TRUST-1", "Review", row_kind="entity-return-trust")],
+            "partnership_items": [row("PARTNERSHIP-1", "Review", row_kind="entity-return-partnership")],
         }
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -87,15 +90,18 @@ class WorkbookExportTests(unittest.TestCase):
                     "accountant_review.csv",
                     "bas.csv",
                     "capital_gains.csv",
+                    "company.csv",
                     "employee.csv",
                     "evidence.csv",
                     "investments.csv",
                     "other.csv",
+                    "partnership.csv",
                     "private_health.csv",
                     "property.csv",
                     "readme.csv",
                     "sources.csv",
                     "super.csv",
+                    "trust.csv",
                 },
                 {path.name for path in output.iterdir()},
             )
@@ -107,6 +113,13 @@ class WorkbookExportTests(unittest.TestCase):
                 self.assertEqual("INV-1", next(csv.DictReader(handle))["number"])
             with (output / "other.csv").open(encoding="utf-8", newline="") as handle:
                 self.assertEqual("AI-1", next(csv.DictReader(handle))["number"])
+            for tab, number in (
+                ("company", "COMPANY-1"),
+                ("trust", "TRUST-1"),
+                ("partnership", "PARTNERSHIP-1"),
+            ):
+                with (output / f"{tab}.csv").open(encoding="utf-8", newline="") as handle:
+                    self.assertEqual(number, next(csv.DictReader(handle))["number"])
 
     def test_direct_workbook_row_preserves_zero_and_false(self) -> None:
         direct = taxmate_taxpack.GuideItem(
@@ -131,6 +144,40 @@ class WorkbookExportTests(unittest.TestCase):
         self.assertEqual("false", exported["question"])
         self.assertEqual("0", exported["answer"])
         self.assertEqual("[false]", exported["source_urls"])
+
+    def test_routed_entity_worksheet_stays_in_entity_tab(self) -> None:
+        payload = {
+            "income_year": "2025-26",
+            "company_return": {
+                "name": "Worksheet Co",
+                "income_items": [{
+                    "category": "interest",
+                    "description": "Bank interest",
+                    "amount": 0,
+                    "evidence": ["statement.pdf"],
+                }],
+            },
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "answers.json"
+            output = Path(temporary) / "workbook"
+            source.write_text(json.dumps(payload), encoding="utf-8")
+            data = taxmate_workbook.load_workbook_data(str(source))
+            tabs = taxmate_workbook.build_tabs(data)
+            taxmate_workbook.export_workbook(data, str(output))
+            with (output / "company.csv").open(encoding="utf-8", newline="") as handle:
+                exported = next(
+                    row for row in csv.DictReader(handle)
+                    if row["number"].startswith("COMPANY-INCOME")
+                )
+
+        self.assertTrue(tabs["company"])
+        self.assertFalse(any(
+            row["number"].startswith("COMPANY-INCOME")
+            for tab in ("employee", "abn", "bas", "investments")
+            for row in tabs[tab]
+        ))
+        self.assertEqual("COMPANY-INCOME-1", exported["number"])
 
     def test_raw_intake_file_uses_canonical_pack_conversion(self) -> None:
         answers = taxmate_intake.sample_answers()

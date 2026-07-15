@@ -991,6 +991,9 @@ def check_workbook_output_layer(root: Path) -> List[Finding]:
         '"source_role": "; ".join(record["roles"])',
         "def main_tab(",
         "ABN_BAS_GATE_NUMBERS",
+        '"company": [row.as_dict() for section, row in section_rows if section == "company"]',
+        '"trust": [row.as_dict() for section, row in section_rows if section == "trust"]',
+        '"partnership": [row.as_dict() for section, row in section_rows if section == "partnership"]',
         'return "employee"',
         'return "other"',
         "def csv_safe_cell(",
@@ -1015,13 +1018,14 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     capital_gains_evidence = read_optional(root, "skills/capital-gains-tax/references/evidence.md")
     findings: List[Finding] = []
     entity_text = read_optional(root, "scripts/taxmate_entity_routing.py")
+    entity_worksheet_text = read_optional(root, "scripts/taxmate_entity_worksheet.py")
     source_state = read_optional(root, "data/ato_knowledge_base/source_registry.json") + read_optional(
         root, "data/ato_knowledge_base/source_coverage.json"
     )
     findings.extend(
         fail_if_missing(
             INDIVIDUAL_INTAKE_CONTRACT,
-            text + "\n" + entity_text,
+            text + "\n" + entity_text + "\n" + entity_worksheet_text,
             [
                 "route_entity_returns(answers)",
                 '"company_items"',
@@ -1071,6 +1075,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 'prefix = f"{kind}_return_"',
                 'nested["conflicting_flat_facts"] = conflicts',
                 "CHILD_COLLECTIONS = {",
+                "WORKSHEET_CONTENT_FIELDS_BY_KIND = {",
+                "def worksheet_values_equivalent(",
                 '"beneficiary_statements"',
                 '"beneficiary_distribution_statements"',
                 '"beneficiary_statement_items"',
@@ -1099,6 +1105,20 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 '"entity-return-partnership-partner-statement"',
                 "def _unsupported_evidence(",
                 '"facts": [{"key": "unsupported", "label": "Unsupported entity facts", "value": unsupported}]',
+                "taxmate_entity_worksheet.route_entity_worksheets(answers)",
+                "COMPANY_INCOME_CATEGORIES = {",
+                "COMPANY_DEDUCTION_CATEGORIES = {",
+                "PARTNERSHIP_INCOME_CATEGORIES = {",
+                "PARTNERSHIP_DEDUCTION_CATEGORIES = {",
+                "COMPANY_DEFERRED_CATEGORIES = {",
+                "def _field_values_equal(",
+                "parsed.is_finite()",
+                "isinstance(value, bool)",
+                'worksheet = "trading-stock" if field == "trading_stock" else "capital-allowance"',
+                'f"entity-return-partnership-{worksheet}"',
+                "taxmate_entity_routing.source_provenance(raw)",
+                "taxmate_entity_routing.valid_checked_at",
+                '"status": "Accountant review"',
             ],
         )
     )

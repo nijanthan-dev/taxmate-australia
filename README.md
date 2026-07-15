@@ -121,6 +121,8 @@ Use the taxmate-australia-individual-return skill to prepare investment income r
 
 ```text
 Use the taxmate-australia-individual-return skill to prepare my individual partnership-share or trust-beneficiary statement facts separately from managed fund/ETF/AMIT distributions. Preserve statement components, losses, withholding, credits, source links, and evidence gaps. Route uncommon compensation, insurance, scholarship, prize, award, or unsupported income to prep-only review; do not prepare an entity return or decide allocations.
+
+For a company or partnership entity return, provide itemized income and expense/deduction categories with supplied amounts, accounting records, evidence, GST/BAS overlap, and review signals. Partnership inputs may also include trading-stock and capital-allowance facts. TaxMate keeps these rows in dedicated company or partnership output, preserves missing evidence and uncertainty, and does not calculate a final return position.
 ```
 
 ```text

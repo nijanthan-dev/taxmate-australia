@@ -23,7 +23,8 @@ from datetime import datetime, timezone
 SCOPE = (
     "ATO official pages relevant to Australian FY2025-26 individual, employment, ABN/sole trader, GST/BAS, "
     "PAYG instalments, PAYG withholding, STP, TPAR, FBT, CGT, ETF/investment, crypto, rental-property "
-    "records, super, private health, and company, trust, and partnership return skeleton preparation."
+    "records, super, private health, and company, trust, and partnership return skeleton, income, deduction, "
+    "trading-stock, and capital-allowance preparation."
 )
 
 SOURCE_TITLE_OVERRIDES = {
@@ -34,6 +35,14 @@ SOURCE_TITLE_OVERRIDES = {
 
 SEED_URLS = [
     *SOURCE_TITLE_OVERRIDES,
+    "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions/instructions-to-complete-the-company-tax-return-2026/items-6-to-14/6-income",
+    "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions/instructions-to-complete-the-company-tax-return-2026/items-6-to-14/6-expenses",
+    "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-item-5/business-income-and-expenses-item-5",
+    "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-items-6-to-9",
+    "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/income-excluding-foreign-income-items-10-to-15",
+    "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/foreign-income-items-22-to-24",
+    "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/deductions-items-16-to-20",
+    "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/business-and-professional-items-items-37-to-53",
     "https://www.ato.gov.au/individuals-and-families/your-tax-return",
     "https://www.ato.gov.au/individuals-and-families/your-tax-return/how-to-lodge-your-tax-return",
     "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records",

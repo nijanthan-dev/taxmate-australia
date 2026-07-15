@@ -785,6 +785,10 @@ class ReviewGuardrailTests(unittest.TestCase):
             text = text.replace("taxmate_taxpack.row_source_entries(render_row)", "[]")
             text = text.replace("taxmate_taxpack.row_review_required(render_row)", "False")
             text = text.replace("ABN_BAS_GATE_NUMBERS", "frozenset()")
+            text = text.replace(
+                '"company": [row.as_dict() for section, row in section_rows if section == "company"]',
+                '"company": []',
+            )
             text = text.replace("candidate.startswith(CSV_FORMULA_PREFIXES)", "False")
             script.write_text(text, encoding="utf-8")
 
@@ -797,6 +801,7 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertIn("taxmate_taxpack.row_source_entries(render_row)", details)
         self.assertIn("taxmate_taxpack.row_review_required(render_row)", details)
         self.assertIn("ABN_BAS_GATE_NUMBERS", details)
+        self.assertIn('"company": [row.as_dict()', details)
         self.assertIn("candidate.startswith(CSV_FORMULA_PREFIXES)", details)
 
     def test_review_guardrails_require_exact_cgt_before_broad_investment_routing(self) -> None:
@@ -17535,6 +17540,10 @@ class RuntimeCoverageTests(unittest.TestCase):
         self.assertEqual("structured", by_id["private-health-medicare-spouse-dependants"]["runtime_status"])
         self.assertEqual("#71", by_id["private-health-medicare-spouse-dependants"]["issue"])
         self.assertGreater(by_id["private-health-medicare-spouse-dependants"]["source_count"], 0)
+        self.assertEqual("structured", by_id["company-income-deduction-worksheet"]["runtime_status"])
+        self.assertEqual("registered_metadata", by_id["company-income-deduction-worksheet"]["source_policy"])
+        self.assertEqual("structured", by_id["partnership-income-deduction-worksheet"]["runtime_status"])
+        self.assertGreater(by_id["partnership-income-deduction-worksheet"]["source_count"], 0)
 
     def test_runtime_coverage_manifest_validates(self) -> None:
         ok, errors = taxmate_coverage.validate_manifest(ROOT)
@@ -17576,6 +17585,24 @@ class RuntimeCoverageTests(unittest.TestCase):
             errors,
         )
         self.assertIn("bad-pins source_url not verified: https://example.invalid/not-verified", errors)
+
+    def test_runtime_coverage_accepts_hashed_metadata_without_skill_assignment(self) -> None:
+        coverage = taxmate_coverage.load_source_coverage(ROOT)
+        concept = {
+            "id": "company-worksheet",
+            "source_policy": "registered_metadata",
+            "source_ids": ["ato-b9d545adddf1", "ato-a64fa573ea4d"],
+        }
+
+        self.assertEqual(2, taxmate_coverage.matched_source_count(coverage["sources"], concept))
+        self.assertEqual([], taxmate_coverage.source_pin_errors(coverage["sources"], concept))
+
+        missing_hash = dict(next(row for row in coverage["sources"] if row["source_id"] == "ato-b9d545adddf1"))
+        missing_hash["content_hash"] = ""
+        self.assertIn(
+            "company-worksheet source_id not registered metadata: ato-b9d545adddf1",
+            taxmate_coverage.source_pin_errors([missing_hash], concept),
+        )
 
     def test_runtime_coverage_rejects_generic_only_concept_matches(self) -> None:
         concept = {"source_skills": ["employment-deductions"], "source_concepts": ["deduction", "tools"]}
