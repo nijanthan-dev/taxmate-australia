@@ -1764,6 +1764,40 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
             for row in valued["evidence_items"]
         ))
 
+    def test_per_partner_allocation_values_require_partner_identity(self):
+        for item in (
+            {"allocation_percentage": "100%", "evidence": ["agreement.pdf"]},
+            {"allocated_loss": 1000, "loss_amount": 1000, "evidence": ["agreement.pdf"]},
+            {"allocation": 100, "allocation_basis": "percentage", "evidence": ["agreement.pdf"]},
+        ):
+            with self.subTest(item=item):
+                payload = self.payload({
+                    "partnership_return": {
+                        "name": "Unidentified Allocation",
+                        "loss_allocation": item,
+                    },
+                })
+                evidence = next(
+                    row for row in payload["evidence_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                )
+                self.assertIn("allocation partner", evidence["answer"])
+
+        keyed = self.payload({
+            "partnership_return": {
+                "name": "Keyed Allocation",
+                "loss_allocation": {
+                    "allocation": {"Partner A": 60, "Partner B": 40},
+                    "allocation_basis": "percentage",
+                    "evidence": ["agreement.pdf"],
+                },
+            },
+        })
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+            for row in keyed["evidence_items"]
+        ))
+
     def test_percentage_strings_reconcile_in_rows_and_generic_maps(self):
         for allocation in (
             [
