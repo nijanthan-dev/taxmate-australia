@@ -1608,6 +1608,48 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         for field in ("gst_registered", "bas_period", "bas_overlap", "psi", "business_structure"):
             self.assertNotIn(field, unsupported)
 
+    def test_flat_allocation_percentage_maps_are_grouped(self):
+        for field in (
+            "allocation_percentages", "partner_percentages", "share_percentages",
+        ):
+            with self.subTest(field=field):
+                payload = self.payload({
+                    "partnership_return": {"name": "Flat Allocation Partners"},
+                    f"partnership_return_{field}": {"Partner A": 60, "Partner B": 40},
+                    "partnership_return_loss_allocation_records": ["agreement.pdf"],
+                })
+                allocation = next(
+                    row for row in payload["partnership_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation"
+                )
+                self.assertIn(field.replace("_", " "), allocation["answer"])
+                unsupported = " ".join(
+                    row["answer"] for row in payload["evidence_items"]
+                    if row["row_kind"] == "entity-return-partnership-unsupported"
+                )
+                self.assertNotIn(field, unsupported)
+
+    def test_review_aliases_union_nested_and_flat_provenance(self):
+        nested_source = "https://www.ato.gov.au/nested-review"
+        flat_source = "https://www.ato.gov.au/flat-review"
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Source Union Partners",
+                "losses": [{
+                    "amount": 0,
+                    "records": ["accounts.pdf"],
+                    "source_url": nested_source,
+                }],
+            },
+            "partnership_return_source_url": flat_source,
+        })
+        loss = next(
+            row for row in payload["partnership_items"]
+            if row["row_kind"] == "entity-return-partnership-loss"
+        )
+        self.assertIn(nested_source, loss["source_urls"])
+        self.assertIn(flat_source, loss["source_urls"])
+
     def test_flat_gst_bas_interaction_has_one_context_and_one_review_row(self):
         payload = self.payload({
             "partnership_return": {"name": "GST Context Partners"},

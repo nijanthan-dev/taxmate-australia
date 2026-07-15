@@ -82,7 +82,8 @@ PARTNERSHIP_REVIEW_FLAT_GROUPS = {
     "loss_items": ("current_year_loss", "prior_year_loss", "carried_forward_loss"),
     "loss_allocation": (
         "allocation", "allocations", "allocation_percentage", "share_percentage",
-        "percentage", "allocation_basis", "allocation_type", "allocated_loss",
+        "percentage", "allocation_percentages", "partner_percentages",
+        "share_percentages", "allocation_basis", "allocation_type", "allocated_loss",
         "loss_amount", "total_loss",
     ),
     "gst_bas_review": (
@@ -117,6 +118,7 @@ PARTNERSHIP_REVIEW_SCALAR_FIELDS = {
     "psi_review": "psi",
     "business_structure_review": "business_structure",
 }
+PARTNERSHIP_REVIEW_PRESERVED_FLAT_FIELDS = {"gst_bas_interaction", "share_percentages"}
 REQUEST_MARKER = "__entity_return_requested__"
 LEGACY_SHARE_FIELDS = {
     "trust": (
@@ -855,20 +857,22 @@ def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
         for field in fields:
             if field not in grouped:
                 continue
+            if field == "share_percentages" and not isinstance(grouped[field], dict):
+                continue
             review[field] = grouped[field]
-            if field != "gst_bas_interaction":
+            if field not in PARTNERSHIP_REVIEW_PRESERVED_FLAT_FIELDS:
                 grouped.pop(field)
         for field in PARTNERSHIP_REVIEW_EVIDENCE_FIELDS[collection]:
             if field in grouped:
                 canonical = "records" if field.endswith("_records") else "evidence"
                 review[canonical] = grouped.pop(field)
-        if not review:
-            continue
-        review.update({key: value for key, value in metadata.items() if key not in review})
         existing_aliases = [
             alias for alias in PARTNERSHIP_REVIEW_COLLECTION_ALIASES[collection]
             if alias in grouped
         ]
+        if not review and not (existing_aliases and metadata):
+            continue
+        review.update({key: value for key, value in metadata.items() if key not in review})
         if existing_aliases:
             for alias in existing_aliases:
                 existing = grouped[alias]
@@ -885,6 +889,11 @@ def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
                     for key, value in review.items():
                         if key not in merged or _missing(merged[key]):
                             merged[key] = value
+                        elif key in {"source_url", "source_urls"}:
+                            sources = _values(merged.get("source_urls"))
+                            sources.extend(_values(merged.get("source_url")))
+                            sources.extend(_values(value))
+                            merged["source_urls"] = _dedupe(sources)
                         elif not worksheet_values_equivalent(key, merged[key], value):
                             merged.setdefault("_alias_conflicts", {})[key] = [merged[key], value]
                     merged_items.append(merged)
@@ -946,6 +955,11 @@ def entity_records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[
                 for key, value in flat.items():
                     if key not in nested:
                         nested[key] = value
+                    elif key in {"source_url", "source_urls"}:
+                        sources = _values(nested.get("source_urls"))
+                        sources.extend(_values(nested.get("source_url")))
+                        sources.extend(_values(value))
+                        nested["source_urls"] = _dedupe(sources)
                     elif key in CHILD_COLLECTIONS.get(kind, ()) and nested[key] != value:
                         nested[key] = _child_collection_value(nested[key], value)
                     elif not worksheet_values_equivalent(key, nested[key], value):

@@ -1125,6 +1125,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "PARTNERSHIP_REVIEW_COLLECTIONS = {",
                 "PARTNERSHIP_REVIEW_FLAT_GROUPS = {",
                 "PARTNERSHIP_REVIEW_COLLECTION_ALIASES = {",
+                '"allocation_percentages", "partner_percentages",',
+                'elif key in {"source_url", "source_urls"}:',
                 "def _group_partnership_review_fields(",
                 "PARTNERSHIP_LOSSES_SOURCE = (",
                 "PARTNERSHIP_GST_SOURCE = (",
