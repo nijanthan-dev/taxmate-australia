@@ -1434,6 +1434,24 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
             if item["row_kind"] == "entity-return-company-loss-evidence"
         ))
 
+    def test_scalar_company_review_aliases_preserve_numeric_and_false_facts(self):
+        payload = self.payload({
+            "company_return": {"name": "Scalar Facts Co"},
+            "company_return_losses": 1250,
+            "company_return_ownership_continuity": False,
+            "company_return_depreciating_assets": "Server",
+        })
+        rows = {row["row_kind"]: row for row in payload["company_items"]}
+        self.assertIn("amount 1250", rows["entity-return-company-loss"]["answer"])
+        self.assertIn(
+            "continuity of ownership false",
+            rows["entity-return-company-loss-continuity"]["answer"],
+        )
+        self.assertIn("asset Server", rows["entity-return-company-asset"]["answer"])
+        evidence = json.dumps(payload["evidence_items"])
+        self.assertIn("entity-return-company-loss-evidence", evidence)
+        self.assertIn("entity-return-company-loss-continuity-evidence", evidence)
+
     def test_other_category_requires_description_and_review_signals_win(self):
         payload = self.payload({
             "partnership_return": {

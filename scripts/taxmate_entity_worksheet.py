@@ -148,6 +148,14 @@ COMPANY_REVIEW_COLLECTIONS = {
     "depreciation": ("depreciation_items",),
     "capital-allowance": ("capital_allowance_items",),
 }
+COMPANY_REVIEW_SCALAR_FIELDS = {
+    "loss": "amount",
+    "loss-continuity": "continuity_of_ownership",
+    "asset": "asset",
+    "asset-pool": "pool_type",
+    "depreciation": "amount",
+    "capital-allowance": "amount",
+}
 CATEGORY_ALIASES = {
     "gross-payments-where-abn-not-quoted": "no-abn-withholding",
     "gross-payments-subject-to-foreign-resident-withholding": "foreign-resident-withholding",
@@ -341,7 +349,12 @@ def _merge_alias_item(existing: Dict[str, Any], candidate: Dict[str, Any]) -> Di
     return merged
 
 
-def _collection(record: Dict[str, Any], aliases: Tuple[str, ...]) -> Tuple[List[Any], bool]:
+def _collection(
+    record: Dict[str, Any],
+    aliases: Tuple[str, ...],
+    *,
+    preserve_falsey_scalars: bool = False,
+) -> Tuple[List[Any], bool]:
     values: List[Any] = []
     origins: List[set[str]] = []
     blank_supplied = False
@@ -349,7 +362,8 @@ def _collection(record: Dict[str, Any], aliases: Tuple[str, ...]) -> Tuple[List[
         if alias not in record:
             continue
         value = record[alias]
-        if _declined(value):
+        scalar_preserved = preserve_falsey_scalars and not isinstance(value, (dict, list))
+        if _declined(value) and not scalar_preserved:
             continue
         if _missing(value):
             blank_supplied = True
@@ -879,7 +893,7 @@ def _company_review_rows(
     counter: int,
     evidence_index: int,
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], int, int]:
-    raw_items, blank_requested = _collection(record, aliases)
+    raw_items, blank_requested = _collection(record, aliases, preserve_falsey_scalars=True)
     rows: List[Dict[str, Any]] = []
     followups: List[Dict[str, Any]] = []
     if blank_requested:
@@ -889,7 +903,9 @@ def _company_review_rows(
         evidence_index += 1
     for raw in raw_items:
         counter += 1
-        if not isinstance(raw, dict) or _missing(raw):
+        if not isinstance(raw, dict):
+            raw = {COMPANY_REVIEW_SCALAR_FIELDS[section]: raw}
+        if _missing(raw):
             followups.append(_line_followup(
                 "company", section, {}, [f"{section.replace('-', ' ')} facts"], False, evidence_index,
             ))

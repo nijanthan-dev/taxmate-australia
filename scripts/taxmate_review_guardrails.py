@@ -1116,6 +1116,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "COMPANY_CAPITAL_ALLOWANCES_SOURCE = (",
                 "def _company_review_gaps(",
                 "def _company_review_rows(",
+                "preserve_falsey_scalars=True",
+                '"loss-continuity": "continuity_of_ownership"',
                 "def _followup_sources(",
                 'worksheet in COMPANY_REVIEW_COLLECTIONS',
                 'f"entity-return-company-{section}"',
