@@ -74,7 +74,10 @@ class EntityReturnRoutingTests(unittest.TestCase):
                 self.assertEqual(records[url]["content_hash"], covered[url]["content_hash"])
                 expected_status = (
                     "verified"
-                    if url in taxmate_entity_worksheet.COMPANY_REVIEW_SOURCES
+                    if url in (
+                        *taxmate_entity_worksheet.COMPANY_REVIEW_SOURCES,
+                        *taxmate_entity_worksheet.PARTNERSHIP_REVIEW_SOURCES,
+                    )
                     else "metadata_only"
                 )
                 self.assertEqual(expected_status, covered[url]["status"])
@@ -270,7 +273,7 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertTrue(all(row["status"] in {"Evidence", "Accountant review"} for row in evidence))
         self.assertFalse(any("franking" in row["answer"].lower() for row in payload["company_items"]))
 
-    def test_nested_alias_lists_and_flat_unsupported_facts_are_evidence_only(self):
+    def test_nested_alias_lists_keep_unsupported_and_route_partnership_losses(self):
         payload = self.payload({
             "company_intake": [{"name": "Alias Co", "dividends": False}],
             "trust_entity": {"name": "Alias Trust", "distributions": 0},
@@ -279,8 +282,12 @@ class EntityReturnRoutingTests(unittest.TestCase):
         rendered = " ".join(row["answer"] for row in payload["evidence_items"])
         self.assertIn('"dividends": false', rendered)
         self.assertIn('"distributions": 0', rendered)
-        self.assertIn('"losses": {"carried_forward": 0}', rendered)
-        self.assertEqual([], payload["partnership_items"])
+        loss = next(
+            row for row in payload["partnership_items"]
+            if row["row_kind"] == "entity-return-partnership-loss"
+        )
+        self.assertIn("carried forward 0", loss["answer"])
+        self.assertIn("finite partnership loss amount", rendered)
 
     def test_flat_aliases_and_renderer_sections_sources_and_anchors(self):
         payload = self.payload({
@@ -469,6 +476,22 @@ class EntityReturnRoutingTests(unittest.TestCase):
         }]})
         self.assertEqual(1, len(payload["company_items"]))
         self.assertIn("https://example.invalid/alias-company", payload["company_items"][0]["source_urls"])
+
+    def test_nested_and_flat_entity_sources_merge_without_missing_sentinel(self):
+        nested_source = "https://example.invalid/nested-company"
+        flat_source = "https://example.invalid/flat-company"
+        payload = self.payload({
+            "company_return": {"name": "Source Co", "source_url": nested_source},
+            "company_return_source_url": flat_source,
+        })
+        sources = payload["company_items"][0]["source_urls"]
+        self.assertIn(nested_source, sources)
+        self.assertIn(flat_source, sources)
+        self.assertNotIn(None, sources)
+        self.assertFalse(any(
+            "source provenance" in row["answer"]
+            for row in payload["evidence_items"]
+        ))
 
     def test_direct_entity_sections_force_fail_closed_status_and_kind(self):
         payload = {
@@ -1451,6 +1474,615 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         evidence = json.dumps(payload["evidence_items"])
         self.assertIn("entity-return-company-loss-evidence", evidence)
         self.assertIn("entity-return-company-loss-continuity-evidence", evidence)
+
+    def test_partnership_loss_gst_bas_psi_structure_rows_are_isolated(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Review Partners",
+                "loss_items": [{
+                    "current_year_loss": 0,
+                    "records": ["accounts.pdf"],
+                }],
+                "loss_allocations": [{
+                    "allocation_percentages": {"Partner A": 60, "Partner B": 40},
+                    "evidence": ["agreement.pdf"],
+                }],
+                "gst_bas_review": {
+                    "gst_registered": False,
+                    "bas_period": "quarterly",
+                    "bas_overlap": False,
+                    "records": ["bas-workpaper.pdf"],
+                },
+                "psi_review": {
+                    "psi": False,
+                    "income_amount": 0,
+                    "evidence": ["contracts.pdf"],
+                },
+                "business_structure_review": {
+                    "business_structure": "partnership",
+                    "structure_indicator": False,
+                    "evidence": ["agreement.pdf"],
+                },
+            },
+        })
+        rows = {
+            row["row_kind"]: row for row in payload["partnership_items"]
+            if row["row_kind"].startswith("entity-return-partnership-")
+        }
+        expected = {
+            "entity-return-partnership-loss",
+            "entity-return-partnership-loss-allocation",
+            "entity-return-partnership-gst-bas",
+            "entity-return-partnership-psi",
+            "entity-return-partnership-business-structure",
+        }
+        self.assertTrue(expected.issubset(rows))
+        rendered = json.dumps(list(rows.values()))
+        self.assertIn("current year loss 0", rendered)
+        self.assertIn("gst registered false", rendered)
+        self.assertIn("psi false", rendered)
+        self.assertIn("structure indicator false", rendered)
+        self.assertTrue(all(rows[kind]["status"] == "Accountant review" for kind in expected))
+        self.assertFalse(any(
+            row["row_kind"] in expected for row in payload["items"] + payload["company_items"]
+        ))
+
+    def test_partnership_review_gaps_fail_closed_with_narrow_sources(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Incomplete Partners",
+                "losses": {"amount": "unknown", "records": False},
+                "loss_allocation": [
+                    {"partner": "Partner A", "allocation_percentage": 60, "evidence": False},
+                    {"partner": "Partner B", "allocation_percentage": 50, "evidence": False},
+                ],
+                "gst_bas_details": {"gst_registered": "unknown", "bas_overlap": True},
+                "psi_details": {"psi": "unknown", "source_urls": ["bad source"]},
+                "structure_indicators": {},
+            },
+        })
+        evidence = [
+            row for row in payload["evidence_items"]
+            if row["row_kind"].startswith("entity-return-partnership-")
+        ]
+        rendered = " ".join(row["answer"] for row in evidence)
+        for expected in (
+            "finite partnership loss amount", "conflicting loss allocation", "evidence",
+            "BAS reporting period", "BAS overlap review", "PSI uncertainty",
+            "source provenance", "business structure facts",
+        ):
+            self.assertIn(expected, rendered)
+        sources = {row["row_kind"]: row["source_urls"] for row in evidence}
+        self.assertIn(
+            taxmate_entity_worksheet.PARTNERSHIP_LOSSES_SOURCE,
+            sources["entity-return-partnership-loss-evidence"],
+        )
+        self.assertIn(
+            taxmate_entity_worksheet.PARTNERSHIP_BAS_SOURCE,
+            sources["entity-return-partnership-gst-bas-evidence"],
+        )
+        self.assertIn(
+            taxmate_entity_worksheet.PARTNERSHIP_PSI_SOURCE,
+            sources["entity-return-partnership-psi-evidence"],
+        )
+
+    def test_flat_scalar_partnership_review_aliases_preserve_falsey_facts(self):
+        payload = self.payload({
+            "partnership_return": {"name": "Scalar Partners"},
+            "partnership_return_losses": 0,
+            "partnership_return_gst_bas_review": False,
+            "partnership_return_personal_services_income": False,
+            "partnership_return_business_structure": "partnership",
+        })
+        rendered = json.dumps(payload["partnership_items"])
+        self.assertIn("amount 0", rendered)
+        self.assertIn("bas overlap false", rendered)
+        self.assertIn("personal services income false", rendered)
+        self.assertIn("business structure partnership", rendered)
+        self.assertEqual(1, sum(
+            row["row_kind"] == "entity-return-partnership-gst-bas"
+            for row in payload["partnership_items"]
+        ))
+
+    def test_documented_flat_partnership_review_fields_are_grouped(self):
+        payload = self.payload({
+            "partnership_return": {"name": "Flat Review Partners"},
+            "partnership_return_current_year_loss": 0,
+            "partnership_return_loss_records": ["accounts.pdf"],
+            "partnership_return_gst_registered": False,
+            "partnership_return_bas_period": "quarterly",
+            "partnership_return_bas_overlap": True,
+            "partnership_return_gst_bas_records": ["bas.pdf"],
+            "partnership_return_psi": False,
+            "partnership_return_psi_evidence": ["contracts.pdf"],
+            "partnership_return_business_structure": "partnership",
+            "partnership_return_business_structure_records": ["agreement.pdf"],
+            "partnership_return_source_url": "https://www.ato.gov.au/example-review",
+            "partnership_return_checked_at": "2026-07-15T10:00:00Z",
+        })
+        rows = {row["row_kind"]: row for row in payload["partnership_items"]}
+        gst = rows["entity-return-partnership-gst-bas"]
+        self.assertEqual(1, sum(
+            row["row_kind"] == "entity-return-partnership-gst-bas"
+            for row in payload["partnership_items"]
+        ))
+        self.assertIn("gst registered false", gst["answer"])
+        self.assertIn("bas period quarterly", gst["answer"])
+        self.assertIn("bas overlap true", gst["answer"])
+        self.assertIn("https://www.ato.gov.au/example-review", gst["source_urls"])
+        self.assertEqual("2026-07-15T10:00:00Z", gst["checked_at"])
+        self.assertIn("psi false", rows["entity-return-partnership-psi"]["answer"])
+        self.assertIn(
+            "business structure partnership",
+            rows["entity-return-partnership-business-structure"]["answer"],
+        )
+        self.assertIn("current year loss 0", rows["entity-return-partnership-loss"]["answer"])
+        unsupported = " ".join(
+            row["answer"] for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-partnership-unsupported"
+        )
+        for field in ("gst_registered", "bas_period", "bas_overlap", "psi", "business_structure"):
+            self.assertNotIn(field, unsupported)
+
+    def test_flat_allocation_percentage_maps_are_grouped(self):
+        for field in ("allocation_percentages", "partner_percentages", "share_percentages"):
+            for percentages in (
+                {"Partner A": 60, "Partner B": 40},
+                {"Partner A": "60%", "Partner B": "40%"},
+            ):
+                with self.subTest(field=field, percentages=percentages):
+                    payload = self.payload({
+                        "partnership_return": {"name": "Flat Allocation Partners"},
+                        f"partnership_return_{field}": percentages,
+                        "partnership_return_loss_allocation_records": ["agreement.pdf"],
+                    })
+                    allocation = next(
+                        row for row in payload["partnership_items"]
+                        if row["row_kind"] == "entity-return-partnership-loss-allocation"
+                    )
+                    self.assertIn(field.replace("_", " "), allocation["answer"])
+                    unsupported = " ".join(
+                        row["answer"] for row in payload["evidence_items"]
+                        if row["row_kind"] == "entity-return-partnership-unsupported"
+                    )
+                    self.assertNotIn(field, unsupported)
+                    self.assertFalse(any(
+                        row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                        for row in payload["evidence_items"]
+                    ))
+
+    def test_core_share_map_does_not_create_loss_allocation_review(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Ordinary Partners",
+                "share_percentages": {"Partner A": 60, "Partner B": 40},
+            },
+        })
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-partnership-loss-allocation"
+            for row in payload["partnership_items"]
+        ))
+        partnership_gaps = " ".join(
+            row["answer"] for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-partnership-evidence"
+        )
+        self.assertNotIn("partner share percentages", partnership_gaps)
+
+    def test_share_percentage_list_joins_real_allocation_context(self):
+        payload = self.payload({
+            "partnership_return": {"name": "Share List Partners"},
+            "partnership_return_share_percentages": [60, 40],
+            "partnership_return_loss_allocation_records": ["agreement.pdf"],
+        })
+        allocation = next(
+            row for row in payload["partnership_items"]
+            if row["row_kind"] == "entity-return-partnership-loss-allocation"
+        )
+        self.assertIn("share percentages [60, 40]", allocation["answer"])
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+            for row in payload["evidence_items"]
+        ))
+
+    def test_nested_overlapping_review_aliases_preserve_objects(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Nested Alias Partners",
+                "personal_services_income": {
+                    "psi": False,
+                    "evidence": ["contracts.pdf"],
+                },
+                "business_structure": {
+                    "structure": "partnership",
+                    "evidence": ["agreement.pdf"],
+                },
+            },
+        })
+        rows = {row["row_kind"]: row for row in payload["partnership_items"]}
+        self.assertIn("psi false", rows["entity-return-partnership-psi"]["answer"])
+        self.assertIn(
+            "structure partnership",
+            rows["entity-return-partnership-business-structure"]["answer"],
+        )
+        self.assertFalse(any(
+            row["row_kind"] in {
+                "entity-return-partnership-psi-evidence",
+                "entity-return-partnership-business-structure-evidence",
+            }
+            for row in payload["evidence_items"]
+        ))
+
+    def test_review_alias_conflicts_queue_every_partnership_section(self):
+        cases = (
+            (
+                "loss_items", {"current_year_loss": 0, "records": ["accounts.pdf"]},
+                "current_year_loss", 100,
+                "entity-return-partnership-loss-evidence",
+            ),
+            (
+                "gst_bas_review", {
+                    "gst_registered": False, "bas_period": "quarterly",
+                    "bas_overlap": False, "records": ["bas.pdf"],
+                },
+                "gst_registered", True,
+                "entity-return-partnership-gst-bas-evidence",
+            ),
+            (
+                "psi_review", {"psi": False, "evidence": ["contracts.pdf"]},
+                "psi", True,
+                "entity-return-partnership-psi-evidence",
+            ),
+            (
+                "business_structure_review", {
+                    "business_structure": "partnership", "evidence": ["agreement.pdf"],
+                },
+                "business_structure", "company",
+                "entity-return-partnership-business-structure-evidence",
+            ),
+        )
+        for collection, nested, flat_field, flat_value, row_kind in cases:
+            with self.subTest(collection=collection):
+                payload = self.payload({
+                    "partnership_return": {
+                        "name": "Conflicting Alias Partners",
+                        collection: nested,
+                    },
+                    f"partnership_return_{flat_field}": flat_value,
+                })
+                evidence = next(
+                    row for row in payload["evidence_items"]
+                    if row["row_kind"] == row_kind
+                )
+                self.assertIn("conflicting review aliases", evidence["answer"])
+
+    def test_bare_loss_allocation_alias_maps_reconcile_as_amounts(self):
+        for alias in ("loss_allocations", "partner_loss_allocations"):
+            with self.subTest(alias=alias):
+                payload = self.payload({
+                    "partnership_return": {
+                        "name": "Bare Map Partners",
+                        alias: {"Partner A": 600, "Partner B": 400},
+                    },
+                    "partnership_return_current_year_loss": 1000,
+                    "partnership_return_loss_allocation_records": ["agreement.pdf"],
+                })
+                allocation = next(
+                    row for row in payload["partnership_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation"
+                )
+                self.assertIn("allocation", allocation["answer"])
+                self.assertFalse(any(
+                    row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                    for row in payload["evidence_items"]
+                ))
+
+    def test_bare_loss_allocation_map_without_metadata_is_normalized(self):
+        for alias in ("loss_allocations", "partner_loss_allocations"):
+            with self.subTest(alias=alias):
+                payload = self.payload({
+                    "partnership_return": {
+                        "name": "Bare Only Partners",
+                        alias: {"Partner A": 600, "Partner B": 400},
+                    },
+                })
+                allocation = next(
+                    row for row in payload["partnership_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation"
+                )
+                self.assertIn('allocation {"Partner A": 600, "Partner B": 400}', allocation["answer"])
+                evidence = " ".join(
+                    row["answer"] for row in payload["evidence_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                )
+                self.assertNotIn("Confirm loss allocation;", evidence)
+                self.assertIn("loss amount for allocation reconciliation", evidence)
+                self.assertIn("evidence", evidence)
+
+    def test_partner_identity_does_not_replace_allocation_value(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Partner Only Allocation",
+                "loss_allocation": {
+                    "partner": "Partner A",
+                    "evidence": ["agreement.pdf"],
+                },
+            },
+        })
+        evidence = next(
+            row for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+        )
+        self.assertIn("loss allocation", evidence["answer"])
+
+        valued = self.payload({
+            "partnership_return": {
+                "name": "Valued Partner Allocation",
+                "loss_allocation": {
+                    "partner": "Partner A",
+                    "allocation_percentage": "100%",
+                    "evidence": ["agreement.pdf"],
+                },
+            },
+        })
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+            for row in valued["evidence_items"]
+        ))
+
+    def test_per_partner_allocation_values_require_partner_identity(self):
+        for item in (
+            {"allocation_percentage": "100%", "evidence": ["agreement.pdf"]},
+            {"allocated_loss": 1000, "loss_amount": 1000, "evidence": ["agreement.pdf"]},
+            {"allocation": 100, "allocation_basis": "percentage", "evidence": ["agreement.pdf"]},
+        ):
+            with self.subTest(item=item):
+                payload = self.payload({
+                    "partnership_return": {
+                        "name": "Unidentified Allocation",
+                        "loss_allocation": item,
+                    },
+                })
+                evidence = next(
+                    row for row in payload["evidence_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                )
+                self.assertIn("allocation partner", evidence["answer"])
+
+        keyed = self.payload({
+            "partnership_return": {
+                "name": "Keyed Allocation",
+                "loss_allocation": {
+                    "allocation": {"Partner A": 60, "Partner B": 40},
+                    "allocation_basis": "percentage",
+                    "evidence": ["agreement.pdf"],
+                },
+            },
+        })
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+            for row in keyed["evidence_items"]
+        ))
+
+    def test_percentage_strings_reconcile_in_rows_and_generic_maps(self):
+        for allocation in (
+            [
+                {"partner": "Partner A", "allocation_percentage": "60%", "evidence": ["agreement.pdf"]},
+                {"partner": "Partner B", "allocation_percentage": "40%", "evidence": ["agreement.pdf"]},
+            ],
+            {
+                "allocation": {"Partner A": "60%", "Partner B": "40%"},
+                "allocation_basis": "percentage",
+                "evidence": ["agreement.pdf"],
+            },
+        ):
+            with self.subTest(allocation=allocation):
+                payload = self.payload({
+                    "partnership_return": {
+                        "name": "Percentage String Partners",
+                        "loss_allocation": allocation,
+                    },
+                })
+                self.assertFalse(any(
+                    row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                    for row in payload["evidence_items"]
+                ))
+
+    def test_review_aliases_union_nested_and_flat_provenance(self):
+        nested_source = "https://www.ato.gov.au/nested-review"
+        flat_source = "https://www.ato.gov.au/flat-review"
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Source Union Partners",
+                "losses": [{
+                    "amount": 0,
+                    "records": ["accounts.pdf"],
+                    "source_url": nested_source,
+                }],
+            },
+            "partnership_return_source_url": flat_source,
+        })
+        loss = next(
+            row for row in payload["partnership_items"]
+            if row["row_kind"] == "entity-return-partnership-loss"
+        )
+        self.assertIn(nested_source, loss["source_urls"])
+        self.assertIn(flat_source, loss["source_urls"])
+        source_gaps = [
+            row for row in payload["evidence_items"]
+            if "source provenance" in row["answer"]
+        ]
+        self.assertEqual([], source_gaps)
+
+    def test_flat_gst_bas_interaction_has_one_context_and_one_review_row(self):
+        payload = self.payload({
+            "partnership_return": {"name": "GST Context Partners"},
+            "partnership_return_gst_bas_interaction": False,
+            "partnership_return_gst_bas_records": ["bas.pdf"],
+        })
+        partnership = payload["partnership_items"]
+        self.assertEqual(1, sum(
+            row["question"] == "Partnership accounting and GST/BAS context"
+            for row in partnership
+        ))
+        self.assertEqual(1, sum(
+            row["row_kind"] == "entity-return-partnership-gst-bas" for row in partnership
+        ))
+        self.assertEqual(1, sum(
+            row["row_kind"] == "entity-return-partnership-gst-bas-evidence"
+            for row in payload["evidence_items"]
+        ))
+
+    def test_psi_amount_and_records_do_not_replace_psi_indicator(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Amount Only PSI Partners",
+                "psi_review": {
+                    "income_amount": 0,
+                    "records": ["contracts.pdf"],
+                },
+            },
+        })
+        evidence = next(
+            row for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-partnership-psi-evidence"
+        )
+        self.assertIn("PSI indicator", evidence["answer"])
+        psi = next(
+            row for row in payload["partnership_items"]
+            if row["row_kind"] == "entity-return-partnership-psi"
+        )
+        self.assertIn("income amount 0", psi["answer"])
+
+    def test_flat_scalar_review_aliases_merge_group_specific_evidence(self):
+        payload = self.payload({
+            "partnership_return": {"name": "Evidence Merge Partners"},
+            "partnership_return_losses": 0,
+            "partnership_return_loss_records": ["accounts.pdf"],
+            "partnership_return_personal_services_income": False,
+            "partnership_return_psi_evidence": ["contracts.pdf"],
+            "partnership_return_business_structure": "partnership",
+            "partnership_return_business_structure_records": ["agreement.pdf"],
+        })
+        rows = {row["row_kind"]: row for row in payload["partnership_items"]}
+        self.assertIn("amount 0", rows["entity-return-partnership-loss"]["answer"])
+        self.assertIn("records", rows["entity-return-partnership-loss"]["answer"])
+        self.assertIn(
+            "personal services income false",
+            rows["entity-return-partnership-psi"]["answer"],
+        )
+        self.assertIn("evidence", rows["entity-return-partnership-psi"]["answer"])
+        self.assertFalse(any(
+            row["row_kind"] in {
+                "entity-return-partnership-loss-evidence",
+                "entity-return-partnership-psi-evidence",
+                "entity-return-partnership-business-structure-evidence",
+            }
+            for row in payload["evidence_items"]
+        ))
+
+    def test_empty_review_alias_preserves_group_specific_evidence(self):
+        payload = self.payload({
+            "partnership_return": {
+                "name": "Empty Alias Partners",
+                "losses": [],
+            },
+            "partnership_return_loss_records": ["accounts.pdf"],
+        })
+        loss = next(
+            row for row in payload["partnership_items"]
+            if row["row_kind"] == "entity-return-partnership-loss"
+        )
+        self.assertIn("records", loss["answer"])
+        self.assertTrue(any(
+            row["row_kind"] == "entity-return-partnership-loss-evidence"
+            for row in payload["evidence_items"]
+        ))
+
+    def test_generic_loss_allocation_maps_and_rows_require_reconciliation(self):
+        for allocation in (
+            {"allocation": {"Partner A": 60, "Partner B": 50}, "evidence": ["agreement.pdf"]},
+            [
+                {"partner": "Partner A", "allocation": 60, "evidence": ["agreement.pdf"]},
+                {"partner": "Partner B", "allocation": 50, "evidence": ["agreement.pdf"]},
+            ],
+        ):
+            with self.subTest(allocation=allocation):
+                payload = self.payload({
+                    "partnership_return": {
+                        "name": "Allocation Partners",
+                        "loss_allocation": allocation,
+                    },
+                })
+                evidence = " ".join(
+                    row["answer"] for row in payload["evidence_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                )
+                self.assertIn("conflicting loss allocation", evidence)
+                self.assertIn("loss allocation basis", evidence)
+
+        reconciled = self.payload({
+            "partnership_return": {
+                "name": "Amount Allocation Partners",
+                "loss_allocation": {
+                    "allocation": {"Partner A": 600, "Partner B": 400},
+                    "allocation_basis": "amount",
+                    "loss_amount": 1000,
+                    "evidence": ["agreement.pdf"],
+                },
+            },
+        })
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+            for row in reconciled["evidence_items"]
+        ))
+
+        for second_amount, conflict_expected in ((400, False), (500, True)):
+            with self.subTest(second_amount=second_amount):
+                rows = self.payload({
+                    "partnership_return": {
+                        "name": "Partner Row Allocations",
+                        "loss_allocation": [
+                            {
+                                "partner": "Partner A", "allocated_loss": 600,
+                                "loss_amount": 1000, "evidence": ["agreement.pdf"],
+                            },
+                            {
+                                "partner": "Partner B", "allocated_loss": second_amount,
+                                "loss_amount": 1000, "evidence": ["agreement.pdf"],
+                            },
+                        ],
+                    },
+                })
+                evidence = " ".join(
+                    row["answer"] for row in rows["evidence_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                )
+                self.assertEqual(conflict_expected, "conflicting loss allocation" in evidence)
+
+        for second_amount, conflict_expected in ((400, False), (500, True)):
+            with self.subTest(flat_current_year_loss=second_amount):
+                rows = self.payload({
+                    "partnership_return": {
+                        "name": "Flat Loss Allocation Partners",
+                        "loss_allocations": [
+                            {
+                                "partner": "Partner A", "allocated_loss": 600,
+                                "evidence": ["agreement.pdf"],
+                            },
+                            {
+                                "partner": "Partner B", "allocated_loss": second_amount,
+                                "evidence": ["agreement.pdf"],
+                            },
+                        ],
+                    },
+                    "partnership_return_current_year_loss": 1000,
+                })
+                evidence = " ".join(
+                    row["answer"] for row in rows["evidence_items"]
+                    if row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                )
+                self.assertEqual(conflict_expected, "conflicting loss allocation" in evidence)
+                self.assertNotIn("loss amount for allocation reconciliation", evidence)
 
     def test_other_category_requires_description_and_review_signals_win(self):
         payload = self.payload({

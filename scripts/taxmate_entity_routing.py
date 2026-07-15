@@ -65,13 +65,65 @@ WORKSHEET_CONTENT_FIELDS_BY_KIND = {
         "depreciating_assets", "asset_pools", "depreciation_items",
         "capital_allowance_items",
     },
-    "partnership": SHARED_WORKSHEET_CONTENT_FIELDS | {"trading_stock", "capital_allowance_items"},
+    "partnership": SHARED_WORKSHEET_CONTENT_FIELDS | {
+        "trading_stock", "capital_allowance_items", "loss_items", "losses",
+        "tax_losses", "partnership_losses", "loss_allocations", "loss_allocation",
+        "partner_loss_allocations", "gst_bas_review", "gst_bas_details",
+        "psi_review", "psi_details", "personal_services_income",
+        "business_structure_review", "business_structure", "structure_indicators",
+    },
 }
 WORKSHEET_FIELDS_BY_KIND = {
     kind: fields | WORKSHEET_ASSOCIATION_FIELDS
     for kind, fields in WORKSHEET_CONTENT_FIELDS_BY_KIND.items()
 }
 WORKSHEET_TOTAL_FIELDS = {"income_total", "deduction_total", "expense_total"}
+PARTNERSHIP_REVIEW_FLAT_GROUPS = {
+    "loss_items": ("current_year_loss", "prior_year_loss", "carried_forward_loss"),
+    "loss_allocation": (
+        "allocation", "allocations", "allocation_percentage", "share_percentage",
+        "percentage", "allocation_percentages", "partner_percentages",
+        "share_percentages", "allocation_basis", "allocation_type", "allocated_loss",
+        "loss_amount", "total_loss",
+    ),
+    "gst_bas_review": (
+        "gst_registered", "gst_registration_status", "registration_date", "bas_period",
+        "reporting_period", "period", "bas_overlap", "gst_bas_interaction", "overlap",
+    ),
+    "psi_review": ("psi", "psi_indicator", "personal_services_income", "income_amount"),
+    "business_structure_review": (
+        "business_structure", "structure", "entity_structure", "structure_indicator",
+    ),
+}
+PARTNERSHIP_REVIEW_EVIDENCE_FIELDS = {
+    "loss_items": ("loss_records", "loss_evidence"),
+    "loss_allocation": ("loss_allocation_records", "loss_allocation_evidence"),
+    "gst_bas_review": ("gst_bas_records", "gst_bas_evidence"),
+    "psi_review": ("psi_records", "psi_evidence"),
+    "business_structure_review": ("business_structure_records", "business_structure_evidence"),
+}
+PARTNERSHIP_REVIEW_COLLECTION_ALIASES = {
+    "loss_items": ("loss_items", "losses", "tax_losses", "partnership_losses"),
+    "loss_allocation": ("loss_allocation", "loss_allocations", "partner_loss_allocations"),
+    "gst_bas_review": ("gst_bas_review", "gst_bas_details"),
+    "psi_review": ("psi_review", "psi_details", "personal_services_income"),
+    "business_structure_review": (
+        "business_structure_review", "business_structure", "structure_indicators",
+    ),
+}
+PARTNERSHIP_REVIEW_SCALAR_FIELDS = {
+    "loss_items": "amount",
+    "loss_allocation": "allocation",
+    "gst_bas_review": "bas_overlap",
+    "psi_review": "psi",
+    "business_structure_review": "business_structure",
+}
+PARTNERSHIP_REVIEW_PRESERVED_FLAT_FIELDS = {"gst_bas_interaction", "share_percentages"}
+PARTNERSHIP_ALLOCATION_ITEM_FIELDS = {
+    *PARTNERSHIP_REVIEW_FLAT_GROUPS["loss_allocation"],
+    "partner", "partner_name", "records", "evidence", "documents",
+    "source_url", "source_urls", "checked_at", "status", "review_status",
+}
 REQUEST_MARKER = "__entity_return_requested__"
 LEGACY_SHARE_FIELDS = {
     "trust": (
@@ -297,6 +349,16 @@ def _dedupe(values: List[Any]) -> List[Any]:
             seen.add(marker)
             unique.append(value)
     return unique
+
+
+def _merge_source_values(*values: Any) -> List[Any]:
+    supplied = [
+        item
+        for value in values
+        for item in _values(value)
+        if not _missing(item)
+    ]
+    return _dedupe(supplied)
 
 
 def _child_collection_value(left: Any, right: Any) -> List[Any]:
@@ -798,6 +860,95 @@ def _entity_request_present(answers: Dict[str, Any], kind: str) -> bool:
     )
 
 
+def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
+    grouped = dict(record)
+    shared_current_year_loss = grouped.get("current_year_loss")
+    metadata = {
+        key: grouped[key]
+        for key in ("source_url", "source_urls", "checked_at", "status", "review_status")
+        if key in grouped
+    }
+    for collection, fields in PARTNERSHIP_REVIEW_FLAT_GROUPS.items():
+        review: Dict[str, Any] = {}
+        allocation_context = collection == "loss_allocation" and any(
+            field in grouped
+            for field in (
+                *PARTNERSHIP_REVIEW_COLLECTION_ALIASES[collection],
+                *PARTNERSHIP_REVIEW_EVIDENCE_FIELDS[collection],
+                *(field for field in fields if field != "share_percentages"),
+            )
+        )
+        for field in fields:
+            if field not in grouped:
+                continue
+            if (
+                field in PARTNERSHIP_REVIEW_COLLECTION_ALIASES[collection]
+                and isinstance(grouped[field], (dict, list))
+            ):
+                continue
+            if field == "share_percentages" and (
+                not isinstance(grouped[field], (dict, list)) or not allocation_context
+            ):
+                continue
+            review[field] = grouped[field]
+            if field not in PARTNERSHIP_REVIEW_PRESERVED_FLAT_FIELDS:
+                grouped.pop(field)
+        for field in PARTNERSHIP_REVIEW_EVIDENCE_FIELDS[collection]:
+            if field in grouped:
+                canonical = "records" if field.endswith("_records") else "evidence"
+                review[canonical] = grouped.pop(field)
+        existing_aliases = [
+            alias for alias in PARTNERSHIP_REVIEW_COLLECTION_ALIASES[collection]
+            if alias in grouped
+        ]
+        if (
+            collection == "loss_allocation"
+            and not _missing(shared_current_year_loss)
+            and (review or existing_aliases)
+        ):
+            review.setdefault("current_year_loss", shared_current_year_loss)
+        populated_existing_alias = any(
+            not _missing(grouped[alias]) for alias in existing_aliases
+        )
+        if not review and not populated_existing_alias:
+            continue
+        review.update({key: value for key, value in metadata.items() if key not in review})
+        if existing_aliases:
+            for alias in existing_aliases:
+                existing = grouped[alias]
+                items = _values(existing)
+                if not items:
+                    grouped[alias] = [review] if isinstance(existing, list) else review
+                    continue
+                merged_items: List[Dict[str, Any]] = []
+                for item in items:
+                    if (
+                        collection == "loss_allocation"
+                        and isinstance(item, dict)
+                        and not PARTNERSHIP_ALLOCATION_ITEM_FIELDS.intersection(item)
+                    ):
+                        merged = {"allocation": dict(item), "allocation_basis": "amount"}
+                    else:
+                        merged = (
+                            dict(item) if isinstance(item, dict)
+                            else {PARTNERSHIP_REVIEW_SCALAR_FIELDS[collection]: item}
+                        )
+                    for key, value in review.items():
+                        if key not in merged or _missing(merged[key]):
+                            merged[key] = value
+                        elif key in {"source_url", "source_urls"}:
+                            merged["source_urls"] = _merge_source_values(
+                                merged.get("source_urls"), merged.get("source_url"), value,
+                            )
+                        elif not worksheet_values_equivalent(key, merged[key], value):
+                            merged.setdefault("_alias_conflicts", {})[key] = [merged[key], value]
+                    merged_items.append(merged)
+                grouped[alias] = merged_items if isinstance(existing, list) else merged_items[0]
+        else:
+            grouped[collection] = review
+    return grouped
+
+
 def entity_facts_present(value: Any) -> bool:
     return not _missing(value)
 
@@ -850,6 +1001,10 @@ def entity_records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[
                 for key, value in flat.items():
                     if key not in nested:
                         nested[key] = value
+                    elif key in {"source_url", "source_urls"}:
+                        nested["source_urls"] = _merge_source_values(
+                            nested.get("source_urls"), nested.get("source_url"), value,
+                        )
                     elif key in CHILD_COLLECTIONS.get(kind, ()) and nested[key] != value:
                         nested[key] = _child_collection_value(nested[key], value)
                     elif not worksheet_values_equivalent(key, nested[key], value):
@@ -878,6 +1033,8 @@ def entity_records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[
         unique: List[Any] = []
         seen: set[str] = set()
         for value in values:
+            if kind == "partnership" and isinstance(value, dict):
+                value = _group_partnership_review_fields(value)
             marker = json.dumps(value, sort_keys=True, ensure_ascii=False, default=str)
             if marker in seen:
                 continue
@@ -939,14 +1096,15 @@ def route_entity_returns(
             ]
             if kind == "partnership" and "share_percentages" in raw:
                 values = raw["share_percentages"]
+                shares = list(values.values()) if isinstance(values, dict) else values
                 valid_values = (
-                    isinstance(values, list)
-                    and bool(values)
+                    isinstance(shares, list)
+                    and bool(shares)
                     and all(
                         isinstance(value, (int, float)) and not isinstance(value, bool)
-                        for value in values
+                        for value in shares
                     )
-                    and sum(values) == 100
+                    and sum(shares) == 100
                 )
                 if not valid_values:
                     gaps.append("partner share percentages")

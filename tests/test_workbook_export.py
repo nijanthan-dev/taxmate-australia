@@ -211,6 +211,39 @@ class WorkbookExportTests(unittest.TestCase):
         self.assertIn("https://www.ato.gov.au/example-loss", loss["source_urls"])
         self.assertEqual("2026-07-15T10:00:00Z", loss["checked_at"])
 
+    def test_partnership_loss_gst_psi_rows_keep_review_and_provenance(self) -> None:
+        answers = {
+            "income_year": "2025-26",
+            "partnership_return": {
+                "name": "Workbook Partners",
+                "losses": {"amount": 0, "records": ["accounts.pdf"]},
+                "gst_bas_review": {
+                    "gst_registered": False,
+                    "bas_period": "quarterly",
+                    "bas_overlap": True,
+                    "records": ["bas.pdf"],
+                },
+                "psi_review": {
+                    "psi": "unknown",
+                    "evidence": ["contracts.pdf"],
+                    "source_url": "https://www.ato.gov.au/example-psi",
+                    "checked_at": "2026-07-15T10:00:00Z",
+                },
+            },
+        }
+        data = taxmate_taxpack.load_guide_payload(taxmate_intake.answers_to_pack_payload(answers))
+        tabs = taxmate_workbook.build_tabs(data)
+        numbers = {row["number"] for row in tabs["partnership"]}
+        review_numbers = {row["number"] for row in tabs["accountant_review"]}
+
+        self.assertIn("PARTNERSHIP-LOSS-1", numbers)
+        self.assertIn("PARTNERSHIP-GST-BAS-1", numbers)
+        self.assertIn("PARTNERSHIP-PSI-1", numbers)
+        self.assertIn("PARTNERSHIP-PSI-1", review_numbers)
+        psi = next(row for row in tabs["partnership"] if row["number"] == "PARTNERSHIP-PSI-1")
+        self.assertIn("https://www.ato.gov.au/example-psi", psi["source_urls"])
+        self.assertEqual("2026-07-15T10:00:00Z", psi["checked_at"])
+
     def test_raw_intake_file_uses_canonical_pack_conversion(self) -> None:
         answers = taxmate_intake.sample_answers()
         with tempfile.TemporaryDirectory() as temporary:
