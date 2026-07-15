@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.28.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.27.0...v0.28.0) (2026-07-15)
+
+
+### Features
+
+* add partnership review workflow ([#160](https://github.com/nijanthan-dev/taxmate-australia/issues/160)) ([dbeee01](https://github.com/nijanthan-dev/taxmate-australia/commit/dbeee0144d4fff87a526ac9aa4a986989dab56f1))
+
 ## [0.27.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.26.0...v0.27.0) (2026-07-15)
 
 
