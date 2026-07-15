@@ -1625,25 +1625,55 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
             self.assertNotIn(field, unsupported)
 
     def test_flat_allocation_percentage_maps_are_grouped(self):
-        for field in (
-            "allocation_percentages", "partner_percentages", "share_percentages",
+        for field in ("allocation_percentages", "partner_percentages", "share_percentages"):
+            for percentages in (
+                {"Partner A": 60, "Partner B": 40},
+                {"Partner A": "60%", "Partner B": "40%"},
+            ):
+                with self.subTest(field=field, percentages=percentages):
+                    payload = self.payload({
+                        "partnership_return": {"name": "Flat Allocation Partners"},
+                        f"partnership_return_{field}": percentages,
+                        "partnership_return_loss_allocation_records": ["agreement.pdf"],
+                    })
+                    allocation = next(
+                        row for row in payload["partnership_items"]
+                        if row["row_kind"] == "entity-return-partnership-loss-allocation"
+                    )
+                    self.assertIn(field.replace("_", " "), allocation["answer"])
+                    unsupported = " ".join(
+                        row["answer"] for row in payload["evidence_items"]
+                        if row["row_kind"] == "entity-return-partnership-unsupported"
+                    )
+                    self.assertNotIn(field, unsupported)
+                    self.assertFalse(any(
+                        row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                        for row in payload["evidence_items"]
+                    ))
+
+    def test_percentage_strings_reconcile_in_rows_and_generic_maps(self):
+        for allocation in (
+            [
+                {"partner": "Partner A", "allocation_percentage": "60%", "evidence": ["agreement.pdf"]},
+                {"partner": "Partner B", "allocation_percentage": "40%", "evidence": ["agreement.pdf"]},
+            ],
+            {
+                "allocation": {"Partner A": "60%", "Partner B": "40%"},
+                "allocation_basis": "percentage",
+                "evidence": ["agreement.pdf"],
+            },
         ):
-            with self.subTest(field=field):
+            with self.subTest(allocation=allocation):
                 payload = self.payload({
-                    "partnership_return": {"name": "Flat Allocation Partners"},
-                    f"partnership_return_{field}": {"Partner A": 60, "Partner B": 40},
-                    "partnership_return_loss_allocation_records": ["agreement.pdf"],
+                    "partnership_return": {
+                        "name": "Percentage String Partners",
+                        "loss_allocation": allocation,
+                    },
                 })
-                allocation = next(
-                    row for row in payload["partnership_items"]
-                    if row["row_kind"] == "entity-return-partnership-loss-allocation"
-                )
-                self.assertIn(field.replace("_", " "), allocation["answer"])
-                unsupported = " ".join(
-                    row["answer"] for row in payload["evidence_items"]
-                    if row["row_kind"] == "entity-return-partnership-unsupported"
-                )
-                self.assertNotIn(field, unsupported)
+                self.assertFalse(any(
+                    row["row_kind"] == "entity-return-partnership-loss-allocation-evidence"
+                    for row in payload["evidence_items"]
+                ))
 
     def test_review_aliases_union_nested_and_flat_provenance(self):
         nested_source = "https://www.ato.gov.au/nested-review"

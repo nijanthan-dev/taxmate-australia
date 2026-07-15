@@ -1014,9 +1014,14 @@ def _partnership_review_sources(section: str, raw: Dict[str, Any]) -> List[str]:
     ]))
 
 
-def _numeric_total(value: Any) -> Optional[Decimal]:
+def _numeric_total(value: Any, *, percentages: bool = False) -> Optional[Decimal]:
     values = value.values() if isinstance(value, dict) else value if isinstance(value, list) else []
-    parsed = [_amount(item) for item in values]
+    parsed = [
+        _amount(item[:-1].strip())
+        if percentages and isinstance(item, str) and item.strip().endswith("%")
+        else _amount(item)
+        for item in values
+    ]
     return sum(parsed, Decimal("0")) if parsed and all(item is not None for item in parsed) else None
 
 
@@ -1049,10 +1054,12 @@ def _allocation_collection_gaps(raw_items: List[Any]) -> List[str]:
             generic.extend(value.values() if isinstance(value, dict) else value if isinstance(value, list) else [value])
             break
     gaps: List[str] = []
-    if percentages and _numeric_total(percentages) != Decimal("100"):
+    if percentages and _numeric_total(percentages, percentages=True) != Decimal("100"):
         gaps.append("conflicting loss allocation")
     if generic:
-        total = _numeric_total(generic)
+        total = _numeric_total(generic, percentages=not bases or next(iter(bases), "") in {
+            "percentage", "percent", "share-percentage",
+        })
         if not bases:
             if total != Decimal("100"):
                 gaps.append("conflicting loss allocation")
@@ -1100,7 +1107,7 @@ def _partnership_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
             gaps.append("loss allocation")
         for field in ("allocation_percentages", "partner_percentages", "share_percentages"):
             if field in raw:
-                total = _numeric_total(raw[field])
+                total = _numeric_total(raw[field], percentages=True)
                 if total is None or total != Decimal("100"):
                     gaps.append("conflicting loss allocation")
         if raw.get("conflicts") or raw.get("_alias_conflicts"):
