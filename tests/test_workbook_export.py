@@ -281,6 +281,21 @@ class WorkbookExportTests(unittest.TestCase):
         self.assertEqual("", supporting["source_title"])
         self.assertEqual("2026-01-02", supporting["checked_at"])
 
+    def test_entity_statement_fixture_exports_review_rows_and_sources(self) -> None:
+        source = ROOT / "tests" / "fixtures" / "entity-routing-answers.json"
+        data = taxmate_workbook.load_workbook_data(str(source))
+        tabs = taxmate_workbook.build_tabs(data)
+
+        review = {row["number"]: row for row in tabs["accountant_review"]}
+        self.assertIn("TRUST-BEN-1", review)
+        self.assertIn("PARTNER-DIST-1", review)
+        self.assertEqual("false", review["TRUST-BEN-1"]["answer"].split("present entitlement ", 1)[1].split(";", 1)[0])
+        self.assertIn("loss share -25", review["PARTNER-DIST-1"]["answer"])
+
+        source_numbers = {row["number"] for row in tabs["sources"]}
+        self.assertIn("TRUST-BEN-1", source_numbers)
+        self.assertIn("PARTNER-DIST-1", source_numbers)
+
     def test_main_rows_route_to_specific_tabs_without_abn_bas_duplication(self) -> None:
         data = taxmate_taxpack.load_guide_payload(
             taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())

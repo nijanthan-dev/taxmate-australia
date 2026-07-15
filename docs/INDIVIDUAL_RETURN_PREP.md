@@ -59,6 +59,7 @@ For general non-crypto/non-rental CGT event prep, collect top-level facts or ite
 | WFH fixed-rate | Structured | 2025-26 calendar helper with records/method review. |
 | CGT, crypto, rental, investment workflows | Structured | Review-first rows with source provenance; no final treatment. |
 | Partnership/trust share statements | Structured | Individual statement facts only; separate from investment distributions and full entity returns. |
+| Entity trust/partnership statements | Structured | Prep-only beneficiary and partner statement rows in isolated entity-return sections; no allocation or entitlement decision. |
 | Uncommon income | Review-first | Narrow compensation/insurance and scholarship/prize/award labels; unsupported facts stay free-form review rows. |
 | Itemized deductions | Structured | Gifts/donations, tax affairs, income protection, self-education, union/professional fees, travel/car/public transport, tools/equipment/assets; all review-first with evidence and duplicate/GST/private-use queues. |
 | Personal super contribution deductions | Structured | Notice of intent, fund acknowledgement, intended deduction, cap, and Division 293 review signals. |
@@ -131,6 +132,7 @@ Every direct route requires the exact verified source ID, canonical URL, content
 - `0` withholding, `0` allowances, `0` RFBA, `0` RESC, and false finalised/tax-ready flags stay visible in PAYG rows.
 - `false` spouse, `false` private health cover, `0` dependants, and supplied `0` premium, rebate, or cover-day amounts stay visible in private health and Medicare review rows; supplied zero or unsupported benefit and tax claim codes also stay visible but remain Evidence or `Accountant review`.
 - `0` franking credits, `0` withholding, and `false` foreign components stay visible in investment rows.
+- `0` beneficiary or partner components, `0` ownership/share percentages, negative loss shares, and `false` present-entitlement or distribution signals stay visible in isolated entity-return statement rows.
 - `0` ABN income, `0` ABN expenses, `0` itemized business income or expense categories, and false GST registration stay visible in ABN and BAS prep rows.
 - `0` GST collected, `0` GST credits, `0` GST-free sales, `0` input-taxed sales, `0` adjustments, `0` PAYG instalments, and `0` PAYG withholding stay visible in BAS worksheet rows.
 - `0` CGT proceeds, cost base, incidental costs, event losses, current-year losses, carried-forward losses, main residence ownership/occupancy/absence period text such as `0 days`, and `false` exemption, discount claim, foreign-resident discount, concession, business-asset, active-asset, entity/affiliate/connected-entity, retirement, rollover, 15-year, 50% reduction, business-use, private-use, main-residence-claim, rental/business-use, and spouse/partner conflict flags stay visible in CGT schedule and item rows.
