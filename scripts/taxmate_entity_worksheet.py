@@ -19,6 +19,16 @@ COMPANY_DEDUCTION_SOURCE = (
     "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions/"
     "instructions-to-complete-the-company-tax-return-2026/items-6-to-14/6-expenses"
 )
+COMPANY_LOSSES_SOURCE = (
+    "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/"
+    "income-and-deductions-for-business/business-losses"
+)
+COMPANY_CAPITAL_ALLOWANCES_SOURCE = (
+    "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/"
+    "income-and-deductions-for-business/deductions/"
+    "deductions-for-depreciating-assets-and-capital-expenses"
+)
+COMPANY_REVIEW_SOURCES = (COMPANY_LOSSES_SOURCE, COMPANY_CAPITAL_ALLOWANCES_SOURCE)
 PARTNERSHIP_ITEM_5_SOURCE = (
     "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/"
     "instructions-to-complete-the-partnership-tax-return-2026/"
@@ -60,6 +70,7 @@ PARTNERSHIP_BUSINESS_SOURCE = (
 DETAILED_SOURCES = tuple(dict.fromkeys((
     COMPANY_INCOME_SOURCE,
     COMPANY_DEDUCTION_SOURCE,
+    *COMPANY_REVIEW_SOURCES,
     *PARTNERSHIP_INCOME_SOURCES,
     *PARTNERSHIP_DEDUCTION_SOURCES,
     PARTNERSHIP_BUSINESS_SOURCE,
@@ -127,8 +138,15 @@ CATEGORIES = {
     ("partnership", "deduction"): PARTNERSHIP_DEDUCTION_CATEGORIES,
 }
 COMPANY_DEFERRED_CATEGORIES = {
-    "dividend", "dividends", "franking", "division-7a", "loss", "losses",
-    "depreciation", "capital-allowance", "capital-allowances",
+    "dividend", "dividends", "franking", "division-7a",
+}
+COMPANY_REVIEW_COLLECTIONS = {
+    "loss": ("loss_items", "losses", "tax_losses"),
+    "loss-continuity": ("loss_continuity", "continuity_tests", "ownership_continuity"),
+    "asset": ("asset_items", "depreciating_assets"),
+    "asset-pool": ("asset_pools",),
+    "depreciation": ("depreciation_items",),
+    "capital-allowance": ("capital_allowance_items",),
 }
 CATEGORY_ALIASES = {
     "gross-payments-where-abn-not-quoted": "no-abn-withholding",
@@ -791,6 +809,134 @@ def _special_rows(
     return rows, followups, counter, evidence_index
 
 
+def _company_sources(section: str, raw: Dict[str, Any]) -> List[str]:
+    detailed = (
+        COMPANY_LOSSES_SOURCE
+        if section in {"loss", "loss-continuity"}
+        else COMPANY_CAPITAL_ALLOWANCES_SOURCE
+    )
+    valid_sources, _ = taxmate_entity_routing.source_provenance(raw)
+    return list(dict.fromkeys([
+        taxmate_entity_routing.SOURCES["company"], detailed, *valid_sources,
+    ]))
+
+
+def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
+    gaps: List[str] = []
+    money_fields = {
+        "loss": (
+            "amount", "current_year_loss", "prior_year_loss", "carried_forward_loss",
+            "loss_deducted", "loss_applied",
+        ),
+        "asset": ("cost", "opening_value", "closing_value", "adjustable_value"),
+        "asset-pool": ("opening_value", "additions", "deductions", "closing_value"),
+        "depreciation": ("amount", "deduction_amount", "opening_value", "closing_value"),
+        "capital-allowance": ("amount", "deduction_amount", "adjustable_value"),
+    }
+    supplied_money = [field for field in money_fields.get(section, ()) if field in raw]
+    if section != "loss-continuity":
+        if not supplied_money or any(_amount(raw[field]) is None for field in supplied_money):
+            gaps.append("finite monetary fact")
+    if section in {"asset", "depreciation", "capital-allowance"}:
+        if _missing(raw.get("asset")) and _missing(raw.get("category")):
+            gaps.append("asset or category")
+    if section == "asset-pool" and _missing(raw.get("pool")) and _missing(raw.get("pool_type")):
+        gaps.append("asset pool type")
+    if section in {"depreciation", "capital-allowance"} and _missing(raw.get("method")):
+        gaps.append("method")
+    if section == "loss-continuity" and all(
+        _missing(raw.get(field))
+        for field in (
+            "continuity_of_ownership", "continuity_test", "ownership_change",
+            "control_change", "business_continuity", "same_business", "similar_business",
+        )
+    ):
+        gaps.append("ownership or business continuity signal")
+    evidence_value = raw.get("evidence", raw.get("records", raw.get("documents")))
+    if not _evidence_available(evidence_value):
+        gaps.append("evidence")
+    _, invalid_sources = taxmate_entity_routing.source_provenance(raw)
+    if invalid_sources:
+        gaps.append("source provenance")
+    checked_at = raw.get("checked_at")
+    if "checked_at" in raw and not _missing(checked_at) and not taxmate_entity_routing.valid_checked_at(checked_at):
+        gaps.append("checked-at provenance")
+    return gaps
+
+
+def _company_review_rows(
+    record: Dict[str, Any],
+    parent: Dict[str, Any],
+    association_gap: Optional[str],
+    section: str,
+    aliases: Tuple[str, ...],
+    counter: int,
+    evidence_index: int,
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], int, int]:
+    raw_items, blank_requested = _collection(record, aliases)
+    rows: List[Dict[str, Any]] = []
+    followups: List[Dict[str, Any]] = []
+    if blank_requested:
+        followups.append(_line_followup(
+            "company", section, {}, [f"{section.replace('-', ' ')} facts"], False, evidence_index,
+        ))
+        evidence_index += 1
+    for raw in raw_items:
+        counter += 1
+        if not isinstance(raw, dict) or _missing(raw):
+            followups.append(_line_followup(
+                "company", section, {}, [f"{section.replace('-', ' ')} facts"], False, evidence_index,
+            ))
+            evidence_index += 1
+            continue
+        metadata = {"source_url", "source_urls", "checked_at", "status", "review_status"}
+        fact_values = {key: value for key, value in raw.items() if key not in metadata}
+        pairs = _identity_facts("company", parent, record) + list(fact_values.items())
+        gaps = [association_gap] if association_gap else []
+        gaps.extend(_company_review_gaps(section, raw))
+        checked_at = raw.get("checked_at")
+        rows.append({
+            "number": f"COMPANY-{section.upper()}-{counter}",
+            "ato_area": f"Company {section.replace('-', ' ')} review",
+            "question": f"Company {section.replace('-', ' ')} facts",
+            "answer": "; ".join(f"{key.replace('_', ' ')} {_display(value)}" for key, value in pairs),
+            "why_included": (
+                "Prep-only company fact; loss use, continuity, method, capital-allowance treatment, "
+                "and final deductions remain accountant decisions."
+            ),
+            "status": "Accountant review",
+            "source_urls": _company_sources(section, raw),
+            "checked_at": (
+                checked_at
+                if taxmate_entity_routing.valid_checked_at(checked_at)
+                else taxmate_entity_routing.CHECKED_AT
+            ),
+            "row_kind": f"entity-return-company-{section}",
+            "facts": _facts(pairs),
+            "tab_text": f"Company {section.replace('-', ' ')} facts require accountant review.",
+        })
+        review_required = section == "loss-continuity" or any(
+            _status_review_signal(raw.get(key))
+            for key in (
+                "method", "instant_asset_write_off", "mixed_use", "private_use",
+                "status", "review_status",
+            )
+        )
+        if gaps:
+            valid_sources, invalid_sources = taxmate_entity_routing.source_provenance(raw)
+            source_item = {
+                "source_urls": valid_sources,
+                "invalid_sources": invalid_sources,
+                "checked_at": checked_at,
+            }
+            followups.append(_line_followup(
+                "company", section, source_item,
+                list(dict.fromkeys(gaps)), review_required, evidence_index,
+            ))
+            evidence_index += 1
+    return rows, followups, counter, evidence_index
+
+
 def route_entity_worksheets(
     answers: Dict[str, Any],
 ) -> Tuple[Dict[str, List[Dict[str, Any]]], List[Dict[str, Any]]]:
@@ -801,6 +947,7 @@ def route_entity_worksheets(
         "company-income": 0, "company-deduction": 0,
         "partnership-income": 0, "partnership-deduction": 0,
         "partnership-trading_stock": 0, "partnership-capital_allowance_items": 0,
+        **{f"company-{section}": 0 for section in COMPANY_REVIEW_COLLECTIONS},
     }
     evidence_index = 1
     for kind in ("company", "partnership"):
@@ -842,5 +989,14 @@ def route_entity_worksheets(
                         counters[f"partnership-{field}"], evidence_index,
                     )
                     sections["partnership_items"].extend(rows)
+                    evidence.extend(followups)
+            else:
+                for section, aliases in COMPANY_REVIEW_COLLECTIONS.items():
+                    key = f"company-{section}"
+                    rows, followups, counters[key], evidence_index = _company_review_rows(
+                        record, parent, association_gap, section, aliases,
+                        counters[key], evidence_index,
+                    )
+                    sections["company_items"].extend(rows)
                     evidence.extend(followups)
     return sections, evidence

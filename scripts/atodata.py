@@ -43,6 +43,8 @@ SEED_URLS = [
     "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/foreign-income-items-22-to-24",
     "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/deductions-items-16-to-20",
     "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/business-and-professional-items-items-37-to-53",
+    "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/business-losses",
+    "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-depreciating-assets-and-capital-expenses",
     "https://www.ato.gov.au/individuals-and-families/your-tax-return",
     "https://www.ato.gov.au/individuals-and-families/your-tax-return/how-to-lodge-your-tax-return",
     "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records",

@@ -59,7 +59,12 @@ SHARED_WORKSHEET_CONTENT_FIELDS = {
     "gst_bas_interaction",
 }
 WORKSHEET_CONTENT_FIELDS_BY_KIND = {
-    "company": SHARED_WORKSHEET_CONTENT_FIELDS,
+    "company": SHARED_WORKSHEET_CONTENT_FIELDS | {
+        "loss_items", "losses", "tax_losses", "loss_continuity",
+        "continuity_tests", "ownership_continuity", "asset_items",
+        "depreciating_assets", "asset_pools", "depreciation_items",
+        "capital_allowance_items",
+    },
     "partnership": SHARED_WORKSHEET_CONTENT_FIELDS | {"trading_stock", "capital_allowance_items"},
 }
 WORKSHEET_FIELDS_BY_KIND = {

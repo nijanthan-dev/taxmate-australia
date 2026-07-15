@@ -87,7 +87,20 @@
       "tests": ["EntityWorksheetRoutingTests", "WorkbookExportTests"],
       "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/individual-return/SKILL.md"],
       "issue": "#130",
-      "notes": "ATO-aligned company income and expense categories render in the isolated company section. Franking, dividends, Division 7A, losses, depreciation, capital allowances, and final treatment stay Accountant review or later-slice scope."
+      "notes": "ATO-aligned company income and expense categories render in the isolated company section. Franking and Division 7A remain later-slice scope; loss, depreciation, and capital-allowance facts route through the separate review-first company workflow."
+    },
+    {
+      "id": "company-losses-assets",
+      "title": "Company losses, depreciating assets, and capital allowances",
+      "runtime_status": "structured",
+      "source_policy": "verified",
+      "source_ids": ["ato-2f746e834538", "ato-e3ae3b47b545"],
+      "source_concepts": ["business losses", "ownership continuity", "business continuity", "depreciating assets", "capital expenses", "asset pools", "instant asset write-off"],
+      "runtime_functions": ["_company_review_rows", "_company_review_gaps", "route_entity_worksheets"],
+      "tests": ["EntityWorksheetRoutingTests", "WorkbookExportTests"],
+      "docs": ["README.md", "docs/INDIVIDUAL_RETURN_PREP.md"],
+      "issue": "#132",
+      "notes": "Prep-only company loss, continuity, asset, pool, depreciation, and capital-allowance facts render in isolated company rows. Missing records and unknown amounts stay Evidence; continuity, method, and mixed-asset uncertainty stay Accountant review. No final loss use or deduction calculation."
     },
     {
       "id": "partnership-income-deduction-worksheet",
