@@ -1081,6 +1081,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def _merge_child(",
                 "def _child_matches(",
                 "def _child_records(",
+                "populated = [value for value in values if not _blank(value)]",
+                "_dedupe(populated or values[:1])",
                 "def _blank(",
                 "def _valid_percentage(",
                 "def _amount_value_state(",

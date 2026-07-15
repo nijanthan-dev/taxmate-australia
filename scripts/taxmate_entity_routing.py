@@ -266,7 +266,9 @@ def _dedupe(values: List[Any]) -> List[Any]:
 
 
 def _child_collection_value(left: Any, right: Any) -> List[Any]:
-    return _dedupe([*_values(left), *_values(right)])
+    values = [*_values(left), *_values(right)]
+    populated = [value for value in values if not _blank(value)]
+    return _dedupe(populated or values[:1])
 
 
 def _child_collection_present(record: Dict[str, Any], kind: str) -> bool:

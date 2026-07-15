@@ -678,6 +678,20 @@ class EntityReturnRoutingTests(unittest.TestCase):
         self.assertFalse(any(row["number"].startswith("PARTNER-DIST-") for row in blank_only["partnership_items"]))
         self.assertTrue(any("statement facts required" in row["question"] for row in blank_only["evidence_items"]))
 
+    def test_blank_nested_collection_does_not_mask_flat_statements(self):
+        payload = self.payload({
+            "trust_return": {"name": "Merged Trust", "beneficiary_statements": None},
+            "trust_return_beneficiary_statements": [self.trust_statement()],
+            "partnership_return": {"name": "Merged Partnership", "partner_statements": ""},
+            "partnership_return_partner_statements": [self.partner_statement()],
+        })
+        trust = [row for row in payload["trust_items"] if row["number"].startswith("TRUST-BEN-")]
+        partner = [row for row in payload["partnership_items"] if row["number"].startswith("PARTNER-DIST-")]
+        self.assertEqual(["TRUST-BEN-1"], [row["number"] for row in trust])
+        self.assertEqual(["PARTNER-DIST-1"], [row["number"] for row in partner])
+        child_evidence = [row for row in payload["evidence_items"] if "statement" in row["row_kind"]]
+        self.assertEqual([], child_evidence)
+
     def test_flat_prefixed_collections_attach_to_single_entity(self):
         payload = self.payload({
             "trust_return": {"name": "Flat Trust"},
