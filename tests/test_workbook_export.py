@@ -226,12 +226,18 @@ class WorkbookExportTests(unittest.TestCase):
                     "opening_balance": 0,
                     "closing_balance": 0,
                     "deficit": False,
+                    "franking_deficit_tax": -1,
+                    "evidence_status": "partial",
                     "records": ["franking.csv"],
                 },
                 "division_7a": {
                     "loan_amount": 0,
                     "complying_loan_agreement": False,
+                    "loan_terms": "written terms pending review",
+                    "benchmark_interest_rate": 8.77,
                     "minimum_repayment_made": False,
+                    "retained_profit": -1,
+                    "evidence_status": "partial",
                     "records": ["ledger.pdf"],
                     "source_url": "https://www.ato.gov.au/example-division-7a",
                     "checked_at": "2026-07-16T10:00:00Z",
@@ -255,12 +261,22 @@ class WorkbookExportTests(unittest.TestCase):
                 for tab in ("employee", "abn", "bas", "investments")
                 for row in tabs[tab]
             ))
+        franking = next(
+            row for row in tabs["company"]
+            if row["number"] == "COMPANY-FRANKING-ACCOUNT-1"
+        )
+        self.assertIn("franking deficit tax -1", franking["answer"])
+        self.assertIn("evidence status partial", franking["answer"])
         division_7a = next(
             row for row in tabs["company"]
             if row["number"] == "COMPANY-DIVISION-7A-1"
         )
         self.assertIn("loan amount 0", division_7a["answer"])
         self.assertIn("complying loan agreement false", division_7a["answer"])
+        self.assertIn("loan terms written terms pending review", division_7a["answer"])
+        self.assertIn("benchmark interest rate 8.77", division_7a["answer"])
+        self.assertIn("retained profit -1", division_7a["answer"])
+        self.assertIn("evidence status partial", division_7a["answer"])
         self.assertIn(
             "https://www.ato.gov.au/example-division-7a",
             division_7a["source_urls"],

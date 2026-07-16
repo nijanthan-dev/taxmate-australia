@@ -113,7 +113,7 @@
       "tests": ["EntityWorksheetRoutingTests", "WorkbookExportTests"],
       "docs": ["README.md", "docs/INDIVIDUAL_RETURN_PREP.md", "skills/individual-return/SKILL.md"],
       "issue": "#131",
-      "notes": "Prep-only company dividend, franking-account, and Division 7A facts render in isolated company rows. Deferred categories migrate without duplicates. Missing records, agreements, repayments, account facts, and provenance remain Evidence or Accountant review; conflicts, deficits, private benefits, related-party facts, and uncertainty stay Accountant review. No franking, FDT, distributable-surplus, repayment, or Division 7A calculation."
+      "notes": "Prep-only company dividend, franking-account, and Division 7A facts render in isolated company rows. Deferred categories migrate without duplicates. Missing statements, resolutions, records, agreements, loan terms, repayments, account facts, evidence status, and provenance remain Evidence or Accountant review; conflicts, malformed or negative values, deficits/FDT, private benefits, related-party and interposed/trust facts, and uncertainty stay Accountant review. No franking, FDT, distributable-surplus, minimum-repayment, or Division 7A calculation."
     },
     {
       "id": "partnership-income-deduction-worksheet",

@@ -1132,10 +1132,19 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 'review.setdefault(amount_field, normalized["amount"])',
                 "COMPANY_REVIEW_FLAT_GROUPS = {",
                 "COMPANY_REVIEW_FLAT_CANONICAL = {",
+                '"dividend_franking_credits": "franking_credit"',
+                '"franking_fdt_payable": "franking_deficit_tax"',
+                '"division_7a_repayments": "repayments"',
+                '"division_7a_loan_terms": "loan_terms"',
+                '"division_7a_benchmark_interest_rate": "benchmark_interest_rate"',
+                '"division_7a_minimum_repayment": "minimum_yearly_repayment"',
+                '"division_7a_retained_profit": "retained_profit"',
+                '"division_7a_evidence_status": "evidence_status"',
                 "COMPANY_REVIEW_COLLECTION_ALIASES = {",
                 "COMPANY_REVIEW_ALIAS_SCALAR_FIELDS = {",
                 '"related_party_benefits": "payment"',
                 "def _group_company_review_fields(",
+                "def _company_review_has_alias_conflict(",
                 "def _company_deferred_review_items(",
                 "def _merge_company_review_items(",
                 '"dividend": ("dividend_items", "dividends", "dividends_paid", "dividends_received")',
@@ -1145,8 +1154,12 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 '"franking-account": "closing_balance"',
                 '"division-7a": "loan_amount"',
                 'gaps.append("dividend paid or received")',
+                'gaps.append("conflicting dividend direction")',
                 'gaps.append("franking account fact")',
+                'gaps.append("dividend resolution")',
+                'gaps.append("dividend statement")',
                 'gaps.append("complying loan agreement review")',
+                'gaps.append("loan terms")',
                 'gaps.append("repayment review")',
                 'gaps.append("conflicting review aliases")',
                 "def _company_review_gaps(",
@@ -1219,6 +1232,29 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
             INDIVIDUAL_INTAKE_CONTRACT,
             "forbidden stale company dividend schedule source",
         ))
+    company_review_guidance = "\n".join([
+        skill_text,
+        skill_rules,
+        read_optional(root, "README.md"),
+        read_optional(root, "docs/INDIVIDUAL_RETURN_PREP.md"),
+    ])
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            company_review_guidance,
+            [
+                "dividend/franking",
+                "written loan terms",
+                "benchmark-interest",
+                "retained-profit",
+                "interposed/trust",
+                "evidence status",
+                "negative supplied values",
+                "without duplicate generic income rows",
+                "Never calculate a franking account",
+            ],
+        )
+    )
     findings.extend(
         fail_if_missing(
             INDIVIDUAL_INTAKE_CONTRACT,

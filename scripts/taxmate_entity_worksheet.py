@@ -247,22 +247,42 @@ COMPANY_REVIEW_MONEY_FIELDS = {
     "dividend": (
         "amount", "dividend_amount", "franked_amount", "unfranked_amount",
         "franking_credit", "dividend_franking_credit", "tfn_withholding",
-        "dividend_tfn_withholding",
+        "dividend_tfn_withholding", "dividend_franked_amount",
+        "dividend_unfranked_amount", "dividend_franking_credits",
     ),
     "franking-account": (
         "opening_balance", "credits", "debits", "closing_balance",
         "franking_opening_balance", "franking_credits", "franking_debits",
-        "franking_closing_balance", "franking_deficit_tax",
+        "franking_closing_balance", "franking_deficit_tax", "fdt", "fdt_payable",
+        "franking_fdt", "franking_fdt_payable",
     ),
     "division-7a": (
         "amount", "payment", "loan", "loan_amount", "asset_use",
         "debt_forgiven", "repayment", "minimum_yearly_repayment",
         "distributable_surplus", "retained_earnings", "private_expense",
+        "shareholder_payment", "director_payment", "associate_payment",
+        "repayments", "minimum_repayment", "retained_profit", "retained_profits",
         "division_7a_payment", "division_7a_loan_amount",
+        "division_7a_shareholder_payment", "division_7a_director_payment",
+        "division_7a_associate_payment",
         "division_7a_asset_use", "division_7a_debt_forgiven",
-        "division_7a_repayment", "division_7a_minimum_yearly_repayment",
+        "division_7a_repayment", "division_7a_repayments",
+        "division_7a_minimum_yearly_repayment", "division_7a_minimum_repayment",
         "division_7a_distributable_surplus", "division_7a_retained_earnings",
+        "division_7a_retained_profit", "division_7a_retained_profits",
         "division_7a_private_expense",
+    ),
+}
+COMPANY_REVIEW_NUMERIC_FIELDS = {
+    "franking-account": (
+        "benchmark_percentage", "corporate_tax_rate",
+        "franking_benchmark_percentage", "franking_corporate_tax_rate",
+    ),
+    "division-7a": (
+        "loan_term_years", "interest_rate", "benchmark_interest_rate",
+        "benchmark_rate",
+        "division_7a_loan_term_years", "division_7a_interest_rate",
+        "division_7a_benchmark_interest_rate", "division_7a_benchmark_rate",
     ),
 }
 COMPANY_ALWAYS_REVIEW_SECTIONS = {
@@ -986,6 +1006,63 @@ def _company_sources(section: str, raw: Dict[str, Any]) -> List[str]:
     ]))
 
 
+def _company_review_has_alias_conflict(section: str, raw: Dict[str, Any]) -> bool:
+    collection = {
+        "dividend": "dividend_items",
+        "franking-account": "franking_account_items",
+        "division-7a": "division_7a_items",
+    }.get(section)
+    if not collection:
+        return False
+    groups: Dict[str, List[str]] = {}
+    for field in taxmate_entity_routing.COMPANY_REVIEW_FLAT_GROUPS[collection]:
+        canonical = taxmate_entity_routing.COMPANY_REVIEW_FLAT_CANONICAL.get(field, field)
+        groups.setdefault(canonical, [canonical])
+        if field not in groups[canonical]:
+            groups[canonical].append(field)
+    extras = {
+        "dividend": {
+            "franking_credit": ("franking_credits",),
+        },
+        "franking-account": {
+            "franking_deficit_tax": ("fdt", "fdt_payable"),
+        },
+        "division-7a": {
+            "complying_loan_agreement": ("complying_agreement",),
+            "loan_terms": ("loan_term",),
+            "benchmark_interest_rate": ("benchmark_rate",),
+            "minimum_yearly_repayment": ("minimum_repayment",),
+            "minimum_repayment_made": ("repayment_made",),
+            "retained_profit": ("retained_profits",),
+        },
+    }.get(section, {})
+    for canonical, aliases in extras.items():
+        groups.setdefault(canonical, [canonical])
+        groups[canonical].extend(alias for alias in aliases if alias not in groups[canonical])
+    for aliases in groups.values():
+        values = [
+            raw[field]
+            for field in aliases
+            if field in raw and not _missing(raw[field])
+        ]
+        if len(values) < 2:
+            continue
+        first = values[0]
+        for candidate in values[1:]:
+            if first == candidate:
+                continue
+            first_amount = _amount(first)
+            candidate_amount = _amount(candidate)
+            if (
+                first_amount is not None
+                and candidate_amount is not None
+                and first_amount == candidate_amount
+            ):
+                continue
+            return True
+    return False
+
+
 def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
     gaps: List[str] = []
     supplied_money = [
@@ -1001,6 +1078,13 @@ def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
         _amount(raw[field]) is None for field in supplied_money
     ):
         gaps.append("finite monetary fact")
+    supplied_numeric = [
+        field
+        for field in COMPANY_REVIEW_NUMERIC_FIELDS.get(section, ())
+        if field in raw and not isinstance(raw[field], bool)
+    ]
+    if supplied_numeric and any(_amount(raw[field]) is None for field in supplied_numeric):
+        gaps.append("finite numeric fact")
     if section in {"asset", "depreciation", "capital-allowance"}:
         if _missing(raw.get("asset")) and _missing(raw.get("category")):
             gaps.append("asset or category")
@@ -1016,20 +1100,40 @@ def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
         )
     ):
         gaps.append("ownership or business continuity signal")
-    if section == "dividend" and all(
-        _missing(raw.get(field))
-        for field in (
-            "direction", "dividend_direction", "paid", "received",
-            "dividend_paid", "dividend_received",
+    if section == "dividend":
+        direction = str(
+            raw.get("direction", raw.get("dividend_direction", ""))
+        ).strip().lower()
+        paid = direction == "paid" or any(
+            _review_signal(raw.get(field))
+            and not _status_review_signal(raw.get(field))
+            for field in ("paid", "dividend_paid")
         )
-    ):
-        gaps.append("dividend paid or received")
+        received = direction == "received" or any(
+            _review_signal(raw.get(field))
+            and not _status_review_signal(raw.get(field))
+            for field in ("received", "dividend_received")
+        )
+        if not paid and not received:
+            gaps.append("dividend paid or received")
+        elif paid and received:
+            gaps.append("conflicting dividend direction")
+        if paid and not any(
+            _evidence_available(raw.get(field))
+            for field in ("resolution", "dividend_resolution")
+        ):
+            gaps.append("dividend resolution")
+        if received and not any(
+            _evidence_available(raw.get(field))
+            for field in ("statement", "dividend_statement")
+        ):
+            gaps.append("dividend statement")
     if section == "franking-account" and all(
         _missing(raw.get(field))
         for field in (
             "opening_balance", "credits", "debits", "closing_balance",
             "franking_opening_balance", "franking_credits", "franking_debits",
-            "franking_closing_balance", "deficit", "franking_deficit",
+            "franking_closing_balance",
         )
     ):
         gaps.append("franking account fact")
@@ -1038,8 +1142,11 @@ def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
             _missing(raw.get(field))
             for field in (
                 "transaction_type", "payment", "loan", "loan_amount", "asset_use",
+                "shareholder_payment", "director_payment", "associate_payment",
                 "debt_forgiven", "private_expense", "division_7a_transaction_type",
                 "division_7a_payment", "division_7a_loan_amount",
+                "division_7a_shareholder_payment", "division_7a_director_payment",
+                "division_7a_associate_payment",
                 "division_7a_asset_use", "division_7a_debt_forgiven",
                 "division_7a_private_expense",
             )
@@ -1054,7 +1161,9 @@ def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
             _missing(raw.get(field))
             for field in (
                 "agreement", "complying_loan_agreement",
-                "division_7a_agreement", "division_7a_complying_agreement",
+                "complying_agreement", "division_7a_agreement",
+                "division_7a_complying_agreement",
+                "division_7a_complying_loan_agreement",
             )
         ):
             gaps.append("loan agreement")
@@ -1062,17 +1171,35 @@ def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
             _false_signal(raw.get(field))
             for field in (
                 "agreement", "complying_loan_agreement",
-                "division_7a_agreement", "division_7a_complying_agreement",
+                "complying_agreement", "division_7a_agreement",
+                "division_7a_complying_agreement",
+                "division_7a_complying_loan_agreement",
             )
         ):
             gaps.append("complying loan agreement review")
         if loan_supplied and all(
             _missing(raw.get(field))
             for field in (
+                "loan_terms", "loan_term", "loan_term_years", "interest_rate",
+                "benchmark_interest_rate", "benchmark_rate", "maturity_date",
+                "division_7a_loan_terms", "division_7a_loan_term_years",
+                "division_7a_interest_rate",
+                "division_7a_benchmark_interest_rate",
+                "division_7a_benchmark_rate",
+                "division_7a_maturity_date",
+            )
+        ):
+            gaps.append("loan terms")
+        if loan_supplied and all(
+            _missing(raw.get(field))
+            for field in (
                 "repayment", "repayments", "minimum_yearly_repayment",
-                "minimum_repayment_made", "division_7a_repayment",
+                "minimum_repayment", "minimum_repayment_made", "repayment_made",
+                "division_7a_repayment",
                 "division_7a_minimum_yearly_repayment",
+                "division_7a_minimum_repayment",
                 "division_7a_minimum_repayment_made",
+                "division_7a_repayment_made",
             )
         ):
             gaps.append("repayment or minimum yearly repayment signal")
@@ -1080,11 +1207,13 @@ def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
             _false_signal(raw.get(field))
             for field in (
                 "repayment", "repayments", "minimum_repayment_made",
-                "division_7a_repayment", "division_7a_minimum_repayment_made",
+                "repayment_made", "division_7a_repayment",
+                "division_7a_minimum_repayment_made",
+                "division_7a_repayment_made",
             )
         ):
             gaps.append("repayment review")
-    if raw.get("_alias_conflicts"):
+    if raw.get("_alias_conflicts") or _company_review_has_alias_conflict(section, raw):
         gaps.append("conflicting review aliases")
     evidence_value = raw.get("evidence", raw.get("records", raw.get("documents")))
     if not _evidence_available(evidence_value):

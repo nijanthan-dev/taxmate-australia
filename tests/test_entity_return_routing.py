@@ -1683,6 +1683,305 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
             self.assertIn(expected, rendered)
         self.assertTrue(all(row["status"] == "Accountant review" for row in evidence))
 
+    def test_company_issue_131_flat_fact_matrix_preserves_negative_and_alias_values(self):
+        payload = self.payload({
+            "company_return_name": "Complete Review Co",
+            "company_return_dividend_direction": "paid",
+            "company_return_dividend_amount": -10,
+            "company_return_dividend_franked_amount": -4,
+            "company_return_dividend_unfranked_amount": -6,
+            "company_return_dividend_franking_credits": -1,
+            "company_return_dividend_resolution": "directors-resolution.pdf",
+            "company_return_dividend_evidence_status": "partial",
+            "company_return_dividend_records": ["dividend-ledger.pdf"],
+            "company_return_franking_opening_balance": -100,
+            "company_return_franking_credits": 0,
+            "company_return_franking_debits": -5,
+            "company_return_franking_closing_balance": -105,
+            "company_return_franking_deficit": True,
+            "company_return_franking_fdt_payable": -7,
+            "company_return_franking_benchmark_percentage": 30,
+            "company_return_franking_evidence_status": "review required",
+            "company_return_franking_records": ["franking-account.csv"],
+            "company_return_division_7a_transaction_type": "loan and benefit",
+            "company_return_division_7a_related_party": True,
+            "company_return_division_7a_shareholder_payment": -10,
+            "company_return_division_7a_director_payment": 0,
+            "company_return_division_7a_associate_payment": -5,
+            "company_return_division_7a_loan_amount": -100,
+            "company_return_division_7a_repayments": -1,
+            "company_return_division_7a_complying_loan_agreement": True,
+            "company_return_division_7a_loan_terms": "7-year written agreement",
+            "company_return_division_7a_loan_term_years": 7,
+            "company_return_division_7a_interest_rate": 8.77,
+            "company_return_division_7a_benchmark_rate": 8.77,
+            "company_return_division_7a_maturity_date": "2033-06-30",
+            "company_return_division_7a_minimum_repayment": 0,
+            "company_return_division_7a_repayment_made": False,
+            "company_return_division_7a_distributable_surplus": -200,
+            "company_return_division_7a_retained_profit": -300,
+            "company_return_division_7a_interposed_entity": True,
+            "company_return_division_7a_trust_upe": True,
+            "company_return_division_7a_evidence_status": "partial",
+            "company_return_division_7a_records": ["related-party-ledger.pdf"],
+        })
+        rows = {
+            row["row_kind"]: row
+            for row in payload["company_items"]
+            if row["row_kind"] in {
+                "entity-return-company-dividend",
+                "entity-return-company-franking-account",
+                "entity-return-company-division-7a",
+            }
+        }
+        self.assertEqual(3, len(rows))
+        rendered = json.dumps(rows)
+        for expected in (
+            "amount -10",
+            "franked amount -4",
+            "unfranked amount -6",
+            "franking credit -1",
+            "evidence status partial",
+            "opening balance -100",
+            "credits 0",
+            "debits -5",
+            "closing balance -105",
+            "deficit true",
+            "franking deficit tax -7",
+            "shareholder payment -10",
+            "director payment 0",
+            "associate payment -5",
+            "loan amount -100",
+            "repayments -1",
+            "loan terms 7-year written agreement",
+            "loan term years 7",
+            "interest rate 8.77",
+            "benchmark interest rate 8.77",
+            "minimum yearly repayment 0",
+            "minimum repayment made false",
+            "distributable surplus -200",
+            "retained profit -300",
+            "interposed entity true",
+            "trust upe true",
+        ):
+            self.assertIn(expected, rendered)
+        self.assertTrue(all(row["status"] == "Accountant review" for row in rows.values()))
+        self.assertFalse(any(
+            row["row_kind"].startswith("entity-return-company-")
+            for row in payload["items"] + payload["trust_items"] + payload["partnership_items"]
+        ))
+
+    def test_company_issue_131_missing_documents_and_loan_terms_fail_closed(self):
+        cases = (
+            (
+                {
+                    "name": "Paid Dividend Co",
+                    "dividends_paid": {
+                        "amount": 10,
+                        "records": ["dividend-ledger.pdf"],
+                    },
+                },
+                "entity-return-company-dividend-evidence",
+                "dividend resolution",
+            ),
+            (
+                {
+                    "name": "Received Dividend Co",
+                    "dividends_received": {
+                        "amount": 10,
+                        "records": ["general-ledger.pdf"],
+                    },
+                },
+                "entity-return-company-dividend-evidence",
+                "dividend statement",
+            ),
+            (
+                {
+                    "name": "Loan Terms Co",
+                    "division_7a": {
+                        "loan_amount": 10,
+                        "complying_loan_agreement": True,
+                        "repayment": 0,
+                        "records": ["related-party-ledger.pdf"],
+                    },
+                },
+                "entity-return-company-division-7a-evidence",
+                "loan terms",
+            ),
+            (
+                {
+                    "name": "Unknown Direction Co",
+                    "dividends": {
+                        "amount": 0,
+                        "paid": False,
+                        "received": False,
+                        "records": ["dividend-ledger.pdf"],
+                    },
+                },
+                "entity-return-company-dividend-evidence",
+                "dividend paid or received",
+            ),
+            (
+                {
+                    "name": "Incomplete Franking Co",
+                    "franking_account": {
+                        "deficit": False,
+                        "records": ["franking-account.csv"],
+                    },
+                },
+                "entity-return-company-franking-account-evidence",
+                "franking account fact",
+            ),
+        )
+        for company, row_kind, expected in cases:
+            with self.subTest(company=company["name"]):
+                payload = self.payload({"company_return": company})
+                evidence = " ".join(
+                    row["answer"]
+                    for row in payload["evidence_items"]
+                    if row["row_kind"] == row_kind
+                )
+                self.assertIn(expected, evidence)
+                review_rows = [
+                    row for row in payload["company_items"]
+                    if row["row_kind"] == row_kind.removesuffix("-evidence")
+                ]
+                self.assertTrue(review_rows)
+                self.assertTrue(all(row["status"] == "Accountant review" for row in review_rows))
+
+    def test_company_issue_131_flat_synonyms_conflict_instead_of_overwriting(self):
+        payload = self.payload({
+            "company_return_name": "Synonym Conflict Co",
+            "company_return_dividend_direction": "received",
+            "company_return_dividend_franking_credit": 1,
+            "company_return_dividend_franking_credits": 2,
+            "company_return_dividend_statement": "statement.pdf",
+            "company_return_dividend_records": ["statement.pdf"],
+            "company_return_franking_opening_balance": 0,
+            "company_return_franking_fdt": 3,
+            "company_return_franking_fdt_payable": 4,
+            "company_return_franking_records": ["franking.csv"],
+        })
+        evidence = " ".join(
+            row["answer"]
+            for row in payload["evidence_items"]
+            if row["row_kind"] in {
+                "entity-return-company-dividend-evidence",
+                "entity-return-company-franking-account-evidence",
+            }
+        )
+        self.assertIn("conflicting review aliases", evidence)
+
+    def test_company_issue_131_direct_item_alias_conflicts_fail_closed(self):
+        payload = self.payload({
+            "company_return": {
+                "name": "Direct Conflict Co",
+                "dividends": {
+                    "direction": "paid",
+                    "dividend_direction": "received",
+                    "amount": 1,
+                    "dividend_amount": 2,
+                    "resolution": "resolution.pdf",
+                    "statement": "statement.pdf",
+                    "records": ["dividend-ledger.pdf"],
+                },
+                "franking_account": {
+                    "opening_balance": 0,
+                    "franking_deficit_tax": 3,
+                    "fdt": 4,
+                    "records": ["franking.csv"],
+                },
+            },
+        })
+        evidence = " ".join(
+            row["answer"]
+            for row in payload["evidence_items"]
+            if row["row_kind"] in {
+                "entity-return-company-dividend-evidence",
+                "entity-return-company-franking-account-evidence",
+            }
+        )
+        self.assertIn("conflicting review aliases", evidence)
+
+    def test_company_issue_131_direct_and_flat_collections_are_equivalent(self):
+        nested = self.payload({
+            "company_return": {
+                "name": "Equivalent Co",
+                "dividend_items": {
+                    "direction": "paid",
+                    "amount": 0,
+                    "franked_amount": 0,
+                    "franking_credit": 0,
+                    "resolution": "resolution.pdf",
+                    "evidence_status": "partial",
+                    "records": ["dividend-ledger.pdf"],
+                },
+                "franking_account_items": {
+                    "opening_balance": 0,
+                    "credits": 0,
+                    "franking_deficit_tax": 0,
+                    "evidence_status": "partial",
+                    "records": ["franking.csv"],
+                },
+                "division_7a_items": {
+                    "transaction_type": "loan",
+                    "shareholder_payment": 0,
+                    "loan_amount": 0,
+                    "repayments": 0,
+                    "complying_loan_agreement": True,
+                    "loan_terms": "written terms",
+                    "benchmark_interest_rate": 8.77,
+                    "minimum_yearly_repayment": 0,
+                    "retained_profit": 0,
+                    "evidence_status": "partial",
+                    "records": ["ledger.pdf"],
+                },
+            },
+        })
+        flat = self.payload({
+            "company_return_name": "Equivalent Co",
+            "company_return_dividend_direction": "paid",
+            "company_return_dividend_amount": 0,
+            "company_return_dividend_franked_amount": 0,
+            "company_return_dividend_franking_credit": 0,
+            "company_return_dividend_resolution": "resolution.pdf",
+            "company_return_dividend_evidence_status": "partial",
+            "company_return_dividend_records": ["dividend-ledger.pdf"],
+            "company_return_franking_opening_balance": 0,
+            "company_return_franking_credits": 0,
+            "company_return_franking_fdt": 0,
+            "company_return_franking_evidence_status": "partial",
+            "company_return_franking_records": ["franking.csv"],
+            "company_return_division_7a_transaction_type": "loan",
+            "company_return_division_7a_shareholder_payment": 0,
+            "company_return_division_7a_loan_amount": 0,
+            "company_return_division_7a_repayments": 0,
+            "company_return_division_7a_complying_loan_agreement": True,
+            "company_return_division_7a_loan_terms": "written terms",
+            "company_return_division_7a_benchmark_rate": 8.77,
+            "company_return_division_7a_minimum_repayment": 0,
+            "company_return_division_7a_retained_profit": 0,
+            "company_return_division_7a_evidence_status": "partial",
+            "company_return_division_7a_records": ["ledger.pdf"],
+        })
+
+        def review_facts(payload):
+            return {
+                row["row_kind"]: {
+                    fact["key"]: fact["value"]
+                    for fact in row["facts"]
+                    if not fact["key"].startswith("company_")
+                }
+                for row in payload["company_items"]
+                if row["row_kind"] in {
+                    "entity-return-company-dividend",
+                    "entity-return-company-franking-account",
+                    "entity-return-company-division-7a",
+                }
+            }
+
+        self.assertEqual(review_facts(nested), review_facts(flat))
+
     def test_out_of_scope_entity_worksheet_fields_are_preserved_as_unsupported(self):
         payload = self.payload({
             "company_return": {

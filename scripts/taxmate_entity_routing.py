@@ -86,26 +86,40 @@ COMPANY_REVIEW_FLAT_GROUPS = {
     "dividend_items": (
         "dividend_direction", "dividend_recipient", "dividend_payer", "dividend_date",
         "dividend_amount", "franked_amount", "unfranked_amount",
-        "dividend_franking_credit", "dividend_tfn_withholding", "dividend_statement",
-        "dividend_resolution", "dividend_declared", "dividend_paid", "dividend_received",
+        "dividend_franked_amount", "dividend_unfranked_amount",
+        "dividend_franking_credit", "dividend_franking_credits",
+        "dividend_tfn_withholding", "dividend_statement", "dividend_resolution",
+        "dividend_declared", "dividend_paid", "dividend_received",
+        "dividend_evidence_status",
     ),
     "franking_account_items": (
         "franking_opening_balance", "franking_credits", "franking_debits",
         "franking_closing_balance", "franking_deficit", "franking_deficit_tax",
         "franking_benchmark_percentage", "franking_corporate_tax_rate",
-        "franking_refund",
+        "franking_refund", "franking_fdt", "franking_fdt_payable",
+        "franking_evidence_status",
     ),
     "division_7a_items": (
         "division_7a_transaction_type", "division_7a_recipient",
         "division_7a_shareholder", "division_7a_associate", "division_7a_director",
-        "division_7a_payment", "division_7a_loan_amount", "division_7a_asset_use",
-        "division_7a_debt_forgiven", "division_7a_repayment",
+        "division_7a_related_party", "division_7a_payment",
+        "division_7a_shareholder_payment", "division_7a_director_payment",
+        "division_7a_associate_payment", "division_7a_loan_amount",
+        "division_7a_asset_use", "division_7a_debt_forgiven",
+        "division_7a_repayment", "division_7a_repayments",
         "division_7a_agreement", "division_7a_complying_agreement",
-        "division_7a_minimum_yearly_repayment",
-        "division_7a_minimum_repayment_made", "division_7a_lodgment_day_action",
+        "division_7a_complying_loan_agreement",
+        "division_7a_loan_terms", "division_7a_loan_term_years",
+        "division_7a_interest_rate", "division_7a_benchmark_interest_rate",
+        "division_7a_benchmark_rate",
+        "division_7a_maturity_date",
+        "division_7a_minimum_yearly_repayment", "division_7a_minimum_repayment",
+        "division_7a_minimum_repayment_made", "division_7a_repayment_made",
+        "division_7a_lodgment_day_action",
         "division_7a_distributable_surplus", "division_7a_retained_earnings",
+        "division_7a_retained_profit", "division_7a_retained_profits",
         "division_7a_private_expense", "division_7a_interposed_entity",
-        "division_7a_trust_upe",
+        "division_7a_trust_upe", "division_7a_evidence_status",
     ),
 }
 COMPANY_REVIEW_FLAT_CANONICAL = {
@@ -114,13 +128,17 @@ COMPANY_REVIEW_FLAT_CANONICAL = {
     "dividend_payer": "payer",
     "dividend_date": "date",
     "dividend_amount": "amount",
+    "dividend_franked_amount": "franked_amount",
+    "dividend_unfranked_amount": "unfranked_amount",
     "dividend_franking_credit": "franking_credit",
+    "dividend_franking_credits": "franking_credit",
     "dividend_tfn_withholding": "tfn_withholding",
     "dividend_statement": "statement",
     "dividend_resolution": "resolution",
     "dividend_declared": "declared",
     "dividend_paid": "paid",
     "dividend_received": "received",
+    "dividend_evidence_status": "evidence_status",
     "franking_opening_balance": "opening_balance",
     "franking_credits": "credits",
     "franking_debits": "debits",
@@ -130,26 +148,46 @@ COMPANY_REVIEW_FLAT_CANONICAL = {
     "franking_benchmark_percentage": "benchmark_percentage",
     "franking_corporate_tax_rate": "corporate_tax_rate",
     "franking_refund": "refund",
+    "franking_fdt": "franking_deficit_tax",
+    "franking_fdt_payable": "franking_deficit_tax",
+    "franking_evidence_status": "evidence_status",
     "division_7a_transaction_type": "transaction_type",
     "division_7a_recipient": "recipient",
     "division_7a_shareholder": "shareholder",
     "division_7a_associate": "associate",
     "division_7a_director": "director",
+    "division_7a_related_party": "related_party",
     "division_7a_payment": "payment",
+    "division_7a_shareholder_payment": "shareholder_payment",
+    "division_7a_director_payment": "director_payment",
+    "division_7a_associate_payment": "associate_payment",
     "division_7a_loan_amount": "loan_amount",
     "division_7a_asset_use": "asset_use",
     "division_7a_debt_forgiven": "debt_forgiven",
     "division_7a_repayment": "repayment",
+    "division_7a_repayments": "repayments",
     "division_7a_agreement": "agreement",
     "division_7a_complying_agreement": "complying_loan_agreement",
+    "division_7a_complying_loan_agreement": "complying_loan_agreement",
+    "division_7a_loan_terms": "loan_terms",
+    "division_7a_loan_term_years": "loan_term_years",
+    "division_7a_interest_rate": "interest_rate",
+    "division_7a_benchmark_interest_rate": "benchmark_interest_rate",
+    "division_7a_benchmark_rate": "benchmark_interest_rate",
+    "division_7a_maturity_date": "maturity_date",
     "division_7a_minimum_yearly_repayment": "minimum_yearly_repayment",
+    "division_7a_minimum_repayment": "minimum_yearly_repayment",
     "division_7a_minimum_repayment_made": "minimum_repayment_made",
+    "division_7a_repayment_made": "minimum_repayment_made",
     "division_7a_lodgment_day_action": "lodgment_day_action",
     "division_7a_distributable_surplus": "distributable_surplus",
     "division_7a_retained_earnings": "retained_earnings",
+    "division_7a_retained_profit": "retained_profit",
+    "division_7a_retained_profits": "retained_profits",
     "division_7a_private_expense": "private_expense",
     "division_7a_interposed_entity": "interposed_entity",
     "division_7a_trust_upe": "trust_upe",
+    "division_7a_evidence_status": "evidence_status",
 }
 COMPANY_REVIEW_EVIDENCE_FIELDS = {
     "dividend_items": ("dividend_records", "dividend_evidence"),
@@ -1055,11 +1093,21 @@ def _group_company_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
         if key in grouped
     }
     for collection, fields in COMPANY_REVIEW_FLAT_GROUPS.items():
-        review = {
-            COMPANY_REVIEW_FLAT_CANONICAL.get(field, field): grouped.pop(field)
-            for field in fields
-            if field in grouped
-        }
+        review: Dict[str, Any] = {}
+        flat_conflicts: Dict[str, List[Any]] = {}
+        for field in fields:
+            if field not in grouped:
+                continue
+            canonical = COMPANY_REVIEW_FLAT_CANONICAL.get(field, field)
+            value = grouped.pop(field)
+            if canonical not in review or _missing(review[canonical]):
+                review[canonical] = value
+            elif not worksheet_values_equivalent(canonical, review[canonical], value):
+                flat_conflicts.setdefault(canonical, [review[canonical]])
+                if value not in flat_conflicts[canonical]:
+                    flat_conflicts[canonical].append(value)
+        if flat_conflicts:
+            review["_alias_conflicts"] = flat_conflicts
         for field in COMPANY_REVIEW_EVIDENCE_FIELDS[collection]:
             if field in grouped:
                 canonical = "records" if field.endswith("_records") else "evidence"
