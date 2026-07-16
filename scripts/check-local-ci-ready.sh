@@ -14,6 +14,8 @@ fail() {
 [[ -f scripts/run-local-ci-act.sh ]] || fail "missing local act runner"
 
 grep -q "catthehacker/ubuntu:act-22.04" .actrc || fail ".actrc must pin the local act image"
+grep -qx 'name: TaxMate Australia Local CI' .github/workflows/local-ci.yml || fail "local workflow must use TaxMate-specific name"
+grep -qx '    name: TaxMate Australia Local CI' .github/workflows/local-ci.yml || fail "local job must use TaxMate-specific name"
 grep -q "workflow_dispatch:" .github/workflows/ci.yml || fail "CI must stay manually runnable"
 grep -q "workflow_dispatch:" .github/workflows/hol-plugin-scanner.yml || fail "HOL scanner must stay manually runnable"
 if grep -Eq "^[[:space:]]*(pull_request|push):" .github/workflows/ci.yml; then

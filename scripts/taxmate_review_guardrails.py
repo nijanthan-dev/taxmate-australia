@@ -4482,6 +4482,7 @@ def check_local_ci_contract(root: Path) -> List[Finding]:
             "\n".join([ci, scanner, local_ci, actrc, run_script, check_script, precommit, publication, development]),
             [
                 "workflow_dispatch:",
+                "name: TaxMate Australia Local CI",
                 "catthehacker/ubuntu:act-22.04",
                 "act workflow_dispatch -W .github/workflows/local-ci.yml",
                 "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
@@ -4497,6 +4498,7 @@ def check_local_ci_contract(root: Path) -> List[Finding]:
                 "bash scripts/check-local-ci-ready.sh",
                 "taxmate-local-ci-ready",
                 "Hosted test workflows stay disabled in GitHub",
+                "act-TaxMate-Australia-Local-CI-...",
                 "disabled_manually",
             ],
         )

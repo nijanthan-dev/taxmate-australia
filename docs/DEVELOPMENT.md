@@ -253,6 +253,8 @@ scripts/run-local-ci-act.sh
 
 The local workflow runs bash+python runtime checks, generated-source checks, environment checks, plugin smokes, publication validation, and local Gitleaks when installed. Keep both `CI` and `Local CI` `disabled_manually`; do not configure required GitHub status checks.
 
+Act derives its ephemeral Docker container name from the workflow and job names. Both are `TaxMate Australia Local CI`, so containers use the project-specific `act-TaxMate-Australia-Local-CI-...` prefix and are removed after successful runs.
+
 ## Release
 
 - Release runs automatically from pushes to `main`, or manually from `main`, after local checks pass. It does not query or require hosted CI.
