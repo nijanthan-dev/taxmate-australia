@@ -4194,6 +4194,39 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-51c859549f3b",
+      "original_url": "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/private-company-benefits-division-7a-dividends/managing-division-7a-risks-and-corrective-action",
+      "canonical_url": "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/private-company-benefits-division-7a-dividends/managing-division-7a-risks-and-corrective-action",
+      "source_title": "Managing Division 7A risks, and corrective action",
+      "source_last_updated": "2019-01-30T13:00:00.000+00:00",
+      "checked_at": "2026-07-16T07:24:52Z",
+      "content_hash": "a86fadbc205efbfa6518908bab6780d4ee794746583958d863996953e0031b51",
+      "status": "verified",
+      "skills": [
+        "records-evidence"
+      ],
+      "references": [
+        "skills/records-evidence/references/rules.md",
+        "skills/records-evidence/references/sources.json"
+      ],
+      "covered_concepts": [
+        "evidence",
+        "invoice",
+        "keeping-crypto-records",
+        "keeping-good-investment-records",
+        "logbook",
+        "receipt",
+        "record",
+        "records",
+        "records-you-need-to-keep",
+        "substantiation",
+        "tax-invoices"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
       "source_id": "ato-531bacc15d56",
       "original_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/capital-proceeds-from-disposing-of-assets",
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/calculating-your-cgt/capital-proceeds-from-disposing-of-assets",
@@ -4606,6 +4639,39 @@
         "travel",
         "wages",
         "work-related"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-596898d84f7c",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2025",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2025",
+      "source_title": "Dividend and interest schedule 2025",
+      "source_last_updated": "2025-05-28T14:00:00.000+00:00",
+      "checked_at": "2026-07-16T07:24:52Z",
+      "content_hash": "4b479fd04d955ef491ad34661066c761f171e375ab54b02ebc5109d891502cfd",
+      "status": "verified",
+      "skills": [
+        "records-evidence"
+      ],
+      "references": [
+        "skills/records-evidence/references/rules.md",
+        "skills/records-evidence/references/sources.json"
+      ],
+      "covered_concepts": [
+        "evidence",
+        "invoice",
+        "keeping-crypto-records",
+        "keeping-good-investment-records",
+        "logbook",
+        "receipt",
+        "record",
+        "records",
+        "records-you-need-to-keep",
+        "substantiation",
+        "tax-invoices"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",
@@ -8304,7 +8370,7 @@
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/claiming-deductions",
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
-      "checked_at": "2026-07-15T09:20:46Z",
+      "checked_at": "2026-07-16T07:24:52Z",
       "content_hash": "",
       "status": "duplicate",
       "skills": [],
@@ -11035,6 +11101,39 @@
         "travel",
         "wages",
         "work-related"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-f695b501c100",
+      "original_url": "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/imputation/in-detail/franking-deficit-tax-offset-calculation-reduction-rule-and-exclusions",
+      "canonical_url": "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/imputation/in-detail/franking-deficit-tax-offset-calculation-reduction-rule-and-exclusions",
+      "source_title": "Franking deficit tax offset calculations, reduction rule and exclusions",
+      "source_last_updated": "2023-10-31T14:00:00.000+00:00",
+      "checked_at": "2026-07-16T07:24:52Z",
+      "content_hash": "a8a96dc96812da7f208741f16c26734849aee9241f71488ad1791c612981361c",
+      "status": "verified",
+      "skills": [
+        "records-evidence"
+      ],
+      "references": [
+        "skills/records-evidence/references/rules.md",
+        "skills/records-evidence/references/sources.json"
+      ],
+      "covered_concepts": [
+        "evidence",
+        "invoice",
+        "keeping-crypto-records",
+        "keeping-good-investment-records",
+        "logbook",
+        "receipt",
+        "record",
+        "records",
+        "records-you-need-to-keep",
+        "substantiation",
+        "tax-invoices"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",

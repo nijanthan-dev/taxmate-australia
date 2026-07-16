@@ -17569,6 +17569,16 @@ class RuntimeCoverageTests(unittest.TestCase):
         self.assertEqual("verified", by_id["company-losses-assets"]["source_policy"])
         self.assertEqual("#132", by_id["company-losses-assets"]["issue"])
         self.assertEqual(2, by_id["company-losses-assets"]["source_count"])
+        self.assertEqual(
+            "structured",
+            by_id["company-dividend-franking-division-7a"]["runtime_status"],
+        )
+        self.assertEqual(
+            "verified",
+            by_id["company-dividend-franking-division-7a"]["source_policy"],
+        )
+        self.assertEqual("#131", by_id["company-dividend-franking-division-7a"]["issue"])
+        self.assertEqual(3, by_id["company-dividend-franking-division-7a"]["source_count"])
         self.assertEqual("structured", by_id["partnership-income-deduction-worksheet"]["runtime_status"])
         self.assertGreater(by_id["partnership-income-deduction-worksheet"]["source_count"], 0)
         self.assertEqual("structured", by_id["partnership-loss-gst-bas-psi"]["runtime_status"])

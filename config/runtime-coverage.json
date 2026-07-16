@@ -87,7 +87,7 @@
       "tests": ["EntityWorksheetRoutingTests", "WorkbookExportTests"],
       "docs": ["docs/INDIVIDUAL_RETURN_PREP.md", "skills/individual-return/SKILL.md"],
       "issue": "#130",
-      "notes": "ATO-aligned company income and expense categories render in the isolated company section. Franking and Division 7A remain later-slice scope; loss, depreciation, and capital-allowance facts route through the separate review-first company workflow."
+      "notes": "ATO-aligned company income and expense categories render in the isolated company section. Dividend, franking-account, Division 7A, loss, depreciation, and capital-allowance facts route through dedicated review-first company workflows."
     },
     {
       "id": "company-losses-assets",
@@ -101,6 +101,19 @@
       "docs": ["README.md", "docs/INDIVIDUAL_RETURN_PREP.md"],
       "issue": "#132",
       "notes": "Prep-only company loss, continuity, asset, pool, depreciation, and capital-allowance facts render in isolated company rows. Missing records and unknown amounts stay Evidence; continuity, method, and mixed-asset uncertainty stay Accountant review. No final loss use or deduction calculation."
+    },
+    {
+      "id": "company-dividend-franking-division-7a",
+      "title": "Company dividends, franking account, and Division 7A review",
+      "runtime_status": "structured",
+      "source_policy": "verified",
+      "source_ids": ["ato-596898d84f7c", "ato-f695b501c100", "ato-51c859549f3b"],
+      "source_concepts": ["dividends paid and received", "franking credits and debits", "franking deficit tax", "shareholder and director loans", "private company benefits", "Division 7A", "distributable surplus"],
+      "runtime_functions": ["_group_company_review_fields", "_company_deferred_review_items", "_company_review_rows", "_company_review_gaps", "route_entity_worksheets"],
+      "tests": ["EntityWorksheetRoutingTests", "WorkbookExportTests"],
+      "docs": ["README.md", "docs/INDIVIDUAL_RETURN_PREP.md", "skills/individual-return/SKILL.md"],
+      "issue": "#131",
+      "notes": "Prep-only company dividend, franking-account, and Division 7A facts render in isolated company rows. Deferred categories migrate without duplicates. Missing records, agreements, repayments, account facts, and provenance remain Evidence or Accountant review; conflicts, deficits, private benefits, related-party facts, and uncertainty stay Accountant review. No franking, FDT, distributable-surplus, repayment, or Division 7A calculation."
     },
     {
       "id": "partnership-income-deduction-worksheet",

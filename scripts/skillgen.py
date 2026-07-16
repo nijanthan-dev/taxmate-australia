@@ -43,6 +43,11 @@ DESTINATION_INSTRUCTION_SOURCES = {
     "ato-815a889d0a59": "https://www.ato.gov.au/individuals-and-families/your-tax-return/instructions-to-complete-your-tax-return/mytax-instructions/2026/other-mytax-instructions-including-spouse-details-and-income-tests/spouse-details",
     "ato-29a73bbec8f5": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/spouse-details-married-or-de-facto-2026",
 }
+ENTITY_RUNTIME_INSTRUCTION_SOURCES = {
+    "ato-596898d84f7c": "records-evidence",
+    "ato-f695b501c100": "records-evidence",
+    "ato-51c859549f3b": "records-evidence",
+}
 ENTITY_INSTRUCTION_PREFIXES = (
     "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions",
     "https://www.ato.gov.au/forms-and-instructions/trust-tax-return-2026-instructions",
@@ -743,6 +748,11 @@ def entityInstructionSource(rec: atodata.SourceRecord) -> bool:
     return canonical.startswith(ENTITY_INSTRUCTION_PREFIXES)
 
 
+def entityRuntimeInstructionSkill(rec: atodata.SourceRecord) -> str:
+    canonical = canonicalURL(firstNonEmpty(rec.final_url, rec.url))
+    return ENTITY_RUNTIME_INSTRUCTION_SOURCES.get(sourceID(rec.url, canonical), "")
+
+
 def syncRegistryWithVerifiedSources(registry: atodata.SourceRegistry, sources: List[Source]) -> None:
     by_id: Dict[str, atodata.SourceRecord] = {}
     for rec in registry.records:
@@ -822,11 +832,16 @@ def _build(
             canonical = rec.url
         record_id = sourceID(rec.url, canonical)
         record_text = atodata.RecordText(root, rec).strip()
-        topic_match, score = (
-            (None, 0)
-            if rec.url in atodata.SOURCE_TITLE_OVERRIDES or entityInstructionSource(rec)
-            else assignTopic(rec, record_text)
-        )
+        runtime_skill = entityRuntimeInstructionSkill(rec)
+        if rec.url in atodata.SOURCE_TITLE_OVERRIDES or entityInstructionSource(rec):
+            topic_match, score = None, 0
+        elif runtime_skill:
+            topic_match = next(
+                topic for topic in Topics() if topic.slug == runtime_skill
+            )
+            score = 100
+        else:
+            topic_match, score = assignTopic(rec, record_text)
         record_hash = (rec.content_hash or "").strip()
         registry_hash_verified = rec.content_verified and validContentHash(record_hash)
         text_hash = ""
@@ -886,7 +901,11 @@ def _build(
             src.assigned_skill = topic_match.slug
             src.assignment_reason = "topic match + verified source content"
             grouped.setdefault(topic_match.slug, []).append(src)
-            if record_text != "" and not destinationInstructionSource(rec):
+            if (
+                record_text != ""
+                and not destinationInstructionSource(rec)
+                and not runtime_skill
+            ):
                 values.setdefault(topic_match.slug, []).extend(detectValues(topic_match.slug, record_text, src))
         elif preserved_verified and preserved_skill:
             src.status = StatusVerified

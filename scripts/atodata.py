@@ -24,7 +24,7 @@ SCOPE = (
     "ATO official pages relevant to Australian FY2025-26 individual, employment, ABN/sole trader, GST/BAS, "
     "PAYG instalments, PAYG withholding, STP, TPAR, FBT, CGT, ETF/investment, crypto, rental-property "
     "records, super, private health, and company, trust, and partnership return skeleton, income, deduction, "
-    "trading-stock, and capital-allowance preparation."
+    "trading-stock, capital-allowance, dividend, franking-account, and Division 7A preparation."
 )
 
 SOURCE_TITLE_OVERRIDES = {
@@ -45,6 +45,9 @@ SEED_URLS = [
     "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/instructions-to-complete-the-partnership-tax-return-2026/business-and-professional-items-items-37-to-53",
     "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/business-losses",
     "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-depreciating-assets-and-capital-expenses",
+    "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2025",
+    "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/imputation/in-detail/franking-deficit-tax-offset-calculation-reduction-rule-and-exclusions",
+    "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/private-company-benefits-division-7a-dividends/managing-division-7a-risks-and-corrective-action",
     "https://www.ato.gov.au/individuals-and-families/your-tax-return",
     "https://www.ato.gov.au/individuals-and-families/your-tax-return/how-to-lodge-your-tax-return",
     "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records",

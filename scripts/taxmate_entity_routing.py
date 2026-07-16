@@ -63,7 +63,11 @@ WORKSHEET_CONTENT_FIELDS_BY_KIND = {
         "loss_items", "losses", "tax_losses", "loss_continuity",
         "continuity_tests", "ownership_continuity", "asset_items",
         "depreciating_assets", "asset_pools", "depreciation_items",
-        "capital_allowance_items",
+        "capital_allowance_items", "dividend_items", "dividends",
+        "dividends_paid", "dividends_received", "franking_account_items",
+        "franking_account", "franking_items", "franking", "division_7a_items",
+        "division_7a", "division7a", "shareholder_loans", "director_loans",
+        "related_party_benefits",
     },
     "partnership": SHARED_WORKSHEET_CONTENT_FIELDS | {
         "trading_stock", "capital_allowance_items", "loss_items", "losses",
@@ -78,6 +82,97 @@ WORKSHEET_FIELDS_BY_KIND = {
     for kind, fields in WORKSHEET_CONTENT_FIELDS_BY_KIND.items()
 }
 WORKSHEET_TOTAL_FIELDS = {"income_total", "deduction_total", "expense_total"}
+COMPANY_REVIEW_FLAT_GROUPS = {
+    "dividend_items": (
+        "dividend_direction", "dividend_recipient", "dividend_payer", "dividend_date",
+        "dividend_amount", "franked_amount", "unfranked_amount",
+        "dividend_franking_credit", "dividend_tfn_withholding", "dividend_statement",
+        "dividend_resolution", "dividend_declared", "dividend_paid", "dividend_received",
+    ),
+    "franking_account_items": (
+        "franking_opening_balance", "franking_credits", "franking_debits",
+        "franking_closing_balance", "franking_deficit", "franking_deficit_tax",
+        "franking_benchmark_percentage", "franking_corporate_tax_rate",
+        "franking_refund",
+    ),
+    "division_7a_items": (
+        "division_7a_transaction_type", "division_7a_recipient",
+        "division_7a_shareholder", "division_7a_associate", "division_7a_director",
+        "division_7a_payment", "division_7a_loan_amount", "division_7a_asset_use",
+        "division_7a_debt_forgiven", "division_7a_repayment",
+        "division_7a_agreement", "division_7a_complying_agreement",
+        "division_7a_minimum_yearly_repayment",
+        "division_7a_minimum_repayment_made", "division_7a_lodgment_day_action",
+        "division_7a_distributable_surplus", "division_7a_retained_earnings",
+        "division_7a_private_expense", "division_7a_interposed_entity",
+        "division_7a_trust_upe",
+    ),
+}
+COMPANY_REVIEW_FLAT_CANONICAL = {
+    "dividend_direction": "direction",
+    "dividend_recipient": "recipient",
+    "dividend_payer": "payer",
+    "dividend_date": "date",
+    "dividend_amount": "amount",
+    "dividend_franking_credit": "franking_credit",
+    "dividend_tfn_withholding": "tfn_withholding",
+    "dividend_statement": "statement",
+    "dividend_resolution": "resolution",
+    "dividend_declared": "declared",
+    "dividend_paid": "paid",
+    "dividend_received": "received",
+    "franking_opening_balance": "opening_balance",
+    "franking_credits": "credits",
+    "franking_debits": "debits",
+    "franking_closing_balance": "closing_balance",
+    "franking_deficit": "deficit",
+    "franking_deficit_tax": "franking_deficit_tax",
+    "franking_benchmark_percentage": "benchmark_percentage",
+    "franking_corporate_tax_rate": "corporate_tax_rate",
+    "franking_refund": "refund",
+    "division_7a_transaction_type": "transaction_type",
+    "division_7a_recipient": "recipient",
+    "division_7a_shareholder": "shareholder",
+    "division_7a_associate": "associate",
+    "division_7a_director": "director",
+    "division_7a_payment": "payment",
+    "division_7a_loan_amount": "loan_amount",
+    "division_7a_asset_use": "asset_use",
+    "division_7a_debt_forgiven": "debt_forgiven",
+    "division_7a_repayment": "repayment",
+    "division_7a_agreement": "agreement",
+    "division_7a_complying_agreement": "complying_loan_agreement",
+    "division_7a_minimum_yearly_repayment": "minimum_yearly_repayment",
+    "division_7a_minimum_repayment_made": "minimum_repayment_made",
+    "division_7a_lodgment_day_action": "lodgment_day_action",
+    "division_7a_distributable_surplus": "distributable_surplus",
+    "division_7a_retained_earnings": "retained_earnings",
+    "division_7a_private_expense": "private_expense",
+    "division_7a_interposed_entity": "interposed_entity",
+    "division_7a_trust_upe": "trust_upe",
+}
+COMPANY_REVIEW_EVIDENCE_FIELDS = {
+    "dividend_items": ("dividend_records", "dividend_evidence"),
+    "franking_account_items": ("franking_records", "franking_evidence"),
+    "division_7a_items": ("division_7a_records", "division_7a_evidence"),
+}
+COMPANY_REVIEW_COLLECTION_ALIASES = {
+    "dividend_items": (
+        "dividend_items", "dividends", "dividends_paid", "dividends_received",
+    ),
+    "franking_account_items": (
+        "franking_account_items", "franking_account", "franking_items", "franking",
+    ),
+    "division_7a_items": (
+        "division_7a_items", "division_7a", "division7a", "shareholder_loans",
+        "director_loans", "related_party_benefits",
+    ),
+}
+COMPANY_REVIEW_SCALAR_FIELDS = {
+    "dividend_items": "amount",
+    "franking_account_items": "closing_balance",
+    "division_7a_items": "loan_amount",
+}
 PARTNERSHIP_REVIEW_FLAT_GROUPS = {
     "loss_items": ("current_year_loss", "prior_year_loss", "carried_forward_loss"),
     "loss_allocation": (
@@ -949,6 +1044,64 @@ def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
     return grouped
 
 
+def _group_company_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
+    grouped = dict(record)
+    metadata = {
+        key: grouped[key]
+        for key in ("source_url", "source_urls", "checked_at", "status", "review_status")
+        if key in grouped
+    }
+    for collection, fields in COMPANY_REVIEW_FLAT_GROUPS.items():
+        review = {
+            COMPANY_REVIEW_FLAT_CANONICAL.get(field, field): grouped.pop(field)
+            for field in fields
+            if field in grouped
+        }
+        for field in COMPANY_REVIEW_EVIDENCE_FIELDS[collection]:
+            if field in grouped:
+                canonical = "records" if field.endswith("_records") else "evidence"
+                review[canonical] = grouped.pop(field)
+        existing_aliases = [
+            alias for alias in COMPANY_REVIEW_COLLECTION_ALIASES[collection]
+            if alias in grouped
+        ]
+        if not review and not any(
+            not _missing(grouped[alias]) for alias in existing_aliases
+        ):
+            continue
+        review.update({key: value for key, value in metadata.items() if key not in review})
+        if not existing_aliases:
+            grouped[collection] = review
+            continue
+        for alias in existing_aliases:
+            existing = grouped[alias]
+            items = _values(existing)
+            if not items:
+                grouped[alias] = [review] if isinstance(existing, list) else review
+                continue
+            merged_items: List[Dict[str, Any]] = []
+            for item in items:
+                merged = (
+                    dict(item)
+                    if isinstance(item, dict)
+                    else {COMPANY_REVIEW_SCALAR_FIELDS[collection]: item}
+                )
+                for key, value in review.items():
+                    if key not in merged or _missing(merged[key]):
+                        merged[key] = value
+                    elif key in {"source_url", "source_urls"}:
+                        merged["source_urls"] = _merge_source_values(
+                            merged.get("source_urls"), merged.get("source_url"), value,
+                        )
+                    elif not worksheet_values_equivalent(key, merged[key], value):
+                        merged.setdefault("_alias_conflicts", {})[key] = [
+                            merged[key], value,
+                        ]
+                merged_items.append(merged)
+            grouped[alias] = merged_items if isinstance(existing, list) else merged_items[0]
+    return grouped
+
+
 def entity_facts_present(value: Any) -> bool:
     return not _missing(value)
 
@@ -1033,6 +1186,8 @@ def entity_records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[
         unique: List[Any] = []
         seen: set[str] = set()
         for value in values:
+            if kind == "company" and isinstance(value, dict):
+                value = _group_company_review_fields(value)
             if kind == "partnership" and isinstance(value, dict):
                 value = _group_partnership_review_fields(value)
             marker = json.dumps(value, sort_keys=True, ensure_ascii=False, default=str)
