@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.29.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.28.0...v0.29.0) (2026-07-16)
+
+
+### Features
+
+* add company franking and Division 7A review ([#164](https://github.com/nijanthan-dev/taxmate-australia/issues/164)) ([fbedd38](https://github.com/nijanthan-dev/taxmate-australia/commit/fbedd38cdaba9936d46aad925ff803d84e1be5ca))
+
 ## [0.28.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.27.0...v0.28.0) (2026-07-15)
 
 
