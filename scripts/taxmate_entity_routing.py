@@ -69,6 +69,14 @@ WORKSHEET_CONTENT_FIELDS_BY_KIND = {
         "division_7a", "division7a", "shareholder_loans", "director_loans",
         "related_party_benefits",
     },
+    "trust": {
+        "capital_gain_items", "capital_gains", "cgt_items", "trust_capital_gains",
+        "franked_distribution_items", "franked_distributions",
+        "trust_franked_distributions", "streaming_review", "streaming_details",
+        "specific_entitlement", "beneficiary_allocations",
+        "beneficiary_component_allocations", "component_allocations",
+        "distribution_allocations",
+    },
     "partnership": SHARED_WORKSHEET_CONTENT_FIELDS | {
         "trading_stock", "capital_allowance_items", "loss_items", "losses",
         "tax_losses", "partnership_losses", "loss_allocations", "loss_allocation",
@@ -213,6 +221,91 @@ COMPANY_REVIEW_SCALAR_FIELDS = {
 }
 COMPANY_REVIEW_ALIAS_SCALAR_FIELDS = {
     "related_party_benefits": "payment",
+}
+TRUST_REVIEW_FLAT_GROUPS = {
+    "capital_gain_items": (
+        "capital_gain_asset", "capital_gain_description", "capital_gain_type",
+        "capital_gain_amount", "gross_capital_gain", "net_capital_gain",
+        "capital_gain_proceeds", "capital_gain_cost_base", "capital_losses_applied",
+        "capital_gain_discount_eligible", "capital_gain_discount_applied",
+        "capital_gain_discount_percentage", "capital_gain_records",
+        "capital_gain_evidence", "capital_gain_evidence_status",
+    ),
+    "franked_distribution_items": (
+        "franked_distribution_payer", "franked_distribution_amount",
+        "franked_amount", "unfranked_amount", "franking_credit", "franking_credits",
+        "franked_distribution_statement", "franked_distribution_records",
+        "franked_distribution_evidence", "franked_distribution_evidence_status",
+    ),
+    "streaming_review": (
+        "streaming", "streaming_applied", "deed_allows_streaming",
+        "specific_entitlement", "recorded_in_character", "resolution",
+        "streaming_resolution", "resolution_date", "streaming_records",
+        "resolution_records", "streaming_evidence", "streaming_evidence_status",
+    ),
+    "beneficiary_allocations": (
+        "beneficiary_name", "beneficiary_type", "beneficiary_residency",
+        "beneficiary_allocation", "beneficiary_allocation_percentage",
+        "beneficiary_capital_gain", "beneficiary_discounted_capital_gain",
+        "beneficiary_franked_distribution", "beneficiary_franking_credits",
+        "component_type", "component_amount", "allocation_basis",
+        "allocation_resolution", "beneficiary_allocation_records",
+        "beneficiary_allocation_evidence", "beneficiary_allocation_evidence_status",
+    ),
+}
+TRUST_REVIEW_FLAT_CANONICAL = {
+    "capital_gain_asset": "asset",
+    "capital_gain_description": "description",
+    "capital_gain_type": "gain_type",
+    "capital_gain_amount": "amount",
+    "capital_gain_proceeds": "proceeds",
+    "capital_gain_cost_base": "cost_base",
+    "capital_gain_discount_eligible": "discount_eligible",
+    "capital_gain_discount_applied": "discount_applied",
+    "capital_gain_discount_percentage": "discount_percentage",
+    "capital_gain_records": "records",
+    "capital_gain_evidence": "evidence",
+    "capital_gain_evidence_status": "evidence_status",
+    "franked_distribution_payer": "payer",
+    "franked_distribution_amount": "amount",
+    "franking_credits": "franking_credit",
+    "franked_distribution_statement": "statement",
+    "franked_distribution_records": "records",
+    "franked_distribution_evidence": "evidence",
+    "franked_distribution_evidence_status": "evidence_status",
+    "streaming_applied": "streaming",
+    "streaming_resolution": "resolution",
+    "streaming_records": "records",
+    "resolution_records": "resolution_evidence",
+    "streaming_evidence": "evidence",
+    "streaming_evidence_status": "evidence_status",
+    "beneficiary_allocation": "allocation",
+    "beneficiary_allocation_percentage": "allocation_percentage",
+    "beneficiary_allocation_records": "records",
+    "beneficiary_allocation_evidence": "evidence",
+    "beneficiary_allocation_evidence_status": "evidence_status",
+}
+TRUST_REVIEW_COLLECTION_ALIASES = {
+    "capital_gain_items": (
+        "capital_gain_items", "capital_gains", "cgt_items", "trust_capital_gains",
+    ),
+    "franked_distribution_items": (
+        "franked_distribution_items", "franked_distributions",
+        "trust_franked_distributions",
+    ),
+    "streaming_review": (
+        "streaming_review", "streaming_details", "specific_entitlement",
+    ),
+    "beneficiary_allocations": (
+        "beneficiary_allocations", "beneficiary_component_allocations",
+        "component_allocations", "distribution_allocations",
+    ),
+}
+TRUST_REVIEW_SCALAR_FIELDS = {
+    "capital_gain_items": "amount",
+    "franked_distribution_items": "amount",
+    "streaming_review": "streaming",
+    "beneficiary_allocations": "allocation",
 }
 PARTNERSHIP_REVIEW_FLAT_GROUPS = {
     "loss_items": ("current_year_loss", "prior_year_loss", "carried_forward_loss"),
@@ -1158,6 +1251,75 @@ def _group_company_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
     return grouped
 
 
+def _group_trust_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
+    grouped = dict(record)
+    metadata = {
+        key: grouped[key]
+        for key in ("source_url", "source_urls", "checked_at", "status", "review_status")
+        if key in grouped
+    }
+    for collection, fields in TRUST_REVIEW_FLAT_GROUPS.items():
+        review: Dict[str, Any] = {}
+        conflicts: Dict[str, List[Any]] = {}
+        for field in fields:
+            if field not in grouped:
+                continue
+            if (
+                field in TRUST_REVIEW_COLLECTION_ALIASES[collection]
+                and isinstance(grouped[field], (dict, list))
+            ):
+                continue
+            canonical = TRUST_REVIEW_FLAT_CANONICAL.get(field, field)
+            value = grouped.pop(field)
+            if canonical not in review or _missing(review[canonical]):
+                review[canonical] = value
+            elif not worksheet_values_equivalent(canonical, review[canonical], value):
+                conflicts.setdefault(canonical, [review[canonical]])
+                if value not in conflicts[canonical]:
+                    conflicts[canonical].append(value)
+        if conflicts:
+            review["_alias_conflicts"] = conflicts
+        existing_aliases = [
+            alias for alias in TRUST_REVIEW_COLLECTION_ALIASES[collection]
+            if alias in grouped
+        ]
+        if not review and not any(
+            not _missing(grouped[alias]) for alias in existing_aliases
+        ):
+            continue
+        review.update({key: value for key, value in metadata.items() if key not in review})
+        if not existing_aliases:
+            grouped[collection] = review
+            continue
+        for alias in existing_aliases:
+            existing = grouped[alias]
+            items = _values(existing)
+            if not items:
+                grouped[alias] = [review] if isinstance(existing, list) else review
+                continue
+            merged_items: List[Dict[str, Any]] = []
+            for item in items:
+                merged = (
+                    dict(item)
+                    if isinstance(item, dict)
+                    else {TRUST_REVIEW_SCALAR_FIELDS[collection]: item}
+                )
+                for key, value in review.items():
+                    if key not in merged or _missing(merged[key]):
+                        merged[key] = value
+                    elif key in {"source_url", "source_urls"}:
+                        merged["source_urls"] = _merge_source_values(
+                            merged.get("source_urls"), merged.get("source_url"), value,
+                        )
+                    elif not worksheet_values_equivalent(key, merged[key], value):
+                        merged.setdefault("_alias_conflicts", {})[key] = [
+                            merged[key], value,
+                        ]
+                merged_items.append(merged)
+            grouped[alias] = merged_items if isinstance(existing, list) else merged_items[0]
+    return grouped
+
+
 def entity_facts_present(value: Any) -> bool:
     return not _missing(value)
 
@@ -1244,6 +1406,8 @@ def entity_records(answers: Dict[str, Any]) -> Tuple[Dict[str, List[Any]], List[
         for value in values:
             if kind == "company" and isinstance(value, dict):
                 value = _group_company_review_fields(value)
+            if kind == "trust" and isinstance(value, dict):
+                value = _group_trust_review_fields(value)
             if kind == "partnership" and isinstance(value, dict):
                 value = _group_partnership_review_fields(value)
             marker = json.dumps(value, sort_keys=True, ensure_ascii=False, default=str)

@@ -116,6 +116,19 @@
       "notes": "Prep-only company dividend, franking-account, and Division 7A facts render in isolated company rows. Deferred categories migrate without duplicates. Missing statements, resolutions, records, agreements, loan terms, repayments, account facts, evidence status, and provenance remain Evidence or Accountant review; conflicts, malformed or negative values, deficits/FDT, private benefits, related-party and interposed/trust facts, and uncertainty stay Accountant review. No franking, FDT, distributable-surplus, minimum-repayment, or Division 7A calculation."
     },
     {
+      "id": "trust-cgt-franking-streaming",
+      "title": "Trust CGT, franked distributions, streaming, and allocations review",
+      "runtime_status": "structured",
+      "source_policy": "verified",
+      "source_ids": ["ato-d89de846a802"],
+      "source_concepts": ["trust capital gains", "CGT discount signals", "franked distributions", "franking credits", "specific entitlement", "trust streaming", "trustee resolutions", "beneficiary component allocations"],
+      "runtime_functions": ["_group_trust_review_fields", "_trust_review_rows", "_trust_review_gaps", "route_entity_worksheets"],
+      "tests": ["EntityWorksheetRoutingTests", "WorkbookExportTests"],
+      "docs": ["README.md", "docs/INDIVIDUAL_RETURN_PREP.md", "skills/records-evidence/references/rules.md"],
+      "issue": "#135",
+      "notes": "Prep-only trust CGT, franked-distribution, streaming, and beneficiary-allocation facts render only in isolated trust rows. Missing resolutions or statements, unknown or malformed amounts, unsupported allocations, conflicts, and provenance gaps remain Accountant review with evidence rows. No CGT, discount, entitlement, streaming, franking, or allocation decision."
+    },
+    {
       "id": "partnership-income-deduction-worksheet",
       "title": "Partnership income and deduction worksheet",
       "runtime_status": "structured",

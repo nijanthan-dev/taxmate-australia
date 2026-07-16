@@ -179,6 +179,37 @@ class WorkbookExportTests(unittest.TestCase):
         ))
         self.assertEqual("COMPANY-INCOME-1", exported["number"])
 
+    def test_trust_review_rows_stay_in_trust_and_review_tabs(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload({
+            "income_year": "2025-26",
+            "trust_return": {
+                "name": "Workbook Trust",
+                "capital_gain_items": [{
+                    "asset": "Synthetic shares",
+                    "amount": 0,
+                    "discount_eligible": False,
+                    "records": ["cgt.csv"],
+                }],
+            },
+        })
+        data = taxmate_taxpack.load_guide_payload(payload)
+        tabs = taxmate_workbook.build_tabs(data)
+        trust = next(
+            row for row in tabs["trust"]
+            if row["number"].startswith("TRUST-CAPITAL-GAIN")
+        )
+
+        self.assertIn("amount 0", trust["answer"])
+        self.assertIn("discount eligible false", trust["answer"])
+        self.assertTrue(any(
+            row["number"] == trust["number"] for row in tabs["accountant_review"]
+        ))
+        self.assertFalse(any(
+            row["number"] == trust["number"]
+            for tab in ("employee", "investments", "capital_gains", "company", "partnership")
+            for row in tabs[tab]
+        ))
+
     def test_company_loss_asset_rows_keep_review_and_provenance_in_workbook(self) -> None:
         answers = {
             "income_year": "2025-26",

@@ -41,6 +41,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-30T06:30:53Z
   - Content hash: 4478c9ba25dab85985422d3f87454e0b9124562bc99bb3625ed74b6159ab8798
 
+- Streaming trust capital gains and franked distributions
+  - Source ID: ato-d89de846a802
+  - URL: https://www.ato.gov.au/businesses-and-organisations/trusts/trust-income-losses-and-capital-gains/streaming-trust-capital-gains-and-franked-distributions
+  - Source last updated: 2024-06-26T14:00:00.000+00:00
+  - Checked at: 2026-07-16T22:55:53Z
+  - Content hash: 00798845810b72277b6d873c974ada3ed15723934bb33edffc2b637233e81bcd
+
 - Franking deficit tax offset calculations, reduction rule and exclusions
   - Source ID: ato-f695b501c100
   - URL: https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/imputation/in-detail/franking-deficit-tax-offset-calculation-reduction-rule-and-exclusions

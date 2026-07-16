@@ -75,6 +75,21 @@
     "assignment_reason": "topic match + verified source content"
   },
   {
+    "source_id": "ato-d89de846a802",
+    "url": "https://www.ato.gov.au/businesses-and-organisations/trusts/trust-income-losses-and-capital-gains/streaming-trust-capital-gains-and-franked-distributions",
+    "final_url": "https://www.ato.gov.au/businesses-and-organisations/trusts/trust-income-losses-and-capital-gains/streaming-trust-capital-gains-and-franked-distributions",
+    "title": "Streaming trust capital gains and franked distributions",
+    "last_updated": "2024-06-26T14:00:00.000+00:00",
+    "checked_at": "2026-07-16T22:55:53Z",
+    "content_hash": "00798845810b72277b6d873c974ada3ed15723934bb33edffc2b637233e81bcd",
+    "assigned_skill": "records-evidence",
+    "reference": "references/rules.md",
+    "duplicate_of": "",
+    "status": "verified",
+    "reason": "",
+    "assignment_reason": "topic match + verified source content"
+  },
+  {
     "source_id": "ato-f695b501c100",
     "url": "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/imputation/in-detail/franking-deficit-tax-offset-calculation-reduction-rule-and-exclusions",
     "final_url": "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/imputation/in-detail/franking-deficit-tax-offset-calculation-reduction-rule-and-exclusions",
