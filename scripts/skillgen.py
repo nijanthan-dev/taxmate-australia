@@ -44,7 +44,7 @@ DESTINATION_INSTRUCTION_SOURCES = {
     "ato-29a73bbec8f5": "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-2026-instructions/spouse-details-married-or-de-facto-2026",
 }
 ENTITY_RUNTIME_INSTRUCTION_SOURCES = {
-    "ato-596898d84f7c": "records-evidence",
+    "ato-127def29a2d6": "records-evidence",
     "ato-f695b501c100": "records-evidence",
     "ato-51c859549f3b": "records-evidence",
 }

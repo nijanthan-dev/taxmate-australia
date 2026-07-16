@@ -760,6 +760,39 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-127def29a2d6",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2026",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2026",
+      "source_title": "Dividend and interest schedule 2026",
+      "source_last_updated": "2026-05-29T14:00:00.000+00:00",
+      "checked_at": "2026-07-16T08:09:19Z",
+      "content_hash": "b8af30d698cf39966efae5335a2aedc453e5bfca87b46e591a50a70c6f0e214b",
+      "status": "verified",
+      "skills": [
+        "records-evidence"
+      ],
+      "references": [
+        "skills/records-evidence/references/rules.md",
+        "skills/records-evidence/references/sources.json"
+      ],
+      "covered_concepts": [
+        "evidence",
+        "invoice",
+        "keeping-crypto-records",
+        "keeping-good-investment-records",
+        "logbook",
+        "receipt",
+        "record",
+        "records",
+        "records-you-need-to-keep",
+        "substantiation",
+        "tax-invoices"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
       "source_id": "ato-1393b6b0eb9a",
       "original_url": "https://www.ato.gov.au/api/public/content/0-70d99f71-9469-4fd4-97fe-e328d58b37ab",
       "canonical_url": "https://www.ato.gov.au/api/public/content/0-70d99f71-9469-4fd4-97fe-e328d58b37ab",
@@ -4645,39 +4678,6 @@
       "reason": "topic match + verified source content"
     },
     {
-      "source_id": "ato-596898d84f7c",
-      "original_url": "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2025",
-      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2025",
-      "source_title": "Dividend and interest schedule 2025",
-      "source_last_updated": "2025-05-28T14:00:00.000+00:00",
-      "checked_at": "2026-07-16T07:24:52Z",
-      "content_hash": "4b479fd04d955ef491ad34661066c761f171e375ab54b02ebc5109d891502cfd",
-      "status": "verified",
-      "skills": [
-        "records-evidence"
-      ],
-      "references": [
-        "skills/records-evidence/references/rules.md",
-        "skills/records-evidence/references/sources.json"
-      ],
-      "covered_concepts": [
-        "evidence",
-        "invoice",
-        "keeping-crypto-records",
-        "keeping-good-investment-records",
-        "logbook",
-        "receipt",
-        "record",
-        "records",
-        "records-you-need-to-keep",
-        "substantiation",
-        "tax-invoices"
-      ],
-      "duplicate_of": "",
-      "duplicate_evidence": "",
-      "reason": "topic match + verified source content"
-    },
-    {
       "source_id": "ato-596a8afad56e",
       "original_url": "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/when-to-charge-gst-and-when-not-to/input-taxed-sales",
       "canonical_url": "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/when-to-charge-gst-and-when-not-to/input-taxed-sales",
@@ -8370,7 +8370,7 @@
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/claiming-deductions",
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
-      "checked_at": "2026-07-16T07:24:52Z",
+      "checked_at": "2026-07-16T08:09:19Z",
       "content_hash": "",
       "status": "duplicate",
       "skills": [],

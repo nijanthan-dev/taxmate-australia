@@ -29,7 +29,7 @@ COMPANY_CAPITAL_ALLOWANCES_SOURCE = (
     "deductions-for-depreciating-assets-and-capital-expenses"
 )
 COMPANY_DIVIDEND_SOURCE = (
-    "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2025"
+    "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2026"
 )
 COMPANY_FRANKING_SOURCE = (
     "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/"
@@ -248,10 +248,10 @@ COMPANY_ALWAYS_REVIEW_SECTIONS = {
     "loss-continuity", "dividend", "franking-account", "division-7a",
 }
 COMPANY_REVIEW_CATEGORY_TARGETS = {
-    "dividend": ("dividend_items", "received"),
-    "dividends": ("dividend_items", "received"),
-    "franking": ("franking_account_items", None),
-    "division-7a": ("division_7a_items", None),
+    "dividend": ("dividend_items", "received", None),
+    "dividends": ("dividend_items", "received", None),
+    "franking": ("franking_account_items", None, "credits"),
+    "division-7a": ("division_7a_items", None, None),
 }
 PARTNERSHIP_REVIEW_COLLECTIONS = {
     "loss": ("loss_items", "losses", "tax_losses", "partnership_losses"),
@@ -1161,10 +1161,12 @@ def _company_deferred_review_items(
         if not target:
             worksheet_items.append(raw)
             continue
-        collection, direction = target
+        collection, direction, amount_field = target
         review = copy.deepcopy(raw)
         if direction:
             review.setdefault("dividend_direction", direction)
+        if amount_field and "amount" in normalized:
+            review.setdefault(amount_field, normalized["amount"])
         review_items[collection].append(review)
         amount = _amount(normalized.get("amount"))
         if amount is None:

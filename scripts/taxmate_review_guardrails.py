@@ -1114,12 +1114,15 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "COMPANY_LOSSES_SOURCE = (",
                 "COMPANY_CAPITAL_ALLOWANCES_SOURCE = (",
                 "COMPANY_DIVIDEND_SOURCE = (",
+                "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2026",
                 "COMPANY_FRANKING_SOURCE = (",
                 "COMPANY_DIVISION_7A_SOURCE = (",
                 "COMPANY_REVIEW_SOURCE_MAP = {",
                 "COMPANY_REVIEW_MONEY_FIELDS = {",
                 "COMPANY_ALWAYS_REVIEW_SECTIONS = {",
                 "COMPANY_REVIEW_CATEGORY_TARGETS = {",
+                '"franking": ("franking_account_items", None, "credits")',
+                'review.setdefault(amount_field, normalized["amount"])',
                 "COMPANY_REVIEW_FLAT_GROUPS = {",
                 "COMPANY_REVIEW_FLAT_CANONICAL = {",
                 "COMPANY_REVIEW_COLLECTION_ALIASES = {",
@@ -1189,15 +1192,20 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "0-e220713e-6a6f-4401-b966-8bddf3ba96fd",
                 "0-70d99f71-9469-4fd4-97fe-e328d58b37ab",
                 "1453e44ff39e4eb789ea83eeb6eac10b",
-                "ato-596898d84f7c",
+                "ato-127def29a2d6",
                 "ato-f695b501c100",
                 "ato-51c859549f3b",
-                "4b479fd04d955ef491ad34661066c761f171e375ab54b02ebc5109d891502cfd",
+                "b8af30d698cf39966efae5335a2aedc453e5bfca87b46e591a50a70c6f0e214b",
                 "a8a96dc96812da7f208741f16c26734849aee9241f71488ad1791c612981361c",
                 "a86fadbc205efbfa6518908bab6780d4ee794746583958d863996953e0031b51",
             ],
         )
     )
+    if "dividend-and-interest-schedule-2025" in entity_worksheet_text + source_state:
+        findings.append(Finding(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            "forbidden stale company dividend schedule source",
+        ))
     findings.extend(
         fail_if_missing(
             INDIVIDUAL_INTAKE_CONTRACT,

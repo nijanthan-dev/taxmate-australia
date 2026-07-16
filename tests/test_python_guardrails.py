@@ -17579,6 +17579,10 @@ class RuntimeCoverageTests(unittest.TestCase):
         )
         self.assertEqual("#131", by_id["company-dividend-franking-division-7a"]["issue"])
         self.assertEqual(3, by_id["company-dividend-franking-division-7a"]["source_count"])
+        self.assertEqual(
+            ["ato-127def29a2d6", "ato-f695b501c100", "ato-51c859549f3b"],
+            by_id["company-dividend-franking-division-7a"]["source_ids"],
+        )
         self.assertEqual("structured", by_id["partnership-income-deduction-worksheet"]["runtime_status"])
         self.assertGreater(by_id["partnership-income-deduction-worksheet"]["source_count"], 0)
         self.assertEqual("structured", by_id["partnership-loss-gst-bas-psi"]["runtime_status"])

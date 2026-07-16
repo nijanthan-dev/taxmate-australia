@@ -1386,6 +1386,13 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
             taxmate_entity_worksheet.COMPANY_DIVIDEND_SOURCE,
             rows["entity-return-company-dividend"]["source_urls"],
         )
+        self.assertTrue(taxmate_entity_worksheet.COMPANY_DIVIDEND_SOURCE.endswith(
+            "dividend-and-interest-schedule-2026"
+        ))
+        self.assertNotIn(
+            "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2025",
+            rows["entity-return-company-dividend"]["source_urls"],
+        )
         self.assertIn(
             taxmate_entity_worksheet.COMPANY_FRANKING_SOURCE,
             rows["entity-return-company-franking-account"]["source_urls"],
@@ -1478,6 +1485,40 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         self.assertIn("franking credit 0", dividends[0]["answer"])
         self.assertIn("resolution false", dividends[0]["answer"])
         self.assertIn("dividend direction received", dividends[0]["answer"])
+        total = next(
+            row for row in payload["company_items"]
+            if row["number"] == "COMPANY-INCOME-TOTAL-1"
+        )
+        self.assertIn("matches supplied item total", total["answer"])
+
+    def test_company_deferred_franking_amount_normalizes_to_account_credit(self):
+        payload = self.payload({
+            "company_return": {
+                "name": "Franking Migration Co",
+                "income_items": [{
+                    "category": "franking",
+                    "amount": 100,
+                    "evidence": ["franking-ledger.csv"],
+                }],
+                "income_total": 100,
+            },
+        })
+        row = next(
+            row for row in payload["company_items"]
+            if row["row_kind"] == "entity-return-company-franking-account"
+        )
+        self.assertIn("credits 100", row["answer"])
+        evidence = " ".join(
+            row["answer"] for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-company-franking-account-evidence"
+        )
+        self.assertNotIn("finite monetary fact", evidence)
+        self.assertNotIn("franking account fact", evidence)
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-company-income"
+            and "category franking" in row["answer"]
+            for row in payload["company_items"]
+        ))
         total = next(
             row for row in payload["company_items"]
             if row["number"] == "COMPANY-INCOME-TOTAL-1"
