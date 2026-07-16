@@ -192,6 +192,27 @@ COMPANY_REVIEW_COLLECTIONS = {
         "director_loans", "related_party_benefits",
     ),
 }
+COMPANY_REVIEW_ALIAS_DEFAULTS = {
+    "dividend": {
+        "dividends_paid": {"dividend_direction": "paid"},
+        "dividends_received": {"dividend_direction": "received"},
+    },
+    "division-7a": {
+        "shareholder_loans": {"transaction_type": "loan", "shareholder": True},
+        "director_loans": {"transaction_type": "loan", "director": True},
+        "related_party_benefits": {
+            "transaction_type": "benefit",
+            "related_party": True,
+        },
+    },
+}
+COMPANY_REVIEW_ALIAS_SCALAR_FIELDS = {
+    "division-7a": {
+        "shareholder_loans": "loan_amount",
+        "director_loans": "loan_amount",
+        "related_party_benefits": "payment",
+    },
+}
 COMPANY_REVIEW_SCALAR_FIELDS = {
     "loss": "amount",
     "loss-continuity": "continuity_of_ownership",
@@ -474,6 +495,9 @@ def _collection(
     aliases: Tuple[str, ...],
     *,
     preserve_falsey_scalars: bool = False,
+    alias_defaults: Optional[Dict[str, Dict[str, Any]]] = None,
+    alias_scalar_fields: Optional[Dict[str, str]] = None,
+    scalar_field: Optional[str] = None,
 ) -> Tuple[List[Any], bool]:
     values: List[Any] = []
     origins: List[set[str]] = []
@@ -492,6 +516,13 @@ def _collection(
             if isinstance(item, dict) and _missing(item):
                 blank_supplied = True
                 continue
+            defaults = (alias_defaults or {}).get(alias, {})
+            if defaults:
+                item = copy.deepcopy(item)
+                if not isinstance(item, dict):
+                    item = {(alias_scalar_fields or {}).get(alias, scalar_field): item}
+                for key, default in defaults.items():
+                    item.setdefault(key, default)
             if any(item == existing for existing in values):
                 continue
             identity = _item_identity(item)
@@ -958,7 +989,10 @@ def _company_sources(section: str, raw: Dict[str, Any]) -> List[str]:
 def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
     gaps: List[str] = []
     supplied_money = [
-        field for field in COMPANY_REVIEW_MONEY_FIELDS.get(section, ()) if field in raw
+        field
+        for field in COMPANY_REVIEW_MONEY_FIELDS.get(section, ())
+        if field in raw
+        and not (section == "division-7a" and isinstance(raw[field], bool))
     ]
     if section not in {"loss-continuity", "division-7a"}:
         if not supplied_money or any(_amount(raw[field]) is None for field in supplied_money):
@@ -1013,6 +1047,7 @@ def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
             gaps.append("payment, loan, asset use, debt forgiveness, or private benefit")
         loan_supplied = any(
             not _missing(raw.get(field))
+            and not (field == "loan" and _false_signal(raw.get(field)))
             for field in ("loan", "loan_amount", "division_7a_loan_amount")
         )
         if loan_supplied and all(
@@ -1072,7 +1107,14 @@ def _company_review_rows(
     counter: int,
     evidence_index: int,
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], int, int]:
-    raw_items, blank_requested = _collection(record, aliases, preserve_falsey_scalars=True)
+    raw_items, blank_requested = _collection(
+        record,
+        aliases,
+        preserve_falsey_scalars=True,
+        alias_defaults=COMPANY_REVIEW_ALIAS_DEFAULTS.get(section),
+        alias_scalar_fields=COMPANY_REVIEW_ALIAS_SCALAR_FIELDS.get(section),
+        scalar_field=COMPANY_REVIEW_SCALAR_FIELDS[section],
+    )
     rows: List[Dict[str, Any]] = []
     followups: List[Dict[str, Any]] = []
     if blank_requested:

@@ -1525,6 +1525,124 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         )
         self.assertIn("matches supplied item total", total["answer"])
 
+    def test_company_dividend_aliases_preserve_nested_flat_and_scalar_direction(self):
+        nested = self.payload({
+            "company_return": {
+                "name": "Paid Alias Co",
+                "dividends_paid": 0,
+                "dividend_records": ["resolution.pdf"],
+            },
+        })
+        paid = next(
+            row for row in nested["company_items"]
+            if row["row_kind"] == "entity-return-company-dividend"
+        )
+        self.assertIn("amount 0", paid["answer"])
+        self.assertIn("dividend direction paid", paid["answer"])
+        nested_evidence = " ".join(
+            row["answer"] for row in nested["evidence_items"]
+            if row["row_kind"] == "entity-return-company-dividend-evidence"
+        )
+        self.assertNotIn("dividend paid or received", nested_evidence)
+
+        flat = self.payload({
+            "company_return_name": "Received Alias Co",
+            "company_return_dividends_received": {
+                "amount": 25,
+                "evidence": ["dividend-statement.pdf"],
+            },
+        })
+        received = next(
+            row for row in flat["company_items"]
+            if row["row_kind"] == "entity-return-company-dividend"
+        )
+        self.assertIn("amount 25", received["answer"])
+        self.assertIn("dividend direction received", received["answer"])
+        flat_evidence = " ".join(
+            row["answer"] for row in flat["evidence_items"]
+            if row["row_kind"] == "entity-return-company-dividend-evidence"
+        )
+        self.assertNotIn("dividend paid or received", flat_evidence)
+
+    def test_company_division_7a_boolean_signals_are_not_validated_as_money(self):
+        denied = self.payload({
+            "company_return": {
+                "name": "Denied Loan Co",
+                "division_7a": {
+                    "payment": 100,
+                    "loan": False,
+                    "asset_use": False,
+                    "private_expense": False,
+                    "evidence": ["related-party-ledger.pdf"],
+                },
+            },
+        })
+        denied_row = next(
+            row for row in denied["company_items"]
+            if row["row_kind"] == "entity-return-company-division-7a"
+        )
+        self.assertIn("payment 100", denied_row["answer"])
+        self.assertIn("loan false", denied_row["answer"])
+        self.assertIn("asset use false", denied_row["answer"])
+        denied_evidence = " ".join(
+            row["answer"] for row in denied["evidence_items"]
+            if row["row_kind"] == "entity-return-company-division-7a-evidence"
+        )
+        self.assertNotIn("finite monetary fact", denied_evidence)
+        self.assertNotIn("loan agreement", denied_evidence)
+        self.assertNotIn("repayment", denied_evidence)
+
+        confirmed = self.payload({
+            "company_return": {
+                "name": "Confirmed Loan Co",
+                "division_7a": {
+                    "loan": True,
+                    "evidence": ["related-party-ledger.pdf"],
+                },
+            },
+        })
+        confirmed_evidence = " ".join(
+            row["answer"] for row in confirmed["evidence_items"]
+            if row["row_kind"] == "entity-return-company-division-7a-evidence"
+        )
+        self.assertNotIn("finite monetary fact", confirmed_evidence)
+        self.assertIn("loan agreement", confirmed_evidence)
+        self.assertIn("repayment", confirmed_evidence)
+
+    def test_company_division_7a_aliases_preserve_transaction_and_recipient_meaning(self):
+        cases = (
+            (
+                "shareholder_loans",
+                40,
+                ("loan amount 40", "transaction type loan", "shareholder true"),
+            ),
+            (
+                "director_loans",
+                50,
+                ("loan amount 50", "transaction type loan", "director true"),
+            ),
+            (
+                "related_party_benefits",
+                60,
+                ("payment 60", "transaction type benefit", "related party true"),
+            ),
+        )
+        for alias, value, expected in cases:
+            with self.subTest(alias=alias):
+                payload = self.payload({
+                    "company_return": {
+                        "name": "Alias Meaning Co",
+                        alias: value,
+                        "division_7a_records": ["related-party-ledger.pdf"],
+                    },
+                })
+                row = next(
+                    row for row in payload["company_items"]
+                    if row["row_kind"] == "entity-return-company-division-7a"
+                )
+                for text in expected:
+                    self.assertIn(text, row["answer"])
+
     def test_company_review_alias_conflicts_and_malformed_amounts_fail_closed(self):
         payload = self.payload({
             "company_return": {

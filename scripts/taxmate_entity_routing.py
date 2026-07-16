@@ -173,6 +173,9 @@ COMPANY_REVIEW_SCALAR_FIELDS = {
     "franking_account_items": "closing_balance",
     "division_7a_items": "loan_amount",
 }
+COMPANY_REVIEW_ALIAS_SCALAR_FIELDS = {
+    "related_party_benefits": "payment",
+}
 PARTNERSHIP_REVIEW_FLAT_GROUPS = {
     "loss_items": ("current_year_loss", "prior_year_loss", "carried_forward_loss"),
     "loss_allocation": (
@@ -1084,7 +1087,12 @@ def _group_company_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
                 merged = (
                     dict(item)
                     if isinstance(item, dict)
-                    else {COMPANY_REVIEW_SCALAR_FIELDS[collection]: item}
+                    else {
+                        COMPANY_REVIEW_ALIAS_SCALAR_FIELDS.get(
+                            alias,
+                            COMPANY_REVIEW_SCALAR_FIELDS[collection],
+                        ): item
+                    }
                 )
                 for key, value in review.items():
                     if key not in merged or _missing(merged[key]):
