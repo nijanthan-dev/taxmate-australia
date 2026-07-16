@@ -32,7 +32,7 @@ Keep exact filenames, commands, identifiers, quoted review text, and genuine sec
 
 ## Independent review feedback loop
 
-Before requesting another Codex review after review feedback:
+After review feedback:
 
 - Scan the full failure pattern, not only the commented line.
 - When independent review exposes an invariant, encode that invariant broadly in validation checks and tests before fixing the narrow line.
@@ -44,7 +44,7 @@ Before requesting another Codex review after review feedback:
 
 Run `./scripts/taxmate review-guardrails` before opening or updating a PR. The script is the canonical pattern inventory and executable validation-check surface. Do not duplicate PR pattern bullets in docs.
 
-The local pre-commit config, repo hook, and CI run these checks. Public-doc boundary checks are deterministic Python checks in `scripts/taxmate_review_guardrails.py`: update `PUBLIC_OUTPUT_DOCS`, `DEVELOPER_ONLY_PUBLIC_DOC_TERMS`, and `DEVELOPER_ONLY_PUBLIC_DOC_PATTERNS` when Codex review finds a new developer-only command that must not appear in README or public setup docs.
+The local pre-commit config, repo hook, and local CI run these checks. Public-doc boundary checks are deterministic Python checks in `scripts/taxmate_review_guardrails.py`: update `PUBLIC_OUTPUT_DOCS`, `DEVELOPER_ONLY_PUBLIC_DOC_TERMS`, and `DEVELOPER_ONLY_PUBLIC_DOC_PATTERNS` when review finds a new developer-only command that must not appear in README or public setup docs.
 
 List the inventory from the script:
 
@@ -245,20 +245,20 @@ Do not claim official plugin discovery unless a published listing has been verif
 
 ## Local CI
 
-Automatic CI triggers stay in workflow YAML so PR checks and the main release `workflow_run` path still work. To pause hosted-runner spend, disable the CI workflow in GitHub, then run the local act workflow before pushing:
+Hosted test workflows stay disabled in GitHub and have no automatic pull-request or push triggers. Run the complete local act workflow before pushing:
 
 ```bash
 scripts/run-local-ci-act.sh
 ```
 
-The local workflow runs bash+python runtime checks, generated-source checks, environment checks, plugin smokes, publication validation, and local Gitleaks when installed. When GitHub CI is `disabled_manually`, temporarily enable it only when branch protection needs fresh required statuses.
+The local workflow runs bash+python runtime checks, generated-source checks, environment checks, plugin smokes, publication validation, and local Gitleaks when installed. Keep both `CI` and `Local CI` `disabled_manually`; do not configure required GitHub status checks.
 
 ## Release
 
-- After a successful merge to `main`, Release can follow a successful main CI `workflow_run`. If CI is disabled to avoid hosted-runner spend, temporarily enable and run CI for the merge commit, or run the Release workflow manually from `main` after local checks pass.
+- Release runs automatically from pushes to `main`, or manually from `main`, after local checks pass. It does not query or require hosted CI.
 - The workflow requires `RELEASE_PLEASE_TOKEN`, a repo secret whose token can create release pull requests and write contents/issues.
 - Versions are calculated from Conventional Commits:
   - `feat:` -> minor
   - `fix:` / `perf:` -> patch
   - `feat!:` / `BREAKING CHANGE:` -> major
-- The workflow creates or updates the Release PR. After that PR is merged and main CI passes, the workflow runs again to publish the GitHub release artifact.
+- The workflow creates or updates the Release PR. After that PR is merged, the next `main` push publishes the GitHub release artifact.

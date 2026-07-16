@@ -1,6 +1,6 @@
 ---
 name: taxmate-release-closeout
-description: Execute TaxMate Australia repo PR closeout, review validation, and release delivery. Use when fixing or merging TaxMate Australia GitHub PRs, handling @Codex review comments, encoding repeated review lessons into validation checks/tests, running Gitleaks gates, merging Release Please PRs, verifying published tags/releases, or cleaning TaxMate worktrees/branches after release.
+description: Execute TaxMate Australia repo PR closeout, local validation, and release delivery. Use when fixing or merging TaxMate Australia GitHub PRs, handling review comments, encoding repeated review lessons into validation checks/tests, running Gitleaks gates, merging Release Please PRs, verifying published tags/releases, or cleaning TaxMate worktrees/branches after release.
 ---
 
 # TaxMate Release Closeout
@@ -11,8 +11,8 @@ Use this only for the `nijanthan-dev/taxmate-australia` repo. Prefer `gh` for Gi
 
 1. Confirm repo, remote, current branch, and worktree state.
 2. If work starts from `main`, create a fresh `fix/`, `feat/`, or `chore/` branch or worktree from current `origin/main`.
-3. Recheck issue/PR head SHA, mergeability, checks, latest reviews, and unresolved review threads.
-4. Never merge on eyes/ack reactions. Wait for a latest-head review body or explicit user go-ahead.
+3. Recheck issue/PR head SHA, mergeability, and unresolved review threads.
+4. Confirm the full local workflow and secret scans passed for the current head.
 5. If GitHub auth lacks scope, report the missing scope and stop. Do not run `gh auth refresh` unless asked in the current turn.
 
 ## Fix PR Review Comments
@@ -23,8 +23,7 @@ Use this only for the `nijanthan-dev/taxmate-australia` repo. Prefer `gh` for Gi
 4. For generated skill/doc output, patch `scripts/skillgen.py` or the source file first; do not hand-edit generated `skills/*/SKILL.md` unless the generator owns no path.
 5. Run focused tests for the touched area, then the repo's relevant validation path.
 6. Reply to each review thread with the fix and resolve it.
-7. Push and recheck current-head checks, reviews, and threads.
-8. If `@Codex` only adds eyes, end the turn and wait for a review event or user wake. Do not request review again unless asked. If events are unavailable and continued monitoring was explicitly requested, poll no more often than every 5 minutes.
+7. Push and recheck the current head and review threads.
 
 ## Validation Gates
 
@@ -44,12 +43,12 @@ For release/version changes, inspect `.release-please-manifest.json`, `.codex-pl
 
 ## Merge And Release
 
-1. Squash-merge the fix PR only after live review, validation, and secret-scan gates pass.
+1. Squash-merge the fix PR only after local validation and secret-scan gates pass.
 2. Verify issue closure and updated `main` state.
 3. Wait for Release Please to open the next release PR when the fix should ship.
-4. Inspect release PR version bumps and changelog; request latest-head review there too when review flow is in use, then wait event-first with the same 5-minute fallback.
+4. Inspect release PR version bumps and changelog, then run the local validation required for the changed files.
 5. Merge the release PR with squash merge.
-6. Verify tag, GitHub release, version artifacts, and any relevant main CI.
+6. Verify tag, GitHub release, and version artifacts.
 7. Fast-forward local `main` if safe.
 8. Clean merged temp branches/worktrees only after verifying no user changes would be lost. Preserve unrelated untracked paths.
 
@@ -58,7 +57,7 @@ For release/version changes, inspect `.release-please-manifest.json`, `.codex-pl
 Stop and report plainly when:
 
 - Missing GitHub scope blocks required action.
-- Latest-head review is absent and user did not give explicit go-ahead.
+- Full local validation is absent for the current head.
 - Any Gitleaks gate finds a real secret.
 - Release Please fails because required repo secret/config is missing.
 - Cleanup would delete user work or an active worktree.

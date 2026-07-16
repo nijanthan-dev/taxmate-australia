@@ -89,6 +89,6 @@ Mark ambiguous, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-co
 - Keep wrapper help on `./scripts/taxmate ...`; internal `taxmate_*.py` script names must not appear.
 - Keep destination logic in the runtime. Output layers may render the handoff contract but must not derive destinations from row names, broad topic URLs, source coverage, or unverified target labels.
 - Keep mixed rows atomic or split them so one destination is not applied to unrelated facts. Missing, malformed, conflicting, unsupported, or stale mappings must keep evidence, non-entry, or review wording.
-- After independent review feedback, scan the same failure pattern across parser paths, direct renderer/workbook-row paths, generated artifacts, plugin lock, tests, validator, publication checks, and documentation and instruction validation rules before requesting another Codex review.
+- After independent review feedback, scan the same failure pattern across parser paths, direct renderer/workbook-row paths, generated artifacts, plugin lock, tests, validator, publication checks, and documentation and instruction validation rules before another review.
 - For output-layer falsey fixes, cover top-level metadata, row fields, source URL lists, checked-at provenance, fallback labels, anchors, and direct constructors.
 - Do not replace the complete Codex plugin with portable skills only.

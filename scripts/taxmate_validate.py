@@ -468,7 +468,7 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("refresh_errors_use_python_formatting", refresh_errors_use_python_formatting(root), "")
     add("wrapper_help_uses_public_commands", wrapper_help_uses_public_commands(root), "")
     add("codex_environment_toml_valid", codex_environment_toml_valid(root), "")
-    add("release_workflow_auto_after_ci", release_workflow_auto_after_ci(root), "")
+    add("release_workflow_after_main_push", release_workflow_runs_after_main_push(root), "")
     add("local_act_ci_ready", local_act_ci_ready(root), "")
     add("release_config_tracks_manifest_versions", release_config_tracks_manifest_versions(root), "")
     private_hits = tracked_private_path_hits(root)
@@ -2361,8 +2361,6 @@ def release_workflow_has_common_guards(text: str) -> bool:
         text,
         [
             "steps.target.outputs.sha",
-            "GH_REPO: nijanthan-dev/taxmate-australia",
-            "--commit \"$TARGET_SHA\"",
             "Require main unchanged",
             "git ls-remote https://github.com/nijanthan-dev/taxmate-australia.git refs/heads/main",
             "main moved from $TARGET_SHA",
@@ -2374,17 +2372,13 @@ def release_workflow_has_common_guards(text: str) -> bool:
     )
 
 
-def release_workflow_has_auto_trigger(text: str) -> bool:
+def release_workflow_has_main_push_trigger(text: str) -> bool:
     return text_contains_all(
         text,
         [
-            "workflow_run:",
-            'workflows: ["CI"]',
-            "types: [completed]",
+            "push:",
             "branches: [main]",
-            "github.event.workflow_run.conclusion == 'success'",
-            "github.event.workflow_run.head_branch == 'main'",
-            "github.event.workflow_run.head_sha",
+            "github.event_name == 'push'",
         ],
     )
 
@@ -2405,22 +2399,24 @@ def release_workflow_has_manual_trigger(text: str) -> bool:
     )
 
 
-def release_workflow_auto_after_ci(root: str) -> bool:
+def release_workflow_runs_after_main_push(root: str) -> bool:
     text = read_text(os.path.join(root, ".github", "workflows", "release.yml"))
     return (
         release_workflow_has_common_guards(text)
-        and release_workflow_has_auto_trigger(text)
+        and release_workflow_has_main_push_trigger(text)
         and release_workflow_has_manual_trigger(text)
         and release_workflow_avoids_privileged_checkout(text)
+        and "workflow_run:" not in text
+        and "Require green CI" not in text
+        and "--workflow CI" not in text
     )
 
 
-def github_ci_workflow_has_required_triggers(text: str) -> bool:
+def github_test_workflow_is_manual_only(text: str) -> bool:
     return (
         "workflow_dispatch:" in text
-        and any(re.match(r"^\s*pull_request:\s*$", line) for line in text.splitlines())
-        and any(re.match(r"^\s*push:\s*$", line) for line in text.splitlines())
-        and "branches: [main]" in text
+        and not any(re.match(r"^\s*pull_request:\s*$", line) for line in text.splitlines())
+        and not any(re.match(r"^\s*push:\s*$", line) for line in text.splitlines())
     )
 
 
@@ -2450,10 +2446,11 @@ def local_act_ci_ready(root: str) -> bool:
         and "docker info" in run_script
         and "gitleaks dir . --redact --no-banner" in run_script
         and "gitleaks detect --source . --redact --no-banner" in run_script
-        and "CI must retain pull_request trigger" in check_script
-        and "CI must retain main push trigger" in check_script
-        and "disable the workflow in GitHub when pausing hosted spend" in check_script
-        and github_ci_workflow_has_required_triggers(ci)
+        and "hosted CI must not run automatically" in check_script
+        and "local act workflow must not run automatically on GitHub" in check_script
+        and "Release must not depend on hosted CI" in check_script
+        and github_test_workflow_is_manual_only(ci)
+        and github_test_workflow_is_manual_only(local_ci)
         and "workflow_dispatch:" in scanner
         and all(step in local_ci for step in required_local_steps)
     )

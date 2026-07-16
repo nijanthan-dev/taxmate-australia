@@ -302,7 +302,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "PR #107 CI",
         LOCAL_CI_CONTRACT,
-        "Keep CI automatic triggers in workflow YAML, pause hosted-runner spend by disabling GitHub workflows when needed, run the local act workflow before push, and keep review/package invariants enforced by pre-commit and publication checks.",
+        "Keep hosted test workflows manual-only and disabled in GitHub, run the complete local act workflow before push, and keep review/package invariants enforced by pre-commit and publication checks.",
     ),
     ReviewPattern(
         "PR #22",
@@ -427,7 +427,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Release guardrails",
         RELEASE_GUARDRAIL_CONTRACT,
-        "Release workflow edits must preserve green-CI checks, unchanged-main checks, version manifest alignment, and the Release Please bootstrap SHA.",
+        "Release workflow edits must preserve main-push and manual triggers, independence from hosted CI, unchanged-main checks, version manifest alignment, and the Release Please bootstrap SHA.",
     ),
 ]
 
@@ -4272,13 +4272,11 @@ def check_release_contract(root: Path) -> List[Finding]:
     findings: List[Finding] = []
     required = [
         "workflow_dispatch:",
-        "workflow_run:",
-        'workflows: ["CI"]',
-        "types: [completed]",
+        "push:",
         "branches: [main]",
-        "Require green CI",
-        "GH_REPO: nijanthan-dev/taxmate-australia",
-        "--workflow CI --branch main --commit",
+        "github.event_name == 'push'",
+        "github.event_name == 'workflow_dispatch'",
+        'echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"',
         "Require main unchanged",
         "git ls-remote https://github.com/nijanthan-dev/taxmate-australia.git refs/heads/main",
         "RELEASE_PLEASE_TOKEN",
@@ -4287,8 +4285,10 @@ def check_release_contract(root: Path) -> List[Finding]:
         "manifest-file: .release-please-manifest.json",
     ]
     findings.extend(fail_if_missing(RELEASE_GUARDRAIL_CONTRACT, release, required))
-    if "workflow_run:" in release and "actions/checkout@" in release:
-        findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "release workflow_run must not checkout repository code"))
+    if any(needle in release for needle in ["workflow_run:", "Require green CI", "--workflow CI"]):
+        findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "release must not depend on hosted CI"))
+    if "actions/checkout@" in release:
+        findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "privileged release workflow must not checkout repository code"))
     bootstrap_sha = config.get("bootstrap-sha")
     if not isinstance(bootstrap_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", bootstrap_sha):
         findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "release-please-config.json missing 40-char bootstrap-sha"))
@@ -4316,20 +4316,20 @@ def check_release_contract(root: Path) -> List[Finding]:
     version = plugin.get("version")
     if isinstance(version, str) and version and version in tests:
         findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "tests must derive plugin version from manifests, not hard-code current version"))
-    if "workflow_run:" not in release and "automatically" in development.lower():
-        findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "manual release workflow must not be documented as automatic"))
+    if "Release runs automatically from pushes to `main`" not in development:
+        findings.append(Finding(RELEASE_GUARDRAIL_CONTRACT, "document automatic main-push release trigger"))
     return findings
 
 
 def check_environment_contract(root: Path) -> List[Finding]:
-    ci = read(root, ".github/workflows/ci.yml")
+    local_ci = read(root, ".github/workflows/local-ci.yml")
     setup = read(root, "scripts/codex-env-setup.sh")
     cleanup = read(root, "scripts/codex-env-cleanup.sh")
     findings: List[Finding] = []
     findings.extend(
         fail_if_missing(
             ENVIRONMENT_WORKTREE_CONTRACT,
-            ci,
+            local_ci,
             [
                 "bash scripts/test-codex-env-cleanup.sh",
                 "bash scripts/test-codex-env-setup-clean.sh",
@@ -4455,12 +4455,11 @@ def check_plugin_mcp_contract(root: Path) -> List[Finding]:
     return findings
 
 
-def workflow_has_required_ci_triggers(text: str) -> bool:
+def workflow_is_manual_only(text: str) -> bool:
     return (
         "workflow_dispatch:" in text
-        and any(re.match(r"^\s*pull_request:\s*$", line) for line in text.splitlines())
-        and any(re.match(r"^\s*push:\s*$", line) for line in text.splitlines())
-        and "branches: [main]" in text
+        and not any(re.match(r"^\s*pull_request:\s*$", line) for line in text.splitlines())
+        and not any(re.match(r"^\s*push:\s*$", line) for line in text.splitlines())
     )
 
 
@@ -4475,8 +4474,8 @@ def check_local_ci_contract(root: Path) -> List[Finding]:
     publication = read(root, "scripts/check-publication-ready.sh")
     development = read(root, "docs/DEVELOPMENT.md")
     findings: List[Finding] = []
-    if not workflow_has_required_ci_triggers(ci):
-        findings.append(Finding(LOCAL_CI_CONTRACT, "GitHub CI must keep automatic pull_request and main push triggers"))
+    if not workflow_is_manual_only(ci) or not workflow_is_manual_only(local_ci):
+        findings.append(Finding(LOCAL_CI_CONTRACT, "hosted test workflows must stay manual-only"))
     findings.extend(
         fail_if_missing(
             LOCAL_CI_CONTRACT,
@@ -4497,7 +4496,7 @@ def check_local_ci_contract(root: Path) -> List[Finding]:
                 "bash scripts/test-mcp-server.sh",
                 "bash scripts/check-local-ci-ready.sh",
                 "taxmate-local-ci-ready",
-                "Automatic CI triggers stay in workflow YAML",
+                "Hosted test workflows stay disabled in GitHub",
                 "disabled_manually",
             ],
         )
