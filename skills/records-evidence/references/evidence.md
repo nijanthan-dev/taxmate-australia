@@ -18,4 +18,5 @@ Missing or altered evidence means `Insufficient evidence` or `Accountant review`
 - ato-93e19de11e37 from https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/records-you-need-to-keep (verified)
 - ato-a0d25d13a38f from https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/records-you-need-to-keep/documents-to-support-and-verify-your-claims (verified)
 - ato-ae68541d0aa6 from https://www.ato.gov.au/forms-and-instructions/foreign-income-tax-offset-rules-guide-2026 (verified)
+- ato-d89de846a802 from https://www.ato.gov.au/businesses-and-organisations/trusts/trust-income-losses-and-capital-gains/streaming-trust-capital-gains-and-franked-distributions (verified)
 - ato-f695b501c100 from https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/imputation/in-detail/franking-deficit-tax-offset-calculation-reduction-rule-and-exclusions (verified)

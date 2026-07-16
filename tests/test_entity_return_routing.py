@@ -77,11 +77,15 @@ class EntityReturnRoutingTests(unittest.TestCase):
                     if url in (
                         *taxmate_entity_worksheet.COMPANY_REVIEW_SOURCES,
                         *taxmate_entity_worksheet.PARTNERSHIP_REVIEW_SOURCES,
+                        *taxmate_entity_worksheet.TRUST_REVIEW_SOURCES,
                     )
                     else "metadata_only"
                 )
                 self.assertEqual(expected_status, covered[url]["status"])
-                if url in taxmate_entity_worksheet.COMPANY_REVIEW_SOURCES[2:]:
+                if url in (
+                    *taxmate_entity_worksheet.COMPANY_REVIEW_SOURCES[2:],
+                    *taxmate_entity_worksheet.TRUST_REVIEW_SOURCES,
+                ):
                     self.assertIn("records-evidence", covered[url]["skills"])
 
     def test_no_entity_has_no_entity_sections(self):
@@ -2003,6 +2007,215 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
             row["row_kind"] == "entity-return-company-capital-allowance"
             for row in payload["company_items"]
         ))
+
+    def test_trust_cgt_franking_streaming_and_allocations_stay_review_only(self):
+        checked_at = "2026-07-17T10:00:00Z"
+        source_url = "https://example.invalid/trust-workpaper"
+        payload = self.payload({
+            "trust_return": {
+                "name": "Review Trust",
+                "capital_gain_items": [{
+                    "asset": "Synthetic shares",
+                    "amount": 0,
+                    "proceeds": 0,
+                    "cost_base": 0,
+                    "discount_eligible": False,
+                    "discount_applied": False,
+                    "records": ["cgt-register.csv"],
+                    "source_url": source_url,
+                    "checked_at": checked_at,
+                }],
+                "franked_distribution_items": [{
+                    "payer": "Synthetic Co",
+                    "amount": 0,
+                    "franked_amount": 0,
+                    "unfranked_amount": 0,
+                    "franking_credit": 0,
+                    "statement": "distribution-statement.pdf",
+                    "records": ["distribution-statement.pdf"],
+                    "source_url": source_url,
+                    "checked_at": checked_at,
+                }],
+                "streaming_review": {
+                    "streaming": False,
+                    "deed_allows_streaming": False,
+                    "specific_entitlement": False,
+                    "recorded_in_character": False,
+                    "resolution": "trustee-resolution.pdf",
+                    "records": ["trustee-resolution.pdf", "trust-deed.pdf"],
+                    "source_url": source_url,
+                    "checked_at": checked_at,
+                },
+                "beneficiary_component_allocations": [{
+                    "beneficiary_name": "Synthetic Beneficiary",
+                    "component_type": "capital gain and franked distribution",
+                    "beneficiary_capital_gain": 0,
+                    "beneficiary_discounted_capital_gain": 0,
+                    "beneficiary_franked_distribution": 0,
+                    "beneficiary_franking_credits": 0,
+                    "allocation_percentage": 0,
+                    "allocation_basis": "trustee resolution",
+                    "allocation_resolution": "trustee-resolution.pdf",
+                    "records": ["beneficiary-ledger.csv"],
+                    "source_url": source_url,
+                    "checked_at": checked_at,
+                }],
+            },
+        })
+        rows = {
+            row["row_kind"]: row for row in payload["trust_items"]
+            if row["row_kind"].startswith("entity-return-trust-")
+            and row["row_kind"] != "entity-return-trust"
+        }
+        expected = {
+            "entity-return-trust-capital-gain",
+            "entity-return-trust-franked-distribution",
+            "entity-return-trust-streaming",
+            "entity-return-trust-beneficiary-allocation",
+        }
+        self.assertEqual(expected, set(rows))
+        rendered = json.dumps(rows)
+        for value in (
+            "amount 0", "proceeds 0", "cost base 0", "discount eligible false",
+            "discount applied false", "franked amount 0", "unfranked amount 0",
+            "franking credit 0", "streaming false", "specific entitlement false",
+            "recorded in character false", "beneficiary capital gain 0",
+            "beneficiary franking credits 0", "allocation percentage 0",
+        ):
+            self.assertIn(value, rendered)
+        self.assertTrue(all(row["status"] == "Accountant review" for row in rows.values()))
+        self.assertTrue(all(row["checked_at"] == checked_at for row in rows.values()))
+        self.assertTrue(all(source_url in row["source_urls"] for row in rows.values()))
+        self.assertTrue(all(
+            taxmate_entity_worksheet.TRUST_STREAMING_SOURCE in row["source_urls"]
+            for row in rows.values()
+        ))
+        self.assertFalse(any(
+            row["row_kind"] in expected
+            for row in payload["items"] + payload["company_items"] + payload["partnership_items"]
+        ))
+
+    def test_trust_unknown_amounts_missing_resolution_and_bad_allocations_fail_closed(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Incomplete Trust",
+                "capital_gains": {
+                    "description": "Unknown disposal",
+                    "amount": "unknown",
+                    "records": ["asset-list.csv"],
+                },
+                "franked_distributions": {
+                    "amount": "bad",
+                    "franking_credit": "unknown",
+                    "records": ["general-ledger.csv"],
+                },
+                "beneficiary_allocations": {
+                    "beneficiary_name": "Synthetic Beneficiary",
+                    "component_type": "capital gain",
+                    "component_amount": 10,
+                    "allocation_percentage": 125,
+                    "records": ["beneficiary-ledger.csv"],
+                },
+            },
+        })
+        evidence = {
+            row["row_kind"]: row
+            for row in payload["evidence_items"]
+            if row["row_kind"].startswith("entity-return-trust-")
+        }
+        self.assertIn("finite component amount", evidence["entity-return-trust-capital-gain-evidence"]["answer"])
+        self.assertIn("CGT discount signal", evidence["entity-return-trust-capital-gain-evidence"]["answer"])
+        self.assertIn("streaming resolution evidence", evidence["entity-return-trust-capital-gain-evidence"]["answer"])
+        self.assertIn("franking credit amount", evidence["entity-return-trust-franked-distribution-evidence"]["answer"])
+        self.assertIn("franked distribution statement", evidence["entity-return-trust-franked-distribution-evidence"]["answer"])
+        self.assertIn("supported allocation percentage", evidence["entity-return-trust-beneficiary-allocation-evidence"]["answer"])
+        self.assertIn("allocation basis", evidence["entity-return-trust-beneficiary-allocation-evidence"]["answer"])
+        self.assertTrue(all(
+            evidence[row_kind]["status"] == "Accountant review"
+            for row_kind in (
+                "entity-return-trust-capital-gain-evidence",
+                "entity-return-trust-franked-distribution-evidence",
+                "entity-return-trust-beneficiary-allocation-evidence",
+            )
+        ))
+
+    def test_trust_flat_review_fields_preserve_falsey_values_and_provenance_gaps(self):
+        payload = self.payload({
+            "trust_return_name": "Flat Trust",
+            "trust_return_capital_gain_asset": "Synthetic asset",
+            "trust_return_capital_gain_amount": 0,
+            "trust_return_capital_gain_discount_eligible": False,
+            "trust_return_capital_gain_records": ["cgt.csv"],
+            "trust_return_franked_distribution_amount": 0,
+            "trust_return_franked_amount": 0,
+            "trust_return_franking_credits": 0,
+            "trust_return_franked_distribution_statement": "statement.pdf",
+            "trust_return_franked_distribution_records": ["statement.pdf"],
+            "trust_return_streaming": False,
+            "trust_return_deed_allows_streaming": False,
+            "trust_return_specific_entitlement": False,
+            "trust_return_recorded_in_character": False,
+            "trust_return_streaming_resolution": "resolution.pdf",
+            "trust_return_streaming_records": ["resolution.pdf"],
+            "trust_return_source_urls": ["bad source", "https://example.invalid/trust"],
+            "trust_return_checked_at": "bad date",
+        })
+        rows = [
+            row for row in payload["trust_items"]
+            if row["row_kind"] in {
+                "entity-return-trust-capital-gain",
+                "entity-return-trust-franked-distribution",
+                "entity-return-trust-streaming",
+            }
+        ]
+        self.assertEqual(3, len(rows))
+        rendered = json.dumps(rows)
+        self.assertIn("amount 0", rendered)
+        self.assertIn("discount eligible false", rendered)
+        self.assertIn("franking credit 0", rendered)
+        self.assertIn("streaming false", rendered)
+        evidence = " ".join(
+            row["answer"] for row in payload["evidence_items"]
+            if row["row_kind"].startswith("entity-return-trust-")
+        )
+        self.assertIn("source provenance", evidence)
+        self.assertIn("checked-at provenance", evidence)
+        self.assertNotIn("bad source", json.dumps(rows))
+
+    def test_trust_flat_and_nested_conflicts_fail_closed_and_streaming_evidence_normalizes(self):
+        payload = self.payload({
+            "trust_return": {
+                "name": "Conflict Trust",
+                "capital_gain_items": {
+                    "asset": "Synthetic asset",
+                    "amount": 1,
+                    "discount_eligible": False,
+                    "records": ["cgt.csv"],
+                },
+            },
+            "trust_return_capital_gain_amount": 2,
+            "trust_return_streaming": False,
+            "trust_return_deed_allows_streaming": False,
+            "trust_return_specific_entitlement": False,
+            "trust_return_recorded_in_character": False,
+            "trust_return_streaming_resolution": "resolution.pdf",
+            "trust_return_streaming_evidence": ["resolution.pdf"],
+        })
+        conflict = next(
+            row for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-trust-capital-gain-evidence"
+        )
+        streaming = next(
+            row for row in payload["trust_items"]
+            if row["row_kind"] == "entity-return-trust-streaming"
+        )
+        streaming_evidence = [
+            row for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-trust-streaming-evidence"
+        ]
+        self.assertIn("conflicting review aliases", conflict["answer"])
+        self.assertIn('evidence ["resolution.pdf"]', streaming["answer"])
+        self.assertFalse(any("Confirm evidence" in row["answer"] for row in streaming_evidence))
         self.assertFalse(any("worksheet" in row["ato_area"].lower() for row in payload["trust_items"]))
 
     def test_company_losses_assets_and_allowances_are_isolated_review_rows(self):

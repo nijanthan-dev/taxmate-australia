@@ -8370,7 +8370,7 @@
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/claiming-deductions",
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
-      "checked_at": "2026-07-16T08:09:19Z",
+      "checked_at": "2026-07-16T22:55:53Z",
       "content_hash": "",
       "status": "duplicate",
       "skills": [],
@@ -9855,6 +9855,39 @@
         "rental income",
         "rental-properties",
         "residential-rental-properties"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-d89de846a802",
+      "original_url": "https://www.ato.gov.au/businesses-and-organisations/trusts/trust-income-losses-and-capital-gains/streaming-trust-capital-gains-and-franked-distributions",
+      "canonical_url": "https://www.ato.gov.au/businesses-and-organisations/trusts/trust-income-losses-and-capital-gains/streaming-trust-capital-gains-and-franked-distributions",
+      "source_title": "Streaming trust capital gains and franked distributions",
+      "source_last_updated": "2024-06-26T14:00:00.000+00:00",
+      "checked_at": "2026-07-16T22:55:53Z",
+      "content_hash": "00798845810b72277b6d873c974ada3ed15723934bb33edffc2b637233e81bcd",
+      "status": "verified",
+      "skills": [
+        "records-evidence"
+      ],
+      "references": [
+        "skills/records-evidence/references/rules.md",
+        "skills/records-evidence/references/sources.json"
+      ],
+      "covered_concepts": [
+        "evidence",
+        "invoice",
+        "keeping-crypto-records",
+        "keeping-good-investment-records",
+        "logbook",
+        "receipt",
+        "record",
+        "records",
+        "records-you-need-to-keep",
+        "substantiation",
+        "tax-invoices"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",

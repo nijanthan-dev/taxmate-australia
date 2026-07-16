@@ -47,6 +47,7 @@ ENTITY_RUNTIME_INSTRUCTION_SOURCES = {
     "ato-127def29a2d6": "records-evidence",
     "ato-f695b501c100": "records-evidence",
     "ato-51c859549f3b": "records-evidence",
+    "ato-d89de846a802": "records-evidence",
 }
 ENTITY_INSTRUCTION_PREFIXES = (
     "https://www.ato.gov.au/forms-and-instructions/company-tax-return-2026-instructions",
@@ -1084,6 +1085,15 @@ def skillMarkdown(topic_obj: Topic) -> str:
                 "acquisition date, disposal date, cost base, capital proceeds, and rewards income where relevant",
                 "owner/entity plus both business and private use context flags",
                 "own-wallet transfer support and records preserving source provenance",
+            ]
+        )
+    if topic_obj.slug == "records-evidence":
+        lines.extend(
+            [
+                "Trust CGT, franked-distribution, streaming, and beneficiary-allocation handling is review-first and prep-only. Collect capital-gain components and discount signals, franked distribution and franking-credit amounts, deed and trustee-resolution records, streaming and specific-entitlement signals, and beneficiary component allocations with source URLs and checked-at dates.",
+                "",
+                "Keep trust entity facts only in isolated trust review rows. Missing resolutions or statements, unknown or malformed component amounts, unsupported allocation percentages or bases, conflicts, and invalid provenance stay Evidence or `Accountant review`. Preserve valid `0` amounts and `false` discount, streaming, deed, specific-entitlement, or recorded-in-character signals. Do not calculate trust CGT, apply discounts, determine specific entitlement, decide allocations or franking treatment, fill official forms, or lodge.",
+                "",
             ]
         )
     if topic_obj.slug == "capital-gains-tax":

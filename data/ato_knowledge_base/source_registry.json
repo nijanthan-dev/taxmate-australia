@@ -1,6 +1,6 @@
 {
   "fetched_at": "2026-06-23T08:53:57Z",
-  "refreshed_at": "2026-07-16T08:09:19Z",
+  "refreshed_at": "2026-07-16T22:55:53Z",
   "scope": "ATO official pages relevant to Australian FY2025-26 individual, employment, ABN/sole trader, GST/BAS, PAYG instalments, PAYG withholding, STP, TPAR, FBT, CGT, ETF/investment, crypto, rental-property records, super, private health, and company, trust, and partnership return skeleton, income, deduction, trading-stock, capital-allowance, dividend, franking-account, and Division 7A preparation.",
   "records": [
     {
@@ -4034,6 +4034,18 @@
       "content_hash": "b8af30d698cf39966efae5335a2aedc453e5bfca87b46e591a50a70c6f0e214b",
       "content_verified": true,
       "last_checked": "2026-07-16T08:09:19Z"
+    },
+    {
+      "url": "https://www.ato.gov.au/businesses-and-organisations/trusts/trust-income-losses-and-capital-gains/streaming-trust-capital-gains-and-franked-distributions",
+      "final_url": "https://www.ato.gov.au/businesses-and-organisations/trusts/trust-income-losses-and-capital-gains/streaming-trust-capital-gains-and-franked-distributions",
+      "status": 200,
+      "title": "Streaming trust capital gains and franked distributions",
+      "last_updated": "2024-06-26T14:00:00.000+00:00",
+      "raw_file": "raw/businesses-and-organisations__trusts__trust-income-losses-and-capital-gains__streaming-trust-capital-gains-and-franked-distributions__786f59c4.html",
+      "text_file": "text/businesses-and-organisations__trusts__trust-income-losses-and-capital-gains__streaming-trust-capital-gains-and-franked-distributions__786f59c4.txt",
+      "content_hash": "00798845810b72277b6d873c974ada3ed15723934bb33edffc2b637233e81bcd",
+      "content_verified": true,
+      "last_checked": "2026-07-16T22:55:53Z"
     }
   ],
   "failures": [

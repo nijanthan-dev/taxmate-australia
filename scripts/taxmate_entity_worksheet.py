@@ -1,4 +1,4 @@
-"""Shared prep-only company and partnership worksheet routing."""
+"""Shared prep-only company, trust, and partnership worksheet routing."""
 
 from __future__ import annotations
 
@@ -105,6 +105,12 @@ PARTNERSHIP_REVIEW_SOURCES = (
     PARTNERSHIP_LOSSES_SOURCE, PARTNERSHIP_GST_SOURCE,
     PARTNERSHIP_BAS_SOURCE, PARTNERSHIP_PSI_SOURCE,
 )
+TRUST_STREAMING_SOURCE = (
+    "https://www.ato.gov.au/businesses-and-organisations/trusts/"
+    "trust-income-losses-and-capital-gains/"
+    "streaming-trust-capital-gains-and-franked-distributions"
+)
+TRUST_REVIEW_SOURCES = (TRUST_STREAMING_SOURCE,)
 DETAILED_SOURCES = tuple(dict.fromkeys((
     COMPANY_INCOME_SOURCE,
     COMPANY_DEDUCTION_SOURCE,
@@ -113,6 +119,7 @@ DETAILED_SOURCES = tuple(dict.fromkeys((
     *PARTNERSHIP_DEDUCTION_SOURCES,
     PARTNERSHIP_BUSINESS_SOURCE,
     *PARTNERSHIP_REVIEW_SOURCES,
+    *TRUST_REVIEW_SOURCES,
 )))
 
 COLLECTION_ALIASES = {
@@ -293,6 +300,43 @@ COMPANY_REVIEW_CATEGORY_TARGETS = {
     "dividends": ("dividend_items", "received", None),
     "franking": ("franking_account_items", None, "credits"),
     "division-7a": ("division_7a_items", None, None),
+}
+TRUST_REVIEW_COLLECTIONS = {
+    "capital-gain": (
+        "capital_gain_items", "capital_gains", "cgt_items", "trust_capital_gains",
+    ),
+    "franked-distribution": (
+        "franked_distribution_items", "franked_distributions",
+        "trust_franked_distributions",
+    ),
+    "streaming": (
+        "streaming_review", "streaming_details", "specific_entitlement",
+    ),
+    "beneficiary-allocation": (
+        "beneficiary_allocations", "beneficiary_component_allocations",
+        "component_allocations", "distribution_allocations",
+    ),
+}
+TRUST_REVIEW_SCALAR_FIELDS = {
+    "capital-gain": "amount",
+    "franked-distribution": "amount",
+    "streaming": "streaming",
+    "beneficiary-allocation": "allocation",
+}
+TRUST_REVIEW_MONEY_FIELDS = {
+    "capital-gain": (
+        "amount", "gross_capital_gain", "net_capital_gain", "proceeds", "cost_base",
+        "capital_losses_applied", "discount_amount",
+    ),
+    "franked-distribution": (
+        "amount", "franked_amount", "unfranked_amount", "franking_credit",
+        "franking_credits", "tfn_withholding",
+    ),
+    "beneficiary-allocation": (
+        "allocation", "component_amount", "beneficiary_capital_gain",
+        "beneficiary_discounted_capital_gain", "beneficiary_franked_distribution",
+        "beneficiary_franking_credits",
+    ),
 }
 PARTNERSHIP_REVIEW_COLLECTIONS = {
     "loss": ("loss_items", "losses", "tax_losses", "partnership_losses"),
@@ -649,6 +693,8 @@ def _facts(pairs: Iterable[Tuple[str, Any]]) -> List[Dict[str, Any]]:
 def _followup_sources(kind: str, worksheet: str, item: Dict[str, Any]) -> List[str]:
     if kind == "company" and worksheet in COMPANY_REVIEW_COLLECTIONS:
         return _company_sources(worksheet, item)
+    if kind == "trust" and worksheet in TRUST_REVIEW_COLLECTIONS:
+        return _trust_sources(item)
     if kind == "partnership" and worksheet in PARTNERSHIP_REVIEW_COLLECTIONS:
         return _partnership_review_sources(worksheet, item)
     return _sources(kind, worksheet, item)
@@ -1215,8 +1261,12 @@ def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
             gaps.append("repayment review")
     if raw.get("_alias_conflicts") or _company_review_has_alias_conflict(section, raw):
         gaps.append("conflicting review aliases")
-    evidence_value = raw.get("evidence", raw.get("records", raw.get("documents")))
-    if not _evidence_available(evidence_value):
+    evidence_values = [
+        raw.get("evidence"), raw.get("records"), raw.get("documents"),
+        raw.get("resolution_evidence"), raw.get("statement"),
+        raw.get("allocation_resolution"),
+    ]
+    if not any(_evidence_available(value) for value in evidence_values):
         gaps.append("evidence")
     _, invalid_sources = taxmate_entity_routing.source_provenance(raw)
     if invalid_sources:
@@ -1375,6 +1425,194 @@ def _merge_company_review_items(
                 values.append(copy.deepcopy(addition))
         merged[collection] = values
     return merged
+
+
+def _trust_sources(raw: Dict[str, Any]) -> List[str]:
+    valid_sources, _ = taxmate_entity_routing.source_provenance(raw)
+    return list(dict.fromkeys([
+        taxmate_entity_routing.SOURCES["trust"],
+        *TRUST_REVIEW_SOURCES,
+        *valid_sources,
+    ]))
+
+
+def _trust_resolution_present(record: Dict[str, Any], raw: Dict[str, Any]) -> bool:
+    resolution_fields = (
+        "resolution", "streaming_resolution", "allocation_resolution",
+        "resolution_reference", "resolution_evidence", "resolution_records",
+    )
+    candidates: List[Any] = [raw, record]
+    for alias in TRUST_REVIEW_COLLECTIONS["streaming"]:
+        if alias in record:
+            value = record[alias]
+            candidates.extend(value if isinstance(value, list) else [value])
+    return any(
+        isinstance(candidate, dict)
+        and any(_evidence_available(candidate.get(field)) for field in resolution_fields)
+        for candidate in candidates
+    )
+
+
+def _trust_review_gaps(
+    section: str,
+    raw: Dict[str, Any],
+    record: Dict[str, Any],
+) -> List[str]:
+    gaps: List[str] = []
+    money_fields = TRUST_REVIEW_MONEY_FIELDS.get(section, ())
+    supplied_money = [
+        field for field in money_fields
+        if field in raw and not isinstance(raw[field], bool)
+    ]
+    if section != "streaming" and (
+        not supplied_money or any(_amount(raw[field]) is None for field in supplied_money)
+    ):
+        gaps.append("finite component amount")
+    if section == "capital-gain":
+        if all(_missing(raw.get(field)) for field in ("asset", "description", "gain_type")):
+            gaps.append("capital gain component")
+        if all(
+            _missing(raw.get(field))
+            for field in (
+                "discount_eligible", "discount_applied", "discount_percentage",
+                "discount_method", "discount_status",
+            )
+        ):
+            gaps.append("CGT discount signal")
+    elif section == "franked-distribution":
+        if all(
+            _missing(raw.get(field))
+            for field in ("franking_credit", "franking_credits")
+        ):
+            gaps.append("franking credit amount")
+        if not any(
+            _evidence_available(raw.get(field))
+            for field in ("statement", "distribution_statement")
+        ):
+            gaps.append("franked distribution statement")
+    elif section == "streaming":
+        if all(
+            _missing(raw.get(field))
+            for field in ("streaming", "specific_entitlement", "recorded_in_character")
+        ):
+            gaps.append("streaming or specific-entitlement signal")
+        if _missing(raw.get("deed_allows_streaming")):
+            gaps.append("trust deed streaming signal")
+    elif section == "beneficiary-allocation":
+        if _missing(raw.get("beneficiary_name")):
+            gaps.append("beneficiary identity")
+        if all(
+            _missing(raw.get(field))
+            for field in (
+                "component_type", "beneficiary_capital_gain",
+                "beneficiary_discounted_capital_gain",
+                "beneficiary_franked_distribution", "beneficiary_franking_credits",
+            )
+        ):
+            gaps.append("beneficiary component allocation")
+        percentage = raw.get("allocation_percentage")
+        if not _missing(percentage):
+            amount = _amount(percentage)
+            if amount is None or amount < 0 or amount > 100:
+                gaps.append("supported allocation percentage")
+        if _missing(raw.get("allocation_basis")):
+            gaps.append("allocation basis")
+    if not _trust_resolution_present(record, raw):
+        gaps.append("streaming resolution evidence")
+    if raw.get("_alias_conflicts"):
+        gaps.append("conflicting review aliases")
+    evidence_value = raw.get("evidence", raw.get("records", raw.get("documents")))
+    if not _evidence_available(evidence_value):
+        gaps.append("evidence")
+    _, invalid_sources = taxmate_entity_routing.source_provenance(raw)
+    if invalid_sources:
+        gaps.append("source provenance")
+    checked_at = raw.get("checked_at")
+    if (
+        "checked_at" in raw
+        and not _missing(checked_at)
+        and not taxmate_entity_routing.valid_checked_at(checked_at)
+    ):
+        gaps.append("checked-at provenance")
+    return gaps
+
+
+def _trust_review_rows(
+    record: Dict[str, Any],
+    parent: Dict[str, Any],
+    association_gap: Optional[str],
+    section: str,
+    aliases: Tuple[str, ...],
+    counter: int,
+    evidence_index: int,
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], int, int]:
+    raw_items, blank_requested = _collection(
+        record,
+        aliases,
+        preserve_falsey_scalars=True,
+        scalar_field=TRUST_REVIEW_SCALAR_FIELDS[section],
+    )
+    rows: List[Dict[str, Any]] = []
+    followups: List[Dict[str, Any]] = []
+    if blank_requested:
+        followups.append(_line_followup(
+            "trust", section, {}, [f"{section.replace('-', ' ')} facts"], True,
+            evidence_index,
+        ))
+        evidence_index += 1
+    for raw in raw_items:
+        counter += 1
+        if not isinstance(raw, dict):
+            raw = {TRUST_REVIEW_SCALAR_FIELDS[section]: raw}
+        if _missing(raw):
+            followups.append(_line_followup(
+                "trust", section, {}, [f"{section.replace('-', ' ')} facts"], True,
+                evidence_index,
+            ))
+            evidence_index += 1
+            continue
+        metadata = {"source_url", "source_urls", "checked_at", "status", "review_status"}
+        fact_values = {key: value for key, value in raw.items() if key not in metadata}
+        pairs = _identity_facts("trust", parent, record) + list(fact_values.items())
+        gaps = [association_gap] if association_gap else []
+        gaps.extend(_trust_review_gaps(section, raw, record))
+        checked_at = raw.get("checked_at")
+        rows.append({
+            "number": f"TRUST-{section.upper()}-{counter}",
+            "ato_area": f"Trust {section.replace('-', ' ')} review",
+            "question": f"Trust {section.replace('-', ' ')} facts",
+            "answer": "; ".join(
+                f"{key.replace('_', ' ')} {_display(value)}" for key, value in pairs
+            ),
+            "why_included": (
+                "Prep-only trust fact; CGT, franking, streaming, beneficiary allocation, "
+                "and final treatment remain accountant decisions."
+            ),
+            "status": "Accountant review",
+            "source_urls": _trust_sources(raw),
+            "checked_at": (
+                checked_at
+                if taxmate_entity_routing.valid_checked_at(checked_at)
+                else taxmate_entity_routing.CHECKED_AT
+            ),
+            "row_kind": f"entity-return-trust-{section}",
+            "facts": _facts(pairs),
+            "tab_text": f"Trust {section.replace('-', ' ')} facts require accountant review.",
+        })
+        if gaps:
+            valid_sources, invalid_sources = taxmate_entity_routing.source_provenance(raw)
+            source_item = {
+                "source_urls": valid_sources,
+                "invalid_sources": invalid_sources,
+                "checked_at": checked_at,
+                "conflicts": raw.get("_alias_conflicts"),
+            }
+            followups.append(_line_followup(
+                "trust", section, source_item, list(dict.fromkeys(gaps)), True,
+                evidence_index,
+            ))
+            evidence_index += 1
+    return rows, followups, counter, evidence_index
 
 
 def _partnership_review_sources(section: str, raw: Dict[str, Any]) -> List[str]:
@@ -1620,10 +1858,11 @@ def route_entity_worksheets(
         "partnership-income": 0, "partnership-deduction": 0,
         "partnership-trading_stock": 0, "partnership-capital_allowance_items": 0,
         **{f"company-{section}": 0 for section in COMPANY_REVIEW_COLLECTIONS},
+        **{f"trust-{section}": 0 for section in TRUST_REVIEW_COLLECTIONS},
         **{f"partnership-{section}": 0 for section in PARTNERSHIP_REVIEW_COLLECTIONS},
     }
     evidence_index = 1
-    for kind in ("company", "partnership"):
+    for kind in ("company", "trust", "partnership"):
         records = [record for record in grouped[kind] if isinstance(record, dict)]
         for record_number, record in enumerate(records, start=1):
             if not _record_has_worksheet(kind, record):
@@ -1635,7 +1874,7 @@ def route_entity_worksheets(
             sections[f"{kind}_items"].extend(context_rows)
             evidence.extend(context_followups)
             company_review_record = record
-            for worksheet in ("income", "deduction"):
+            for worksheet in (() if kind == "trust" else ("income", "deduction")):
                 raw_items, blank_requested = _collection(record, COLLECTION_ALIASES[worksheet])
                 migrated_amounts: List[Decimal] = []
                 migrated_valid = True
@@ -1673,7 +1912,16 @@ def route_entity_worksheets(
                 sections[f"{kind}_items"].extend(total_rows)
                 evidence.extend(total_followups)
 
-            if kind == "partnership":
+            if kind == "trust":
+                for section, aliases in TRUST_REVIEW_COLLECTIONS.items():
+                    key = f"trust-{section}"
+                    rows, followups, counters[key], evidence_index = _trust_review_rows(
+                        record, parent, association_gap, section, aliases,
+                        counters[key], evidence_index,
+                    )
+                    sections["trust_items"].extend(rows)
+                    evidence.extend(followups)
+            elif kind == "partnership":
                 for field in ("trading_stock", "capital_allowance_items"):
                     rows, followups, counters[f"partnership-{field}"], evidence_index = _special_rows(
                         record, parent, association_gap, field,

@@ -24,7 +24,8 @@ SCOPE = (
     "ATO official pages relevant to Australian FY2025-26 individual, employment, ABN/sole trader, GST/BAS, "
     "PAYG instalments, PAYG withholding, STP, TPAR, FBT, CGT, ETF/investment, crypto, rental-property "
     "records, super, private health, and company, trust, and partnership return skeleton, income, deduction, "
-    "trading-stock, capital-allowance, dividend, franking-account, and Division 7A preparation."
+    "trading-stock, capital-allowance, dividend, franking-account, Division 7A, and trust CGT, "
+    "franked-distribution, streaming, and beneficiary-allocation preparation."
 )
 
 SOURCE_TITLE_OVERRIDES = {
@@ -48,6 +49,7 @@ SEED_URLS = [
     "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2026",
     "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/imputation/in-detail/franking-deficit-tax-offset-calculation-reduction-rule-and-exclusions",
     "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/private-company-benefits-division-7a-dividends/managing-division-7a-risks-and-corrective-action",
+    "https://www.ato.gov.au/businesses-and-organisations/trusts/trust-income-losses-and-capital-gains/streaming-trust-capital-gains-and-franked-distributions",
     "https://www.ato.gov.au/individuals-and-families/your-tax-return",
     "https://www.ato.gov.au/individuals-and-families/your-tax-return/how-to-lodge-your-tax-return",
     "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records",
