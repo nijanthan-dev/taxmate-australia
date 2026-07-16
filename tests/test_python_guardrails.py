@@ -12620,6 +12620,28 @@ class ValidatorAndCliTests(unittest.TestCase):
 
             self.assertFalse(taxmate_validate.local_act_ci_ready(tmp))
 
+    def test_local_act_ci_requires_taxmate_container_name(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            for rel in [
+                ".actrc",
+                ".github/workflows/local-ci.yml",
+                ".github/workflows/ci.yml",
+                ".github/workflows/hol-plugin-scanner.yml",
+                "scripts/check-local-ci-ready.sh",
+                "scripts/run-local-ci-act.sh",
+            ]:
+                dest = tmp_root / rel
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_text((ROOT / rel).read_text(encoding="utf-8"), encoding="utf-8")
+            local_ci = tmp_root / ".github" / "workflows" / "local-ci.yml"
+            local_ci.write_text(
+                local_ci.read_text(encoding="utf-8").replace("TaxMate Australia Local CI", "Local CI"),
+                encoding="utf-8",
+            )
+
+            self.assertFalse(taxmate_validate.local_act_ci_ready(tmp))
+
     def test_release_config_tracks_manifest_versions(self) -> None:
         self.assertTrue(taxmate_validate.release_config_tracks_manifest_versions(str(ROOT)))
 

@@ -2442,6 +2442,7 @@ def local_act_ci_ready(root: str) -> bool:
     ]
     return (
         "catthehacker/ubuntu:act-22.04" in actrc
+        and local_ci.count("name: TaxMate Australia Local CI") == 2
         and "act workflow_dispatch -W .github/workflows/local-ci.yml" in run_script
         and "docker info" in run_script
         and "gitleaks dir . --redact --no-banner" in run_script
