@@ -48,14 +48,13 @@ gitleaks detect --source . --redact
 gitleaks dir . --redact
 ```
 
-If `gitleaks` is unavailable locally, say that in the PR and rely on the required `Gitleaks` workflow.
+If `gitleaks` is unavailable locally, install it before merge.
 
 ## Pull Request Rules
 
 - Use the PR template.
 - Link the issue when one exists.
 - Mark skipped checks with the reason.
-- Request `@Codex` review only after local validation is green.
 - Reply to every review thread with the fix and resolve the thread after verification.
-- Merge only after required checks are green, `mergeStateStatus` is `CLEAN`, all review threads are resolved, latest-head Codex review is clean, and a local secret scan has run.
+- Merge only after the full local workflow and secret scans pass, `mergeStateStatus` is `CLEAN`, and all review threads are resolved.
 - Use squash merge only.

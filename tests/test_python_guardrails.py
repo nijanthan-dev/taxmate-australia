@@ -1041,13 +1041,13 @@ class ReviewGuardrailTests(unittest.TestCase):
 
         self.assertTrue(any("missing taxmateAustralia" in finding.detail for finding in findings))
 
-    def test_local_ci_contract_requires_auto_ci_triggers(self) -> None:
+    def test_local_ci_contract_rejects_auto_ci_triggers(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / ".github" / "workflows").mkdir(parents=True)
             (root / "scripts").mkdir()
             (root / ".github" / "workflows" / "ci.yml").write_text(
-                "on:\n  workflow_dispatch:\n",
+                "on:\n  workflow_dispatch:\n  pull_request:\n",
                 encoding="utf-8",
             )
             (root / ".github" / "workflows" / "hol-plugin-scanner.yml").write_text(
@@ -1070,9 +1070,9 @@ class ReviewGuardrailTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (root / "scripts" / "check-local-ci-ready.sh").write_text(
-                "CI must retain pull_request trigger\n"
-                "CI must retain main push trigger\n"
-                "disable the workflow in GitHub when pausing hosted spend\n",
+                "hosted CI must not run automatically\n"
+                "local act workflow must not run automatically on GitHub\n"
+                "Release must not depend on hosted CI\n",
                 encoding="utf-8",
             )
             (root / ".pre-commit-config.yaml").write_text(
@@ -1085,13 +1085,13 @@ class ReviewGuardrailTests(unittest.TestCase):
             )
             (root / "docs").mkdir()
             (root / "docs" / "DEVELOPMENT.md").write_text(
-                "Automatic CI triggers stay in workflow YAML\ndisabled_manually\n",
+                "Hosted test workflows stay disabled in GitHub\ndisabled_manually\n",
                 encoding="utf-8",
             )
 
             findings = taxmate_review_guardrails.check_local_ci_contract(root)
 
-        self.assertTrue(any("automatic pull_request and main push triggers" in finding.detail for finding in findings))
+        self.assertTrue(any("manual-only" in finding.detail for finding in findings))
 
     def test_release_contract_rejects_test_version_literals(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1104,13 +1104,11 @@ class ReviewGuardrailTests(unittest.TestCase):
                 "\n".join(
                     [
                         "workflow_dispatch:",
-                        "workflow_run:",
-                        'workflows: ["CI"]',
-                        "types: [completed]",
+                        "push:",
                         "branches: [main]",
-                        "Require green CI",
-                        "GH_REPO: nijanthan-dev/taxmate-australia",
-                        "--workflow CI --branch main --commit",
+                        "github.event_name == 'push'",
+                        "github.event_name == 'workflow_dispatch'",
+                        'echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"',
                         "Require main unchanged",
                         "git ls-remote https://github.com/nijanthan-dev/taxmate-australia.git refs/heads/main",
                         "RELEASE_PLEASE_TOKEN",
@@ -1121,7 +1119,10 @@ class ReviewGuardrailTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            (root / "docs" / "DEVELOPMENT.md").write_text("Manual release notes.\n", encoding="utf-8")
+            (root / "docs" / "DEVELOPMENT.md").write_text(
+                "Release runs automatically from pushes to `main`.\n",
+                encoding="utf-8",
+            )
             (root / ".codex-plugin" / "plugin.json").write_text(
                 json.dumps({"version": CURRENT_PLUGIN_VERSION}),
                 encoding="utf-8",
@@ -12543,10 +12544,10 @@ class ValidatorAndCliTests(unittest.TestCase):
     def test_gitleaks_has_no_broad_cache_allowlist(self) -> None:
         self.assertTrue(taxmate_validate.gitleaks_no_broad_cache_allowlist(str(ROOT)))
 
-    def test_release_workflow_auto_runs_after_green_ci(self) -> None:
-        self.assertTrue(taxmate_validate.release_workflow_auto_after_ci(str(ROOT)))
+    def test_release_workflow_runs_after_main_push(self) -> None:
+        self.assertTrue(taxmate_validate.release_workflow_runs_after_main_push(str(ROOT)))
 
-    def test_release_workflow_rejects_manual_only(self) -> None:
+    def test_release_workflow_rejects_missing_main_push(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
             workflow = tmp_root / ".github" / "workflows" / "release.yml"
@@ -12555,13 +12556,13 @@ class ValidatorAndCliTests(unittest.TestCase):
                 (ROOT / ".github" / "workflows" / "release.yml")
                 .read_text(encoding="utf-8")
                 .replace(
-                    '  workflow_run:\n    workflows: ["CI"]\n    types: [completed]\n    branches: [main]\n',
+                    "  push:\n    branches: [main]\n",
                     "",
                 ),
                 encoding="utf-8",
             )
 
-            self.assertFalse(taxmate_validate.release_workflow_auto_after_ci(tmp))
+            self.assertFalse(taxmate_validate.release_workflow_runs_after_main_push(tmp))
 
     def test_release_workflow_rejects_privileged_head_checkout(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -12572,18 +12573,18 @@ class ValidatorAndCliTests(unittest.TestCase):
                 (ROOT / ".github" / "workflows" / "release.yml")
                 .read_text(encoding="utf-8")
                 .replace(
-                    "      - name: Require green CI\n",
+                    "      - name: Require main unchanged\n",
                     "      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683\n"
                     "        with:\n"
                     "          ref: ${{ steps.target.outputs.sha }}\n"
-                    "      - name: Require green CI\n",
+                    "      - name: Require main unchanged\n",
                 ),
                 encoding="utf-8",
             )
 
-            self.assertFalse(taxmate_validate.release_workflow_auto_after_ci(tmp))
+            self.assertFalse(taxmate_validate.release_workflow_runs_after_main_push(tmp))
 
-    def test_release_workflow_requires_gh_repo_without_checkout(self) -> None:
+    def test_release_workflow_rejects_hosted_ci_dependency(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
             workflow = tmp_root / ".github" / "workflows" / "release.yml"
@@ -12591,16 +12592,16 @@ class ValidatorAndCliTests(unittest.TestCase):
             workflow.write_text(
                 (ROOT / ".github" / "workflows" / "release.yml")
                 .read_text(encoding="utf-8")
-                .replace("          GH_REPO: nijanthan-dev/taxmate-australia\n", ""),
+                .replace("      - name: Require main unchanged\n", "      - name: Require green CI\n"),
                 encoding="utf-8",
             )
 
-            self.assertFalse(taxmate_validate.release_workflow_auto_after_ci(tmp))
+            self.assertFalse(taxmate_validate.release_workflow_runs_after_main_push(tmp))
 
     def test_local_act_ci_ready(self) -> None:
         self.assertTrue(taxmate_validate.local_act_ci_ready(str(ROOT)))
 
-    def test_local_act_ci_requires_auto_ci_trigger(self) -> None:
+    def test_local_act_ci_rejects_auto_ci_trigger(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
             for rel in [
@@ -12615,7 +12616,7 @@ class ValidatorAndCliTests(unittest.TestCase):
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_text((ROOT / rel).read_text(encoding="utf-8"), encoding="utf-8")
             ci = tmp_root / ".github" / "workflows" / "ci.yml"
-            ci.write_text("on:\n  workflow_dispatch:\n", encoding="utf-8")
+            ci.write_text("on:\n  workflow_dispatch:\n  pull_request:\n", encoding="utf-8")
 
             self.assertFalse(taxmate_validate.local_act_ci_ready(tmp))
 

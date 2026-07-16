@@ -2,13 +2,10 @@ name: Release
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
+  push:
     branches: [main]
 
 permissions:
-  actions: read
   contents: write
   issues: write
   pull-requests: write
@@ -17,10 +14,8 @@ jobs:
   release:
     name: Release
     if: >-
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main')
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     concurrency:
       group: release-main
@@ -28,26 +23,8 @@ jobs:
     steps:
       - name: Resolve release target
         id: target
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          WORKFLOW_RUN_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          if [ "$EVENT_NAME" = "workflow_run" ]; then
-            echo "sha=$WORKFLOW_RUN_SHA" >> "$GITHUB_OUTPUT"
-          else
-            echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Require green CI
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: nijanthan-dev/taxmate-australia
-          TARGET_SHA: ${{ steps.target.outputs.sha }}
-        run: |
-          passed="$(gh run list --workflow CI --branch main --commit "$TARGET_SHA" --json conclusion,status --jq 'map(select(.status == "completed" and .conclusion == "success")) | length')"
-          if [ "$passed" = "0" ]; then
-            echo "No successful CI run found for $TARGET_SHA on main."
-            exit 1
-          fi
+          echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
       - name: Require main unchanged
         env:
           TARGET_SHA: ${{ steps.target.outputs.sha }}

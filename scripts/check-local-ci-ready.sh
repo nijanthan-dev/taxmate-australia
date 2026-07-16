@@ -16,9 +16,17 @@ fail() {
 grep -q "catthehacker/ubuntu:act-22.04" .actrc || fail ".actrc must pin the local act image"
 grep -q "workflow_dispatch:" .github/workflows/ci.yml || fail "CI must stay manually runnable"
 grep -q "workflow_dispatch:" .github/workflows/hol-plugin-scanner.yml || fail "HOL scanner must stay manually runnable"
-grep -Eq "^[[:space:]]*pull_request:" .github/workflows/ci.yml || fail "CI must retain pull_request trigger; disable the workflow in GitHub when pausing hosted spend"
-grep -Eq "^[[:space:]]*push:" .github/workflows/ci.yml || fail "CI must retain main push trigger for release workflow_run"
-grep -q "branches: \\[main\\]" .github/workflows/ci.yml || fail "CI push trigger must target main"
+if grep -Eq "^[[:space:]]*(pull_request|push):" .github/workflows/ci.yml; then
+  fail "hosted CI must not run automatically"
+fi
+if grep -Eq "^[[:space:]]*(pull_request|push):" .github/workflows/local-ci.yml; then
+  fail "local act workflow must not run automatically on GitHub"
+fi
+grep -Eq "^[[:space:]]*push:" .github/workflows/release.yml || fail "Release must run from main pushes"
+grep -q "branches: \\[main\\]" .github/workflows/release.yml || fail "Release push trigger must target main"
+if grep -Eq "workflow_run:|Require green CI|--workflow CI" .github/workflows/release.yml; then
+  fail "Release must not depend on hosted CI"
+fi
 
 grep -q "bash scripts/check-publication-ready.sh" .github/workflows/local-ci.yml || fail "local act workflow must run publication guardrails"
 grep -q "./scripts/taxmate review-guardrails" .github/workflows/local-ci.yml || fail "local act workflow must run review guardrails"

@@ -20,8 +20,8 @@
 - [ ] `./scripts/taxmate skills generate --check`
 - [ ] `./scripts/taxmate skills audit --check`
 - [ ] `scripts/check-publication-ready.sh`
-- [ ] history secret scan (`gitleaks detect --source . --redact` or required CI `Gitleaks`)
-- [ ] tree secret scan (`gitleaks dir . --redact` or required CI `Gitleaks`)
+- [ ] history secret scan (`gitleaks detect --source . --redact`)
+- [ ] tree secret scan (`gitleaks dir . --redact`)
 
 ## Generated Artifacts
 
@@ -40,6 +40,6 @@
 
 - [ ] same-pattern scan completed before requesting independent review
 - [ ] documentation and instruction validation rules updated for newly learned failure modes
-- [ ] `@Codex` review requested after local validation
 - [ ] review threads replied to and resolved after fixes
-- [ ] merge only after required checks green, `mergeStateStatus` `CLEAN`, and no unresolved review threads
+- [ ] full local workflow passed
+- [ ] merge only when `mergeStateStatus` is `CLEAN` and no review threads remain
