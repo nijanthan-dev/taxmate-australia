@@ -23,6 +23,7 @@ These rules are self-contained. Do not depend on or assume `~/.codex/AGENTS.md` 
 - Use standard branch prefixes. For parallel/automation work, prefer a fresh worktree from current `origin/main`.
 - Use GitHub CLI for GitHub. Never run `gh auth refresh` unless explicitly requested. If a scope is missing, report it and stop.
 - Before acting on PR review state, recheck head, latest reviews, unresolved threads, and checks live. Eyes/ack reactions are not approval.
+- Never request Codex PR review. Do not comment `@Codex review`, enable automatic Codex PR review, or treat Codex bot review as a merge gate. `Independent review` means local review with distinct lenses unless the user explicitly names another reviewer.
 - Fix valid review comments, reply with the fix, resolve the thread, and scan for the same bug class before re-review.
 - Before merge, run Gitleaks on local history/current tree and PR diff; inspect remote PR state for secrets. If a secret reached remote Git, stop and remove it from branch history.
 - Squash merge only. After merge, verify PR/issue closure and relevant main CI, update main, and clean safe merged branches/worktrees.
@@ -79,5 +80,5 @@ These rules are self-contained. Do not depend on or assume `~/.codex/AGENTS.md` 
 - Keep README and public install docs focused on install, use, previews, boundaries, and user-facing examples; put screenshot refresh commands, Chrome flags, crop coordinates, and other developer maintenance recipes in `docs/DEVELOPMENT.md` or `AGENTS.md`.
 - Before PR/merge, run `python3 -m py_compile scripts/*.py`, `./scripts/taxmate validate`, `./scripts/taxmate skills generate --check`, `./scripts/taxmate skills audit --check`, `scripts/check-publication-ready.sh`, and run a secret scan.
 - For PR fix -> merge -> Release Please -> release/tag -> cleanup work, use `$taxmate-release-closeout` when available.
-- Before merge, require the full local workflow and secret scans, `mergeStateStatus` `CLEAN`, and no unresolved review threads. Hosted CI and automatic Codex PR review stay disabled.
+- Before merge, require the full local workflow and secret scans, `mergeStateStatus` `CLEAN`, and no unresolved review threads. Hosted CI and all Codex PR review triggers, automatic or manual, stay disabled.
 - For each new review finding, state the invariant, scan directly analogous workflows, add the smallest focused regression proof, make one commit/push, then reply and resolve. Run full validation only after changes or at the final gate.

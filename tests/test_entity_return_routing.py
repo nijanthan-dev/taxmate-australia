@@ -81,6 +81,8 @@ class EntityReturnRoutingTests(unittest.TestCase):
                     else "metadata_only"
                 )
                 self.assertEqual(expected_status, covered[url]["status"])
+                if url in taxmate_entity_worksheet.COMPANY_REVIEW_SOURCES[2:]:
+                    self.assertIn("records-evidence", covered[url]["skills"])
 
     def test_no_entity_has_no_entity_sections(self):
         payload = self.payload({
@@ -266,12 +268,15 @@ class EntityReturnRoutingTests(unittest.TestCase):
         ]
         rendered = " ".join(row["answer"] for row in evidence)
         self.assertIn("Untyped Trust", rendered)
-        self.assertIn('"franking_credits": 0', rendered)
         self.assertIn('"carried_losses": false', rendered)
         self.assertIn('"beneficiary": 0', rendered)
         self.assertIn('"cgt_details": []', rendered)
+        franking = next(
+            row for row in payload["company_items"]
+            if row["row_kind"] == "entity-return-company-franking-account"
+        )
+        self.assertIn("credits 0", franking["answer"])
         self.assertTrue(all(row["status"] in {"Evidence", "Accountant review"} for row in evidence))
-        self.assertFalse(any("franking" in row["answer"].lower() for row in payload["company_items"]))
 
     def test_nested_alias_lists_keep_unsupported_and_route_partnership_losses(self):
         payload = self.payload({
@@ -280,8 +285,12 @@ class EntityReturnRoutingTests(unittest.TestCase):
             "partnership_return_losses": {"carried_forward": 0},
         })
         rendered = " ".join(row["answer"] for row in payload["evidence_items"])
-        self.assertIn('"dividends": false', rendered)
         self.assertIn('"distributions": 0', rendered)
+        dividend = next(
+            row for row in payload["company_items"]
+            if row["row_kind"] == "entity-return-company-dividend"
+        )
+        self.assertIn("amount false", dividend["answer"])
         loss = next(
             row for row in payload["partnership_items"]
             if row["row_kind"] == "entity-return-partnership-loss"
@@ -1272,12 +1281,12 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
             if row["row_kind"] == "entity-return-company-income-evidence"
         ))
 
-    def test_unknown_and_deferred_company_categories_remain_review(self):
+    def test_unknown_company_categories_remain_review_and_dividends_migrate(self):
         payload = self.payload({
             "company_return": {
                 "name": "Boundary Co",
                 "income_items": [
-                    self.income_item(category="dividends"),
+                    self.income_item(category="dividends", amount=0),
                     self.income_item(category="mystery income"),
                 ],
                 "deduction_items": [self.deduction_item(category="depreciation")],
@@ -1291,10 +1300,19 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
             }
         ]
         rendered = " ".join(row["answer"] for row in evidence)
-        self.assertIn("out-of-scope company category (#131)", rendered)
-        self.assertNotIn("out-of-scope company category (#132)", rendered)
         self.assertIn("supported category", rendered)
         self.assertTrue(all(row["status"] == "Accountant review" for row in evidence))
+        dividend = next(
+            row for row in payload["company_items"]
+            if row["row_kind"] == "entity-return-company-dividend"
+        )
+        self.assertIn("amount 0", dividend["answer"])
+        self.assertIn("dividend direction received", dividend["answer"])
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-company-income"
+            and "category dividends" in row["answer"]
+            for row in payload["company_items"]
+        ))
 
         with_total = self.payload({
             "company_return": {
@@ -1305,6 +1323,664 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         })
         total = next(row for row in with_total["company_items"] if "TOTAL" in row["number"])
         self.assertIn("item reconciliation unavailable", total["answer"])
+
+    def test_company_dividend_franking_and_division_7a_rows_preserve_review_facts(self):
+        payload = self.payload({
+            "company_return": {
+                "name": "Review Benefits Co",
+                "income_items": [{
+                    "category": "dividends",
+                    "amount": 0,
+                    "franked_amount": 0,
+                    "unfranked_amount": 0,
+                    "franking_credit": 0,
+                    "evidence": ["dividend-statement.pdf"],
+                    "source_url": "https://example.invalid/dividend",
+                    "checked_at": "2026-07-16T10:00:00Z",
+                }],
+                "franking_account": {
+                    "opening_balance": 0,
+                    "credits": 0,
+                    "debits": 0,
+                    "closing_balance": 0,
+                    "deficit": False,
+                    "franking_deficit_tax": 0,
+                    "records": ["franking-account.csv"],
+                },
+                "division_7a": {
+                    "shareholder": "Synthetic Shareholder",
+                    "loan_amount": 0,
+                    "asset_use": False,
+                    "debt_forgiven": 0,
+                    "complying_loan_agreement": False,
+                    "minimum_repayment_made": False,
+                    "distributable_surplus": 0,
+                    "retained_earnings": 0,
+                    "private_expense": False,
+                    "interposed_entity": False,
+                    "trust_upe": False,
+                    "records": ["related-party-ledger.pdf"],
+                },
+            },
+        })
+        rows = {
+            row["row_kind"]: row for row in payload["company_items"]
+            if row["row_kind"] in {
+                "entity-return-company-dividend",
+                "entity-return-company-franking-account",
+                "entity-return-company-division-7a",
+            }
+        }
+        self.assertEqual(3, len(rows))
+        rendered = json.dumps(rows)
+        for expected in (
+            "franked amount 0", "franking credit 0", "deficit false",
+            "franking deficit tax 0", "loan amount 0", "asset use false",
+            "debt forgiven 0", "complying loan agreement false",
+            "minimum repayment made false", "distributable surplus 0",
+            "retained earnings 0", "private expense false",
+            "interposed entity false", "trust upe false",
+        ):
+            self.assertIn(expected, rendered)
+        self.assertIn(
+            taxmate_entity_worksheet.COMPANY_DIVIDEND_SOURCE,
+            rows["entity-return-company-dividend"]["source_urls"],
+        )
+        self.assertTrue(taxmate_entity_worksheet.COMPANY_DIVIDEND_SOURCE.endswith(
+            "dividend-and-interest-schedule-2026"
+        ))
+        self.assertNotIn(
+            "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2025",
+            rows["entity-return-company-dividend"]["source_urls"],
+        )
+        self.assertIn(
+            taxmate_entity_worksheet.COMPANY_FRANKING_SOURCE,
+            rows["entity-return-company-franking-account"]["source_urls"],
+        )
+        self.assertIn(
+            taxmate_entity_worksheet.COMPANY_DIVISION_7A_SOURCE,
+            rows["entity-return-company-division-7a"]["source_urls"],
+        )
+        evidence = " ".join(
+            row["answer"] for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-company-division-7a-evidence"
+        )
+        self.assertIn("complying loan agreement review", evidence)
+        self.assertIn("repayment review", evidence)
+        self.assertTrue(all(row["status"] == "Accountant review" for row in rows.values()))
+        self.assertFalse(any(
+            row["row_kind"].startswith("entity-return-company-")
+            for row in payload["items"] + payload["trust_items"] + payload["partnership_items"]
+        ))
+
+    def test_company_review_flat_scalar_aliases_dedupe_and_fail_closed(self):
+        payload = self.payload({
+            "company_return": [{"name": "First Co"}, {"name": "Review Co", "abn": "22"}],
+            "company_return_entity_name": "Review Co",
+            "company_return_dividends": 0,
+            "company_return_dividend_direction": "paid",
+            "company_return_dividend_records": ["resolution.pdf"],
+            "company_return_franking_account": 0,
+            "company_return_franking_opening_balance": 0,
+            "company_return_franking_records": ["franking.csv"],
+            "company_return_division_7a": 0,
+            "company_return_division_7a_loan_amount": 0,
+            "company_return_division_7a_records": ["ledger.pdf"],
+            "company_return_source_urls": [
+                "bad source",
+                "https://example.invalid/company-review",
+            ],
+            "company_return_checked_at": "bad date",
+        })
+        rows = [
+            row for row in payload["company_items"]
+            if row["row_kind"] in {
+                "entity-return-company-dividend",
+                "entity-return-company-franking-account",
+                "entity-return-company-division-7a",
+            }
+        ]
+        self.assertEqual(3, len(rows))
+        self.assertTrue(all("company name Review Co" in row["answer"] for row in rows))
+        self.assertEqual(
+            1,
+            sum(row["row_kind"] == "entity-return-company-dividend" for row in rows),
+        )
+        rendered = json.dumps(rows)
+        self.assertIn("amount 0", rendered)
+        self.assertIn("closing balance 0", rendered)
+        self.assertIn("loan amount 0", rendered)
+        evidence = " ".join(
+            row["answer"] for row in payload["evidence_items"]
+            if row["row_kind"].startswith("entity-return-company-")
+        )
+        self.assertIn("source provenance", evidence)
+        self.assertIn("checked-at provenance", evidence)
+        self.assertNotIn("parent entity", evidence)
+
+    def test_company_deferred_and_direct_dividend_aliases_merge_once(self):
+        shared = {
+            "category": "dividends",
+            "description": "Synthetic dividend",
+            "amount": 0,
+            "evidence": ["dividend.pdf"],
+        }
+        payload = self.payload({
+            "company_return": {
+                "name": "Dedupe Co",
+                "income_items": [shared],
+                "dividend_items": [{
+                    **shared,
+                    "franking_credit": 0,
+                    "resolution": False,
+                }],
+                "income_total": 0,
+            },
+        })
+        dividends = [
+            row for row in payload["company_items"]
+            if row["row_kind"] == "entity-return-company-dividend"
+        ]
+        self.assertEqual(1, len(dividends))
+        self.assertIn("franking credit 0", dividends[0]["answer"])
+        self.assertIn("resolution false", dividends[0]["answer"])
+        self.assertIn("dividend direction received", dividends[0]["answer"])
+        total = next(
+            row for row in payload["company_items"]
+            if row["number"] == "COMPANY-INCOME-TOTAL-1"
+        )
+        self.assertIn("matches supplied item total", total["answer"])
+
+    def test_company_deferred_franking_amount_normalizes_to_account_credit(self):
+        payload = self.payload({
+            "company_return": {
+                "name": "Franking Migration Co",
+                "income_items": [{
+                    "category": "franking",
+                    "amount": 100,
+                    "evidence": ["franking-ledger.csv"],
+                }],
+                "income_total": 100,
+            },
+        })
+        row = next(
+            row for row in payload["company_items"]
+            if row["row_kind"] == "entity-return-company-franking-account"
+        )
+        self.assertIn("credits 100", row["answer"])
+        evidence = " ".join(
+            row["answer"] for row in payload["evidence_items"]
+            if row["row_kind"] == "entity-return-company-franking-account-evidence"
+        )
+        self.assertNotIn("finite monetary fact", evidence)
+        self.assertNotIn("franking account fact", evidence)
+        self.assertFalse(any(
+            row["row_kind"] == "entity-return-company-income"
+            and "category franking" in row["answer"]
+            for row in payload["company_items"]
+        ))
+        total = next(
+            row for row in payload["company_items"]
+            if row["number"] == "COMPANY-INCOME-TOTAL-1"
+        )
+        self.assertIn("matches supplied item total", total["answer"])
+
+    def test_company_dividend_aliases_preserve_nested_flat_and_scalar_direction(self):
+        nested = self.payload({
+            "company_return": {
+                "name": "Paid Alias Co",
+                "dividends_paid": 0,
+                "dividend_records": ["resolution.pdf"],
+            },
+        })
+        paid = next(
+            row for row in nested["company_items"]
+            if row["row_kind"] == "entity-return-company-dividend"
+        )
+        self.assertIn("amount 0", paid["answer"])
+        self.assertIn("dividend direction paid", paid["answer"])
+        nested_evidence = " ".join(
+            row["answer"] for row in nested["evidence_items"]
+            if row["row_kind"] == "entity-return-company-dividend-evidence"
+        )
+        self.assertNotIn("dividend paid or received", nested_evidence)
+
+        flat = self.payload({
+            "company_return_name": "Received Alias Co",
+            "company_return_dividends_received": {
+                "amount": 25,
+                "evidence": ["dividend-statement.pdf"],
+            },
+        })
+        received = next(
+            row for row in flat["company_items"]
+            if row["row_kind"] == "entity-return-company-dividend"
+        )
+        self.assertIn("amount 25", received["answer"])
+        self.assertIn("dividend direction received", received["answer"])
+        flat_evidence = " ".join(
+            row["answer"] for row in flat["evidence_items"]
+            if row["row_kind"] == "entity-return-company-dividend-evidence"
+        )
+        self.assertNotIn("dividend paid or received", flat_evidence)
+
+    def test_company_division_7a_boolean_signals_are_not_validated_as_money(self):
+        denied = self.payload({
+            "company_return": {
+                "name": "Denied Loan Co",
+                "division_7a": {
+                    "payment": 100,
+                    "loan": False,
+                    "asset_use": False,
+                    "private_expense": False,
+                    "evidence": ["related-party-ledger.pdf"],
+                },
+            },
+        })
+        denied_row = next(
+            row for row in denied["company_items"]
+            if row["row_kind"] == "entity-return-company-division-7a"
+        )
+        self.assertIn("payment 100", denied_row["answer"])
+        self.assertIn("loan false", denied_row["answer"])
+        self.assertIn("asset use false", denied_row["answer"])
+        denied_evidence = " ".join(
+            row["answer"] for row in denied["evidence_items"]
+            if row["row_kind"] == "entity-return-company-division-7a-evidence"
+        )
+        self.assertNotIn("finite monetary fact", denied_evidence)
+        self.assertNotIn("loan agreement", denied_evidence)
+        self.assertNotIn("repayment", denied_evidence)
+
+        confirmed = self.payload({
+            "company_return": {
+                "name": "Confirmed Loan Co",
+                "division_7a": {
+                    "loan": True,
+                    "evidence": ["related-party-ledger.pdf"],
+                },
+            },
+        })
+        confirmed_evidence = " ".join(
+            row["answer"] for row in confirmed["evidence_items"]
+            if row["row_kind"] == "entity-return-company-division-7a-evidence"
+        )
+        self.assertNotIn("finite monetary fact", confirmed_evidence)
+        self.assertIn("loan agreement", confirmed_evidence)
+        self.assertIn("repayment", confirmed_evidence)
+
+    def test_company_division_7a_aliases_preserve_transaction_and_recipient_meaning(self):
+        cases = (
+            (
+                "shareholder_loans",
+                40,
+                ("loan amount 40", "transaction type loan", "shareholder true"),
+            ),
+            (
+                "director_loans",
+                50,
+                ("loan amount 50", "transaction type loan", "director true"),
+            ),
+            (
+                "related_party_benefits",
+                60,
+                ("payment 60", "transaction type benefit", "related party true"),
+            ),
+        )
+        for alias, value, expected in cases:
+            with self.subTest(alias=alias):
+                payload = self.payload({
+                    "company_return": {
+                        "name": "Alias Meaning Co",
+                        alias: value,
+                        "division_7a_records": ["related-party-ledger.pdf"],
+                    },
+                })
+                row = next(
+                    row for row in payload["company_items"]
+                    if row["row_kind"] == "entity-return-company-division-7a"
+                )
+                for text in expected:
+                    self.assertIn(text, row["answer"])
+
+    def test_company_review_alias_conflicts_and_malformed_amounts_fail_closed(self):
+        payload = self.payload({
+            "company_return": {
+                "name": "Conflict Co",
+                "dividends": {
+                    "amount": "unknown",
+                    "dividend_direction": "paid",
+                    "records": False,
+                },
+                "dividend_amount": 50,
+                "franking_account": {
+                    "opening_balance": "NaN",
+                    "records": False,
+                },
+                "franking_opening_balance": 0,
+                "division_7a": {
+                    "loan_amount": "unknown",
+                    "records": False,
+                    "source_urls": ["bad source"],
+                    "checked_at": "bad date",
+                },
+                "division_7a_loan_amount": 0,
+            },
+        })
+        evidence = [
+            row for row in payload["evidence_items"]
+            if row["row_kind"] in {
+                "entity-return-company-dividend-evidence",
+                "entity-return-company-franking-account-evidence",
+                "entity-return-company-division-7a-evidence",
+            }
+        ]
+        rendered = json.dumps(evidence)
+        for expected in (
+            "finite monetary fact", "evidence", "conflicting review aliases",
+            "source provenance", "checked-at provenance",
+        ):
+            self.assertIn(expected, rendered)
+        self.assertTrue(all(row["status"] == "Accountant review" for row in evidence))
+
+    def test_company_issue_131_flat_fact_matrix_preserves_negative_and_alias_values(self):
+        payload = self.payload({
+            "company_return_name": "Complete Review Co",
+            "company_return_dividend_direction": "paid",
+            "company_return_dividend_amount": -10,
+            "company_return_dividend_franked_amount": -4,
+            "company_return_dividend_unfranked_amount": -6,
+            "company_return_dividend_franking_credits": -1,
+            "company_return_dividend_resolution": "directors-resolution.pdf",
+            "company_return_dividend_evidence_status": "partial",
+            "company_return_dividend_records": ["dividend-ledger.pdf"],
+            "company_return_franking_opening_balance": -100,
+            "company_return_franking_credits": 0,
+            "company_return_franking_debits": -5,
+            "company_return_franking_closing_balance": -105,
+            "company_return_franking_deficit": True,
+            "company_return_franking_fdt_payable": -7,
+            "company_return_franking_benchmark_percentage": 30,
+            "company_return_franking_evidence_status": "review required",
+            "company_return_franking_records": ["franking-account.csv"],
+            "company_return_division_7a_transaction_type": "loan and benefit",
+            "company_return_division_7a_related_party": True,
+            "company_return_division_7a_shareholder_payment": -10,
+            "company_return_division_7a_director_payment": 0,
+            "company_return_division_7a_associate_payment": -5,
+            "company_return_division_7a_loan_amount": -100,
+            "company_return_division_7a_repayments": -1,
+            "company_return_division_7a_complying_loan_agreement": True,
+            "company_return_division_7a_loan_terms": "7-year written agreement",
+            "company_return_division_7a_loan_term_years": 7,
+            "company_return_division_7a_interest_rate": 8.77,
+            "company_return_division_7a_benchmark_rate": 8.77,
+            "company_return_division_7a_maturity_date": "2033-06-30",
+            "company_return_division_7a_minimum_repayment": 0,
+            "company_return_division_7a_repayment_made": False,
+            "company_return_division_7a_distributable_surplus": -200,
+            "company_return_division_7a_retained_profit": -300,
+            "company_return_division_7a_interposed_entity": True,
+            "company_return_division_7a_trust_upe": True,
+            "company_return_division_7a_evidence_status": "partial",
+            "company_return_division_7a_records": ["related-party-ledger.pdf"],
+        })
+        rows = {
+            row["row_kind"]: row
+            for row in payload["company_items"]
+            if row["row_kind"] in {
+                "entity-return-company-dividend",
+                "entity-return-company-franking-account",
+                "entity-return-company-division-7a",
+            }
+        }
+        self.assertEqual(3, len(rows))
+        rendered = json.dumps(rows)
+        for expected in (
+            "amount -10",
+            "franked amount -4",
+            "unfranked amount -6",
+            "franking credit -1",
+            "evidence status partial",
+            "opening balance -100",
+            "credits 0",
+            "debits -5",
+            "closing balance -105",
+            "deficit true",
+            "franking deficit tax -7",
+            "shareholder payment -10",
+            "director payment 0",
+            "associate payment -5",
+            "loan amount -100",
+            "repayments -1",
+            "loan terms 7-year written agreement",
+            "loan term years 7",
+            "interest rate 8.77",
+            "benchmark interest rate 8.77",
+            "minimum yearly repayment 0",
+            "minimum repayment made false",
+            "distributable surplus -200",
+            "retained profit -300",
+            "interposed entity true",
+            "trust upe true",
+        ):
+            self.assertIn(expected, rendered)
+        self.assertTrue(all(row["status"] == "Accountant review" for row in rows.values()))
+        self.assertFalse(any(
+            row["row_kind"].startswith("entity-return-company-")
+            for row in payload["items"] + payload["trust_items"] + payload["partnership_items"]
+        ))
+
+    def test_company_issue_131_missing_documents_and_loan_terms_fail_closed(self):
+        cases = (
+            (
+                {
+                    "name": "Paid Dividend Co",
+                    "dividends_paid": {
+                        "amount": 10,
+                        "records": ["dividend-ledger.pdf"],
+                    },
+                },
+                "entity-return-company-dividend-evidence",
+                "dividend resolution",
+            ),
+            (
+                {
+                    "name": "Received Dividend Co",
+                    "dividends_received": {
+                        "amount": 10,
+                        "records": ["general-ledger.pdf"],
+                    },
+                },
+                "entity-return-company-dividend-evidence",
+                "dividend statement",
+            ),
+            (
+                {
+                    "name": "Loan Terms Co",
+                    "division_7a": {
+                        "loan_amount": 10,
+                        "complying_loan_agreement": True,
+                        "repayment": 0,
+                        "records": ["related-party-ledger.pdf"],
+                    },
+                },
+                "entity-return-company-division-7a-evidence",
+                "loan terms",
+            ),
+            (
+                {
+                    "name": "Unknown Direction Co",
+                    "dividends": {
+                        "amount": 0,
+                        "paid": False,
+                        "received": False,
+                        "records": ["dividend-ledger.pdf"],
+                    },
+                },
+                "entity-return-company-dividend-evidence",
+                "dividend paid or received",
+            ),
+            (
+                {
+                    "name": "Incomplete Franking Co",
+                    "franking_account": {
+                        "deficit": False,
+                        "records": ["franking-account.csv"],
+                    },
+                },
+                "entity-return-company-franking-account-evidence",
+                "franking account fact",
+            ),
+        )
+        for company, row_kind, expected in cases:
+            with self.subTest(company=company["name"]):
+                payload = self.payload({"company_return": company})
+                evidence = " ".join(
+                    row["answer"]
+                    for row in payload["evidence_items"]
+                    if row["row_kind"] == row_kind
+                )
+                self.assertIn(expected, evidence)
+                review_rows = [
+                    row for row in payload["company_items"]
+                    if row["row_kind"] == row_kind.removesuffix("-evidence")
+                ]
+                self.assertTrue(review_rows)
+                self.assertTrue(all(row["status"] == "Accountant review" for row in review_rows))
+
+    def test_company_issue_131_flat_synonyms_conflict_instead_of_overwriting(self):
+        payload = self.payload({
+            "company_return_name": "Synonym Conflict Co",
+            "company_return_dividend_direction": "received",
+            "company_return_dividend_franking_credit": 1,
+            "company_return_dividend_franking_credits": 2,
+            "company_return_dividend_statement": "statement.pdf",
+            "company_return_dividend_records": ["statement.pdf"],
+            "company_return_franking_opening_balance": 0,
+            "company_return_franking_fdt": 3,
+            "company_return_franking_fdt_payable": 4,
+            "company_return_franking_records": ["franking.csv"],
+        })
+        evidence = " ".join(
+            row["answer"]
+            for row in payload["evidence_items"]
+            if row["row_kind"] in {
+                "entity-return-company-dividend-evidence",
+                "entity-return-company-franking-account-evidence",
+            }
+        )
+        self.assertIn("conflicting review aliases", evidence)
+
+    def test_company_issue_131_direct_item_alias_conflicts_fail_closed(self):
+        payload = self.payload({
+            "company_return": {
+                "name": "Direct Conflict Co",
+                "dividends": {
+                    "direction": "paid",
+                    "dividend_direction": "received",
+                    "amount": 1,
+                    "dividend_amount": 2,
+                    "resolution": "resolution.pdf",
+                    "statement": "statement.pdf",
+                    "records": ["dividend-ledger.pdf"],
+                },
+                "franking_account": {
+                    "opening_balance": 0,
+                    "franking_deficit_tax": 3,
+                    "fdt": 4,
+                    "records": ["franking.csv"],
+                },
+            },
+        })
+        evidence = " ".join(
+            row["answer"]
+            for row in payload["evidence_items"]
+            if row["row_kind"] in {
+                "entity-return-company-dividend-evidence",
+                "entity-return-company-franking-account-evidence",
+            }
+        )
+        self.assertIn("conflicting review aliases", evidence)
+
+    def test_company_issue_131_direct_and_flat_collections_are_equivalent(self):
+        nested = self.payload({
+            "company_return": {
+                "name": "Equivalent Co",
+                "dividend_items": {
+                    "direction": "paid",
+                    "amount": 0,
+                    "franked_amount": 0,
+                    "franking_credit": 0,
+                    "resolution": "resolution.pdf",
+                    "evidence_status": "partial",
+                    "records": ["dividend-ledger.pdf"],
+                },
+                "franking_account_items": {
+                    "opening_balance": 0,
+                    "credits": 0,
+                    "franking_deficit_tax": 0,
+                    "evidence_status": "partial",
+                    "records": ["franking.csv"],
+                },
+                "division_7a_items": {
+                    "transaction_type": "loan",
+                    "shareholder_payment": 0,
+                    "loan_amount": 0,
+                    "repayments": 0,
+                    "complying_loan_agreement": True,
+                    "loan_terms": "written terms",
+                    "benchmark_interest_rate": 8.77,
+                    "minimum_yearly_repayment": 0,
+                    "retained_profit": 0,
+                    "evidence_status": "partial",
+                    "records": ["ledger.pdf"],
+                },
+            },
+        })
+        flat = self.payload({
+            "company_return_name": "Equivalent Co",
+            "company_return_dividend_direction": "paid",
+            "company_return_dividend_amount": 0,
+            "company_return_dividend_franked_amount": 0,
+            "company_return_dividend_franking_credit": 0,
+            "company_return_dividend_resolution": "resolution.pdf",
+            "company_return_dividend_evidence_status": "partial",
+            "company_return_dividend_records": ["dividend-ledger.pdf"],
+            "company_return_franking_opening_balance": 0,
+            "company_return_franking_credits": 0,
+            "company_return_franking_fdt": 0,
+            "company_return_franking_evidence_status": "partial",
+            "company_return_franking_records": ["franking.csv"],
+            "company_return_division_7a_transaction_type": "loan",
+            "company_return_division_7a_shareholder_payment": 0,
+            "company_return_division_7a_loan_amount": 0,
+            "company_return_division_7a_repayments": 0,
+            "company_return_division_7a_complying_loan_agreement": True,
+            "company_return_division_7a_loan_terms": "written terms",
+            "company_return_division_7a_benchmark_rate": 8.77,
+            "company_return_division_7a_minimum_repayment": 0,
+            "company_return_division_7a_retained_profit": 0,
+            "company_return_division_7a_evidence_status": "partial",
+            "company_return_division_7a_records": ["ledger.pdf"],
+        })
+
+        def review_facts(payload):
+            return {
+                row["row_kind"]: {
+                    fact["key"]: fact["value"]
+                    for fact in row["facts"]
+                    if not fact["key"].startswith("company_")
+                }
+                for row in payload["company_items"]
+                if row["row_kind"] in {
+                    "entity-return-company-dividend",
+                    "entity-return-company-franking-account",
+                    "entity-return-company-division-7a",
+                }
+            }
+
+        self.assertEqual(review_facts(nested), review_facts(flat))
 
     def test_out_of_scope_entity_worksheet_fields_are_preserved_as_unsupported(self):
         payload = self.payload({

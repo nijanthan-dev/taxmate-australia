@@ -6,6 +6,20 @@ These are conservative topic summaries from official sources, not copied ATO pag
 
 ## Verified official-source content
 
+- Dividend and interest schedule 2026
+  - Source ID: ato-127def29a2d6
+  - URL: https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2026
+  - Source last updated: 2026-05-29T14:00:00.000+00:00
+  - Checked at: 2026-07-16T08:09:19Z
+  - Content hash: b8af30d698cf39966efae5335a2aedc453e5bfca87b46e591a50a70c6f0e214b
+
+- Managing Division 7A risks, and corrective action
+  - Source ID: ato-51c859549f3b
+  - URL: https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/private-company-benefits-division-7a-dividends/managing-division-7a-risks-and-corrective-action
+  - Source last updated: 2019-01-30T13:00:00.000+00:00
+  - Checked at: 2026-07-16T07:24:52Z
+  - Content hash: a86fadbc205efbfa6518908bab6780d4ee794746583958d863996953e0031b51
+
 - Records you need to keep
   - Source ID: ato-93e19de11e37
   - URL: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/records-you-need-to-keep
@@ -26,6 +40,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Source last updated: 2026-05-29T14:00:00.000+00:00
   - Checked at: 2026-06-30T06:30:53Z
   - Content hash: 4478c9ba25dab85985422d3f87454e0b9124562bc99bb3625ed74b6159ab8798
+
+- Franking deficit tax offset calculations, reduction rule and exclusions
+  - Source ID: ato-f695b501c100
+  - URL: https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/imputation/in-detail/franking-deficit-tax-offset-calculation-reduction-rule-and-exclusions
+  - Source last updated: 2023-10-31T14:00:00.000+00:00
+  - Checked at: 2026-07-16T07:24:52Z
+  - Content hash: a8a96dc96812da7f208741f16c26734849aee9241f71488ad1791c612981361c
 
 ## Metadata-only official-source links
 

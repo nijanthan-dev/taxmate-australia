@@ -28,7 +28,25 @@ COMPANY_CAPITAL_ALLOWANCES_SOURCE = (
     "income-and-deductions-for-business/deductions/"
     "deductions-for-depreciating-assets-and-capital-expenses"
 )
-COMPANY_REVIEW_SOURCES = (COMPANY_LOSSES_SOURCE, COMPANY_CAPITAL_ALLOWANCES_SOURCE)
+COMPANY_DIVIDEND_SOURCE = (
+    "https://www.ato.gov.au/forms-and-instructions/dividend-and-interest-schedule-2026"
+)
+COMPANY_FRANKING_SOURCE = (
+    "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/"
+    "imputation/in-detail/franking-deficit-tax-offset-calculation-reduction-rule-and-exclusions"
+)
+COMPANY_DIVISION_7A_SOURCE = (
+    "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/"
+    "private-company-benefits-division-7a-dividends/"
+    "managing-division-7a-risks-and-corrective-action"
+)
+COMPANY_REVIEW_SOURCES = (
+    COMPANY_LOSSES_SOURCE,
+    COMPANY_CAPITAL_ALLOWANCES_SOURCE,
+    COMPANY_DIVIDEND_SOURCE,
+    COMPANY_FRANKING_SOURCE,
+    COMPANY_DIVISION_7A_SOURCE,
+)
 PARTNERSHIP_ITEM_5_SOURCE = (
     "https://www.ato.gov.au/forms-and-instructions/partnership-tax-return-2026-instructions/"
     "instructions-to-complete-the-partnership-tax-return-2026/"
@@ -158,9 +176,6 @@ CATEGORIES = {
     ("partnership", "income"): PARTNERSHIP_INCOME_CATEGORIES,
     ("partnership", "deduction"): PARTNERSHIP_DEDUCTION_CATEGORIES,
 }
-COMPANY_DEFERRED_CATEGORIES = {
-    "dividend", "dividends", "franking", "division-7a",
-}
 COMPANY_REVIEW_COLLECTIONS = {
     "loss": ("loss_items", "losses", "tax_losses"),
     "loss-continuity": ("loss_continuity", "continuity_tests", "ownership_continuity"),
@@ -168,6 +183,35 @@ COMPANY_REVIEW_COLLECTIONS = {
     "asset-pool": ("asset_pools",),
     "depreciation": ("depreciation_items",),
     "capital-allowance": ("capital_allowance_items",),
+    "dividend": ("dividend_items", "dividends", "dividends_paid", "dividends_received"),
+    "franking-account": (
+        "franking_account_items", "franking_account", "franking_items", "franking",
+    ),
+    "division-7a": (
+        "division_7a_items", "division_7a", "division7a", "shareholder_loans",
+        "director_loans", "related_party_benefits",
+    ),
+}
+COMPANY_REVIEW_ALIAS_DEFAULTS = {
+    "dividend": {
+        "dividends_paid": {"dividend_direction": "paid"},
+        "dividends_received": {"dividend_direction": "received"},
+    },
+    "division-7a": {
+        "shareholder_loans": {"transaction_type": "loan", "shareholder": True},
+        "director_loans": {"transaction_type": "loan", "director": True},
+        "related_party_benefits": {
+            "transaction_type": "benefit",
+            "related_party": True,
+        },
+    },
+}
+COMPANY_REVIEW_ALIAS_SCALAR_FIELDS = {
+    "division-7a": {
+        "shareholder_loans": "loan_amount",
+        "director_loans": "loan_amount",
+        "related_party_benefits": "payment",
+    },
 }
 COMPANY_REVIEW_SCALAR_FIELDS = {
     "loss": "amount",
@@ -176,6 +220,79 @@ COMPANY_REVIEW_SCALAR_FIELDS = {
     "asset-pool": "pool_type",
     "depreciation": "amount",
     "capital-allowance": "amount",
+    "dividend": "amount",
+    "franking-account": "closing_balance",
+    "division-7a": "loan_amount",
+}
+COMPANY_REVIEW_SOURCE_MAP = {
+    "loss": (COMPANY_LOSSES_SOURCE,),
+    "loss-continuity": (COMPANY_LOSSES_SOURCE,),
+    "asset": (COMPANY_CAPITAL_ALLOWANCES_SOURCE,),
+    "asset-pool": (COMPANY_CAPITAL_ALLOWANCES_SOURCE,),
+    "depreciation": (COMPANY_CAPITAL_ALLOWANCES_SOURCE,),
+    "capital-allowance": (COMPANY_CAPITAL_ALLOWANCES_SOURCE,),
+    "dividend": (COMPANY_DIVIDEND_SOURCE, COMPANY_FRANKING_SOURCE),
+    "franking-account": (COMPANY_FRANKING_SOURCE,),
+    "division-7a": (COMPANY_DIVISION_7A_SOURCE,),
+}
+COMPANY_REVIEW_MONEY_FIELDS = {
+    "loss": (
+        "amount", "current_year_loss", "prior_year_loss", "carried_forward_loss",
+        "loss_deducted", "loss_applied",
+    ),
+    "asset": ("cost", "opening_value", "closing_value", "adjustable_value"),
+    "asset-pool": ("opening_value", "additions", "deductions", "closing_value"),
+    "depreciation": ("amount", "deduction_amount", "opening_value", "closing_value"),
+    "capital-allowance": ("amount", "deduction_amount", "adjustable_value"),
+    "dividend": (
+        "amount", "dividend_amount", "franked_amount", "unfranked_amount",
+        "franking_credit", "dividend_franking_credit", "tfn_withholding",
+        "dividend_tfn_withholding", "dividend_franked_amount",
+        "dividend_unfranked_amount", "dividend_franking_credits",
+    ),
+    "franking-account": (
+        "opening_balance", "credits", "debits", "closing_balance",
+        "franking_opening_balance", "franking_credits", "franking_debits",
+        "franking_closing_balance", "franking_deficit_tax", "fdt", "fdt_payable",
+        "franking_fdt", "franking_fdt_payable",
+    ),
+    "division-7a": (
+        "amount", "payment", "loan", "loan_amount", "asset_use",
+        "debt_forgiven", "repayment", "minimum_yearly_repayment",
+        "distributable_surplus", "retained_earnings", "private_expense",
+        "shareholder_payment", "director_payment", "associate_payment",
+        "repayments", "minimum_repayment", "retained_profit", "retained_profits",
+        "division_7a_payment", "division_7a_loan_amount",
+        "division_7a_shareholder_payment", "division_7a_director_payment",
+        "division_7a_associate_payment",
+        "division_7a_asset_use", "division_7a_debt_forgiven",
+        "division_7a_repayment", "division_7a_repayments",
+        "division_7a_minimum_yearly_repayment", "division_7a_minimum_repayment",
+        "division_7a_distributable_surplus", "division_7a_retained_earnings",
+        "division_7a_retained_profit", "division_7a_retained_profits",
+        "division_7a_private_expense",
+    ),
+}
+COMPANY_REVIEW_NUMERIC_FIELDS = {
+    "franking-account": (
+        "benchmark_percentage", "corporate_tax_rate",
+        "franking_benchmark_percentage", "franking_corporate_tax_rate",
+    ),
+    "division-7a": (
+        "loan_term_years", "interest_rate", "benchmark_interest_rate",
+        "benchmark_rate",
+        "division_7a_loan_term_years", "division_7a_interest_rate",
+        "division_7a_benchmark_interest_rate", "division_7a_benchmark_rate",
+    ),
+}
+COMPANY_ALWAYS_REVIEW_SECTIONS = {
+    "loss-continuity", "dividend", "franking-account", "division-7a",
+}
+COMPANY_REVIEW_CATEGORY_TARGETS = {
+    "dividend": ("dividend_items", "received", None),
+    "dividends": ("dividend_items", "received", None),
+    "franking": ("franking_account_items", None, "credits"),
+    "division-7a": ("division_7a_items", None, None),
 }
 PARTNERSHIP_REVIEW_COLLECTIONS = {
     "loss": ("loss_items", "losses", "tax_losses", "partnership_losses"),
@@ -398,6 +515,9 @@ def _collection(
     aliases: Tuple[str, ...],
     *,
     preserve_falsey_scalars: bool = False,
+    alias_defaults: Optional[Dict[str, Dict[str, Any]]] = None,
+    alias_scalar_fields: Optional[Dict[str, str]] = None,
+    scalar_field: Optional[str] = None,
 ) -> Tuple[List[Any], bool]:
     values: List[Any] = []
     origins: List[set[str]] = []
@@ -416,6 +536,13 @@ def _collection(
             if isinstance(item, dict) and _missing(item):
                 blank_supplied = True
                 continue
+            defaults = (alias_defaults or {}).get(alias, {})
+            if defaults:
+                item = copy.deepcopy(item)
+                if not isinstance(item, dict):
+                    item = {(alias_scalar_fields or {}).get(alias, scalar_field): item}
+                for key, default in defaults.items():
+                    item.setdefault(key, default)
             if any(item == existing for existing in values):
                 continue
             identity = _item_identity(item)
@@ -589,15 +716,11 @@ def _line_rows(
         category = _slug(item.get("category", ""))
         amount = _amount(item.get("amount"))
         supported = category in CATEGORIES[(kind, worksheet)]
-        deferred = kind == "company" and category in COMPANY_DEFERRED_CATEGORIES
         gaps: List[str] = []
         if association_gap:
             gaps.append(association_gap)
         if not category:
             gaps.append("category")
-        elif deferred:
-            target = "#131" if category in {"dividend", "dividends", "franking", "division-7a"} else "#132"
-            gaps.append(f"out-of-scope company category ({target})")
         elif not supported:
             gaps.append("supported category")
         if category == "other" and _missing(item.get("description")):
@@ -617,7 +740,7 @@ def _line_rows(
             gaps.append("conflicting item facts")
         if item.get("unsupported"):
             gaps.append("unsupported item facts")
-        component_valid = bool(category) and supported and not deferred and amount is not None
+        component_valid = bool(category) and supported and amount is not None
         if category == "other" and _missing(item.get("description")):
             component_valid = False
         if item.get("conflicts") or item.get("unsupported"):
@@ -649,8 +772,7 @@ def _line_rows(
         }
         rows.append(row)
         review_required = (
-            deferred
-            or not supported
+            not supported
             or (amount is not None and amount < 0)
             or bool(item.get("conflicts") or item.get("unsupported"))
             or any(_review_signal(item.get(field)) for field in REVIEW_FIELDS if field not in {"status", "review_status"})
@@ -876,33 +998,93 @@ def _special_rows(
 
 
 def _company_sources(section: str, raw: Dict[str, Any]) -> List[str]:
-    detailed = (
-        COMPANY_LOSSES_SOURCE
-        if section in {"loss", "loss-continuity"}
-        else COMPANY_CAPITAL_ALLOWANCES_SOURCE
-    )
     valid_sources, _ = taxmate_entity_routing.source_provenance(raw)
     return list(dict.fromkeys([
-        taxmate_entity_routing.SOURCES["company"], detailed, *valid_sources,
+        taxmate_entity_routing.SOURCES["company"],
+        *COMPANY_REVIEW_SOURCE_MAP[section],
+        *valid_sources,
     ]))
+
+
+def _company_review_has_alias_conflict(section: str, raw: Dict[str, Any]) -> bool:
+    collection = {
+        "dividend": "dividend_items",
+        "franking-account": "franking_account_items",
+        "division-7a": "division_7a_items",
+    }.get(section)
+    if not collection:
+        return False
+    groups: Dict[str, List[str]] = {}
+    for field in taxmate_entity_routing.COMPANY_REVIEW_FLAT_GROUPS[collection]:
+        canonical = taxmate_entity_routing.COMPANY_REVIEW_FLAT_CANONICAL.get(field, field)
+        groups.setdefault(canonical, [canonical])
+        if field not in groups[canonical]:
+            groups[canonical].append(field)
+    extras = {
+        "dividend": {
+            "franking_credit": ("franking_credits",),
+        },
+        "franking-account": {
+            "franking_deficit_tax": ("fdt", "fdt_payable"),
+        },
+        "division-7a": {
+            "complying_loan_agreement": ("complying_agreement",),
+            "loan_terms": ("loan_term",),
+            "benchmark_interest_rate": ("benchmark_rate",),
+            "minimum_yearly_repayment": ("minimum_repayment",),
+            "minimum_repayment_made": ("repayment_made",),
+            "retained_profit": ("retained_profits",),
+        },
+    }.get(section, {})
+    for canonical, aliases in extras.items():
+        groups.setdefault(canonical, [canonical])
+        groups[canonical].extend(alias for alias in aliases if alias not in groups[canonical])
+    for aliases in groups.values():
+        values = [
+            raw[field]
+            for field in aliases
+            if field in raw and not _missing(raw[field])
+        ]
+        if len(values) < 2:
+            continue
+        first = values[0]
+        for candidate in values[1:]:
+            if first == candidate:
+                continue
+            first_amount = _amount(first)
+            candidate_amount = _amount(candidate)
+            if (
+                first_amount is not None
+                and candidate_amount is not None
+                and first_amount == candidate_amount
+            ):
+                continue
+            return True
+    return False
 
 
 def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
     gaps: List[str] = []
-    money_fields = {
-        "loss": (
-            "amount", "current_year_loss", "prior_year_loss", "carried_forward_loss",
-            "loss_deducted", "loss_applied",
-        ),
-        "asset": ("cost", "opening_value", "closing_value", "adjustable_value"),
-        "asset-pool": ("opening_value", "additions", "deductions", "closing_value"),
-        "depreciation": ("amount", "deduction_amount", "opening_value", "closing_value"),
-        "capital-allowance": ("amount", "deduction_amount", "adjustable_value"),
-    }
-    supplied_money = [field for field in money_fields.get(section, ()) if field in raw]
-    if section != "loss-continuity":
+    supplied_money = [
+        field
+        for field in COMPANY_REVIEW_MONEY_FIELDS.get(section, ())
+        if field in raw
+        and not (section == "division-7a" and isinstance(raw[field], bool))
+    ]
+    if section not in {"loss-continuity", "division-7a"}:
         if not supplied_money or any(_amount(raw[field]) is None for field in supplied_money):
             gaps.append("finite monetary fact")
+    elif section == "division-7a" and supplied_money and any(
+        _amount(raw[field]) is None for field in supplied_money
+    ):
+        gaps.append("finite monetary fact")
+    supplied_numeric = [
+        field
+        for field in COMPANY_REVIEW_NUMERIC_FIELDS.get(section, ())
+        if field in raw and not isinstance(raw[field], bool)
+    ]
+    if supplied_numeric and any(_amount(raw[field]) is None for field in supplied_numeric):
+        gaps.append("finite numeric fact")
     if section in {"asset", "depreciation", "capital-allowance"}:
         if _missing(raw.get("asset")) and _missing(raw.get("category")):
             gaps.append("asset or category")
@@ -918,6 +1100,121 @@ def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
         )
     ):
         gaps.append("ownership or business continuity signal")
+    if section == "dividend":
+        direction = str(
+            raw.get("direction", raw.get("dividend_direction", ""))
+        ).strip().lower()
+        paid = direction == "paid" or any(
+            _review_signal(raw.get(field))
+            and not _status_review_signal(raw.get(field))
+            for field in ("paid", "dividend_paid")
+        )
+        received = direction == "received" or any(
+            _review_signal(raw.get(field))
+            and not _status_review_signal(raw.get(field))
+            for field in ("received", "dividend_received")
+        )
+        if not paid and not received:
+            gaps.append("dividend paid or received")
+        elif paid and received:
+            gaps.append("conflicting dividend direction")
+        if paid and not any(
+            _evidence_available(raw.get(field))
+            for field in ("resolution", "dividend_resolution")
+        ):
+            gaps.append("dividend resolution")
+        if received and not any(
+            _evidence_available(raw.get(field))
+            for field in ("statement", "dividend_statement")
+        ):
+            gaps.append("dividend statement")
+    if section == "franking-account" and all(
+        _missing(raw.get(field))
+        for field in (
+            "opening_balance", "credits", "debits", "closing_balance",
+            "franking_opening_balance", "franking_credits", "franking_debits",
+            "franking_closing_balance",
+        )
+    ):
+        gaps.append("franking account fact")
+    if section == "division-7a":
+        if all(
+            _missing(raw.get(field))
+            for field in (
+                "transaction_type", "payment", "loan", "loan_amount", "asset_use",
+                "shareholder_payment", "director_payment", "associate_payment",
+                "debt_forgiven", "private_expense", "division_7a_transaction_type",
+                "division_7a_payment", "division_7a_loan_amount",
+                "division_7a_shareholder_payment", "division_7a_director_payment",
+                "division_7a_associate_payment",
+                "division_7a_asset_use", "division_7a_debt_forgiven",
+                "division_7a_private_expense",
+            )
+        ):
+            gaps.append("payment, loan, asset use, debt forgiveness, or private benefit")
+        loan_supplied = any(
+            not _missing(raw.get(field))
+            and not (field == "loan" and _false_signal(raw.get(field)))
+            for field in ("loan", "loan_amount", "division_7a_loan_amount")
+        )
+        if loan_supplied and all(
+            _missing(raw.get(field))
+            for field in (
+                "agreement", "complying_loan_agreement",
+                "complying_agreement", "division_7a_agreement",
+                "division_7a_complying_agreement",
+                "division_7a_complying_loan_agreement",
+            )
+        ):
+            gaps.append("loan agreement")
+        elif loan_supplied and any(
+            _false_signal(raw.get(field))
+            for field in (
+                "agreement", "complying_loan_agreement",
+                "complying_agreement", "division_7a_agreement",
+                "division_7a_complying_agreement",
+                "division_7a_complying_loan_agreement",
+            )
+        ):
+            gaps.append("complying loan agreement review")
+        if loan_supplied and all(
+            _missing(raw.get(field))
+            for field in (
+                "loan_terms", "loan_term", "loan_term_years", "interest_rate",
+                "benchmark_interest_rate", "benchmark_rate", "maturity_date",
+                "division_7a_loan_terms", "division_7a_loan_term_years",
+                "division_7a_interest_rate",
+                "division_7a_benchmark_interest_rate",
+                "division_7a_benchmark_rate",
+                "division_7a_maturity_date",
+            )
+        ):
+            gaps.append("loan terms")
+        if loan_supplied and all(
+            _missing(raw.get(field))
+            for field in (
+                "repayment", "repayments", "minimum_yearly_repayment",
+                "minimum_repayment", "minimum_repayment_made", "repayment_made",
+                "division_7a_repayment",
+                "division_7a_minimum_yearly_repayment",
+                "division_7a_minimum_repayment",
+                "division_7a_minimum_repayment_made",
+                "division_7a_repayment_made",
+            )
+        ):
+            gaps.append("repayment or minimum yearly repayment signal")
+        elif loan_supplied and any(
+            _false_signal(raw.get(field))
+            for field in (
+                "repayment", "repayments", "minimum_repayment_made",
+                "repayment_made", "division_7a_repayment",
+                "division_7a_minimum_repayment_made",
+                "division_7a_repayment_made",
+            )
+        ):
+            gaps.append("repayment review")
+    if raw.get("_alias_conflicts") or _company_review_has_alias_conflict(section, raw):
+        gaps.append("conflicting review aliases")
     evidence_value = raw.get("evidence", raw.get("records", raw.get("documents")))
     if not _evidence_available(evidence_value):
         gaps.append("evidence")
@@ -939,7 +1236,14 @@ def _company_review_rows(
     counter: int,
     evidence_index: int,
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], int, int]:
-    raw_items, blank_requested = _collection(record, aliases, preserve_falsey_scalars=True)
+    raw_items, blank_requested = _collection(
+        record,
+        aliases,
+        preserve_falsey_scalars=True,
+        alias_defaults=COMPANY_REVIEW_ALIAS_DEFAULTS.get(section),
+        alias_scalar_fields=COMPANY_REVIEW_ALIAS_SCALAR_FIELDS.get(section),
+        scalar_field=COMPANY_REVIEW_SCALAR_FIELDS[section],
+    )
     rows: List[Dict[str, Any]] = []
     followups: List[Dict[str, Any]] = []
     if blank_requested:
@@ -969,8 +1273,8 @@ def _company_review_rows(
             "question": f"Company {section.replace('-', ' ')} facts",
             "answer": "; ".join(f"{key.replace('_', ' ')} {_display(value)}" for key, value in pairs),
             "why_included": (
-                "Prep-only company fact; loss use, continuity, method, capital-allowance treatment, "
-                "and final deductions remain accountant decisions."
+                "Prep-only company fact; loss use, asset treatment, dividend/franking treatment, "
+                "Division 7A, and final tax outcomes remain accountant decisions."
             ),
             "status": "Accountant review",
             "source_urls": _company_sources(section, raw),
@@ -983,7 +1287,7 @@ def _company_review_rows(
             "facts": _facts(pairs),
             "tab_text": f"Company {section.replace('-', ' ')} facts require accountant review.",
         })
-        review_required = section == "loss-continuity" or any(
+        review_required = section in COMPANY_ALWAYS_REVIEW_SECTIONS or any(
             _status_review_signal(raw.get(key))
             for key in (
                 "method", "instant_asset_write_off", "mixed_use", "private_use",
@@ -996,6 +1300,7 @@ def _company_review_rows(
                 "source_urls": valid_sources,
                 "invalid_sources": invalid_sources,
                 "checked_at": checked_at,
+                "conflicts": raw.get("_alias_conflicts"),
             }
             followups.append(_line_followup(
                 "company", section, source_item,
@@ -1003,6 +1308,73 @@ def _company_review_rows(
             ))
             evidence_index += 1
     return rows, followups, counter, evidence_index
+
+
+def _company_deferred_review_items(
+    raw_items: List[Any],
+) -> Tuple[List[Any], Dict[str, List[Dict[str, Any]]], List[Decimal], bool]:
+    worksheet_items: List[Any] = []
+    review_items = {
+        "dividend_items": [],
+        "franking_account_items": [],
+        "division_7a_items": [],
+    }
+    amounts: List[Decimal] = []
+    all_valid = True
+    for raw in raw_items:
+        if not isinstance(raw, dict):
+            worksheet_items.append(raw)
+            continue
+        normalized = _normalize_item(raw)
+        target = COMPANY_REVIEW_CATEGORY_TARGETS.get(
+            _slug(normalized.get("category", ""))
+        )
+        if not target:
+            worksheet_items.append(raw)
+            continue
+        collection, direction, amount_field = target
+        review = copy.deepcopy(raw)
+        if direction:
+            review.setdefault("dividend_direction", direction)
+        if amount_field and "amount" in normalized:
+            review.setdefault(amount_field, normalized["amount"])
+        review_items[collection].append(review)
+        amount = _amount(normalized.get("amount"))
+        if amount is None:
+            all_valid = False
+        else:
+            amounts.append(amount)
+    return worksheet_items, review_items, amounts, all_valid
+
+
+def _merge_company_review_items(
+    record: Dict[str, Any],
+    review_items: Dict[str, List[Dict[str, Any]]],
+) -> Dict[str, Any]:
+    merged = copy.deepcopy(record)
+    for collection, additions in review_items.items():
+        if not additions:
+            continue
+        existing = merged.get(collection)
+        values = (
+            copy.deepcopy(existing)
+            if isinstance(existing, list)
+            else [copy.deepcopy(existing)]
+            if existing is not None
+            else []
+        )
+        for addition in additions:
+            identity = _item_identity(addition)
+            matches = [
+                index for index, value in enumerate(values)
+                if identity != ("", "") and _item_identity(value) == identity
+            ]
+            if len(matches) == 1 and isinstance(values[matches[0]], dict):
+                values[matches[0]] = _merge_alias_item(values[matches[0]], addition)
+            elif addition not in values:
+                values.append(copy.deepcopy(addition))
+        merged[collection] = values
+    return merged
 
 
 def _partnership_review_sources(section: str, raw: Dict[str, Any]) -> List[str]:
@@ -1262,8 +1634,23 @@ def route_entity_worksheets(
             )
             sections[f"{kind}_items"].extend(context_rows)
             evidence.extend(context_followups)
+            company_review_record = record
             for worksheet in ("income", "deduction"):
                 raw_items, blank_requested = _collection(record, COLLECTION_ALIASES[worksheet])
+                migrated_amounts: List[Decimal] = []
+                migrated_valid = True
+                migrated_present = False
+                if kind == "company" and worksheet == "income":
+                    (
+                        raw_items,
+                        migrated_reviews,
+                        migrated_amounts,
+                        migrated_valid,
+                    ) = _company_deferred_review_items(raw_items)
+                    company_review_record = _merge_company_review_items(
+                        company_review_record, migrated_reviews,
+                    )
+                    migrated_present = any(migrated_reviews.values())
                 key = f"{kind}-{worksheet}"
                 if blank_requested:
                     evidence.append(_line_followup(
@@ -1274,6 +1661,9 @@ def route_entity_worksheets(
                     kind, worksheet, raw_items, parent, record, association_gap,
                     counters[key], evidence_index,
                 )
+                amounts.extend(migrated_amounts)
+                if migrated_present:
+                    all_valid = migrated_valid and (all_valid if raw_items else True)
                 sections[f"{kind}_items"].extend(rows)
                 evidence.extend(followups)
                 total_rows, total_followups, evidence_index = _total_rows(
@@ -1303,7 +1693,7 @@ def route_entity_worksheets(
                 for section, aliases in COMPANY_REVIEW_COLLECTIONS.items():
                     key = f"company-{section}"
                     rows, followups, counters[key], evidence_index = _company_review_rows(
-                        record, parent, association_gap, section, aliases,
+                        company_review_record, parent, association_gap, section, aliases,
                         counters[key], evidence_index,
                     )
                     sections["company_items"].extend(rows)
