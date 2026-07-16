@@ -6,6 +6,7 @@
 ### Features
 
 * add company franking and Division 7A review ([#164](https://github.com/nijanthan-dev/taxmate-australia/issues/164)) ([fbedd38](https://github.com/nijanthan-dev/taxmate-australia/commit/fbedd38cdaba9936d46aad925ff803d84e1be5ca))
+* add trust CGT franking and streaming review ([#166](https://github.com/nijanthan-dev/taxmate-australia/issues/166)) ([7552a02](https://github.com/nijanthan-dev/taxmate-australia/commit/7552a02880dcb289f409c85bc0e08087c778a39f))
 
 ## [0.28.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.27.0...v0.28.0) (2026-07-15)
 
