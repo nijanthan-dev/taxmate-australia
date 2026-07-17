@@ -2419,6 +2419,137 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         self.assertIn("conflicting review aliases", conflict_evidence)
         self.assertNotIn("conflicting review aliases", equivalent_evidence)
 
+    def test_claimed_trust_streaming_requires_ato_specific_entitlement_facts(self):
+        incomplete = self.payload({
+            "trust_return": {
+                "name": "Incomplete Streaming Trust",
+                "deed_evidence": False,
+                "streaming_review": {
+                    "streaming": True,
+                    "specific_entitlement": True,
+                    "deed_allows_streaming": False,
+                    "recorded_in_character": False,
+                    "resolution": "resolution.pdf",
+                    "resolution_date": "not-a-date",
+                    "records": ["resolution.pdf"],
+                },
+            },
+        })
+        answer = next(
+            row["answer"] for row in incomplete["evidence_items"]
+            if row["row_kind"] == "entity-return-trust-streaming-evidence"
+        )
+        for gap in (
+            "trust deed streaming power", "trust deed evidence", "streamed component type",
+            "financial benefit received or expected",
+            "financial benefit referable to component",
+            "specific-entitlement recording condition",
+            "specific-entitlement recording date",
+        ):
+            self.assertIn(gap, answer)
+
+        complete = self.payload({
+            "trust_return": {
+                "name": "Supported Streaming Review Trust",
+                "deed_evidence": "trust-deed.pdf",
+                "streaming_review": {
+                    "streaming": True,
+                    "specific_entitlement": True,
+                    "deed_allows_streaming": True,
+                    "component_type": "capital gain",
+                    "financial_benefit_expected": True,
+                    "benefit_referable_to_component": True,
+                    "recorded_in_character": True,
+                    "resolution": "resolution.pdf",
+                    "recording_date": "2026-06-30",
+                    "records": ["resolution.pdf"],
+                },
+            },
+        })
+        complete_evidence = " ".join(
+            row["answer"] for row in complete["evidence_items"]
+            if row["row_kind"] == "entity-return-trust-streaming-evidence"
+        )
+        for gap in (
+            "trust deed streaming power", "trust deed evidence", "streamed component type",
+            "financial benefit received or expected",
+            "financial benefit referable to component",
+            "specific-entitlement recording condition",
+            "specific-entitlement recording date",
+        ):
+            self.assertNotIn(gap, complete_evidence)
+
+        flat = self.payload({
+            "trust_return_name": "Flat Supported Streaming Review Trust",
+            "trust_return_deed_evidence": "trust-deed.pdf",
+            "trust_return_streaming": True,
+            "trust_return_specific_entitlement": True,
+            "trust_return_deed_allows_streaming": True,
+            "trust_return_component_type": "franked distribution",
+            "trust_return_financial_benefit_received": True,
+            "trust_return_benefit_referable_to_component": True,
+            "trust_return_recorded_in_character": True,
+            "trust_return_resolution": "resolution.pdf",
+            "trust_return_resolution_date": "2026-06-30",
+            "trust_return_streaming_records": ["resolution.pdf"],
+        })
+        flat_evidence = " ".join(
+            row["answer"] for row in flat["evidence_items"]
+            if row["row_kind"] == "entity-return-trust-streaming-evidence"
+        )
+        self.assertNotIn("streaming resolution evidence", flat_evidence)
+        self.assertNotIn("specific-entitlement", flat_evidence)
+
+    def test_positive_trust_franking_requires_integrity_review_facts(self):
+        cases = (
+            (
+                "franked_distribution_items",
+                {
+                    "amount": 10, "franking_credit": 3,
+                    "statement": "statement.pdf", "records": ["statement.pdf"],
+                    "resolution": "resolution.pdf",
+                },
+                "entity-return-trust-franked-distribution-evidence",
+                "trust_qualified_person",
+            ),
+            (
+                "beneficiary_allocations",
+                {
+                    "beneficiary_name": "Synthetic Beneficiary",
+                    "component_type": "franked distribution",
+                    "beneficiary_franked_distribution": 10,
+                    "beneficiary_franking_credits": 3,
+                    "allocation_percentage": 100,
+                    "allocation_basis": "percentage",
+                    "allocation_resolution": "resolution.pdf",
+                    "records": ["beneficiary.csv"],
+                },
+                "entity-return-trust-beneficiary-allocation-evidence",
+                "beneficiary_qualified_person",
+            ),
+        )
+        for collection, item, row_kind, integrity_field in cases:
+            with self.subTest(collection=collection):
+                missing = self.payload({
+                    "trust_return": {"name": "Franking Review Trust", collection: item},
+                })
+                missing_answer = next(
+                    row["answer"] for row in missing["evidence_items"]
+                    if row["row_kind"] == row_kind
+                )
+                self.assertIn("franking credit integrity review", missing_answer)
+
+                supplied_item = dict(item)
+                supplied_item[integrity_field] = False
+                supplied = self.payload({
+                    "trust_return": {"name": "Franking Review Trust", collection: supplied_item},
+                })
+                supplied_answer = " ".join(
+                    row["answer"] for row in supplied["evidence_items"]
+                    if row["row_kind"] == row_kind
+                )
+                self.assertNotIn("franking credit integrity review", supplied_answer)
+
     def test_company_losses_assets_and_allowances_are_isolated_review_rows(self):
         payload = self.payload({
             "company_return": {

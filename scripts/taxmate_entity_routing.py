@@ -236,12 +236,18 @@ TRUST_REVIEW_FLAT_GROUPS = {
         "franked_amount", "unfranked_amount", "franking_credit", "franking_credits",
         "franked_distribution_statement", "franked_distribution_records",
         "franked_distribution_evidence", "franked_distribution_evidence_status",
+        "qualified_person", "trust_qualified_person", "holding_period_rule",
+        "related_payments_rule", "franking_integrity_status",
     ),
     "streaming_review": (
         "streaming", "streaming_applied", "deed_allows_streaming",
         "specific_entitlement", "recorded_in_character", "resolution",
         "streaming_resolution", "resolution_date", "streaming_records",
         "resolution_records", "streaming_evidence", "streaming_evidence_status",
+        "component_type", "financial_benefit_received",
+        "financial_benefit_expected", "financial_benefit_received_or_expected",
+        "financial_benefit_referable", "benefit_referable_to_component",
+        "recording_date", "deed_record", "deed_records",
     ),
     "beneficiary_allocations": (
         "beneficiary_name", "beneficiary_type", "beneficiary_residency",
@@ -251,6 +257,8 @@ TRUST_REVIEW_FLAT_GROUPS = {
         "component_type", "component_amount", "allocation_basis",
         "allocation_resolution", "beneficiary_allocation_records",
         "beneficiary_allocation_evidence", "beneficiary_allocation_evidence_status",
+        "qualified_person", "beneficiary_qualified_person", "holding_period_rule",
+        "related_payments_rule", "franking_integrity_status",
     ),
 }
 TRUST_REVIEW_FLAT_CANONICAL = {
@@ -279,6 +287,9 @@ TRUST_REVIEW_FLAT_CANONICAL = {
     "resolution_records": "resolution_evidence",
     "streaming_evidence": "evidence",
     "streaming_evidence_status": "evidence_status",
+    "financial_benefit_received": "financial_benefit_received_or_expected",
+    "financial_benefit_expected": "financial_benefit_received_or_expected",
+    "benefit_referable_to_component": "financial_benefit_referable",
     "beneficiary_allocation": "allocation",
     "beneficiary_allocation_percentage": "allocation_percentage",
     "beneficiary_allocation_records": "records",
@@ -494,7 +505,7 @@ def _display(value: Any) -> str:
     return str(value)
 
 
-def valid_checked_at(value: Any) -> bool:
+def valid_iso_date(value: Any) -> bool:
     if not isinstance(value, str) or not value.strip():
         return False
     try:
@@ -502,6 +513,10 @@ def valid_checked_at(value: Any) -> bool:
         return True
     except ValueError:
         return False
+
+
+def valid_checked_at(value: Any) -> bool:
+    return valid_iso_date(value)
 
 
 def source_provenance(record: Dict[str, Any]) -> Tuple[List[str], List[Any]]:

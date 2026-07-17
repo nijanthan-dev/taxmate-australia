@@ -447,6 +447,14 @@ def _false_signal(value: Any) -> bool:
     }
 
 
+def _positive_signal(value: Any) -> bool:
+    if value is True or value == 1:
+        return True
+    return isinstance(value, str) and value.strip().lower() in {
+        "true", "yes", "1", "on", "checked", "met", "satisfied", "confirmed",
+    }
+
+
 def _review_signal(value: Any) -> bool:
     if _missing(value) or _false_signal(value):
         return False
@@ -1486,6 +1494,31 @@ def _trust_resolution_present(record: Dict[str, Any], raw: Dict[str, Any]) -> bo
     )
 
 
+def _trust_deed_evidence_present(record: Dict[str, Any], raw: Dict[str, Any]) -> bool:
+    return any(
+        _evidence_available(value)
+        for value in (
+            record.get("deed_evidence"), raw.get("deed_record"), raw.get("deed_records"),
+        )
+    )
+
+
+def _positive_money(raw: Dict[str, Any], fields: Tuple[str, ...]) -> bool:
+    return any(
+        amount is not None and amount > 0
+        for amount in (_amount(raw.get(field)) for field in fields if field in raw)
+    )
+
+
+def _franking_integrity_signal_present(raw: Dict[str, Any], *, beneficiary: bool) -> bool:
+    fields = (
+        "qualified_person",
+        "beneficiary_qualified_person" if beneficiary else "trust_qualified_person",
+        "holding_period_rule", "related_payments_rule", "franking_integrity_status",
+    )
+    return any(field in raw and not _missing(raw[field]) for field in fields)
+
+
 def _trust_review_gaps(
     section: str,
     raw: Dict[str, Any],
@@ -1523,6 +1556,10 @@ def _trust_review_gaps(
             for field in ("statement", "distribution_statement")
         ):
             gaps.append("franked distribution statement")
+        if _positive_money(raw, ("franking_credit", "franking_credits")) and not (
+            _franking_integrity_signal_present(raw, beneficiary=False)
+        ):
+            gaps.append("franking credit integrity review")
     elif section == "streaming":
         if all(
             _missing(raw.get(field))
@@ -1531,6 +1568,40 @@ def _trust_review_gaps(
             gaps.append("streaming or specific-entitlement signal")
         if _missing(raw.get("deed_allows_streaming")):
             gaps.append("trust deed streaming signal")
+        claimed = any(
+            _positive_signal(raw.get(field)) for field in ("streaming", "specific_entitlement")
+        )
+        if claimed:
+            if not _positive_signal(raw.get("deed_allows_streaming")):
+                gaps.append("trust deed streaming power")
+            if not _trust_deed_evidence_present(record, raw):
+                gaps.append("trust deed evidence")
+            if _missing(raw.get("component_type")):
+                gaps.append("streamed component type")
+            if not any(
+                _positive_signal(raw.get(field))
+                for field in (
+                    "financial_benefit_received_or_expected",
+                    "financial_benefit_received", "financial_benefit_expected",
+                )
+            ):
+                gaps.append("financial benefit received or expected")
+            if not any(
+                _positive_signal(raw.get(field))
+                for field in ("financial_benefit_referable", "benefit_referable_to_component")
+            ):
+                gaps.append("financial benefit referable to component")
+            if not _positive_signal(raw.get("recorded_in_character")):
+                gaps.append("specific-entitlement recording condition")
+            recording_date = next(
+                (
+                    raw[field] for field in ("recording_date", "resolution_date")
+                    if field in raw and not _missing(raw[field])
+                ),
+                None,
+            )
+            if not taxmate_entity_routing.valid_iso_date(recording_date):
+                gaps.append("specific-entitlement recording date")
     elif section == "beneficiary-allocation":
         if _missing(raw.get("beneficiary_name")):
             gaps.append("beneficiary identity")
@@ -1550,6 +1621,10 @@ def _trust_review_gaps(
                 gaps.append("supported allocation percentage")
         if _missing(raw.get("allocation_basis")):
             gaps.append("allocation basis")
+        if _positive_money(raw, ("beneficiary_franking_credits",)) and not (
+            _franking_integrity_signal_present(raw, beneficiary=True)
+        ):
+            gaps.append("franking credit integrity review")
     if not _trust_resolution_present(record, raw):
         gaps.append("streaming resolution evidence")
     if raw.get("_alias_conflicts") or _trust_review_has_alias_conflict(section, raw):
