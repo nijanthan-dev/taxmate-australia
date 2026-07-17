@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.29.1](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.29.0...v0.29.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* harden entity review evidence ([#167](https://github.com/nijanthan-dev/taxmate-australia/issues/167)) ([f1740dc](https://github.com/nijanthan-dev/taxmate-australia/commit/f1740dca2ce77c76c00d9f96f30f1553cb7f0a28))
+
 ## [0.29.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.28.0...v0.29.0) (2026-07-16)
 
 
