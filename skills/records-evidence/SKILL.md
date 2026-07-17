@@ -62,9 +62,9 @@ Use for records and proof standards. Do not use for topic-specific current rates
 
 ## Required facts
 
-Trust CGT, franked-distribution, streaming, and beneficiary-allocation handling is review-first and prep-only. Collect capital-gain components and discount signals, franked distribution and franking-credit amounts, deed and trustee-resolution records, streaming and specific-entitlement signals, and beneficiary component allocations with source URLs and checked-at dates.
+Trust CGT, franked-distribution, streaming, and beneficiary-allocation handling is review-first and prep-only. Collect capital-gain components and discount signals, franked distribution and franking-credit amounts, deed and trustee-resolution records, streaming and specific-entitlement signals, the financial-benefit and recorded-in-character conditions, the component character and recording date, franking-integrity review signals, and beneficiary component allocations with source URLs and checked-at dates.
 
-Keep trust entity facts only in isolated trust review rows. Missing resolutions or statements, unknown or malformed component amounts, unsupported allocation percentages or bases, conflicts, and invalid provenance stay Evidence or `Accountant review`. Preserve valid `0` amounts and `false` discount, streaming, deed, specific-entitlement, or recorded-in-character signals. Do not calculate trust CGT, apply discounts, determine specific entitlement, decide allocations or franking treatment, fill official forms, or lodge.
+Keep trust entity facts only in isolated trust review rows. Missing deed power or evidence, financial-benefit or recorded-in-character conditions, component character, recording dates, resolutions, statements, franking-integrity review signals, unknown or malformed component amounts, unsupported allocation percentages or bases, conflicts, and invalid provenance stay Evidence or `Accountant review`. Preserve valid `0` amounts and `false` discount, streaming, deed, specific-entitlement, recorded-in-character, or qualified-person signals. Do not calculate trust CGT, test recording deadlines, apply discounts, determine specific entitlement, decide allocations or franking treatment, fill official forms, or lodge.
 
 - income year or effective period
 - taxpayer/entity and ownership

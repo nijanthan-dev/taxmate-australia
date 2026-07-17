@@ -429,6 +429,12 @@ def _amount(value: Any) -> Optional[Decimal]:
     return parsed if parsed.is_finite() else None
 
 
+def _percentage(value: Any) -> Optional[Decimal]:
+    if isinstance(value, str) and value.strip().endswith("%"):
+        value = value.strip()[:-1]
+    return _amount(value)
+
+
 def _decimal_text(value: Decimal) -> str:
     return format(value, "f")
 
@@ -438,6 +444,14 @@ def _false_signal(value: Any) -> bool:
         return True
     return isinstance(value, str) and value.strip().lower() in {
         "false", "no", "none", "0", "off", "unchecked",
+    }
+
+
+def _positive_signal(value: Any) -> bool:
+    if value is True or value == 1:
+        return True
+    return isinstance(value, str) and value.strip().lower() in {
+        "true", "yes", "1", "on", "checked", "met", "satisfied", "confirmed",
     }
 
 
@@ -529,6 +543,9 @@ def _merge_alias_item(existing: Dict[str, Any], candidate: Dict[str, Any]) -> Di
         alias: field for field, aliases in LINE_FIELD_ALIASES.items() for alias in aliases
     }
     for key, value in candidate.items():
+        if key == "_alias_conflicts" and isinstance(value, dict):
+            taxmate_entity_routing.merge_alias_conflicts(merged, value)
+            continue
         if key not in merged or _missing(merged[key]):
             merged[key] = copy.deepcopy(value)
             continue
@@ -549,8 +566,9 @@ def _merge_alias_item(existing: Dict[str, Any], candidate: Dict[str, Any]) -> Di
         if spare:
             merged[spare] = copy.deepcopy(value)
             continue
-        conflicts = merged.setdefault("_alias_conflicts", {})
-        conflicts[key] = _unique([merged[key], value])
+        taxmate_entity_routing.merge_alias_conflicts(
+            merged, {key: [merged[key], value]},
+        )
     return merged
 
 
@@ -1052,6 +1070,38 @@ def _company_sources(section: str, raw: Dict[str, Any]) -> List[str]:
     ]))
 
 
+def _review_alias_groups(
+    fields: Iterable[str],
+    canonical_by_field: Dict[str, str],
+) -> Dict[str, List[str]]:
+    groups: Dict[str, List[str]] = {}
+    for field in fields:
+        canonical = canonical_by_field.get(field, field)
+        groups.setdefault(canonical, [canonical])
+        if field not in groups[canonical]:
+            groups[canonical].append(field)
+    return groups
+
+
+def _review_aliases_conflict(raw: Dict[str, Any], groups: Dict[str, List[str]]) -> bool:
+    for canonical, aliases in groups.items():
+        values = [
+            raw[field]
+            for field in aliases
+            if field in raw and not _missing(raw[field])
+        ]
+        if len(values) < 2:
+            continue
+        if any(
+            not taxmate_entity_routing.review_values_equivalent(
+                canonical, values[0], candidate,
+            )
+            for candidate in values[1:]
+        ):
+            return True
+    return False
+
+
 def _company_review_has_alias_conflict(section: str, raw: Dict[str, Any]) -> bool:
     collection = {
         "dividend": "dividend_items",
@@ -1060,12 +1110,10 @@ def _company_review_has_alias_conflict(section: str, raw: Dict[str, Any]) -> boo
     }.get(section)
     if not collection:
         return False
-    groups: Dict[str, List[str]] = {}
-    for field in taxmate_entity_routing.COMPANY_REVIEW_FLAT_GROUPS[collection]:
-        canonical = taxmate_entity_routing.COMPANY_REVIEW_FLAT_CANONICAL.get(field, field)
-        groups.setdefault(canonical, [canonical])
-        if field not in groups[canonical]:
-            groups[canonical].append(field)
+    groups = _review_alias_groups(
+        taxmate_entity_routing.COMPANY_REVIEW_FLAT_GROUPS[collection],
+        taxmate_entity_routing.COMPANY_REVIEW_FLAT_CANONICAL,
+    )
     extras = {
         "dividend": {
             "franking_credit": ("franking_credits",),
@@ -1085,28 +1133,7 @@ def _company_review_has_alias_conflict(section: str, raw: Dict[str, Any]) -> boo
     for canonical, aliases in extras.items():
         groups.setdefault(canonical, [canonical])
         groups[canonical].extend(alias for alias in aliases if alias not in groups[canonical])
-    for aliases in groups.values():
-        values = [
-            raw[field]
-            for field in aliases
-            if field in raw and not _missing(raw[field])
-        ]
-        if len(values) < 2:
-            continue
-        first = values[0]
-        for candidate in values[1:]:
-            if first == candidate:
-                continue
-            first_amount = _amount(first)
-            candidate_amount = _amount(candidate)
-            if (
-                first_amount is not None
-                and candidate_amount is not None
-                and first_amount == candidate_amount
-            ):
-                continue
-            return True
-    return False
+    return _review_aliases_conflict(raw, groups)
 
 
 def _company_review_gaps(section: str, raw: Dict[str, Any]) -> List[str]:
@@ -1436,6 +1463,20 @@ def _trust_sources(raw: Dict[str, Any]) -> List[str]:
     ]))
 
 
+def _trust_review_has_alias_conflict(section: str, raw: Dict[str, Any]) -> bool:
+    collection = {
+        "capital-gain": "capital_gain_items",
+        "franked-distribution": "franked_distribution_items",
+        "streaming": "streaming_review",
+        "beneficiary-allocation": "beneficiary_allocations",
+    }[section]
+    groups = _review_alias_groups(
+        taxmate_entity_routing.TRUST_REVIEW_FLAT_GROUPS[collection],
+        taxmate_entity_routing.TRUST_REVIEW_FLAT_CANONICAL,
+    )
+    return _review_aliases_conflict(raw, groups)
+
+
 def _trust_resolution_present(record: Dict[str, Any], raw: Dict[str, Any]) -> bool:
     resolution_fields = (
         "resolution", "streaming_resolution", "allocation_resolution",
@@ -1451,6 +1492,31 @@ def _trust_resolution_present(record: Dict[str, Any], raw: Dict[str, Any]) -> bo
         and any(_evidence_available(candidate.get(field)) for field in resolution_fields)
         for candidate in candidates
     )
+
+
+def _trust_deed_evidence_present(record: Dict[str, Any], raw: Dict[str, Any]) -> bool:
+    return any(
+        _evidence_available(value)
+        for value in (
+            record.get("deed_evidence"), raw.get("deed_record"), raw.get("deed_records"),
+        )
+    )
+
+
+def _positive_money(raw: Dict[str, Any], fields: Tuple[str, ...]) -> bool:
+    return any(
+        amount is not None and amount > 0
+        for amount in (_amount(raw.get(field)) for field in fields if field in raw)
+    )
+
+
+def _franking_integrity_signal_present(raw: Dict[str, Any], *, beneficiary: bool) -> bool:
+    fields = (
+        "qualified_person",
+        "beneficiary_qualified_person" if beneficiary else "trust_qualified_person",
+        "holding_period_rule", "related_payments_rule", "franking_integrity_status",
+    )
+    return any(field in raw and not _missing(raw[field]) for field in fields)
 
 
 def _trust_review_gaps(
@@ -1490,6 +1556,10 @@ def _trust_review_gaps(
             for field in ("statement", "distribution_statement")
         ):
             gaps.append("franked distribution statement")
+        if _positive_money(raw, ("franking_credit", "franking_credits")) and not (
+            _franking_integrity_signal_present(raw, beneficiary=False)
+        ):
+            gaps.append("franking credit integrity review")
     elif section == "streaming":
         if all(
             _missing(raw.get(field))
@@ -1498,6 +1568,40 @@ def _trust_review_gaps(
             gaps.append("streaming or specific-entitlement signal")
         if _missing(raw.get("deed_allows_streaming")):
             gaps.append("trust deed streaming signal")
+        claimed = any(
+            _positive_signal(raw.get(field)) for field in ("streaming", "specific_entitlement")
+        )
+        if claimed:
+            if not _positive_signal(raw.get("deed_allows_streaming")):
+                gaps.append("trust deed streaming power")
+            if not _trust_deed_evidence_present(record, raw):
+                gaps.append("trust deed evidence")
+            if _missing(raw.get("component_type")):
+                gaps.append("streamed component type")
+            if not any(
+                _positive_signal(raw.get(field))
+                for field in (
+                    "financial_benefit_received_or_expected",
+                    "financial_benefit_received", "financial_benefit_expected",
+                )
+            ):
+                gaps.append("financial benefit received or expected")
+            if not any(
+                _positive_signal(raw.get(field))
+                for field in ("financial_benefit_referable", "benefit_referable_to_component")
+            ):
+                gaps.append("financial benefit referable to component")
+            if not _positive_signal(raw.get("recorded_in_character")):
+                gaps.append("specific-entitlement recording condition")
+            recording_date = next(
+                (
+                    raw[field] for field in ("recording_date", "resolution_date")
+                    if field in raw and not _missing(raw[field])
+                ),
+                None,
+            )
+            if not taxmate_entity_routing.valid_iso_date(recording_date):
+                gaps.append("specific-entitlement recording date")
     elif section == "beneficiary-allocation":
         if _missing(raw.get("beneficiary_name")):
             gaps.append("beneficiary identity")
@@ -1512,14 +1616,18 @@ def _trust_review_gaps(
             gaps.append("beneficiary component allocation")
         percentage = raw.get("allocation_percentage")
         if not _missing(percentage):
-            amount = _amount(percentage)
+            amount = _percentage(percentage)
             if amount is None or amount < 0 or amount > 100:
                 gaps.append("supported allocation percentage")
         if _missing(raw.get("allocation_basis")):
             gaps.append("allocation basis")
+        if _positive_money(raw, ("beneficiary_franking_credits",)) and not (
+            _franking_integrity_signal_present(raw, beneficiary=True)
+        ):
+            gaps.append("franking credit integrity review")
     if not _trust_resolution_present(record, raw):
         gaps.append("streaming resolution evidence")
-    if raw.get("_alias_conflicts"):
+    if raw.get("_alias_conflicts") or _trust_review_has_alias_conflict(section, raw):
         gaps.append("conflicting review aliases")
     evidence_value = raw.get("evidence", raw.get("records", raw.get("documents")))
     if not _evidence_available(evidence_value):
@@ -1626,12 +1734,8 @@ def _partnership_review_sources(section: str, raw: Dict[str, Any]) -> List[str]:
 
 def _numeric_total(value: Any, *, percentages: bool = False) -> Optional[Decimal]:
     values = value.values() if isinstance(value, dict) else value if isinstance(value, list) else []
-    parsed = [
-        _amount(item[:-1].strip())
-        if percentages and isinstance(item, str) and item.strip().endswith("%")
-        else _amount(item)
-        for item in values
-    ]
+    parse = _percentage if percentages else _amount
+    parsed = [parse(item) for item in values]
     return sum(parsed, Decimal("0")) if parsed and all(item is not None for item in parsed) else None
 
 

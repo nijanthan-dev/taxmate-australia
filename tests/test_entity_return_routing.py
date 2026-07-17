@@ -2218,6 +2218,338 @@ class EntityWorksheetRoutingTests(unittest.TestCase):
         self.assertFalse(any("Confirm evidence" in row["answer"] for row in streaming_evidence))
         self.assertFalse(any("worksheet" in row["ato_area"].lower() for row in payload["trust_items"]))
 
+    def test_entity_review_conflict_merges_never_create_circular_payloads(self):
+        cases = (
+            (
+                {
+                    "company_return": {
+                        "name": "Conflict Company",
+                        "dividends": {
+                            "direction": "received", "amount": 1,
+                            "franking_credit": 1, "records": ["ledger.csv"],
+                        },
+                    },
+                    "company_return_dividend_franking_credit": 2,
+                    "company_return_dividend_franking_credits": 3,
+                },
+                "entity-return-company-dividend-evidence",
+            ),
+            (
+                {
+                    "trust_return": {
+                        "name": "Conflict Trust",
+                        "franked_distribution_items": {
+                            "payer": "Synthetic Co", "amount": 1,
+                            "franking_credit": 1, "records": ["ledger.csv"],
+                        },
+                    },
+                    "trust_return_franking_credit": 2,
+                    "trust_return_franking_credits": 3,
+                },
+                "entity-return-trust-franked-distribution-evidence",
+            ),
+            (
+                {
+                    "partnership_return": {
+                        "name": "Conflict Partnership",
+                        "loss_items": {
+                            "category": "loss", "description": "same loss",
+                            "current_year_loss": 1, "records": ["first.csv"],
+                        },
+                        "losses": {
+                            "category": "loss", "description": "same loss",
+                            "current_year_loss": 2, "records": ["second.csv"],
+                        },
+                    },
+                    "partnership_return_current_year_loss": 3,
+                },
+                "entity-return-partnership-loss-evidence",
+            ),
+        )
+        for answers, row_kind in cases:
+            with self.subTest(row_kind=row_kind):
+                payload = self.payload(answers)
+                json.dumps(payload)
+                evidence = next(
+                    row for row in payload["evidence_items"]
+                    if row["row_kind"] == row_kind
+                )
+                self.assertIn("conflicting review aliases", evidence["answer"])
+
+    def test_trust_direct_item_alias_conflicts_fail_closed(self):
+        cases = (
+            (
+                "capital_gain_items",
+                {
+                    "asset": "Synthetic asset", "amount": 1,
+                    "capital_gain_amount": 2, "discount_eligible": False,
+                    "resolution": "resolution.pdf", "records": ["cgt.csv"],
+                },
+                "entity-return-trust-capital-gain-evidence",
+            ),
+            (
+                "franked_distribution_items",
+                {
+                    "payer": "Synthetic Co", "amount": 1,
+                    "franking_credit": 1, "franking_credits": 2,
+                    "statement": "statement.pdf", "resolution": "resolution.pdf",
+                    "records": ["statement.pdf"],
+                },
+                "entity-return-trust-franked-distribution-evidence",
+            ),
+            (
+                "streaming_review",
+                {
+                    "streaming": False, "streaming_applied": True,
+                    "deed_allows_streaming": False, "resolution": "resolution.pdf",
+                    "records": ["resolution.pdf"],
+                },
+                "entity-return-trust-streaming-evidence",
+            ),
+            (
+                "beneficiary_allocations",
+                {
+                    "beneficiary_name": "Synthetic Beneficiary",
+                    "component_type": "capital gain", "component_amount": 1,
+                    "allocation": 1, "beneficiary_allocation": 2,
+                    "allocation_percentage": 50, "allocation_basis": "percentage",
+                    "allocation_resolution": "resolution.pdf",
+                    "records": ["beneficiary.csv"],
+                },
+                "entity-return-trust-beneficiary-allocation-evidence",
+            ),
+        )
+        for collection, item, row_kind in cases:
+            with self.subTest(collection=collection):
+                payload = self.payload({
+                    "trust_return": {"name": "Direct Conflict Trust", collection: item},
+                })
+                evidence = next(
+                    row for row in payload["evidence_items"]
+                    if row["row_kind"] == row_kind
+                )
+                self.assertIn("conflicting review aliases", evidence["answer"])
+
+    def test_trust_allocation_percentage_strings_use_percentage_semantics(self):
+        for percentage, supported in (
+            ("0%", True), ("50%", True), ("100%", True),
+            ("-1%", False), ("101%", False), ("bad", False),
+        ):
+            with self.subTest(percentage=percentage):
+                payload = self.payload({
+                    "trust_return": {
+                        "name": "Percentage Trust",
+                        "beneficiary_allocations": {
+                            "beneficiary_name": "Synthetic Beneficiary",
+                            "component_type": "capital gain", "component_amount": 1,
+                            "allocation_percentage": percentage,
+                            "allocation_basis": "percentage",
+                            "allocation_resolution": "resolution.pdf",
+                            "records": ["beneficiary.csv"],
+                        },
+                    },
+                })
+                evidence = " ".join(
+                    row["answer"] for row in payload["evidence_items"]
+                    if row["row_kind"]
+                    == "entity-return-trust-beneficiary-allocation-evidence"
+                )
+                self.assertEqual(
+                    supported,
+                    "supported allocation percentage" not in evidence,
+                )
+
+    def test_numeric_equivalent_review_aliases_do_not_create_false_conflicts(self):
+        cases = (
+            {
+                "company_return_name": "Equivalent Company",
+                "company_return_dividend_direction": "received",
+                "company_return_dividend_franking_credit": 1,
+                "company_return_dividend_franking_credits": "1.00",
+                "company_return_dividend_statement": "statement.pdf",
+                "company_return_dividend_records": ["statement.pdf"],
+            },
+            {
+                "trust_return_name": "Equivalent Trust",
+                "trust_return_franked_distribution_amount": 1,
+                "trust_return_franking_credit": 1,
+                "trust_return_franking_credits": "1.00",
+                "trust_return_franked_distribution_statement": "statement.pdf",
+                "trust_return_franked_distribution_records": ["statement.pdf"],
+                "trust_return_streaming_resolution": "resolution.pdf",
+            },
+        )
+        for answers in cases:
+            name = next(value for key, value in answers.items() if key.endswith("_name"))
+            with self.subTest(name=name):
+                payload = self.payload(answers)
+                evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+                self.assertNotIn("conflicting review aliases", evidence)
+
+    def test_percent_alias_equivalence_is_limited_to_percentage_fields(self):
+        conflict = self.payload({
+            "trust_return_name": "Amount Percent Trust",
+            "trust_return_franked_distribution_amount": 1,
+            "trust_return_franking_credit": 1,
+            "trust_return_franking_credits": "1%",
+            "trust_return_franked_distribution_statement": "statement.pdf",
+            "trust_return_franked_distribution_records": ["statement.pdf"],
+            "trust_return_streaming_resolution": "resolution.pdf",
+        })
+        equivalent = self.payload({
+            "trust_return": {
+                "name": "Percentage Alias Trust",
+                "beneficiary_allocations": {
+                    "beneficiary_name": "Synthetic Beneficiary",
+                    "component_type": "capital gain", "component_amount": 1,
+                    "allocation_percentage": 50,
+                    "beneficiary_allocation_percentage": "50%",
+                    "allocation_basis": "percentage",
+                    "allocation_resolution": "resolution.pdf",
+                    "records": ["beneficiary.csv"],
+                },
+            },
+        })
+        conflict_evidence = " ".join(
+            row["answer"] for row in conflict["evidence_items"]
+        )
+        equivalent_evidence = " ".join(
+            row["answer"] for row in equivalent["evidence_items"]
+        )
+        self.assertIn("conflicting review aliases", conflict_evidence)
+        self.assertNotIn("conflicting review aliases", equivalent_evidence)
+
+    def test_claimed_trust_streaming_requires_ato_specific_entitlement_facts(self):
+        incomplete = self.payload({
+            "trust_return": {
+                "name": "Incomplete Streaming Trust",
+                "deed_evidence": False,
+                "streaming_review": {
+                    "streaming": True,
+                    "specific_entitlement": True,
+                    "deed_allows_streaming": False,
+                    "recorded_in_character": False,
+                    "resolution": "resolution.pdf",
+                    "resolution_date": "not-a-date",
+                    "records": ["resolution.pdf"],
+                },
+            },
+        })
+        answer = next(
+            row["answer"] for row in incomplete["evidence_items"]
+            if row["row_kind"] == "entity-return-trust-streaming-evidence"
+        )
+        for gap in (
+            "trust deed streaming power", "trust deed evidence", "streamed component type",
+            "financial benefit received or expected",
+            "financial benefit referable to component",
+            "specific-entitlement recording condition",
+            "specific-entitlement recording date",
+        ):
+            self.assertIn(gap, answer)
+
+        complete = self.payload({
+            "trust_return": {
+                "name": "Supported Streaming Review Trust",
+                "deed_evidence": "trust-deed.pdf",
+                "streaming_review": {
+                    "streaming": True,
+                    "specific_entitlement": True,
+                    "deed_allows_streaming": True,
+                    "component_type": "capital gain",
+                    "financial_benefit_expected": True,
+                    "benefit_referable_to_component": True,
+                    "recorded_in_character": True,
+                    "resolution": "resolution.pdf",
+                    "recording_date": "2026-06-30",
+                    "records": ["resolution.pdf"],
+                },
+            },
+        })
+        complete_evidence = " ".join(
+            row["answer"] for row in complete["evidence_items"]
+            if row["row_kind"] == "entity-return-trust-streaming-evidence"
+        )
+        for gap in (
+            "trust deed streaming power", "trust deed evidence", "streamed component type",
+            "financial benefit received or expected",
+            "financial benefit referable to component",
+            "specific-entitlement recording condition",
+            "specific-entitlement recording date",
+        ):
+            self.assertNotIn(gap, complete_evidence)
+
+        flat = self.payload({
+            "trust_return_name": "Flat Supported Streaming Review Trust",
+            "trust_return_deed_evidence": "trust-deed.pdf",
+            "trust_return_streaming": True,
+            "trust_return_specific_entitlement": True,
+            "trust_return_deed_allows_streaming": True,
+            "trust_return_component_type": "franked distribution",
+            "trust_return_financial_benefit_received": True,
+            "trust_return_benefit_referable_to_component": True,
+            "trust_return_recorded_in_character": True,
+            "trust_return_resolution": "resolution.pdf",
+            "trust_return_resolution_date": "2026-06-30",
+            "trust_return_streaming_records": ["resolution.pdf"],
+        })
+        flat_evidence = " ".join(
+            row["answer"] for row in flat["evidence_items"]
+            if row["row_kind"] == "entity-return-trust-streaming-evidence"
+        )
+        self.assertNotIn("streaming resolution evidence", flat_evidence)
+        self.assertNotIn("specific-entitlement", flat_evidence)
+
+    def test_positive_trust_franking_requires_integrity_review_facts(self):
+        cases = (
+            (
+                "franked_distribution_items",
+                {
+                    "amount": 10, "franking_credit": 3,
+                    "statement": "statement.pdf", "records": ["statement.pdf"],
+                    "resolution": "resolution.pdf",
+                },
+                "entity-return-trust-franked-distribution-evidence",
+                "trust_qualified_person",
+            ),
+            (
+                "beneficiary_allocations",
+                {
+                    "beneficiary_name": "Synthetic Beneficiary",
+                    "component_type": "franked distribution",
+                    "beneficiary_franked_distribution": 10,
+                    "beneficiary_franking_credits": 3,
+                    "allocation_percentage": 100,
+                    "allocation_basis": "percentage",
+                    "allocation_resolution": "resolution.pdf",
+                    "records": ["beneficiary.csv"],
+                },
+                "entity-return-trust-beneficiary-allocation-evidence",
+                "beneficiary_qualified_person",
+            ),
+        )
+        for collection, item, row_kind, integrity_field in cases:
+            with self.subTest(collection=collection):
+                missing = self.payload({
+                    "trust_return": {"name": "Franking Review Trust", collection: item},
+                })
+                missing_answer = next(
+                    row["answer"] for row in missing["evidence_items"]
+                    if row["row_kind"] == row_kind
+                )
+                self.assertIn("franking credit integrity review", missing_answer)
+
+                supplied_item = dict(item)
+                supplied_item[integrity_field] = False
+                supplied = self.payload({
+                    "trust_return": {"name": "Franking Review Trust", collection: supplied_item},
+                })
+                supplied_answer = " ".join(
+                    row["answer"] for row in supplied["evidence_items"]
+                    if row["row_kind"] == row_kind
+                )
+                self.assertNotIn("franking credit integrity review", supplied_answer)
+
     def test_company_losses_assets_and_allowances_are_isolated_review_rows(self):
         payload = self.payload({
             "company_return": {

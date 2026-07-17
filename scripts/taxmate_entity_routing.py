@@ -236,12 +236,18 @@ TRUST_REVIEW_FLAT_GROUPS = {
         "franked_amount", "unfranked_amount", "franking_credit", "franking_credits",
         "franked_distribution_statement", "franked_distribution_records",
         "franked_distribution_evidence", "franked_distribution_evidence_status",
+        "qualified_person", "trust_qualified_person", "holding_period_rule",
+        "related_payments_rule", "franking_integrity_status",
     ),
     "streaming_review": (
         "streaming", "streaming_applied", "deed_allows_streaming",
         "specific_entitlement", "recorded_in_character", "resolution",
         "streaming_resolution", "resolution_date", "streaming_records",
         "resolution_records", "streaming_evidence", "streaming_evidence_status",
+        "component_type", "financial_benefit_received",
+        "financial_benefit_expected", "financial_benefit_received_or_expected",
+        "financial_benefit_referable", "benefit_referable_to_component",
+        "recording_date", "deed_record", "deed_records",
     ),
     "beneficiary_allocations": (
         "beneficiary_name", "beneficiary_type", "beneficiary_residency",
@@ -251,6 +257,8 @@ TRUST_REVIEW_FLAT_GROUPS = {
         "component_type", "component_amount", "allocation_basis",
         "allocation_resolution", "beneficiary_allocation_records",
         "beneficiary_allocation_evidence", "beneficiary_allocation_evidence_status",
+        "qualified_person", "beneficiary_qualified_person", "holding_period_rule",
+        "related_payments_rule", "franking_integrity_status",
     ),
 }
 TRUST_REVIEW_FLAT_CANONICAL = {
@@ -279,6 +287,9 @@ TRUST_REVIEW_FLAT_CANONICAL = {
     "resolution_records": "resolution_evidence",
     "streaming_evidence": "evidence",
     "streaming_evidence_status": "evidence_status",
+    "financial_benefit_received": "financial_benefit_received_or_expected",
+    "financial_benefit_expected": "financial_benefit_received_or_expected",
+    "benefit_referable_to_component": "financial_benefit_referable",
     "beneficiary_allocation": "allocation",
     "beneficiary_allocation_percentage": "allocation_percentage",
     "beneficiary_allocation_records": "records",
@@ -494,7 +505,7 @@ def _display(value: Any) -> str:
     return str(value)
 
 
-def valid_checked_at(value: Any) -> bool:
+def valid_iso_date(value: Any) -> bool:
     if not isinstance(value, str) or not value.strip():
         return False
     try:
@@ -502,6 +513,10 @@ def valid_checked_at(value: Any) -> bool:
         return True
     except ValueError:
         return False
+
+
+def valid_checked_at(value: Any) -> bool:
+    return valid_iso_date(value)
 
 
 def source_provenance(record: Dict[str, Any]) -> Tuple[List[str], List[Any]]:
@@ -542,6 +557,24 @@ def worksheet_values_equivalent(field: str, left: Any, right: Any) -> bool:
     try:
         left_amount = Decimal(str(left).strip().replace(",", "").replace("$", ""))
         right_amount = Decimal(str(right).strip().replace(",", "").replace("$", ""))
+    except (InvalidOperation, ValueError):
+        return False
+    return left_amount.is_finite() and right_amount.is_finite() and left_amount == right_amount
+
+
+def review_values_equivalent(field: str, left: Any, right: Any) -> bool:
+    if worksheet_values_equivalent(field, left, right):
+        return True
+    if isinstance(left, bool) or isinstance(right, bool):
+        return False
+    left_text = str(left).strip().replace(",", "").replace("$", "")
+    right_text = str(right).strip().replace(",", "").replace("$", "")
+    if field.endswith(("percentage", "rate")):
+        left_text = left_text.removesuffix("%")
+        right_text = right_text.removesuffix("%")
+    try:
+        left_amount = Decimal(left_text)
+        right_amount = Decimal(right_text)
     except (InvalidOperation, ValueError):
         return False
     return left_amount.is_finite() and right_amount.is_finite() and left_amount == right_amount
@@ -588,6 +621,37 @@ def _merge_source_values(*values: Any) -> List[Any]:
         if not _missing(item)
     ]
     return _dedupe(supplied)
+
+
+def merge_alias_conflicts(target: Dict[str, Any], incoming: Dict[str, Any]) -> None:
+    conflicts = target.get("_alias_conflicts")
+    if not isinstance(conflicts, dict):
+        conflicts = (
+            {"_alias_conflicts": [conflicts]}
+            if conflicts is not None
+            else {}
+        )
+        target["_alias_conflicts"] = conflicts
+    for field, values in incoming.items():
+        existing = conflicts.get(field, [])
+        existing_values = existing if isinstance(existing, list) else [existing]
+        incoming_values = values if isinstance(values, list) else [values]
+        conflicts[field] = _dedupe([*existing_values, *incoming_values])
+
+
+def _merge_review_item(merged: Dict[str, Any], review: Dict[str, Any]) -> Dict[str, Any]:
+    for key, value in review.items():
+        if key == "_alias_conflicts" and isinstance(value, dict):
+            merge_alias_conflicts(merged, value)
+        elif key not in merged or _missing(merged[key]):
+            merged[key] = value
+        elif key in {"source_url", "source_urls"}:
+            merged["source_urls"] = _merge_source_values(
+                merged.get("source_urls"), merged.get("source_url"), value,
+            )
+        elif not review_values_equivalent(key, merged[key], value):
+            merge_alias_conflicts(merged, {key: [merged[key], value]})
+    return merged
 
 
 def _child_collection_value(left: Any, right: Any) -> List[Any]:
@@ -1162,16 +1226,7 @@ def _group_partnership_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
                             dict(item) if isinstance(item, dict)
                             else {PARTNERSHIP_REVIEW_SCALAR_FIELDS[collection]: item}
                         )
-                    for key, value in review.items():
-                        if key not in merged or _missing(merged[key]):
-                            merged[key] = value
-                        elif key in {"source_url", "source_urls"}:
-                            merged["source_urls"] = _merge_source_values(
-                                merged.get("source_urls"), merged.get("source_url"), value,
-                            )
-                        elif not worksheet_values_equivalent(key, merged[key], value):
-                            merged.setdefault("_alias_conflicts", {})[key] = [merged[key], value]
-                    merged_items.append(merged)
+                    merged_items.append(_merge_review_item(merged, review))
                 grouped[alias] = merged_items if isinstance(existing, list) else merged_items[0]
         else:
             grouped[collection] = review
@@ -1195,7 +1250,7 @@ def _group_company_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
             value = grouped.pop(field)
             if canonical not in review or _missing(review[canonical]):
                 review[canonical] = value
-            elif not worksheet_values_equivalent(canonical, review[canonical], value):
+            elif not review_values_equivalent(canonical, review[canonical], value):
                 flat_conflicts.setdefault(canonical, [review[canonical]])
                 if value not in flat_conflicts[canonical]:
                     flat_conflicts[canonical].append(value)
@@ -1235,18 +1290,7 @@ def _group_company_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
                         ): item
                     }
                 )
-                for key, value in review.items():
-                    if key not in merged or _missing(merged[key]):
-                        merged[key] = value
-                    elif key in {"source_url", "source_urls"}:
-                        merged["source_urls"] = _merge_source_values(
-                            merged.get("source_urls"), merged.get("source_url"), value,
-                        )
-                    elif not worksheet_values_equivalent(key, merged[key], value):
-                        merged.setdefault("_alias_conflicts", {})[key] = [
-                            merged[key], value,
-                        ]
-                merged_items.append(merged)
+                merged_items.append(_merge_review_item(merged, review))
             grouped[alias] = merged_items if isinstance(existing, list) else merged_items[0]
     return grouped
 
@@ -1273,7 +1317,7 @@ def _group_trust_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
             value = grouped.pop(field)
             if canonical not in review or _missing(review[canonical]):
                 review[canonical] = value
-            elif not worksheet_values_equivalent(canonical, review[canonical], value):
+            elif not review_values_equivalent(canonical, review[canonical], value):
                 conflicts.setdefault(canonical, [review[canonical]])
                 if value not in conflicts[canonical]:
                     conflicts[canonical].append(value)
@@ -1304,18 +1348,7 @@ def _group_trust_review_fields(record: Dict[str, Any]) -> Dict[str, Any]:
                     if isinstance(item, dict)
                     else {TRUST_REVIEW_SCALAR_FIELDS[collection]: item}
                 )
-                for key, value in review.items():
-                    if key not in merged or _missing(merged[key]):
-                        merged[key] = value
-                    elif key in {"source_url", "source_urls"}:
-                        merged["source_urls"] = _merge_source_values(
-                            merged.get("source_urls"), merged.get("source_url"), value,
-                        )
-                    elif not worksheet_values_equivalent(key, merged[key], value):
-                        merged.setdefault("_alias_conflicts", {})[key] = [
-                            merged[key], value,
-                        ]
-                merged_items.append(merged)
+                merged_items.append(_merge_review_item(merged, review))
             grouped[alias] = merged_items if isinstance(existing, list) else merged_items[0]
     return grouped
 
