@@ -4625,7 +4625,7 @@ def check_local_ci_contract(root: Path) -> List[Finding]:
                 "name: TaxMate Australia Local CI",
                 "catthehacker/ubuntu:act-22.04",
                 "act workflow_dispatch -W .github/workflows/local-ci.yml",
-                "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+                "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
                 "rm -rf .git",
                 "git commit -m act-baseline",
                 "docker info",
